@@ -1,0 +1,6 @@
+_build/
+*.install
+*.ba
+*~
+*.swp
+.DS_Store

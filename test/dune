@@ -1,0 +1,49 @@
+(executable
+ (name test_pyml_standalone)
+ (modules test_pyml_standalone)
+ (libraries lwt lwt.unix yojson pyml falcon))
+
+(executable
+ (name test_launcher)
+ (modules toy_acus test_launcher)
+ (libraries lwt lwt.unix yojson falcon))
+
+(test
+ (name test_acu_api)
+ (modules test_acu_api)
+ (libraries alcotest falcon))
+
+(test
+ (name test_acu_base)
+ (modules test_acu_base)
+ (libraries lwt lwt.unix alcotest falcon))
+
+(test
+ (name test_config_factory)
+ (modules test_config_factory)
+ (libraries alcotest falcon))
+
+(test
+ (name test_autotuner_base)
+ (modules test_autotuner_base)
+ (libraries lwt lwt.unix alcotest falcon))
+
+(test
+ (name test_feature_optimizer_base)
+ (modules test_feature_optimizer_base)
+ (libraries lwt lwt.unix alcotest falcon))
+
+(test
+ (name test_signal_analyzer_base)
+ (modules test_signal_analyzer_base)
+ (libraries lwt lwt.unix alcotest falcon))
+
+(test
+ (name test_message_handler)
+ (modules test_message_handler)
+ (libraries lwt lwt.unix alcotest falcon))
+
+(test
+ (name test_signal_utils)
+ (modules test_signal_utils)
+ (libraries alcotest falcon))
