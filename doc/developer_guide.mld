@@ -1,0 +1,34 @@
+{0 Developer Guide}
+
+{1 Project Structure}
+
+- [lib/acu/]: Core ACU classes and templates.
+- [lib/utils/]: NATS, configuration, and logging middleware.
+- [lib/types/]: Data structures ([DeviceCharacteristic], [Specifications]).
+- [lib/analysis/]: OCaml-native analysis (Owl).
+
+{1 Building}
+
+{[
+dune build
+dune build @doc
+]}
+
+{1 Creating a New ACU}
+
+Inherit from {!Falcon.Signal_analyzer_base} for typical analysis units.
+
+{[
+class my_analyzer info request iv handler cio config = object(self)
+  inherit Signal_analyzer_base.base_signal_analyzer info request iv handler cio config as super
+  
+  method! analyze data =
+    (* Implementation here *)
+    Lwt.return (Ok result)
+end
+]}
+
+{1 Python Integration (Legacy)}
+
+Python is officially **deprecated**. Use native OCaml (Owl) for new logic.
+To use legacy scripts, call [self#set_python_script] in [setup].

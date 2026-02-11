@@ -1,0 +1,22 @@
+{0 Architecture Overview}
+
+FAlCon uses **OCaml** as the "meta-language" for defining ACUs.
+
+{1 The "Hub and Spoke" Model}
+
+1. **Source of Truth**: ACU logic and types are defined in OCaml.
+2. **Polyglot Bindings**: OCaml exports C-compatible APIs for Python, Go, and C++.
+3. **Execution**: Core logic runs in the OCaml runtime (native performance).
+
+{1 Execution Flow}
+
+- **Initialization**: ACU loads configuration and connects to NATS.
+- **Signal Ingestion**: Data arrives via NATS or direct memory (Python bridge).
+- **Analysis**: Native OCaml analysis (e.g., via Owl).
+- **State Update**: Resulting parameters are synchronized and emitted.
+
+{1 Core Compositions}
+
+- {!Falcon.Base_acu}: Lifecycle and message handling.
+- {!Falcon.Signal_analyzer_base}: Signal processing workflow.
+- {!Falcon.Acu_templates}: Standardized unit structures.

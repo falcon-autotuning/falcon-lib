@@ -1,11 +1,13 @@
 open Ctypes
 
+(** C-compatible string structure for polyglot interop *)
 type string_struct
 let string_struct : string_struct structure typ = structure "string"
 let string_raw = field string_struct "raw" (ptr char)
 let string_length = field string_struct "length" size_t
 let () = seal string_struct
 
+(** Convert C string handle to OCaml string *)
 let string_to_ocaml handle =
   if handle = null then ""
   else
@@ -21,6 +23,7 @@ let to_number_compat v =
   | `Float f -> f
   | _ -> to_float v
 
+(** Constant keys for NATS command subjects and fields *)
 module RUNTIME_COMMANDS = struct
   (* ... (rest of the RUNTIME_COMMANDS content) ... *)
   module BULK_DATABASE_ACCESS = struct
@@ -185,7 +188,7 @@ module RUNTIME_COMMANDS = struct
     module OPTIMIZER_PKT = struct
       let comm_channel = "OPTIMIZER_PKT"
       let extra_products = "extra_products"
-      let outputs = "outputs"
+      let HW_outputs = "outputs"
       let graphical_element = "graphical_element"
       let message = "message"
       let products = "products"
@@ -231,6 +234,7 @@ module RUNTIME_COMMANDS = struct
   end
 end
 
+(** Key-value pairs for unit initialization parameters *)
 module InstanceVariables = struct
   type t = (string * Yojson.Safe.t) list
 
@@ -238,6 +242,7 @@ module InstanceVariables = struct
   let from_json json = match json with `Assoc l -> l | _ -> []
 end
 
+(** Structure for requesting an action from an ACU *)
 module UnitRequest = struct
   type t = {
     message : string;
@@ -260,6 +265,7 @@ module UnitRequest = struct
     }
 end
 
+(** Structure for ACU execution results *)
 module UnitResponse = struct
   type t = {
     message : string;

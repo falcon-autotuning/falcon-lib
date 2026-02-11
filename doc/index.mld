@@ -1,0 +1,19 @@
+{0 FAlCon: Algorithmic Control Units}
+
+OCaml-native framework for high-performance signal analysis and control.
+
+{1 Core Modules}
+
+- {!Falcon.Base_acu}: Core lifecycle and state management.
+- {!Falcon.Signal_analyzer_base}: Foundation for signal processing logic.
+- {!Falcon.Acu_templates}: Pre-built ACU patterns (Simple, Optimizer, Autotuner).
+- {!Falcon.Acu_api}: Unified API for unit interaction.
+- {!Falcon.Ui_api}: API for UI/Dashboard integration.
+
+{1 Architecture & Usage}
+
+- {{!page-architecture} Fundamentals}: Hub-and-spoke polyglot model.
+- {{!page-developer_guide} Usage}: Quickstart for building and deploying ACUs.
+
+{1 Full API Reference}
+{!modules: Falcon}
