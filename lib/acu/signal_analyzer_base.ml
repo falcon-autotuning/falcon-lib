@@ -11,16 +11,16 @@ class virtual base_signal_analyzer hash request instance_vars handler config_io 
 
   method! setup _kwargs =
     super#setup _kwargs >>= fun () ->
-    self#log "SignalAnalyzer: Initializing Python bridge" >>= fun () ->
-    if not (Py.is_initialized ()) then Py.initialize ();
-    
-    (* Extract input signals from instance variables *)
-    (match List.assoc_opt "input_signals" instance_variables with
-     | Some s -> input_signals <- s
-     | None -> ());
-    Lwt.return_unit
+    if python_script <> "" then
+      begin
+        self#log "WARNING: SignalAnalyzer is using deprecated Python bridge. Move to native OCaml analysis." >>= fun () ->
+        if not (Py.is_initialized ()) then Py.initialize ();
+        Lwt.return_unit
+      end
+    else
+      Lwt.return_unit
 
-  (** Direct Yojson.Safe.t to Py.Object.t bridge (no intermediate JSON strings) *)
+  (** [DEPRECATED] Direct Yojson.Safe.t to Py.Object.t bridge (no intermediate JSON strings) *)
   method private yojson_to_py (j : Yojson.Safe.t) : Py.Object.t =
     match j with
     | `Null -> Py.none
@@ -36,7 +36,7 @@ class virtual base_signal_analyzer hash request instance_vars handler config_io 
         Py.List.of_list (List.map (fun v -> self#yojson_to_py v) l)
     | _ -> Py.none
 
-  (** Convert DeviceCharacteristic.t directly to a Python dict *)
+  (** [DEPRECATED] Convert DeviceCharacteristic.t directly to a Python dict *)
   method private characteristic_to_py (c : DeviceCharacteristic.t) : Py.Object.t =
     let dict = Py.Dict.create () in
     let set k v = Py.Dict.set_item dict (Py.String.of_string k) v in
@@ -49,39 +49,56 @@ class virtual base_signal_analyzer hash request instance_vars handler config_io 
     set "value" (self#yojson_to_py c.characteristic);
     dict
 
-  method! program () =
-    if python_script = "" then
+  method private build_context () =
+    let signals = match List.assoc_opt "input_signals" instance_variables with
+      | Some s -> s
+      | None -> `Null
+    in
+    let deps_assoc = List.map (fun (name, char) ->
+      let char_json = `Assoc [
+        ("name", `String char.DeviceCharacteristic.name);
+        ("value", char.DeviceCharacteristic.characteristic);
+        ("unit_type", `String char.DeviceCharacteristic.unit_type);
+        ("uncertainty", `Float char.DeviceCharacteristic.uncertainty)
+      ] in
+      (name, char_json)
+    ) dependencies in
+    `Assoc [
+      ("signals", signals);
+      ("instance_vars", `Assoc instance_variables);
+      ("dependencies", `Assoc deps_assoc)
+    ]
+
+  (** 
+    The main analysis hook. Subclasses should override this for native OCaml analysis.
+    By default, it falls back to the Python script if provided (DEPRECATED).
+  *)
+  method analyze (context : Yojson.Safe.t) =
+    if python_script <> "" then
       begin
-        let msg = "No Python script provided for SignalAnalyzer" in
-        self#log msg >>= fun () ->
-        success <- false;
-        result <- msg;
-        Lwt.return_unit
+        self#log "SignalAnalyzer: Falling back to deprecated Python analysis" >>= fun () ->
+        self#run_python_analysis context
       end
     else
       begin
-        self#run_python_analysis () >>= fun (s, m, p) ->
-        success <- s;
-        result <- m;
-        products <- p;
-        Lwt.return_unit
+        let msg = "No analysis method implemented (and no Python script provided)" in
+        Lwt.return (false, msg, [])
       end
 
-  method private run_python_analysis () =
-    try
-      (* Build the enriched context object *)
-      let context = Py.Dict.create () in
-      let set k v = Py.Dict.set_item context (Py.String.of_string k) v in
-      
-      set "signals" (self#yojson_to_py input_signals);
-      set "instance_vars" (self#yojson_to_py (`Assoc instance_variables));
-      
-      let deps_dict = Py.Dict.create () in
-      List.iter (fun (name, char) -> 
-        Py.Dict.set_item deps_dict (Py.String.of_string name) (self#characteristic_to_py char)
-      ) dependencies;
-      set "dependencies" deps_dict;
+  method! program () =
+    let context = self#build_context () in
+    self#analyze context >>= fun (s, m, p) ->
+    success <- s;
+    result <- m;
+    products <- p;
+    Lwt.return_unit
 
+  (** [DEPRECATED] Internal method to execute user script via pyml *)
+  method private run_python_analysis context_json =
+    try
+      (* Build the enriched Python context object from JSON context *)
+      let context = self#yojson_to_py context_json in
+      
       (* Execute user script *)
       let script_source = 
         let ic = open_in python_script in
