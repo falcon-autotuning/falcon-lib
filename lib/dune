@@ -20,8 +20,10 @@
   signal_analyzer_base
   specifications
   launcher_logic
-  config_factory)
- (libraries lwt lwt.unix yojson ctypes ctypes.foreign pyml falcon_core dynlink)
+  config_factory
+  owl_helpers)
+ (libraries lwt lwt.unix yojson ctypes ctypes.foreign pyml falcon_core dynlink owl-base)
  (preprocess (pps lwt_ppx))
  (flags :standard -w -32))
+
 
