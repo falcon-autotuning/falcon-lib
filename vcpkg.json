@@ -8,7 +8,7 @@
   "dependencies": [
     {
       "name": "libpqxx",
-      "version>=": "7.10.0"
+      "version>=": "7.10.5"
     },
     {
       "name": "nlohmann-json",
@@ -17,7 +17,19 @@
     {
       "name": "gtest",
       "version>=": "1.14.0"
+    },
+    {
+      "name": "bext-sml",
+      "version>=": "1.1.13"
+    },
+    {
+      "name": "boost-graph",
+      "version>=": "1.83.0"
+    },
+    {
+      "name": "boost-dll",
+      "version>=": "1.83.0"
     }
   ],
-  "builtin-baseline": "7213cf8135c329c37c7e2778e40774489a0583a8"
+  "builtin-baseline": "a42af01b72c28a8e1d7b48107b33e4f286a55ef6"
 }
