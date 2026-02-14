@@ -1,0 +1,145 @@
+#include "DatabaseTestFixture.hpp"
+#include "falcon-database/SnapshotManager.hpp"
+#include <filesystem>
+#include <gtest/gtest.h>
+
+using namespace falcon::database;
+using namespace falcon::database::test;
+
+class FullWorkflowTest : public DatabaseTestFixture {
+protected:
+  void SetUp() override { DatabaseTestFixture::SetUp(); }
+};
+
+TEST_F(FullWorkflowTest, CompleteDeviceCharacterizationWorkflow) {
+  // Step 1: Initialize and insert characteristics
+  std::vector<DeviceCharacteristic> characteristics;
+
+  for (int i = 0; i < 10; ++i) {
+    DeviceCharacteristic dc;
+    dc.scope = "quantum_dot_" + std::to_string(i / 3);
+    dc.name = "gate_voltage_" + std::to_string(i);
+    dc.barrier_gate = "BG" + std::to_string(i % 3);
+    dc.plunger_gate = "PG" + std::to_string(i);
+    dc.hash = "measurement_" + std::to_string(1000 + i);
+    dc.time = 1700000000 + i * 100;
+    dc.state = (i % 2 == 0) ? "tuned" : "untuned";
+    dc.unit_name = "mV";
+    dc.uncertainty = 0.05 * (i + 1);
+    dc.characteristic = JSONPrimitive(100.0 + i * 5.5);
+
+    db_->insert(dc);
+    characteristics.push_back(dc);
+  }
+
+  EXPECT_EQ(db_->count(), 10);
+
+  // Step 2: Query specific characteristics
+  auto result = db_->get_by_name("gate_voltage_5");
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(result->plunger_gate, "PG5");
+  EXPECT_DOUBLE_EQ(result->characteristic.as_double(), 127.5);
+
+  // Step 3: Query multiple characteristics
+  std::vector<std::string> names = {"gate_voltage_0", "gate_voltage_5",
+                                    "gate_voltage_9"};
+  auto many_results = db_->get_many(names);
+  EXPECT_EQ(many_results.size(), 3);
+
+  // Step 4: Query by hash range
+  auto hash_results =
+      db_->get_by_hash_range("measurement_1003", "measurement_1007");
+  EXPECT_GE(hash_results.size(), 1);
+
+  // Step 5: Export snapshot
+  auto snapshot_path =
+      std::filesystem::temp_directory_path() / "workflow_snapshot.json";
+  SnapshotManager mgr(*db_);
+  mgr.export_to_json(snapshot_path.string());
+  EXPECT_TRUE(std::filesystem::exists(snapshot_path));
+
+  // Step 6: Validate snapshot
+  EXPECT_TRUE(SnapshotManager::validate_snapshot(snapshot_path.string()));
+
+  // Step 7: Delete some characteristics
+  db_->delete_by_name("gate_voltage_3");
+  EXPECT_EQ(db_->count(), 9);
+
+  // Step 8: Restore from snapshot
+  mgr.import_from_json(snapshot_path.string(), true);
+  EXPECT_EQ(db_->count(), 10);
+
+  // Step 9: Verify restoration
+  auto restored = db_->get_by_name("gate_voltage_3");
+  ASSERT_TRUE(restored.has_value());
+
+  // Cleanup
+  if (std::filesystem::exists(snapshot_path)) {
+    std::filesystem::remove(snapshot_path);
+  }
+}
+
+TEST_F(FullWorkflowTest, NullCharacteristicsHandling) {
+  DeviceCharacteristic dc;
+  dc.name = "null_test";
+  dc.hash = "null_hash";
+  dc.time = 1000;
+  dc.characteristic = JSONPrimitive(); // Null value
+
+  db_->insert(dc);
+
+  auto result = db_->get_by_name("null_test");
+  ASSERT_TRUE(result.has_value());
+  EXPECT_TRUE(result->characteristic.is_null());
+}
+
+TEST_F(FullWorkflowTest, DifferentCharacteristicTypes) {
+  // Boolean
+  DeviceCharacteristic dc_bool;
+  dc_bool.name = "is_tuned";
+  dc_bool.hash = "bool_hash";
+  dc_bool.time = 1000;
+  dc_bool.characteristic = JSONPrimitive(true);
+  db_->insert(dc_bool);
+
+  // Integer
+  DeviceCharacteristic dc_int;
+  dc_int.name = "step_count";
+  dc_int.hash = "int_hash";
+  dc_int.time = 2000;
+  dc_int.characteristic = JSONPrimitive(int64_t(42));
+  db_->insert(dc_int);
+
+  // Double
+  DeviceCharacteristic dc_double;
+  dc_double.name = "voltage";
+  dc_double.hash = "double_hash";
+  dc_double.time = 3000;
+  dc_double.characteristic = JSONPrimitive(3.14159);
+  db_->insert(dc_double);
+
+  // String
+  DeviceCharacteristic dc_string;
+  dc_string.name = "config_id";
+  dc_string.hash = "string_hash";
+  dc_string.time = 4000;
+  dc_string.characteristic = JSONPrimitive("CONFIG_A1");
+  db_->insert(dc_string);
+
+  // Retrieve and validate
+  auto r_bool = db_->get_by_name("is_tuned");
+  ASSERT_TRUE(r_bool.has_value());
+  EXPECT_TRUE(r_bool->characteristic.as_bool());
+
+  auto r_int = db_->get_by_name("step_count");
+  ASSERT_TRUE(r_int.has_value());
+  EXPECT_EQ(r_int->characteristic.as_int(), 42);
+
+  auto r_double = db_->get_by_name("voltage");
+  ASSERT_TRUE(r_double.has_value());
+  EXPECT_DOUBLE_EQ(r_double->characteristic.as_double(), 3.14159);
+
+  auto r_string = db_->get_by_name("config_id");
+  ASSERT_TRUE(r_string.has_value());
+  EXPECT_EQ(r_string->characteristic.as_string(), "CONFIG_A1");
+}
