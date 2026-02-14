@@ -3,9 +3,7 @@
 #include "falcon-autotuner/MeasurementRoutine.hpp"
 #include <atomic>
 
-namespace falcon {
-namespace autotuner {
-namespace test {
+namespace falcon::autotuner::test {
 
 /**
  * @brief Simple measurement that counts executions
@@ -23,9 +21,11 @@ public:
     return result;
   }
 
-  std::string name() const override { return "CountingMeasurement"; }
+  [[nodiscard]] std::string name() const override {
+    return "CountingMeasurement";
+  }
 
-  int get_count() const { return count_.load(); }
+  [[nodiscard]] int get_count() const { return count_.load(); }
 
 private:
   std::atomic<int> count_;
@@ -55,9 +55,11 @@ public:
     return result;
   }
 
-  std::string name() const override { return "ValidationMeasurement"; }
+  [[nodiscard]] std::string name() const override {
+    return "ValidationMeasurement";
+  }
 
-  std::vector<std::string> expected_inputs() const override {
+  [[nodiscard]] std::vector<std::string> expected_inputs() const override {
     return required_params_;
   }
 
@@ -86,9 +88,9 @@ public:
     return result;
   }
 
-  std::string name() const override { return "SummingMeasurement"; }
+  [[nodiscard]] std::string name() const override {
+    return "SummingMeasurement";
+  }
 };
 
-} // namespace test
-} // namespace autotuner
-} // namespace falcon
+} // namespace falcon::autotuner::test

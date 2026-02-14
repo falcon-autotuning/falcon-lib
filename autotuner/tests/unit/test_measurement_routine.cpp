@@ -4,7 +4,27 @@
 
 using namespace falcon::autotuner;
 using namespace falcon::autotuner::test;
+/**
+ * @brief Functional measurement routine using lambdas
+ */
+class FunctionalMeasurement : public MeasurementRoutine {
+public:
+  using MeasurementFunction =
+      std::function<MeasurementResult(const ParameterMap &)>;
 
+  FunctionalMeasurement(std::string name, MeasurementFunction func)
+      : name_(std::move(name)), func_(std::move(func)) {}
+
+  MeasurementResult execute(const ParameterMap &inputs) override {
+    return func_(inputs);
+  }
+
+  [[nodiscard]] std::string name() const override { return name_; }
+
+private:
+  std::string name_;
+  MeasurementFunction func_;
+};
 TEST(MeasurementRoutineTest, FunctionalMeasurement) {
   auto measurement = std::make_shared<FunctionalMeasurement>(
       "test_func", [](const ParameterMap &inputs) {
