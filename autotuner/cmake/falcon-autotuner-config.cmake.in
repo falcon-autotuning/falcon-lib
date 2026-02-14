@@ -1,0 +1,10 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(nlohmann_json CONFIG REQUIRED)
+find_dependency(Boost REQUIRED COMPONENTS graph)
+
+include("${CMAKE_CURRENT_LIST_DIR}/falcon-autotuner-targets.cmake")
+
+check_required_components(falcon-autotuner)

@@ -1,0 +1,175 @@
+name: Falcon Lib CI/CD
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  # Database tests
+  test-database:
+    name: Test Database (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-2022]
+        build-type: [Debug, Release]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: falcon_test
+          POSTGRES_PASSWORD: falcon_test_password
+          POSTGRES_DB: falcon_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Set up vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: "${{ github.workspace }}/.vcpkg"
+          vcpkgGitCommitId: "a42af01b72c28a8e1d7b48107b33e4f286a55ef6"
+
+      - name: Install vcpkg dependencies
+        run: |
+          cd ${{ github.workspace }}
+          make install-vcpkg-deps
+        shell: bash
+
+      - name: Build Database
+        working-directory: database
+        run: make build-${{ matrix.build-type == 'Debug' && 'debug' || 'release' }}
+        shell: bash
+
+      - name: Run Database Tests
+        working-directory: database
+        env:
+          TEST_DATABASE_URL: postgresql://falcon_test:falcon_test_password@localhost:5432/falcon_test
+        run: make test-${{ matrix.build-type == 'Debug' && 'local-debug' || 'local' }}
+        shell: bash
+
+  # Autotuner tests
+  test-autotuner:
+    name: Test Autotuner (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-2022]
+        build-type: [Debug, Release]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Set up vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: "${{ github.workspace }}/.vcpkg"
+          vcpkgGitCommitId: "a42af01b72c28a8e1d7b48107b33e4f286a55ef6"
+
+      - name: Install vcpkg dependencies
+        run: |
+          cd ${{ github.workspace }}
+          make install-vcpkg-deps
+        shell: bash
+
+      - name: Build Autotuner
+        working-directory: autotuner
+        run: make build-${{ matrix.build-type == 'Debug' && 'debug' || 'release' }}
+        shell: bash
+
+      - name: Run Autotuner Tests
+        working-directory: autotuner
+        run: make test${{ matrix.build-type == 'Debug' && '-debug' || '' }}
+        shell: bash
+
+  # Integration test - both components
+  test-integration:
+    name: Integration Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: falcon_test
+          POSTGRES_PASSWORD: falcon_test_password
+          POSTGRES_DB: falcon_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Set up vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: "${{ github.workspace }}/.vcpkg"
+          vcpkgGitCommitId: "a42af01b72c28a8e1d7b48107b33e4f286a55ef6"
+
+      - name: Install vcpkg dependencies
+        run: make install-vcpkg-deps
+
+      - name: Build All Components
+        run: |
+          cd database && make build-release
+          cd ../autotuner && make build-release
+
+      - name: Run All Tests
+        env:
+          TEST_DATABASE_URL: postgresql://falcon_test:falcon_test_password@localhost:5432/falcon_test
+        run: |
+          cd database && make test-local
+          cd ../autotuner && make test
+
+  # Code quality checks
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install clang-format
+        run: sudo apt-get install -y clang-format
+
+      - name: Check formatting
+        run: |
+          find database/include database/src database/tests \
+               autotuner/include autotuner/src autotuner/tests \
+               -name "*.cpp" -o -name "*.hpp" | \
+          xargs clang-format --dry-run --Werror
+
+      - name: Install clang-tidy
+        run: sudo apt-get install -y clang-tidy
+
+      - name: Static analysis (if compile_commands.json exists)
+        run: |
+          if [ -f compile_commands.json ]; then
+            clang-tidy -p . $(find . -name "*.cpp")
+          else
+            echo "Skipping clang-tidy (no compile_commands.json)"
+          fi
