@@ -8,7 +8,7 @@ add_library(falcon-db-test-utils STATIC
 
 target_link_libraries(falcon-db-test-utils
   PUBLIC
-    falcon-database-core
+    falcon-database
     GTest::gtest
 )
 
@@ -26,7 +26,7 @@ add_executable(falcon_db_unit_tests
 
 target_link_libraries(falcon_db_unit_tests
   PRIVATE
-    falcon-database-core
+    falcon-database
     falcon-db-test-utils
     GTest::gtest
     GTest::gtest_main
@@ -46,7 +46,7 @@ add_executable(falcon_db_integration_tests
 
 target_link_libraries(falcon_db_integration_tests
   PRIVATE
-    falcon-database-core
+    falcon-database
     falcon-db-test-utils
     GTest::gtest
     GTest::gtest_main

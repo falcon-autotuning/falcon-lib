@@ -62,13 +62,13 @@ configure_file(
 )
 
 # Core library
-add_library(falcon-database-core
+add_library(falcon-database SHARED
   src/DeviceCharacteristic.cpp
   src/DatabaseConnection.cpp
   src/SnapshotManager.cpp
 )
 
-target_include_directories(falcon-database-core
+target_include_directories(falcon-database
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
@@ -77,7 +77,7 @@ target_include_directories(falcon-database-core
     ${CMAKE_CURRENT_BINARY_DIR}/generated  # Add generated headers
 )
 
-target_link_libraries(falcon-database-core
+target_link_libraries(falcon-database
   PUBLIC
     libpqxx::pqxx
     nlohmann_json::nlohmann_json
@@ -85,13 +85,13 @@ target_link_libraries(falcon-database-core
 
 # Compiler warnings
 if(MSVC)
-  target_compile_options(falcon-database-core PRIVATE /W4)
+  target_compile_options(falcon-database PRIVATE /W4)
 else()
-  target_compile_options(falcon-database-core PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(falcon-database PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 if(ENABLE_PCH)
-  target_precompile_headers(falcon-database-core
+  target_precompile_headers(falcon-database
     PRIVATE
       <string>
       <vector>
@@ -109,7 +109,7 @@ if(BUILD_TESTS)
 endif()
 
 # Installation
-install(TARGETS falcon-database-core
+install(TARGETS falcon-database
   EXPORT falcon-database-targets
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
