@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.json.schema.json",
+  "name": "falcon-lib",
+  "version": "1.0.0",
+  "description": "Falcon lib implementation",
+  "homepage": "https://github.com/falcon-autotuning/falcon-lib",
+  "license": "MPL-2.0",
+  "dependencies": [
+    {
+      "name": "libpqxx",
+      "version>=": "7.10.0"
+    },
+    {
+      "name": "nlohmann-json",
+      "version>=": "3.11.2"
+    },
+    {
+      "name": "gtest",
+      "version>=": "1.14.0"
+    }
+  ],
+  "builtin-baseline": "7213cf8135c329c37c7e2778e40774489a0583a8"
+}
