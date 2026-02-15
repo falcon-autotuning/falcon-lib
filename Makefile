@@ -1,6 +1,7 @@
-# Falcon Library Root Makefile
+# Falcon-lib Root Makefile
+# Manages build configurations for all submodules
 
-.PHONY: all deps install-deps clean help database autotuner
+.PHONY: all deps help clean install-vcpkg-deps build-all test-all
 
 VCPKG_ROOT ?= $(CURDIR)/.vcpkg
 VCPKG_TOOLCHAIN ?= $(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake
@@ -13,24 +14,7 @@ ifeq ($(OS),Windows_NT)
     VCPKG_TRIPLET ?= x64-windows
 endif
 
-all: deps database autotuner
-
-help:
-	@echo "Falcon Library Build System"
-	@echo "============================"
-	@echo ""
-	@echo "Main targets:"
-	@echo "  make all              - Build everything"
-	@echo "  make deps             - Install vcpkg"
-	@echo "  make install-deps     - Install dependencies"
-	@echo "  make database         - Build database component"
-	@echo "  make autotuner        - Build autotuner component"
-	@echo "  make test             - Run all tests"
-	@echo "  make clean            - Clean all build artifacts"
-	@echo ""
-	@echo "Component-specific:"
-	@echo "  make -C database <target>"
-	@echo "  make -C autotuner <target>"
+all: build-all
 
 deps:
 	@if [ ! -d "$(VCPKG_ROOT)" ]; then \
@@ -39,32 +23,59 @@ deps:
 		cd $(VCPKG_ROOT) && ./bootstrap-vcpkg.sh; \
 	else \
 		echo "vcpkg already installed at $(VCPKG_ROOT)"; \
+		cd $(VCPKG_ROOT) && git pull; \
 	fi
 	@echo "✓ vcpkg ready"
 
-install-deps: deps
-	@echo "Installing vcpkg dependencies..."
-	cd $(VCPKG_ROOT) && ./vcpkg install \
-		--triplet $(VCPKG_TRIPLET) \
-		--x-install-root=$(CURDIR)/vcpkg_installed
-	@echo "✓ Dependencies installed"
+install-vcpkg-deps: deps
+	@echo "Installing vcpkg dependencies from vcpkg.json..."
+	CC=clang CXX=clang++ MAKELEVEL=0 $(VCPKG_ROOT)/vcpkg install --triplet $(VCPKG_TRIPLET)
+	@echo "✓ vcpkg dependencies installed"
 
-database:
-	@$(MAKE) -C database build-release
+build-all: install-vcpkg-deps
+	@echo "Building all components..."
+	$(MAKE) -C database build-release
+	$(MAKE) -C autotuner build-release
+	@echo "✓ All components built"
 
-autotuner:
-	@$(MAKE) -C autotuner build-release
+test-all:
+	@echo "Testing all components..."
+	$(MAKE) -C database test
+	$(MAKE) -C autotuner test
+	@echo "✓ All tests passed"
 
-test:
-	@$(MAKE) -C database test
-	@$(MAKE) -C autotuner test
+install:
+	@echo "Installing all components..."
+	$(MAKE) -C database install
+	$(MAKE) -C autotuner install
+	@echo "✓ All components installed"
 
 clean:
-	@$(MAKE) -C database clean
-	@$(MAKE) -C autotuner clean
-	@echo "✓ All clean"
-
-distclean: clean
+	@echo "Cleaning all components..."
+	$(MAKE) -C database clean
+	$(MAKE) -C autotuner clean
 	rm -rf $(VCPKG_ROOT)
-	rm -rf vcpkg_installed
-	@echo "✓ Full clean complete"
+	rm -rf ./vcpkg_installed/
+	@echo "✓ Clean complete"
+
+help:
+	@echo "Falcon Library Root Makefile"
+	@echo "============================"
+	@echo ""
+	@echo "Setup targets:"
+	@echo "  make deps               - Install or update vcpkg"
+	@echo "  make install-vcpkg-deps - Install all dependencies"
+	@echo ""
+	@echo "Build targets:"
+	@echo "  make build-all         - Build all components"
+	@echo "  make test-all          - Test all components"
+	@echo "  make install           - Install all components"
+	@echo "  make clean             - Clean all builds"
+	@echo ""
+	@echo "Component-specific:"
+	@echo "  make -C database <target>   - Run target in database/"
+	@echo "  make -C autotuner <target>  - Run target in autotuner/"
+	@echo ""
+	@echo "Current configuration:"
+	@echo "  VCPKG_ROOT: $(VCPKG_ROOT)"
+	@echo "  VCPKG_TRIPLET: $(VCPKG_TRIPLET)"
