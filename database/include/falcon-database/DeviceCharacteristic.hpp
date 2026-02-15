@@ -1,13 +1,10 @@
 #pragma once
 
 #include <cstdint>
-#include <memory>
 #include <nlohmann/json.hpp>
-#include <optional>
 #include <pqxx/pqxx>
 #include <string>
 #include <utility>
-#include <vector>
 
 namespace falcon::database {
 
@@ -47,7 +44,7 @@ public:
   [[nodiscard]] std::string as_string() const;
 
   [[nodiscard]] json to_json() const;
-  static JSONPrimitive from_json(const json &j);
+  static JSONPrimitive from_json(const json &json);
 
 private:
   Type type_;
@@ -58,106 +55,45 @@ private:
 };
 
 /**
- * @brief Represents a device characteristic with extended metadata
+ * @brief Represents a possible query for a device characteristic which is
+ * stored in the globals database
+ */
+struct DeviceCharacteristicQuery {
+  std::optional<std::string> scope;
+  std::optional<std::string> name;
+  std::optional<std::string> barrier_gate;
+  std::optional<std::string> plunger_gate;
+  std::optional<std::string> reservoir_gate;
+  std::optional<std::string> screening_gate;
+  std::optional<std::string> extra;
+  std::optional<double> uncertainty;
+  std::optional<std::string> hash;
+  std::optional<int64_t> time;
+  std::optional<std::string> state;
+  std::optional<std::string> unit_name;
+  // No characteristic field here
+};
+/**
+ * @brief Represents a device characteristic which is stored in the globals
+ * database
  */
 struct DeviceCharacteristic {
   std::string scope;
   std::string name;
-  std::string barrier_gate;
-  std::string plunger_gate;
-  std::string reservoir_gate;
-  std::string screening_gate;
-  std::string extra;
-  double uncertainty = 0.0;
-  std::string hash;
-  int64_t time = 0; // Unix timestamp
-  std::string state;
-  std::string unit_name;
+  std::optional<std::string> barrier_gate;
+  std::optional<std::string> plunger_gate;
+  std::optional<std::string> reservoir_gate;
+  std::optional<std::string> screening_gate;
+  std::optional<std::string> extra;
+  std::optional<double> uncertainty;
+  std::optional<std::string> hash;
+  std::optional<int64_t> time;
+  std::optional<std::string> state;
+  std::optional<std::string> unit_name;
   JSONPrimitive characteristic;
 
   [[nodiscard]] json to_json() const;
-  static DeviceCharacteristic from_json(const json &j);
-};
-
-/**
- * @brief Database connection and operations for DeviceCharacteristic
- */
-class DatabaseConnection {
-public:
-  explicit DatabaseConnection(const std::string &connection_string);
-  ~DatabaseConnection();
-
-  // Delete copy constructor and assignment
-  DatabaseConnection(const DatabaseConnection &) = delete;
-  DatabaseConnection &operator=(const DatabaseConnection &) = delete;
-
-  // Allow move
-  DatabaseConnection(DatabaseConnection &&) noexcept = default;
-  DatabaseConnection &operator=(DatabaseConnection &&) noexcept = default;
-
-  /**
-   * @brief Initialize the database schema
-   */
-  void initialize_schema();
-
-  /**
-   * @brief Insert a device characteristic into the database
-   */
-  void insert(const DeviceCharacteristic &dc);
-
-  /**
-   * @brief Get a characteristic by name
-   * @return Optional DeviceCharacteristic if found
-   */
-  std::optional<DeviceCharacteristic> get_by_name(const std::string &name);
-
-  /**
-   * @brief Get all characteristics matching a set of names
-   */
-  std::vector<DeviceCharacteristic>
-  get_many(const std::vector<std::string> &names);
-
-  /**
-   * @brief Get characteristics within a range of hashes
-   */
-  std::vector<DeviceCharacteristic>
-  get_by_hash_range(const std::string &hash_start, const std::string &hash_end);
-
-  /**
-   * @brief Delete a characteristic by name
-   * @return true if deleted, false if not found
-   */
-  bool delete_by_name(const std::string &name);
-
-  /**
-   * @brief Delete a characteristic by hash
-   * @return Number of rows deleted
-   */
-  int delete_by_hash(const std::string &hash);
-
-  /**
-   * @brief Clear all characteristics from the database
-   */
-  void clear_all();
-
-  /**
-   * @brief Get count of all characteristics
-   */
-  size_t count();
-
-  /**
-   * @brief Test database connection
-   */
-  bool test_connection();
-
-  /**
-   * @brief Get all device characteristics from the database
-   * @return Vector of all characteristics
-   */
-  std::vector<DeviceCharacteristic> get_all();
-
-private:
-  std::unique_ptr<pqxx::connection> conn_;
+  static DeviceCharacteristic from_json(const json &json);
 };
 
 } // namespace falcon::database

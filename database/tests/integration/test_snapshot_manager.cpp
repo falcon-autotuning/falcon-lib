@@ -11,7 +11,7 @@ class SnapshotManagerTest : public DatabaseTestFixture {
 protected:
   void SetUp() override {
     DatabaseTestFixture::SetUp();
-    snapshot_mgr_ = std::make_unique<SnapshotManager>(*db_);
+    snapshot_mgr_ = std::make_unique<SnapshotManager>(db_);
     test_file_ = std::filesystem::temp_directory_path() / "test_snapshot.json";
   }
 
@@ -36,15 +36,15 @@ TEST_F(SnapshotManagerTest, GetSchema) {
 TEST_F(SnapshotManagerTest, ExportAndImport) {
   // Insert test data
   for (int i = 0; i < 5; ++i) {
-    DeviceCharacteristic dc;
-    dc.name = "test_" + std::to_string(i);
-    dc.hash = "hash_" + std::to_string(i);
-    dc.time = 1000 + i;
-    dc.scope = "test_scope";
-    dc.plunger_gate = "P" + std::to_string(i);
-    dc.characteristic = JSONPrimitive(static_cast<double>(i) * 10.0);
-    dc.uncertainty = 0.01;
-    db_->insert(dc);
+    DeviceCharacteristic dchar;
+    dchar.name = "test_" + std::to_string(i);
+    dchar.hash = "hash_" + std::to_string(i);
+    dchar.time = 1000 + i;
+    dchar.scope = "test_scope";
+    dchar.plunger_gate = "P" + std::to_string(i);
+    dchar.characteristic = JSONPrimitive(static_cast<double>(i) * 10.0);
+    dchar.uncertainty = 0.01;
+    db_->insert(dchar);
   }
 
   EXPECT_EQ(db_->count(), 5);

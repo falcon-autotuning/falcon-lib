@@ -1,6 +1,6 @@
 #pragma once
 
-#include "falcon-database/DeviceCharacteristic.hpp"
+#include "falcon-database/DatabaseConnection.hpp"
 #include <string>
 
 namespace falcon::database {
@@ -11,7 +11,7 @@ namespace falcon::database {
  */
 class SnapshotManager {
 public:
-  explicit SnapshotManager(DatabaseConnection &db);
+  explicit SnapshotManager(std::shared_ptr<DatabaseConnection> dconn);
 
   /**
    * @brief Export all device characteristics to a JSON file
@@ -41,7 +41,7 @@ public:
   static bool validate_snapshot(const std::string &filename);
 
 private:
-  DatabaseConnection &db_;
+  std::shared_ptr<DatabaseConnection> db_;
 };
 
 } // namespace falcon::database

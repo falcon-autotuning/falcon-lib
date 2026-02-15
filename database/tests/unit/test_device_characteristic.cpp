@@ -4,52 +4,55 @@
 using namespace falcon::database;
 
 TEST(DeviceCharacteristicTest, ToJsonAndBack) {
-  DeviceCharacteristic dc;
-  dc.scope = "test_scope";
-  dc.name = "test_characteristic";
-  dc.barrier_gate = "BG1";
-  dc.plunger_gate = "PG1";
-  dc.reservoir_gate = "RG1";
-  dc.screening_gate = "SG1";
-  dc.extra = "extra_data";
-  dc.uncertainty = 0.05;
-  dc.hash = "abc123";
-  dc.time = 1234567890;
-  dc.state = "initialized";
-  dc.unit_name = "mV";
-  dc.characteristic = JSONPrimitive(42.5);
+  DeviceCharacteristic dchar;
+  dchar.scope = "test_scope";
+  dchar.name = "test_characteristic";
+  dchar.barrier_gate = "BG1";
+  dchar.plunger_gate = "PG1";
+  dchar.reservoir_gate = "RG1";
+  dchar.screening_gate = "SG1";
+  dchar.extra = "extra_data";
+  dchar.uncertainty = 0.05;
+  dchar.hash = "22.54";
+  dchar.time = 1234567890;
+  dchar.state = "initialized";
+  dchar.unit_name = "mV";
+  dchar.characteristic = JSONPrimitive(42.5);
 
-  auto j = dc.to_json();
-  auto dc2 = DeviceCharacteristic::from_json(j);
+  auto j = dchar.to_json();
+  auto dchar2 = DeviceCharacteristic::from_json(j);
 
-  EXPECT_EQ(dc.scope, dc2.scope);
-  EXPECT_EQ(dc.name, dc2.name);
-  EXPECT_EQ(dc.barrier_gate, dc2.barrier_gate);
-  EXPECT_EQ(dc.plunger_gate, dc2.plunger_gate);
-  EXPECT_EQ(dc.reservoir_gate, dc2.reservoir_gate);
-  EXPECT_EQ(dc.screening_gate, dc2.screening_gate);
-  EXPECT_EQ(dc.extra, dc2.extra);
-  EXPECT_DOUBLE_EQ(dc.uncertainty, dc2.uncertainty);
-  EXPECT_EQ(dc.hash, dc2.hash);
-  EXPECT_EQ(dc.time, dc2.time);
-  EXPECT_EQ(dc.state, dc2.state);
-  EXPECT_EQ(dc.unit_name, dc2.unit_name);
-  EXPECT_DOUBLE_EQ(dc.characteristic.as_double(),
-                   dc2.characteristic.as_double());
+  EXPECT_EQ(dchar.scope, dchar2.scope);
+  EXPECT_EQ(dchar.name, dchar2.name);
+  EXPECT_EQ(dchar.barrier_gate, dchar2.barrier_gate);
+  EXPECT_EQ(dchar.plunger_gate, dchar2.plunger_gate);
+  EXPECT_EQ(dchar.reservoir_gate, dchar2.reservoir_gate);
+  EXPECT_EQ(dchar.screening_gate, dchar2.screening_gate);
+  EXPECT_EQ(dchar.extra, dchar2.extra);
+  ASSERT_EQ(dchar.uncertainty.has_value(), dchar2.uncertainty.has_value());
+  if (dchar.uncertainty && dchar2.uncertainty) {
+    EXPECT_DOUBLE_EQ(*dchar.uncertainty, *dchar2.uncertainty);
+  }
+  EXPECT_EQ(dchar.hash, dchar2.hash);
+  EXPECT_EQ(dchar.time, dchar2.time);
+  EXPECT_EQ(dchar.state, dchar2.state);
+  EXPECT_EQ(dchar.unit_name, dchar2.unit_name);
+  EXPECT_DOUBLE_EQ(dchar.characteristic.as_double(),
+                   dchar2.characteristic.as_double());
 }
 
 TEST(DeviceCharacteristicTest, EmptyFields) {
-  DeviceCharacteristic dc;
-  dc.name = "minimal";
-  dc.hash = "hash1";
-  dc.time = 1000;
-  dc.characteristic = JSONPrimitive();
+  DeviceCharacteristic dchar;
+  dchar.name = "minimal";
+  dchar.hash = "1.2.3";
+  dchar.time = 1000;
+  dchar.characteristic = JSONPrimitive();
 
-  auto j = dc.to_json();
-  auto dc2 = DeviceCharacteristic::from_json(j);
+  auto j = dchar.to_json();
+  auto dchar2 = DeviceCharacteristic::from_json(j);
 
-  EXPECT_TRUE(dc2.scope.empty());
-  EXPECT_TRUE(dc2.barrier_gate.empty());
-  EXPECT_EQ(dc2.name, "minimal");
-  EXPECT_TRUE(dc2.characteristic.is_null());
+  EXPECT_TRUE(dchar2.scope.empty());
+  EXPECT_FALSE(dchar2.barrier_gate.has_value());
+  EXPECT_EQ(dchar2.name, "minimal");
+  EXPECT_TRUE(dchar2.characteristic.is_null());
 }

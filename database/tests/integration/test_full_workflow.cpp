@@ -16,20 +16,20 @@ TEST_F(FullWorkflowTest, CompleteDeviceCharacterizationWorkflow) {
   std::vector<DeviceCharacteristic> characteristics;
 
   for (int i = 0; i < 10; ++i) {
-    DeviceCharacteristic dc;
-    dc.scope = "quantum_dot_" + std::to_string(i / 3);
-    dc.name = "gate_voltage_" + std::to_string(i);
-    dc.barrier_gate = "BG" + std::to_string(i % 3);
-    dc.plunger_gate = "PG" + std::to_string(i);
-    dc.hash = "measurement_" + std::to_string(1000 + i);
-    dc.time = 1700000000 + i * 100;
-    dc.state = (i % 2 == 0) ? "tuned" : "untuned";
-    dc.unit_name = "mV";
-    dc.uncertainty = 0.05 * (i + 1);
-    dc.characteristic = JSONPrimitive(100.0 + i * 5.5);
+    DeviceCharacteristic dchar;
+    dchar.scope = "quantum_dot_" + std::to_string(i / 3);
+    dchar.name = "gate_voltage_" + std::to_string(i);
+    dchar.barrier_gate = "BG" + std::to_string(i % 3);
+    dchar.plunger_gate = "PG" + std::to_string(i);
+    dchar.hash = "21." + std::to_string(i);
+    dchar.time = 1700000000 + (i * 100);
+    dchar.state = (i % 2 == 0) ? "tuned" : "untuned";
+    dchar.unit_name = "mV";
+    dchar.uncertainty = 0.05 * (i + 1);
+    dchar.characteristic = JSONPrimitive(100.0 + i * 5.5);
 
-    db_->insert(dc);
-    characteristics.push_back(dc);
+    db_->insert(dchar);
+    characteristics.push_back(dchar);
   }
 
   EXPECT_EQ(db_->count(), 10);
@@ -47,14 +47,13 @@ TEST_F(FullWorkflowTest, CompleteDeviceCharacterizationWorkflow) {
   EXPECT_EQ(many_results.size(), 3);
 
   // Step 4: Query by hash range
-  auto hash_results =
-      db_->get_by_hash_range("measurement_1003", "measurement_1007");
+  auto hash_results = db_->get_by_hash_range("21.3", "21.7");
   EXPECT_GE(hash_results.size(), 1);
 
   // Step 5: Export snapshot
   auto snapshot_path =
       std::filesystem::temp_directory_path() / "workflow_snapshot.json";
-  SnapshotManager mgr(*db_);
+  SnapshotManager mgr(db_);
   mgr.export_to_json(snapshot_path.string());
   EXPECT_TRUE(std::filesystem::exists(snapshot_path));
 
@@ -80,13 +79,13 @@ TEST_F(FullWorkflowTest, CompleteDeviceCharacterizationWorkflow) {
 }
 
 TEST_F(FullWorkflowTest, NullCharacteristicsHandling) {
-  DeviceCharacteristic dc;
-  dc.name = "null_test";
-  dc.hash = "null_hash";
-  dc.time = 1000;
-  dc.characteristic = JSONPrimitive(); // Null value
+  DeviceCharacteristic dchar;
+  dchar.name = "null_test";
+  dchar.hash = "3.2";
+  dchar.time = 1000;
+  dchar.characteristic = JSONPrimitive(); // Null value
 
-  db_->insert(dc);
+  db_->insert(dchar);
 
   auto result = db_->get_by_name("null_test");
   ASSERT_TRUE(result.has_value());
@@ -95,36 +94,36 @@ TEST_F(FullWorkflowTest, NullCharacteristicsHandling) {
 
 TEST_F(FullWorkflowTest, DifferentCharacteristicTypes) {
   // Boolean
-  DeviceCharacteristic dc_bool;
-  dc_bool.name = "is_tuned";
-  dc_bool.hash = "bool_hash";
-  dc_bool.time = 1000;
-  dc_bool.characteristic = JSONPrimitive(true);
-  db_->insert(dc_bool);
+  DeviceCharacteristic dchar_bool;
+  dchar_bool.name = "is_tuned";
+  dchar_bool.hash = "3.2";
+  dchar_bool.time = 1000;
+  dchar_bool.characteristic = JSONPrimitive(true);
+  db_->insert(dchar_bool);
 
   // Integer
-  DeviceCharacteristic dc_int;
-  dc_int.name = "step_count";
-  dc_int.hash = "int_hash";
-  dc_int.time = 2000;
-  dc_int.characteristic = JSONPrimitive(int64_t(42));
-  db_->insert(dc_int);
+  DeviceCharacteristic dchar_int;
+  dchar_int.name = "step_count";
+  dchar_int.hash = "3.2";
+  dchar_int.time = 2000;
+  dchar_int.characteristic = JSONPrimitive(int64_t(42));
+  db_->insert(dchar_int);
 
   // Double
-  DeviceCharacteristic dc_double;
-  dc_double.name = "voltage";
-  dc_double.hash = "double_hash";
-  dc_double.time = 3000;
-  dc_double.characteristic = JSONPrimitive(3.14159);
-  db_->insert(dc_double);
+  DeviceCharacteristic dchar_double;
+  dchar_double.name = "voltage";
+  dchar_double.hash = "3.2";
+  dchar_double.time = 3000;
+  dchar_double.characteristic = JSONPrimitive(3.14159);
+  db_->insert(dchar_double);
 
   // String
-  DeviceCharacteristic dc_string;
-  dc_string.name = "config_id";
-  dc_string.hash = "string_hash";
-  dc_string.time = 4000;
-  dc_string.characteristic = JSONPrimitive("CONFIG_A1");
-  db_->insert(dc_string);
+  DeviceCharacteristic dchar_string;
+  dchar_string.name = "config_id";
+  dchar_string.hash = "3.2";
+  dchar_string.time = 4000;
+  dchar_string.characteristic = JSONPrimitive("CONFIG_A1");
+  db_->insert(dchar_string);
 
   // Retrieve and validate
   auto r_bool = db_->get_by_name("is_tuned");
