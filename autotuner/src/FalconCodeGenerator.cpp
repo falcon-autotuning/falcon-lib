@@ -5,9 +5,7 @@
 #include <set>
 #include <sstream>
 
-namespace falcon {
-namespace autotuner {
-namespace dsl {
+namespace falcon::autotuner::dsl {
 
 FalconCodeGenerator::GeneratedCode FalconCodeGenerator::generate(
     const std::vector<std::unique_ptr<AutotunerDecl>> &ast) {
@@ -194,9 +192,9 @@ void FalconCodeGenerator::generate_statement(const ASTNode &stmt,
   if (auto *state = dynamic_cast<const StateDecl *>(&stmt)) {
     generate_state_config(*state, autotuner, source);
   } else if (auto *for_loop = dynamic_cast<const ForLoop *>(&stmt)) {
-    generate_for_loop(*for_loop, autotuner, source);
+    generate_for_loop(*for_loop, source);
   } else if (auto *while_loop = dynamic_cast<const WhileLoop *>(&stmt)) {
-    generate_while_loop(*while_loop, autotuner, source);
+    generate_while_loop(*while_loop, source);
   }
 }
 
@@ -325,7 +323,6 @@ void FalconCodeGenerator::generate_transition_with_transfer(
 }
 
 void FalconCodeGenerator::generate_for_loop(const ForLoop &loop,
-                                            const AutotunerDecl &autotuner,
                                             std::ostringstream &source) {
 
   // Parse range expression: range(start, end, step)
@@ -346,7 +343,6 @@ void FalconCodeGenerator::generate_for_loop(const ForLoop &loop,
 }
 
 void FalconCodeGenerator::generate_while_loop(const WhileLoop &loop,
-                                              const AutotunerDecl &autotuner,
                                               std::ostringstream &source) {
 
   source << "  // While loop: " << loop.condition << "\n";
@@ -454,6 +450,4 @@ FalconCodeGenerator::substitute_variable(const std::string &text,
   return result;
 }
 
-} // namespace dsl
-} // namespace autotuner
-} // namespace falcon
+} // namespace falcon::autotuner::dsl
