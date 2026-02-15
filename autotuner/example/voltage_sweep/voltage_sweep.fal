@@ -1,0 +1,93 @@
+// Voltage sweep autotuner example
+autotuner VoltageSweep {
+  requires: [];
+  
+  params {
+    float min_voltage = 0.0;
+    float max_voltage = 1.0;
+    float step = 0.1;
+    float current_voltage = 0.0;
+    float current_threshold = 1e-6;
+    int measurement_count = 0;
+  }
+  
+  start -> initialize;
+  
+  state initialize {
+    temp {
+      bool init_success;
+      string error_msg;
+    }
+    
+    measurement: initialize_device();
+    
+    if (init_success == true) -> start_sweep;
+    else -> error_state[error_msg: error];
+  }
+  
+  state start_sweep {
+    measurement: prepare_sweep();
+    
+    current_voltage = min_voltage;
+    
+    -> measure_point;
+  }
+  
+  state measure_point {
+    temp {
+      float measured_current;
+      float measured_voltage;
+      bool valid;
+    }
+    
+    measurement: measure_iv(current_voltage);
+    
+    if (valid == false) -> error_state;
+    
+    if (measured_current > current_threshold) -> saturated;
+    
+    measurement_count = measurement_count + 1;
+    
+    if (current_voltage + step < max_voltage) {
+      current_voltage = current_voltage + step;
+      -> measure_point;
+    }
+    else -> finalize;
+  }
+  
+  state saturated {
+    temp {
+      bool recovery_success;
+    }
+    
+    measurement: handle_saturation();
+    
+    if (recovery_success == true) {
+      current_threshold = current_threshold * 2.0;
+      -> measure_point;
+    }
+    else -> error_state;
+  }
+  
+  state finalize {
+    temp {
+      bool save_success;
+    }
+    
+    measurement: save_data(measurement_count);
+    
+    if (save_success == true) -> complete;
+    else -> error_state;
+  }
+  
+  state complete {
+    terminal;
+  }
+  
+  state error_state {
+    params {
+      string error = "Unknown error";
+    }
+    terminal;
+  }
+}

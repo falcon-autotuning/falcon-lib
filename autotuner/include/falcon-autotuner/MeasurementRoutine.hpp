@@ -1,63 +1,61 @@
 #pragma once
 
-#include "falcon-autotuner/ParameterMap.hpp"
+#include "ParameterMap.hpp"
+#include <memory>
 #include <string>
-#include <vector>
 
-namespace falcon::autotuner {
+namespace falcon {
+namespace autotuner {
 
 /**
- * @brief Result of a measurement routine
+ * @brief Result of a measurement execution
  */
 struct MeasurementResult {
-  ParameterMap outputs;
-  bool success = true;
+  bool success = false;
   std::string error_message;
-
-  enum class Action : std::uint8_t {
-    Continue,    // Continue in current autotuner
-    ExitSuccess, // Exit to parent with success
-    ExitFailure  // Exit to parent with failure
-  };
-  Action next_action = Action::Continue;
+  ParameterMap outputs;
 };
 
 /**
- * @brief Interface for measurement routines
- *
- * Users should implement this interface to define custom measurements.
- * The measurement will receive combined parameters from the current state
- * (both local and parent parameters).
+ * @brief Base class for measurement routines
  */
 class MeasurementRoutine {
 public:
   virtual ~MeasurementRoutine() = default;
 
   /**
-   * @brief Execute the measurement with given parameters
-   * @param inputs Combined parameters from state (local + parent)
-   * @return Measurement results including outputs and next action
+   * @brief Execute the measurement
+   * @param inputs Input parameters
+   * @return Result containing success status and output parameters
    */
   virtual MeasurementResult execute(const ParameterMap &inputs) = 0;
 
   /**
-   * @brief Get the name of this measurement routine
+   * @brief Get the name of this measurement
    */
-  [[nodiscard]] virtual std::string name() const = 0;
-
-  /**
-   * @brief Get expected input parameter names (for validation)
-   */
-  [[nodiscard]] virtual std::vector<std::string> expected_inputs() const {
-    return {};
-  }
-
-  /**
-   * @brief Get expected output parameter names (for documentation)
-   */
-  [[nodiscard]] virtual std::vector<std::string> expected_outputs() const {
-    return {};
-  }
+  virtual std::string name() const = 0;
 };
 
-} // namespace falcon::autotuner
+/**
+ * @brief Functional measurement (wraps a lambda/function)
+ */
+class FunctionalMeasurement : public MeasurementRoutine {
+public:
+  using Func = std::function<MeasurementResult(const ParameterMap &)>;
+
+  FunctionalMeasurement(std::string name, Func func)
+      : name_(std::move(name)), func_(std::move(func)) {}
+
+  MeasurementResult execute(const ParameterMap &inputs) override {
+    return func_(inputs);
+  }
+
+  std::string name() const override { return name_; }
+
+private:
+  std::string name_;
+  Func func_;
+};
+
+} // namespace autotuner
+} // namespace falcon
