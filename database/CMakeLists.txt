@@ -20,7 +20,6 @@ if(WIN32)
 endif()
 
 # Try to auto-detect a compiler launcher (prefer sccache if present)
-om/falcon-autotuning/falcon-lib",
 if(USE_CCACHE)
   find_program(SCCACHE_PROGRAM sccache)
   if(SCCACHE_PROGRAM)
