@@ -1,4 +1,4 @@
-#include "falcon-autotuner/dsl/FalconParser.hpp"
+#include "falcon-autotuner/FalconParser.hpp"
 #include <sstream>
 #include <stdexcept>
 

@@ -1,4 +1,4 @@
-#include "falcon-autotuner/MeasurementRoutine.hpp"
+#include "falcon-autotuner/ParameterMap.hpp"
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -128,23 +128,3 @@ ParameterMap save_data(const ParameterMap &params) {
 }
 
 } // namespace VoltageSweep
-
-// Library exports
-extern "C" {
-
-#ifdef _WIN32
-#define FALCON_EXPORT __declspec(dllexport)
-#else
-#define FALCON_EXPORT __attribute__((visibility("default")))
-#endif
-
-FALCON_EXPORT void
-register_autotuners(falcon::autotuner::AutotunerRegistry &registry) {
-  falcon::autotuner::generated::register_all_autotuners();
-}
-
-FALCON_EXPORT const char *get_library_info() {
-  return "VoltageSweep Example v1.0 - Voltage sweep measurement";
-}
-
-} // extern "C"

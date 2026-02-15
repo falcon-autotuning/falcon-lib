@@ -1,20 +1,18 @@
 #pragma once
 
 #include <filesystem>
-#include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <variant>
 #include <vector>
 
-namespace falcon {
-namespace autotuner {
-namespace dsl {
+namespace falcon::autotuner::dsl {
 
 /**
  * @brief Token types for Falcon language
  */
-enum class TokenType {
+enum class TokenType : std::uint8_t {
   // Keywords
   Autotuner,
   Requires,
@@ -139,7 +137,7 @@ public:
 
 private:
   Token next_token();
-  char peek(int offset = 0) const;
+  [[nodiscard]] char peek(int offset = 0) const;
   char advance();
   void skip_whitespace();
   void skip_comment();
@@ -172,11 +170,11 @@ private:
   std::vector<std::unique_ptr<ASTNode>> parse_transitions();
   std::unique_ptr<ConditionalTransition> parse_conditional_transition();
 
-  Token peek(int offset = 0) const;
+  [[nodiscard]] Token peek(int offset = 0) const;
   Token advance();
   bool match(TokenType type);
   Token expect(TokenType type);
-  bool at_end() const;
+  [[nodiscard]] bool at_end() const;
 
   std::vector<Token> tokens_;
   size_t position_ = 0;
@@ -231,17 +229,16 @@ private:
                                   const std::string &variable);
 };
 
+struct CompilerOptions {
+  std::filesystem::path output_dir = "generated";
+  bool generate_documentation = true;
+  bool validate_dependencies = true;
+};
 /**
  * @brief Main compiler interface
  */
 class FalconCompiler {
 public:
-  struct CompilerOptions {
-    std::filesystem::path output_dir = "generated";
-    bool generate_documentation = true;
-    bool validate_dependencies = true;
-  };
-
   explicit FalconCompiler(CompilerOptions options = {});
 
   /**
@@ -257,13 +254,11 @@ public:
   /**
    * @brief Get list of measurement functions that need to be implemented
    */
-  std::vector<std::string> get_required_implementations() const;
+  [[nodiscard]] std::vector<std::string> get_required_implementations() const;
 
 private:
   CompilerOptions options_;
   std::vector<std::string> required_implementations_;
 };
 
-} // namespace dsl
-} // namespace autotuner
-} // namespace falcon
+} // namespace falcon::autotuner::dsl
