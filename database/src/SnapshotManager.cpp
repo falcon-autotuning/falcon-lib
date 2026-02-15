@@ -5,18 +5,17 @@
 
 namespace falcon::database {
 
-SnapshotManager::SnapshotManager(DatabaseConnection &db) : db_(db) {}
+SnapshotManager::SnapshotManager(std::shared_ptr<DatabaseConnection> dconn)
+    : db_(std::move(dconn)) {}
 
 void SnapshotManager::export_to_json(const std::string &filename) {
   try {
     // Get all characteristics from the database
-    auto characteristics = db_.get_all();
-
+    auto characteristics = db_->get_all();
     json output = json::array();
-    for (const auto &dc : characteristics) {
-      output.push_back(dc.to_json());
+    for (const auto &dchar : characteristics) {
+      output.push_back(dchar.to_json());
     }
-
     std::ofstream file(filename);
     if (!file.is_open()) {
       throw std::runtime_error("Failed to open file for writing: " + filename);
@@ -27,6 +26,7 @@ void SnapshotManager::export_to_json(const std::string &filename) {
 
     std::cout << "Exported " << characteristics.size()
               << " characteristics to: " << filename << '\n';
+
   } catch (const std::exception &e) {
     throw std::runtime_error(std::string("Export error: ") + e.what());
   }
@@ -39,28 +39,27 @@ void SnapshotManager::import_from_json(const std::string &filename,
     if (!file.is_open()) {
       throw std::runtime_error("Failed to open file for reading: " + filename);
     }
-
-    json j;
-    file >> j;
+    json json;
+    file >> json;
     file.close();
-
-    if (!j.is_array()) {
+    if (!json.is_array()) {
       throw std::runtime_error("Invalid snapshot format: expected array");
     }
 
     if (clear_existing) {
-      db_.clear_all();
+      db_->clear_all();
     }
 
     size_t count = 0;
-    for (const auto &item : j) {
-      auto dc = DeviceCharacteristic::from_json(item);
-      db_.insert(dc);
+    for (const auto &item : json) {
+      auto dchar = DeviceCharacteristic::from_json(item);
+      db_->insert(dchar);
       ++count;
     }
 
     std::cout << "Imported " << count << " characteristics from: " << filename
               << '\n';
+
   } catch (const std::exception &e) {
     throw std::runtime_error(std::string("Import error: ") + e.what());
   }
@@ -77,27 +76,18 @@ bool SnapshotManager::validate_snapshot(const std::string &filename) {
     if (!file.is_open()) {
       return false;
     }
-
-    json j;
-    file >> j;
+    json json;
+    file >> json;
     file.close();
-
-    if (!j.is_array()) {
+    if (!json.is_array()) {
       return false;
     }
 
-    for (const auto &item : j) {
-      if (!item.is_object())
-        return false;
-      if (!item.contains("name"))
-        return false;
-      if (!item.contains("hash"))
-        return false;
-      if (!item.contains("recordtime"))
-        return false;
-    }
+    return std::all_of(json.begin(), json.end(), [](const auto &item) {
+      return item.is_object() && item.contains("name") &&
+             item.contains("hash") && item.contains("recordtime");
+    });
 
-    return true;
   } catch (...) {
     return false;
   }

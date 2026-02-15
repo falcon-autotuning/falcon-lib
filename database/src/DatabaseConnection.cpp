@@ -1,7 +1,47 @@
-#include "falcon-database/DeviceCharacteristic.hpp"
+#include "falcon-database/DatabaseConnection.hpp"
 #include <iostream>
 #include <sstream>
 
+namespace {
+template <typename Row>
+std::optional<std::string> get_opt_str(const Row &row, const char *col) {
+  return row[col].is_null() ? std::nullopt
+                            : std::make_optional(row[col].c_str());
+}
+template <typename Row>
+std::optional<double> get_opt_double(const Row &row, const char *col) {
+  return row[col].is_null()
+             ? std::nullopt
+             : std::make_optional(row[col].template as<double>());
+}
+template <typename Row>
+std::optional<int64_t> get_opt_int64(const Row &row, const char *col) {
+  return row[col].is_null()
+             ? std::nullopt
+             : std::make_optional(row[col].template as<int64_t>());
+}
+falcon::database::DeviceCharacteristic dchar_from_row(const pqxx::row &row) {
+  falcon::database::DeviceCharacteristic dchar;
+  dchar.scope = row["scope"].c_str();
+  dchar.name = row["name"].c_str();
+  dchar.barrier_gate = get_opt_str(row, "barrier_gate");
+  dchar.plunger_gate = get_opt_str(row, "plunger_gate");
+  dchar.reservoir_gate = get_opt_str(row, "reservoir_gate");
+  dchar.screening_gate = get_opt_str(row, "screening_gate");
+  dchar.extra = get_opt_str(row, "extra");
+  dchar.uncertainty = get_opt_double(row, "uncertainty");
+  dchar.hash = get_opt_str(row, "hash");
+  dchar.time = get_opt_int64(row, "recordtime");
+  dchar.state = get_opt_str(row, "device_state");
+  dchar.unit_name = get_opt_str(row, "unit_name");
+  if (!row["device_characteristic"].is_null()) {
+    const auto *json_str = row["device_characteristic"].c_str();
+    auto json = nlohmann::json::parse(json_str);
+    dchar.characteristic = falcon::database::JSONPrimitive::from_json(json);
+  }
+  return dchar;
+}
+} // namespace
 namespace falcon::database {
 
 DatabaseConnection::DatabaseConnection(const std::string &connection_string) {
@@ -22,6 +62,7 @@ void DatabaseConnection::initialize_schema() {
   try {
     pqxx::work txn(*conn_);
 
+    txn.exec("DROP TABLE IF EXISTS device_characteristics CASCADE;");
     txn.exec(R"(
             CREATE TABLE IF NOT EXISTS device_characteristics (
                 id SERIAL PRIMARY KEY,
@@ -33,8 +74,8 @@ void DatabaseConnection::initialize_schema() {
                 screening_gate TEXT,
                 extra TEXT,
                 uncertainty DOUBLE PRECISION DEFAULT 0.0,
-                hash TEXT NOT NULL,
-                recordtime BIGINT NOT NULL,
+                hash TEXT,
+                recordtime BIGINT,
                 device_state TEXT,
                 unit_name TEXT,
                 device_characteristic JSONB,
@@ -58,13 +99,24 @@ void DatabaseConnection::initialize_schema() {
   }
 }
 
-void DatabaseConnection::insert(const DeviceCharacteristic &dc) {
+void DatabaseConnection::insert(const DeviceCharacteristic &dchar) {
   try {
     pqxx::work txn(*conn_);
+    auto char_json = dchar.characteristic.to_json().dump();
 
-    auto char_json = dc.characteristic.to_json().dump();
+    auto str_or_null =
+        [](const std::optional<std::string> &var) -> const char * {
+      return var ? var->c_str() : nullptr;
+    };
+    auto dbl_or_null =
+        [](const std::optional<double> &var) -> std::optional<double> {
+      return var ? var : std::nullopt;
+    };
+    auto int_or_null =
+        [](const std::optional<int64_t> &var) -> std::optional<int64_t> {
+      return var ? var : std::nullopt;
+    };
 
-    // Use new exec() API instead of deprecated exec_params()
     txn.exec(
         R"(
             INSERT INTO device_characteristics (
@@ -73,10 +125,13 @@ void DatabaseConnection::insert(const DeviceCharacteristic &dc) {
                 device_state, unit_name, device_characteristic
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         )",
-        pqxx::params(dc.scope, dc.name, dc.barrier_gate, dc.plunger_gate,
-                     dc.reservoir_gate, dc.screening_gate, dc.extra,
-                     dc.uncertainty, dc.hash, dc.time, dc.state, dc.unit_name,
-                     char_json));
+        pqxx::params(
+            dchar.scope, dchar.name, str_or_null(dchar.barrier_gate),
+            str_or_null(dchar.plunger_gate), str_or_null(dchar.reservoir_gate),
+            str_or_null(dchar.screening_gate), str_or_null(dchar.extra),
+            dbl_or_null(dchar.uncertainty), str_or_null(dchar.hash),
+            int_or_null(dchar.time), str_or_null(dchar.state),
+            str_or_null(dchar.unit_name), char_json));
 
     txn.commit();
   } catch (const std::exception &e) {
@@ -88,7 +143,6 @@ std::optional<DeviceCharacteristic>
 DatabaseConnection::get_by_name(const std::string &name) {
   try {
     pqxx::work txn(*conn_);
-
     auto result = txn.exec(R"(
             SELECT scope, name, barrier_gate, plunger_gate, reservoir_gate,
                    screening_gate, extra, uncertainty, hash, recordtime,
@@ -99,37 +153,13 @@ DatabaseConnection::get_by_name(const std::string &name) {
             LIMIT 1
         )",
                            pqxx::params(name));
-
     if (result.empty()) {
       return std::nullopt;
     }
 
     auto row = result[0];
-    DeviceCharacteristic dc;
-    dc.scope = row["scope"].c_str();
-    dc.name = row["name"].c_str();
-    dc.barrier_gate =
-        row["barrier_gate"].is_null() ? "" : row["barrier_gate"].c_str();
-    dc.plunger_gate =
-        row["plunger_gate"].is_null() ? "" : row["plunger_gate"].c_str();
-    dc.reservoir_gate =
-        row["reservoir_gate"].is_null() ? "" : row["reservoir_gate"].c_str();
-    dc.screening_gate =
-        row["screening_gate"].is_null() ? "" : row["screening_gate"].c_str();
-    dc.extra = row["extra"].is_null() ? "" : row["extra"].c_str();
-    dc.uncertainty = row["uncertainty"].as<double>();
-    dc.hash = row["hash"].c_str();
-    dc.time = row["recordtime"].as<int64_t>();
-    dc.state = row["device_state"].is_null() ? "" : row["device_state"].c_str();
-    dc.unit_name = row["unit_name"].is_null() ? "" : row["unit_name"].c_str();
+    return dchar_from_row(row);
 
-    if (!row["device_characteristic"].is_null()) {
-      auto json_str = row["device_characteristic"].c_str();
-      auto j = json::parse(json_str);
-      dc.characteristic = JSONPrimitive::from_json(j);
-    }
-
-    return dc;
   } catch (const std::exception &e) {
     throw std::runtime_error(std::string("Get by name error: ") + e.what());
   }
@@ -137,16 +167,12 @@ DatabaseConnection::get_by_name(const std::string &name) {
 
 std::vector<DeviceCharacteristic>
 DatabaseConnection::get_many(const std::vector<std::string> &names) {
-
   std::vector<DeviceCharacteristic> results;
-
   if (names.empty()) {
     return results;
   }
-
   try {
     pqxx::work txn(*conn_);
-
     // Build IN clause with placeholders
     std::ostringstream query;
     query << R"(
@@ -156,10 +182,10 @@ DatabaseConnection::get_many(const std::vector<std::string> &names) {
             FROM device_characteristics
             WHERE name IN (
         )";
-
     for (size_t i = 0; i < names.size(); ++i) {
-      if (i > 0)
+      if (i > 0) {
         query << ", ";
+      }
       query << "$" << (i + 1);
     }
     query << ") ORDER BY recordtime DESC";
@@ -173,35 +199,11 @@ DatabaseConnection::get_many(const std::vector<std::string> &names) {
     auto result = txn.exec(query.str(), params);
 
     for (auto row : result) {
-      DeviceCharacteristic dc;
-      dc.scope = row["scope"].c_str();
-      dc.name = row["name"].c_str();
-      dc.barrier_gate =
-          row["barrier_gate"].is_null() ? "" : row["barrier_gate"].c_str();
-      dc.plunger_gate =
-          row["plunger_gate"].is_null() ? "" : row["plunger_gate"].c_str();
-      dc.reservoir_gate =
-          row["reservoir_gate"].is_null() ? "" : row["reservoir_gate"].c_str();
-      dc.screening_gate =
-          row["screening_gate"].is_null() ? "" : row["screening_gate"].c_str();
-      dc.extra = row["extra"].is_null() ? "" : row["extra"].c_str();
-      dc.uncertainty = row["uncertainty"].as<double>();
-      dc.hash = row["hash"].c_str();
-      dc.time = row["recordtime"].as<int64_t>();
-      dc.state =
-          row["device_state"].is_null() ? "" : row["device_state"].c_str();
-      dc.unit_name = row["unit_name"].is_null() ? "" : row["unit_name"].c_str();
-
-      if (!row["device_characteristic"].is_null()) {
-        auto json_str = row["device_characteristic"].c_str();
-        auto j = json::parse(json_str);
-        dc.characteristic = JSONPrimitive::from_json(j);
-      }
-
-      results.push_back(std::move(dc));
+      results.push_back(dchar_from_row(row));
     }
 
     return results;
+
   } catch (const std::exception &e) {
     throw std::runtime_error(std::string("Get many error: ") + e.what());
   }
@@ -210,52 +212,29 @@ DatabaseConnection::get_many(const std::vector<std::string> &names) {
 std::vector<DeviceCharacteristic>
 DatabaseConnection::get_by_hash_range(const std::string &hash_start,
                                       const std::string &hash_end) {
-
   std::vector<DeviceCharacteristic> results;
-
   try {
     pqxx::work txn(*conn_);
 
+    // Use string_to_array and cast to int[] for proper numeric comparison
+    // This will match hashes like "8.5.4" as arrays of integers
     auto result = txn.exec(R"(
             SELECT scope, name, barrier_gate, plunger_gate, reservoir_gate,
                    screening_gate, extra, uncertainty, hash, recordtime,
                    device_state, unit_name, device_characteristic
             FROM device_characteristics
-            WHERE hash >= $1 AND hash <= $2
-            ORDER BY hash, recordtime DESC
+            WHERE string_to_array(hash, '.')::int[] >= string_to_array($1, '.')::int[]
+              AND string_to_array(hash, '.')::int[] <= string_to_array($2, '.')::int[]
+            ORDER BY string_to_array(hash, '.')::int[], recordtime DESC
         )",
                            pqxx::params(hash_start, hash_end));
 
     for (auto row : result) {
-      DeviceCharacteristic dc;
-      dc.scope = row["scope"].c_str();
-      dc.name = row["name"].c_str();
-      dc.barrier_gate =
-          row["barrier_gate"].is_null() ? "" : row["barrier_gate"].c_str();
-      dc.plunger_gate =
-          row["plunger_gate"].is_null() ? "" : row["plunger_gate"].c_str();
-      dc.reservoir_gate =
-          row["reservoir_gate"].is_null() ? "" : row["reservoir_gate"].c_str();
-      dc.screening_gate =
-          row["screening_gate"].is_null() ? "" : row["screening_gate"].c_str();
-      dc.extra = row["extra"].is_null() ? "" : row["extra"].c_str();
-      dc.uncertainty = row["uncertainty"].as<double>();
-      dc.hash = row["hash"].c_str();
-      dc.time = row["recordtime"].as<int64_t>();
-      dc.state =
-          row["device_state"].is_null() ? "" : row["device_state"].c_str();
-      dc.unit_name = row["unit_name"].is_null() ? "" : row["unit_name"].c_str();
-
-      if (!row["device_characteristic"].is_null()) {
-        auto json_str = row["device_characteristic"].c_str();
-        auto j = json::parse(json_str);
-        dc.characteristic = JSONPrimitive::from_json(j);
-      }
-
-      results.push_back(std::move(dc));
+      results.push_back(dchar_from_row(row));
     }
 
     return results;
+
   } catch (const std::exception &e) {
     throw std::runtime_error(std::string("Get by hash range error: ") +
                              e.what());
@@ -315,6 +294,86 @@ bool DatabaseConnection::test_connection() {
     return conn_ && conn_->is_open();
   } catch (...) {
     return false;
+  }
+}
+
+std::vector<DeviceCharacteristic> DatabaseConnection::get_all() {
+  std::vector<DeviceCharacteristic> results;
+  try {
+    pqxx::work txn(*conn_);
+    auto result = txn.exec(R"(
+            SELECT scope, name, barrier_gate, plunger_gate, reservoir_gate,
+                   screening_gate, extra, uncertainty, hash, recordtime,
+                   device_state, unit_name, device_characteristic
+            FROM device_characteristics
+            ORDER BY name, recordtime DESC
+        )");
+
+    for (auto row : result) {
+      results.push_back(dchar_from_row(row));
+    }
+    return results;
+  } catch (const std::exception &e) {
+    throw std::runtime_error(std::string("Get all error: ") + e.what());
+  }
+}
+
+std::vector<DeviceCharacteristic>
+DatabaseConnection::get_by_query(const DeviceCharacteristicQuery &query) {
+  std::vector<DeviceCharacteristic> results;
+  try {
+    pqxx::work txn(*conn_);
+    std::ostringstream sql;
+    sql << R"(
+      SELECT scope, name, barrier_gate, plunger_gate, reservoir_gate,
+             screening_gate, extra, uncertainty, hash, recordtime,
+             device_state, unit_name, device_characteristic
+      FROM device_characteristics
+    )";
+
+    std::vector<std::string> conditions;
+    pqxx::params params;
+
+    auto add_condition = [&](const auto &opt, const std::string &field) {
+      if (opt) {
+        conditions.push_back(field + " = $" +
+                             std::to_string(params.size() + 1));
+        params.append(*opt);
+      }
+    };
+
+    add_condition(query.scope, "scope");
+    add_condition(query.name, "name");
+    add_condition(query.barrier_gate, "barrier_gate");
+    add_condition(query.plunger_gate, "plunger_gate");
+    add_condition(query.reservoir_gate, "reservoir_gate");
+    add_condition(query.screening_gate, "screening_gate");
+    add_condition(query.extra, "extra");
+    add_condition(query.uncertainty, "uncertainty");
+    add_condition(query.hash, "hash");
+    add_condition(query.time, "recordtime");
+    add_condition(query.state, "device_state");
+    add_condition(query.unit_name, "unit_name");
+
+    if (!conditions.empty()) {
+      sql << " WHERE ";
+      for (size_t i = 0; i < conditions.size(); ++i) {
+        if (i > 0) {
+          sql << " AND ";
+        }
+        sql << conditions[i];
+      }
+    }
+    sql << " ORDER BY recordtime DESC";
+
+    auto result = txn.exec(sql.str(), params);
+
+    for (auto row : result) {
+      results.push_back(dchar_from_row(row));
+    }
+    return results;
+  } catch (const std::exception &e) {
+    throw std::runtime_error(std::string("Get by query error: ") + e.what());
   }
 }
 
