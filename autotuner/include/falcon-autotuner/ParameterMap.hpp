@@ -1,157 +1,107 @@
 #pragma once
 
-#include <any>
 #include <map>
 #include <nlohmann/json.hpp>
 #include <optional>
+#include <stdexcept>
 #include <string>
-#include <typeindex>
+#include <variant>
+#include <vector>
 
-namespace falcon::autotuner {
-
-using json = nlohmann::json;
+namespace falcon {
+namespace autotuner {
 
 /**
- * @brief Type-erased parameter storage with type safety
- *
- * Allows storing heterogeneous types in a map with runtime type checking
+ * @brief Type-safe parameter storage for autotuner state
  */
 class ParameterMap {
 public:
-  ParameterMap() = default;
+  using Value = std::variant<int64_t, double, bool, std::string>;
 
   /**
-   * @brief Set a parameter with type information
+   * @brief Set a parameter value
    */
-  template <typename T> void set(const std::string &key, T &&value) {
-    data_[key] = std::make_any<std::decay_t<T>>(std::forward<T>(value));
-    types_[key] = std::type_index(typeid(std::decay_t<T>));
-  }
+  void set(const std::string &key, int64_t value);
+  void set(const std::string &key, double value);
+  void set(const std::string &key, bool value);
+  void set(const std::string &key, std::string value);
 
   /**
-   * @brief Get a parameter with type checking
-   * @throws std::bad_any_cast if type mismatch
+   * @brief Get a parameter value (throws if not found or wrong type)
    */
   template <typename T> T get(const std::string &key) const {
-    auto it = data_.find(key);
-    if (it == data_.end()) {
+    auto it = params_.find(key);
+    if (it == params_.end()) {
       throw std::runtime_error("Parameter not found: " + key);
     }
-    return std::any_cast<T>(it->second);
+
+    try {
+      return std::get<T>(it->second);
+    } catch (const std::bad_variant_access &) {
+      throw std::runtime_error("Type mismatch for parameter: " + key);
+    }
   }
 
   /**
-   * @brief Try to get a parameter, returns nullopt if not found or type
-   * mismatch
+   * @brief Try to get a parameter value (returns nullopt if not found or wrong
+   * type)
    */
   template <typename T> std::optional<T> try_get(const std::string &key) const {
-    auto it = data_.find(key);
-    if (it == data_.end()) {
+    auto it = params_.find(key);
+    if (it == params_.end()) {
       return std::nullopt;
     }
+
     try {
-      return std::any_cast<T>(it->second);
-    } catch (const std::bad_any_cast &) {
+      return std::get<T>(it->second);
+    } catch (const std::bad_variant_access &) {
       return std::nullopt;
     }
   }
 
   /**
-   * @brief Check if a parameter exists
+   * @brief Check if parameter exists
    */
-  [[nodiscard]] bool has(const std::string &key) const {
-    return data_.find(key) != data_.end();
-  }
-
-  /**
-   * @brief Get the type of a parameter
-   */
-  [[nodiscard]] std::optional<std::type_index>
-  get_type(const std::string &key) const {
-    auto it = types_.find(key);
-    if (it == types_.end()) {
-      return std::nullopt;
-    }
-    return it->second;
-  }
-
-  /**
-   * @brief Remove a parameter
-   */
-  void remove(const std::string &key) {
-    data_.erase(key);
-    types_.erase(key);
-  }
+  bool has(const std::string &key) const;
 
   /**
    * @brief Get all parameter keys
    */
-  [[nodiscard]] std::vector<std::string> keys() const {
-    std::vector<std::string> result;
-    result.reserve(data_.size());
-    for (const auto &[key, _] : data_) {
-      result.push_back(key);
-    }
-    return result;
-  }
+  std::vector<std::string> keys() const;
+
+  /**
+   * @brief Merge another ParameterMap into this one (overwrites existing)
+   */
+  void merge(const ParameterMap &other);
+
+  /**
+   * @brief Remove a parameter
+   */
+  void remove(const std::string &key);
 
   /**
    * @brief Clear all parameters
    */
-  void clear() {
-    data_.clear();
-    types_.clear();
-  }
+  void clear();
 
   /**
-   * @brief Merge another parameter map (this one takes precedence)
+   * @brief Get number of parameters
    */
-  void merge(const ParameterMap &other) {
-    for (const auto &key : other.keys()) {
-      if (!has(key)) {
-        data_[key] = other.data_.at(key);
-        types_[key] = other.types_.at(key);
-      }
-    }
-  }
+  size_t size() const;
 
   /**
-   * @brief Create a read-only view (copies all parameters)
+   * @brief Convert to JSON
    */
-  [[nodiscard]] ParameterMap create_readonly_view() const {
-    ParameterMap view;
-    view.data_ = data_;
-    view.types_ = types_;
-    view.readonly_ = true;
-    return view;
-  }
+  nlohmann::json to_json() const;
 
   /**
-   * @brief Check if this is a read-only view
+   * @brief Create from JSON
    */
-  [[nodiscard]] bool is_readonly() const { return readonly_; }
-
-  /**
-   * @brief Convert to JSON (for serialization)
-   * Note: Only supports JSON-serializable types
-   */
-  [[nodiscard]] json to_json() const;
-
-  /**
-   * @brief Load from JSON
-   */
-  static ParameterMap from_json(const json &j);
+  static ParameterMap from_json(const nlohmann::json &j);
 
 private:
-  std::map<std::string, std::any> data_;
-  std::map<std::string, std::type_index> types_;
-  bool readonly_ = false;
-
-  void check_readonly() const {
-    if (readonly_) {
-      throw std::runtime_error("Cannot modify read-only parameter map");
-    }
-  }
+  std::map<std::string, Value> params_;
 };
 
-} // namespace falcon::autotuner
+} // namespace autotuner
+} // namespace falcon

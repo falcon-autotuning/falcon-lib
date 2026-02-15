@@ -10,7 +10,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Build Options
 option(BUILD_TESTS "Build tests" ON)
-option(BUILD_EXAMPLES "Build example plugins" ON)
+option(BUILD_EXAMPLES "Build example autotuners" ON)
+option(BUILD_TOOLS "Build compiler and runtime tools" ON)
 option(USE_CCACHE "Enable ccache or sccache if available" ON)
 option(ENABLE_PCH "Enable target_precompile_headers to speed up builds" ON)
 
@@ -20,7 +21,7 @@ if(WIN32)
   add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
 
-# Try to auto-detect a compiler launcher
+# Compiler launcher
 if(USE_CCACHE)
   find_program(SCCACHE_PROGRAM sccache)
   if(SCCACHE_PROGRAM)
@@ -33,22 +34,26 @@ if(USE_CCACHE)
       message(STATUS "Using ccache: ${CCACHE_PROGRAM}")
       set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
       set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
-    else()
-      message(STATUS "No ccache/sccache found")
     endif()
   endif()
 endif()
 
-# Find dependencies (via vcpkg)
+# Find dependencies
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(Boost REQUIRED COMPONENTS graph)
+find_package(fmt CONFIG REQUIRED)
 
 message(STATUS "Found nlohmann_json: ${nlohmann_json_VERSION}")
 message(STATUS "Found Boost: ${Boost_VERSION}")
+message(STATUS "Found fmt: ${fmt_VERSION}")
 
 # Core library
-add_library(falcon-autotuner-core
+add_library(falcon-autotuner-core STATIC
   src/ParameterMap.cpp
+  src/dsl/FalconLexer.cpp
+  src/dsl/FalconParser.cpp
+  src/dsl/FalconCodeGenerator.cpp
+  src/dsl/FalconCompiler.cpp
 )
 
 target_include_directories(falcon-autotuner-core
@@ -63,6 +68,7 @@ target_link_libraries(falcon-autotuner-core
   PUBLIC
     nlohmann_json::nlohmann_json
     Boost::graph
+    fmt::fmt
     ${CMAKE_DL_LIBS}
 )
 
@@ -80,8 +86,40 @@ if(ENABLE_PCH)
       <string>
       <vector>
       <map>
+      <set>
       <functional>
       <nlohmann/json.hpp>
+  )
+endif()
+
+# Tools
+if(BUILD_TOOLS)
+  # Compiler tool (falc)
+  add_executable(falc tools/falc.cpp)
+
+  target_link_libraries(falc
+    PRIVATE falcon-autotuner-core
+  )
+
+  install(TARGETS falc
+    RUNTIME DESTINATION bin
+  )
+
+  # Runtime tool (falcon-runtime)
+  find_package(Boost REQUIRED COMPONENTS system filesystem)
+
+  add_executable(falcon-runtime tools/falcon-runtime.cpp)
+
+  target_link_libraries(falcon-runtime
+    PRIVATE
+      falcon-autotuner-core
+      Boost::system
+      Boost::filesystem
+      ${CMAKE_DL_LIBS}
+  )
+
+  install(TARGETS falcon-runtime
+    RUNTIME DESTINATION bin
   )
 endif()
 
@@ -91,9 +129,9 @@ if(BUILD_TESTS)
   add_subdirectory(tests)
 endif()
 
-# Example plugins
+# Examples
 if(BUILD_EXAMPLES)
-  add_subdirectory(plugins)
+  add_subdirectory(examples)
 endif()
 
 # Installation

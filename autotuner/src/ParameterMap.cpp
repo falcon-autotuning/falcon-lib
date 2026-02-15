@@ -1,56 +1,79 @@
 #include "falcon-autotuner/ParameterMap.hpp"
+#include <stdexcept>
 
-namespace falcon::autotuner {
+namespace falcon {
+namespace autotuner {
 
-json ParameterMap::to_json() const {
-  json result = json::object();
+void ParameterMap::set(const std::string &key, int64_t value) {
+  params_[key] = value;
+}
 
-  for (const auto &key : keys()) {
-    const auto &value = data_.at(key);
+void ParameterMap::set(const std::string &key, double value) {
+  params_[key] = value;
+}
 
-    // Try to convert common types to JSON
-    if (auto *v = std::any_cast<int>(&value)) {
-      result[key] = *v;
-    } else if (auto *v = std::any_cast<int64_t>(&value)) {
-      result[key] = *v;
-    } else if (auto *v = std::any_cast<double>(&value)) {
-      result[key] = *v;
-    } else if (auto *v = std::any_cast<float>(&value)) {
-      result[key] = *v;
-    } else if (auto *v = std::any_cast<bool>(&value)) {
-      result[key] = *v;
-    } else if (auto *v = std::any_cast<std::string>(&value)) {
-      result[key] = *v;
-    } else {
-      // Unsupported type - store as null with type info
-      result[key] = json::object(
-          {{"_type", "unsupported"}, {"_type_name", types_.at(key).name()}});
-    }
+void ParameterMap::set(const std::string &key, bool value) {
+  params_[key] = value;
+}
+
+void ParameterMap::set(const std::string &key, std::string value) {
+  params_[key] = std::move(value);
+}
+
+bool ParameterMap::has(const std::string &key) const {
+  return params_.find(key) != params_.end();
+}
+
+std::vector<std::string> ParameterMap::keys() const {
+  std::vector<std::string> result;
+  for (const auto &[key, _] : params_) {
+    result.push_back(key);
   }
-
   return result;
 }
 
-ParameterMap ParameterMap::from_json(const json &j) {
-  ParameterMap map;
+void ParameterMap::merge(const ParameterMap &other) {
+  for (const auto &[key, value] : other.params_) {
+    params_[key] = value;
+  }
+}
+
+void ParameterMap::remove(const std::string &key) { params_.erase(key); }
+
+void ParameterMap::clear() { params_.clear(); }
+
+size_t ParameterMap::size() const { return params_.size(); }
+
+nlohmann::json ParameterMap::to_json() const {
+  nlohmann::json j = nlohmann::json::object();
+
+  for (const auto &[key, value] : params_) {
+    std::visit([&](auto &&val) { j[key] = val; }, value);
+  }
+
+  return j;
+}
+
+ParameterMap ParameterMap::from_json(const nlohmann::json &j) {
+  ParameterMap result;
 
   for (auto it = j.begin(); it != j.end(); ++it) {
     const auto &key = it.key();
     const auto &value = it.value();
 
     if (value.is_number_integer()) {
-      map.set(key, value.get<int64_t>());
+      result.set(key, value.get<int64_t>());
     } else if (value.is_number_float()) {
-      map.set(key, value.get<double>());
+      result.set(key, value.get<double>());
     } else if (value.is_boolean()) {
-      map.set(key, value.get<bool>());
+      result.set(key, value.get<bool>());
     } else if (value.is_string()) {
-      map.set(key, value.get<std::string>());
+      result.set(key, value.get<std::string>());
     }
-    // Skip unsupported types
   }
 
-  return map;
+  return result;
 }
 
-} // namespace falcon::autotuner
+} // namespace autotuner
+} // namespace falcon
