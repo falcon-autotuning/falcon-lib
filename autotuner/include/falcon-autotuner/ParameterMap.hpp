@@ -8,8 +8,7 @@
 #include <variant>
 #include <vector>
 
-namespace falcon {
-namespace autotuner {
+namespace falcon::autotuner {
 
 /**
  * @brief Type-safe parameter storage for autotuner state
@@ -62,12 +61,12 @@ public:
   /**
    * @brief Check if parameter exists
    */
-  bool has(const std::string &key) const;
+  [[nodiscard]] bool has(const std::string &key) const;
 
   /**
    * @brief Get all parameter keys
    */
-  std::vector<std::string> keys() const;
+  [[nodiscard]] std::vector<std::string> keys() const;
 
   /**
    * @brief Merge another ParameterMap into this one (overwrites existing)
@@ -87,12 +86,12 @@ public:
   /**
    * @brief Get number of parameters
    */
-  size_t size() const;
+  [[nodiscard]] size_t size() const;
 
   /**
    * @brief Convert to JSON
    */
-  nlohmann::json to_json() const;
+  [[nodiscard]] nlohmann::json to_json() const;
 
   /**
    * @brief Create from JSON
@@ -103,5 +102,4 @@ private:
   std::map<std::string, Value> params_;
 };
 
-} // namespace autotuner
-} // namespace falcon
+} // namespace falcon::autotuner

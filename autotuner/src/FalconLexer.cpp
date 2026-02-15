@@ -1,10 +1,9 @@
-#include "falcon-autotuner/dsl/FalconParser.hpp"
+#include "falcon-autotuner/FalconParser.hpp"
 #include <cctype>
+#include <map>
 #include <stdexcept>
 
-namespace falcon {
-namespace autotuner {
-namespace dsl {
+namespace falcon::autotuner::dsl {
 
 FalconLexer::FalconLexer(const std::string &source) : source_(source) {}
 
@@ -268,6 +267,4 @@ Token FalconLexer::read_string() {
   return Token{TokenType::StringLiteral, value, line, col};
 }
 
-} // namespace dsl
-} // namespace autotuner
-} // namespace falcon
+} // namespace falcon::autotuner::dsl
