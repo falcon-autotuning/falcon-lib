@@ -212,12 +212,9 @@ private:
                                          const AutotunerDecl &autotuner,
                                          std::ostringstream &source);
 
-  void generate_for_loop(const ForLoop &loop, const AutotunerDecl &autotuner,
-                         std::ostringstream &source);
+  void generate_for_loop(const ForLoop &loop, std::ostringstream &source);
 
-  void generate_while_loop(const WhileLoop &loop,
-                           const AutotunerDecl &autotuner,
-                           std::ostringstream &source);
+  void generate_while_loop(const WhileLoop &loop, std::ostringstream &source);
 
   std::string generate_condition_code(const std::string &condition);
 

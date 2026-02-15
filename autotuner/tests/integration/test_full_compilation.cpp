@@ -59,7 +59,7 @@ TEST_F(FullCompilationTest, CompileSimpleAutotuner) {
   write_fal_file("simple.fal", source);
 
   // Compile
-  FalconCompiler::CompilerOptions options;
+  CompilerOptions options;
   options.output_dir = test_dir_ / "generated";
 
   FalconCompiler compiler(options);
@@ -99,7 +99,7 @@ TEST_F(FullCompilationTest, CompileMultipleAutotuners) {
 
   write_fal_file("multi.fal", source);
 
-  FalconCompiler::CompilerOptions options;
+  CompilerOptions options;
   options.output_dir = test_dir_ / "generated";
 
   FalconCompiler compiler(options);
@@ -119,7 +119,7 @@ TEST_F(FullCompilationTest, InvalidSyntax) {
 
   write_fal_file("broken.fal", source);
 
-  FalconCompiler::CompilerOptions options;
+  CompilerOptions options;
   options.output_dir = test_dir_ / "generated";
 
   FalconCompiler compiler(options);

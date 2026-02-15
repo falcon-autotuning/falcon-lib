@@ -37,7 +37,7 @@ TEST(ParameterMapTest, SetAndGetString) {
 
 TEST(ParameterMapTest, TryGetExisting) {
   ParameterMap params;
-  params.set("value", 100);
+  params.set("value", int64_t(100));
 
   auto result = params.try_get<int64_t>("value");
   ASSERT_TRUE(result.has_value());
@@ -53,7 +53,7 @@ TEST(ParameterMapTest, TryGetNonExisting) {
 
 TEST(ParameterMapTest, TryGetWrongType) {
   ParameterMap params;
-  params.set("value", 100);
+  params.set("value", int64_t(100));
 
   auto result = params.try_get<double>("value");
   EXPECT_FALSE(result.has_value());
@@ -61,12 +61,12 @@ TEST(ParameterMapTest, TryGetWrongType) {
 
 TEST(ParameterMapTest, Merge) {
   ParameterMap params1;
-  params1.set("a", 1);
-  params1.set("b", 2);
+  params1.set("a", int64_t(1));
+  params1.set("b", int64_t(2));
 
   ParameterMap params2;
-  params2.set("b", 20);
-  params2.set("c", 30);
+  params2.set("b", int64_t(20));
+  params2.set("c", int64_t(30));
 
   params1.merge(params2);
 
@@ -77,7 +77,7 @@ TEST(ParameterMapTest, Merge) {
 
 TEST(ParameterMapTest, Keys) {
   ParameterMap params;
-  params.set("a", 1);
+  params.set("a", int64_t(1));
   params.set("b", 2.0);
   params.set("c", true);
 
@@ -92,7 +92,7 @@ TEST(ParameterMapTest, Keys) {
 
 TEST(ParameterMapTest, Remove) {
   ParameterMap params;
-  params.set("value", 42);
+  params.set("value", int64_t(42));
 
   EXPECT_TRUE(params.has("value"));
 
@@ -103,8 +103,8 @@ TEST(ParameterMapTest, Remove) {
 
 TEST(ParameterMapTest, Clear) {
   ParameterMap params;
-  params.set("a", 1);
-  params.set("b", 2);
+  params.set("a", int64_t(1));
+  params.set("b", int64_t(2));
 
   EXPECT_EQ(params.size(), 2);
 
