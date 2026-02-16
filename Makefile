@@ -35,7 +35,11 @@ install-vcpkg-deps: deps
 build-all: install-vcpkg-deps
 	@echo "Building all components..."
 	$(MAKE) -C database build-release
+	$(MAKE) -C database install
 	$(MAKE) -C autotuner build-release
+	$(MAKE) -C autotuner install
+	$(MAKE) -C routine build-release
+	$(MAKE) -C routine install
 	@echo "✓ All components built"
 
 test-all:

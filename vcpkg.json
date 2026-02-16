@@ -29,7 +29,17 @@
     {
       "name": "boost-dll",
       "version>=": "1.83.0"
+    },
+    {
+      "name": "fmt"
+    },
+    {
+      "name": "spdlog"
+    },
+    {
+      "name": "cnats",
+      "version>=": "3.7.0"
     }
   ],
-  "builtin-baseline": "a42af01b72c28a8e1d7b48107b33e4f286a55ef6"
+  "builtin-baseline": "e5a1490e1409d175932ef6014519e9ae149ddb7c"
 }
