@@ -25,7 +25,7 @@ TEST_F(IntegrationTest, DatabaseAndLogging) {
   log::debug("Inserted test device");
 
   // Read via lazy connection
-  LazyReadOnlyDatabaseConnection lazy_db(getDatabaseUrl());
+  LazyReadOnlyDatabaseConnection lazy_db;
   auto result = lazy_db.get_by_name("test_device");
 
   ASSERT_TRUE(result.has_value());
@@ -45,7 +45,7 @@ TEST_F(IntegrationTest, HubAndDatabaseTogether) {
   log::info("Stored calibration data");
 
   // Retrieve from database
-  LazyReadOnlyDatabaseConnection lazy_db(getDatabaseUrl());
+  LazyReadOnlyDatabaseConnection lazy_db;
   auto cal_data = lazy_db.get_by_name("cal_factor");
 
   ASSERT_TRUE(cal_data.has_value());
@@ -72,7 +72,7 @@ TEST_F(IntegrationTest, CompleteWorkflow) {
   params["voltage_min"] = 0.0;
   params["voltage_max"] = 5.0;
   params["step"] = 0.1;
-  config.characteristic = JSONPrimitive::from_json(params);
+  config.characteristic = JSONPrimitive(params.dump());
   db_->insert(config);
 
   log::debug("Step 1: Configuration stored");
@@ -118,7 +118,7 @@ TEST_F(IntegrationTest, CompleteWorkflow) {
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   // Step 3: Read config from database
-  LazyReadOnlyDatabaseConnection lazy_db(getDatabaseUrl());
+  LazyReadOnlyDatabaseConnection lazy_db;
   auto config_data = lazy_db.get_by_name("measurement_params");
   ASSERT_TRUE(config_data.has_value());
 
@@ -143,7 +143,7 @@ TEST_F(IntegrationTest, CompleteWorkflow) {
   DeviceCharacteristic result_dc;
   result_dc.scope = "results";
   result_dc.name = "measurement_1";
-  result_dc.characteristic = JSONPrimitive::from_json(*response);
+  result_dc.characteristic = JSONPrimitive(response->dump());
   db_->insert(result_dc);
 
   log::debug("Step 5: Result stored in database");
@@ -152,7 +152,8 @@ TEST_F(IntegrationTest, CompleteWorkflow) {
   auto stored_result = lazy_db.get_by_name("measurement_1");
   ASSERT_TRUE(stored_result.has_value());
 
-  auto result_json = stored_result->characteristic.to_json();
+  auto result_json =
+      nlohmann::json::parse(stored_result->characteristic.as_string());
   EXPECT_EQ(result_json["voltage"], 2.5);
   EXPECT_EQ(result_json["current"], 0.003);
   EXPECT_EQ(result_json["status"], "ok");

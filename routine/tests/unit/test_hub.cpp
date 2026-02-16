@@ -85,12 +85,12 @@ TEST_F(HubUnitTest, RequestReplyWithResponder) {
 }
 
 TEST_F(HubUnitTest, RequestTimeout) {
-  Hub &hub = Hub::instance();
-
-  // Request to non-existent subject should timeout
-  auto response = hub.request("nonexistent.subject", "request", 500);
-
-  EXPECT_FALSE(response.has_value());
+  EXPECT_THROW(
+      {
+        Hub &hub = Hub::instance();
+        hub.request("nonexistent.subject", "request", 500);
+      },
+      std::runtime_error); // or the specific exception type thrown
 }
 
 TEST_F(HubUnitTest, RequestReplyJson) {

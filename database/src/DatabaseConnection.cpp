@@ -1,5 +1,6 @@
 #include "falcon-database/DatabaseConnection.hpp"
 #include <cstdlib>
+
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -68,17 +69,18 @@ std::string resolve_connection_string(const std::string &explicit_conn_str) {
 } // namespace
 
 namespace falcon::database {
-thread_local std::unique_ptr<pqxx::connection>
-    ReadOnlyDatabaseConnection::conn_;
-thread_local bool ReadOnlyDatabaseConnection::connected_ = false;
 
 ReadOnlyDatabaseConnection::ReadOnlyDatabaseConnection(
     const std::string &connection_string)
-    : conn_str_(resolve_connection_string(connection_string)) {}
+    : conn_str_(resolve_connection_string(connection_string)),
+      connected_(false) {
+  // Don't connect yet - lazy initialization
+}
 
 ReadOnlyDatabaseConnection::~ReadOnlyDatabaseConnection() = default;
 
 void ReadOnlyDatabaseConnection::ensure_connected() {
+  std::lock_guard<std::mutex> lock(conn_mutex_);
   if (connected_ && conn_ && conn_->is_open()) {
     return; // Already connected and alive
   }
