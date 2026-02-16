@@ -11,7 +11,7 @@ namespace falcon::database {
  */
 class SnapshotManager {
 public:
-  explicit SnapshotManager(std::shared_ptr<DatabaseConnection> dconn);
+  explicit SnapshotManager(std::shared_ptr<AdminDatabaseConnection> dconn);
 
   /**
    * @brief Export all device characteristics to a JSON file
@@ -41,7 +41,7 @@ public:
   static bool validate_snapshot(const std::string &filename);
 
 private:
-  std::shared_ptr<DatabaseConnection> db_;
+  std::shared_ptr<AdminDatabaseConnection> db_;
 };
 
 } // namespace falcon::database

@@ -10,7 +10,7 @@ class DatabaseTestFixture : public ::testing::Test {
 protected:
   void SetUp() override;
   void TearDown() override;
-  std::shared_ptr<DatabaseConnection> db_;
+  std::shared_ptr<AdminDatabaseConnection> db_;
   std::string test_db_name_;
 };
 

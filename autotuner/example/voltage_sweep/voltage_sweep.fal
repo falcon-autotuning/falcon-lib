@@ -1,6 +1,16 @@
 // Voltage sweep autotuner example
-autotuner VoltageSweep {
-  requires: [];
+autotuner VoltageSweep (min_voltage) [] {
+  requires: [## other autotuners that this autotuner depends on ##];
+  spec-inputs: [ 
+    for plunger_gate in config.plunger_gates {
+        Quantity pinchoff [plunger_gate]
+        }
+  ]
+  spec-outputs: [
+    for plunger_gate in config.plunger_gates {
+        Quantity iv_curve_threshold [plunger_gate]
+        }
+  ]
   
   params {
     float min_voltage = 0.0;
@@ -12,6 +22,7 @@ autotuner VoltageSweep {
   }
   
   start -> initialize;
+  finish -> finalize;
   
   state initialize {
     temp {
@@ -19,19 +30,24 @@ autotuner VoltageSweep {
       string error_msg;
     }
     
-    measurement: initialize_device();
+    run: initialize_device();
     
     if (init_success == true) -> start_sweep;
-    else -> error_state[error_msg: error];
+    else -> error_state(error_msg: error);
   }
-  
-  state start_sweep {
-    measurement: prepare_sweep();
+ 
+  for plunger_gate in config.plunger_gates {
+  state start_sweep [plunger_gate] {
+    temp {
+        bool valid;
+
+    }
+    run: prepare_sweep();
     
-    current_voltage = min_voltage;
-    
-    -> measure_point;
+    if (valid == false) -> error_state;
+    else -> start_sweep [next plunger_gate];
   }
+}
   
   state measure_point {
     temp {
