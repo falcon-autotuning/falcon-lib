@@ -5,7 +5,7 @@
 
 namespace falcon::database {
 
-SnapshotManager::SnapshotManager(std::shared_ptr<DatabaseConnection> dconn)
+SnapshotManager::SnapshotManager(std::shared_ptr<AdminDatabaseConnection> dconn)
     : db_(std::move(dconn)) {}
 
 void SnapshotManager::export_to_json(const std::string &filename) {

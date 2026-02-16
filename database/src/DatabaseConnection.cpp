@@ -1,6 +1,7 @@
 #include "falcon-database/DatabaseConnection.hpp"
 #include <iostream>
 #include <sstream>
+#include <string>
 
 namespace {
 template <typename Row>
@@ -44,9 +45,9 @@ falcon::database::DeviceCharacteristic dchar_from_row(const pqxx::row &row) {
 } // namespace
 namespace falcon::database {
 
-DatabaseConnection::DatabaseConnection(const std::string &connection_string) {
+ReadOnlyDatabaseConnection::ReadOnlyDatabaseConnection(const std::string &url) {
   try {
-    conn_ = std::make_unique<pqxx::connection>(connection_string);
+    conn_ = std::make_unique<pqxx::connection>(url);
     if (!conn_->is_open()) {
       throw std::runtime_error("Failed to open database connection");
     }
@@ -56,9 +57,19 @@ DatabaseConnection::DatabaseConnection(const std::string &connection_string) {
   }
 }
 
-DatabaseConnection::~DatabaseConnection() = default;
+ReadOnlyDatabaseConnection::~ReadOnlyDatabaseConnection() = default;
 
-void DatabaseConnection::initialize_schema() {
+ReadWriteDatabaseConnection::ReadWriteDatabaseConnection(const std::string &url)
+    : ReadOnlyDatabaseConnection(url) {}
+
+ReadWriteDatabaseConnection::~ReadWriteDatabaseConnection() = default;
+
+AdminDatabaseConnection::AdminDatabaseConnection(const std::string &url)
+    : ReadWriteDatabaseConnection(url) {}
+
+AdminDatabaseConnection::~AdminDatabaseConnection() = default;
+
+void AdminDatabaseConnection::initialize_schema() {
   try {
     pqxx::work txn(*conn_);
 
@@ -99,7 +110,7 @@ void DatabaseConnection::initialize_schema() {
   }
 }
 
-void DatabaseConnection::insert(const DeviceCharacteristic &dchar) {
+void ReadWriteDatabaseConnection::insert(const DeviceCharacteristic &dchar) {
   try {
     pqxx::work txn(*conn_);
     auto char_json = dchar.characteristic.to_json().dump();
@@ -140,7 +151,7 @@ void DatabaseConnection::insert(const DeviceCharacteristic &dchar) {
 }
 
 std::optional<DeviceCharacteristic>
-DatabaseConnection::get_by_name(const std::string &name) {
+ReadOnlyDatabaseConnection::get_by_name(const std::string &name) {
   try {
     pqxx::work txn(*conn_);
     auto result = txn.exec(R"(
@@ -166,7 +177,7 @@ DatabaseConnection::get_by_name(const std::string &name) {
 }
 
 std::vector<DeviceCharacteristic>
-DatabaseConnection::get_many(const std::vector<std::string> &names) {
+ReadOnlyDatabaseConnection::get_many(const std::vector<std::string> &names) {
   std::vector<DeviceCharacteristic> results;
   if (names.empty()) {
     return results;
@@ -210,8 +221,8 @@ DatabaseConnection::get_many(const std::vector<std::string> &names) {
 }
 
 std::vector<DeviceCharacteristic>
-DatabaseConnection::get_by_hash_range(const std::string &hash_start,
-                                      const std::string &hash_end) {
+ReadOnlyDatabaseConnection::get_by_hash_range(const std::string &hash_start,
+                                              const std::string &hash_end) {
   std::vector<DeviceCharacteristic> results;
   try {
     pqxx::work txn(*conn_);
@@ -241,7 +252,7 @@ DatabaseConnection::get_by_hash_range(const std::string &hash_start,
   }
 }
 
-bool DatabaseConnection::delete_by_name(const std::string &name) {
+bool ReadWriteDatabaseConnection::delete_by_name(const std::string &name) {
   try {
     pqxx::work txn(*conn_);
 
@@ -255,7 +266,7 @@ bool DatabaseConnection::delete_by_name(const std::string &name) {
   }
 }
 
-int DatabaseConnection::delete_by_hash(const std::string &hash) {
+int ReadWriteDatabaseConnection::delete_by_hash(const std::string &hash) {
   try {
     pqxx::work txn(*conn_);
 
@@ -269,7 +280,7 @@ int DatabaseConnection::delete_by_hash(const std::string &hash) {
   }
 }
 
-void DatabaseConnection::clear_all() {
+void AdminDatabaseConnection::clear_all() {
   try {
     pqxx::work txn(*conn_);
     txn.exec("DELETE FROM device_characteristics");
@@ -279,7 +290,7 @@ void DatabaseConnection::clear_all() {
   }
 }
 
-size_t DatabaseConnection::count() {
+size_t ReadOnlyDatabaseConnection::count() {
   try {
     pqxx::work txn(*conn_);
     auto result = txn.exec("SELECT COUNT(*) FROM device_characteristics");
@@ -289,7 +300,7 @@ size_t DatabaseConnection::count() {
   }
 }
 
-bool DatabaseConnection::test_connection() {
+bool ReadOnlyDatabaseConnection::test_connection() {
   try {
     return conn_ && conn_->is_open();
   } catch (...) {
@@ -297,7 +308,7 @@ bool DatabaseConnection::test_connection() {
   }
 }
 
-std::vector<DeviceCharacteristic> DatabaseConnection::get_all() {
+std::vector<DeviceCharacteristic> ReadOnlyDatabaseConnection::get_all() {
   std::vector<DeviceCharacteristic> results;
   try {
     pqxx::work txn(*conn_);
@@ -318,8 +329,8 @@ std::vector<DeviceCharacteristic> DatabaseConnection::get_all() {
   }
 }
 
-std::vector<DeviceCharacteristic>
-DatabaseConnection::get_by_query(const DeviceCharacteristicQuery &query) {
+std::vector<DeviceCharacteristic> ReadOnlyDatabaseConnection::get_by_query(
+    const DeviceCharacteristicQuery &query) {
   std::vector<DeviceCharacteristic> results;
   try {
     pqxx::work txn(*conn_);

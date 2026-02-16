@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <nlohmann/json.hpp>
-#include <pqxx/pqxx>
+#include <optional>
 #include <string>
 #include <utility>
 

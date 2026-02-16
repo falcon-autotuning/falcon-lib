@@ -11,7 +11,7 @@ void DatabaseTestFixture::SetUp() {
     // Default test database connection
     conn_string = "postgresql://localhost/falcon_test";
   }
-  db_ = std::make_shared<DatabaseConnection>(conn_string);
+  db_ = std::make_shared<AdminDatabaseConnection>(conn_string);
   db_->initialize_schema();
   db_->clear_all(); // Clean slate for each test
 }
