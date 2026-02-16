@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <memory>
 #include <mutex>
 #include <nats/nats.h>
 #include <nlohmann/json.hpp>

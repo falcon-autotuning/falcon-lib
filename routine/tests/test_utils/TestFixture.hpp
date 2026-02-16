@@ -1,9 +1,7 @@
 #pragma once
-
 #include "falcon-database/DatabaseConnection.hpp"
 #include <cstdlib>
 #include <gtest/gtest.h>
-#include <memory>
 #include <string>
 
 namespace falcon::routine::test {
@@ -13,19 +11,16 @@ namespace falcon::routine::test {
  */
 class RoutineTestFixture : public ::testing::Test {
 protected:
-  void SetUp() override {
-    // Set up test environment variables
-    setupEnvironment();
-  }
+  void SetUp() override { setupEnvironment(); }
 
   void TearDown() override {
-    // Clean up
+    // Clean up if needed
   }
 
   void setupEnvironment() {
     // Database URL from environment or default
     const char *db_url = std::getenv("TEST_DATABASE_URL");
-    if (!db_url) {
+    if (db_url == nullptr) {
       db_url_ = "postgresql://falcon_test:falcon_test_password@localhost:5433/"
                 "falcon_test";
     } else {
@@ -35,7 +30,7 @@ protected:
 
     // NATS URL from environment or default
     const char *nats_url = std::getenv("TEST_NATS_URL");
-    if (!nats_url) {
+    if (nats_url == nullptr) {
       nats_url_ = "nats://localhost:4222";
     } else {
       nats_url_ = nats_url;
@@ -46,8 +41,8 @@ protected:
     setenv("LOG_LEVEL", "debug", 1);
   }
 
-  std::string getDatabaseUrl() const { return db_url_; }
-  std::string getNatsUrl() const { return nats_url_; }
+  [[nodiscard]] std::string getDatabaseUrl() const { return db_url_; }
+  [[nodiscard]] std::string getNatsUrl() const { return nats_url_; }
 
 private:
   std::string db_url_;
@@ -63,7 +58,8 @@ protected:
     RoutineTestFixture::SetUp();
 
     // Create database connection and initialize schema
-    db_ = std::make_unique<database::DatabaseConnection>(getDatabaseUrl());
+    db_ = std::make_unique<falcon::database::AdminDatabaseConnection>(
+        getDatabaseUrl());
     db_->initialize_schema();
     db_->clear_all();
   }
@@ -75,7 +71,7 @@ protected:
     RoutineTestFixture::TearDown();
   }
 
-  std::unique_ptr<database::DatabaseConnection> db_;
+  std::unique_ptr<falcon::database::AdminDatabaseConnection> db_;
 };
 
 } // namespace falcon::routine::test

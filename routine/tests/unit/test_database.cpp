@@ -1,6 +1,5 @@
 #include "../test_utils/TestFixture.hpp"
 #include "falcon-routine/database.hpp"
-#include <chrono>
 #include <gtest/gtest.h>
 #include <thread>
 
