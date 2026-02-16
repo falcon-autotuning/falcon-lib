@@ -109,6 +109,8 @@ configure-debug: check-vcpkg
 		-DBUILD_TESTS=ON \
 		-DUSE_CCACHE=ON \
 		-DENABLE_PCH=ON \
+		-DCMAKE_C_COMPILER=clang \
+		-DCMAKE_CXX_COMPILER=clang++ \
 		-G $(CMAKE_GENERATOR)
 	@echo "✓ Debug build configured"
 
@@ -123,6 +125,8 @@ configure-release: check-vcpkg
 		-DBUILD_TESTS=ON \
 		-DUSE_CCACHE=ON \
 		-DENABLE_PCH=ON \
+		-DCMAKE_C_COMPILER=clang \
+		-DCMAKE_CXX_COMPILER=clang++ \
 		-G $(CMAKE_GENERATOR)
 	@echo "✓ Release build configured"
 
