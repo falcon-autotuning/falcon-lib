@@ -16,13 +16,13 @@ option(ENABLE_PCH "Enable target_precompile_headers to speed up builds" ON)
 # Find dependencies (via vcpkg)
 find_package(nlohmann_json CONFIG REQUIRED)
 
-# DSL Compiler Library
+# Add Compiler Sub-project
+add_subdirectory(compiler)
+
+# DSL Runtime Library (core types and logic)
 add_library(falcon-dsl
   src/ParameterMap.cpp
-  src/FalconLexer.cpp
-  src/FalconParser.cpp
-  src/FalconCodeGenerator.cpp
-  src/FalconCompiler.cpp
+  src/Autotuner.cpp
 )
 
 target_include_directories(falcon-dsl
@@ -45,16 +45,6 @@ else()
   target_compile_options(falcon-dsl PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-# DSL Compiler Executable
-add_executable(falcon-dsl-compiler
-  src/main.cpp
-)
-
-target_link_libraries(falcon-dsl-compiler
-  PRIVATE
-    falcon-dsl
-)
-
 # Tests
 if(BUILD_TESTS)
   enable_testing()
@@ -62,7 +52,7 @@ if(BUILD_TESTS)
 endif()
 
 # Installation
-install(TARGETS falcon-dsl falcon-dsl-compiler
+install(TARGETS falcon-dsl falcon-atc
   EXPORT falcon-dsl-targets
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
