@@ -75,7 +75,7 @@ public:
   /**
    * @brief Check if connection has been established
    */
-  bool is_connected() const { return connected_; }
+  static bool is_connected() { return connected_; }
 
 protected:
   /**
@@ -87,12 +87,13 @@ protected:
   /**
    * @brief Get the connection string being used
    */
-  const std::string &get_connection_string() const { return conn_str_; }
+  [[nodiscard]] const std::string &get_connection_string() const {
+    return conn_str_;
+  }
 
-  std::unique_ptr<pqxx::connection> conn_;
+  thread_local static std::unique_ptr<pqxx::connection> conn_;
+  thread_local static bool connected_;
   std::string conn_str_;
-  bool connected_{false};
-  mutable std::mutex conn_mutex_;
 };
 
 /**
