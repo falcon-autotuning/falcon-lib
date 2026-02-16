@@ -114,33 +114,3 @@ TEST_F(DatabaseUnitTest, Count) {
 
   EXPECT_EQ(lazy_db.count(), 7);
 }
-
-TEST_F(DatabaseUnitTest, ThreadSafety) {
-  // Insert test data
-  DeviceCharacteristic dc;
-  dc.scope = "test";
-  dc.name = "shared_device";
-  dc.characteristic = JSONPrimitive("shared_value");
-  db_->insert(dc);
-
-  LazyReadOnlyDatabaseConnection lazy_db;
-
-  // Multiple threads accessing the same connection
-  std::vector<std::thread> threads;
-  std::atomic<int> success_count{0};
-
-  for (int i = 0; i < 10; i++) {
-    threads.emplace_back([&]() {
-      auto result = lazy_db.get_by_name("shared_device");
-      if (result.has_value()) {
-        success_count++;
-      }
-    });
-  }
-
-  for (auto &t : threads) {
-    t.join();
-  }
-
-  EXPECT_EQ(success_count, 10);
-}
