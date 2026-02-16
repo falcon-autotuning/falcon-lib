@@ -1,21 +1,35 @@
 #pragma once
 
+#include "falcon-autotuner/DeviceCharacteristic.hpp"
 #include <map>
+#include <memory>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
+namespace falcon_core::physics::device_structures {
+class Connection;
+class Connections;
+} // namespace falcon_core::physics::device_structures
+
 namespace falcon::autotuner {
+
+using ConnectionSP =
+    std::shared_ptr<::falcon_core::physics::device_structures::Connection>;
+using ConnectionsSP =
+    std::shared_ptr<::falcon_core::physics::device_structures::Connections>;
 
 /**
  * @brief Type-safe parameter storage for autotuner state
  */
 class ParameterMap {
 public:
-  using Value = std::variant<int64_t, double, bool, std::string>;
+  using Value = std::variant<int64_t, double, bool, std::string, ConnectionSP,
+                             ConnectionsSP, DeviceCharacteristic>;
 
   /**
    * @brief Set a parameter value
@@ -24,6 +38,10 @@ public:
   void set(const std::string &key, double value);
   void set(const std::string &key, bool value);
   void set(const std::string &key, std::string value);
+  void set(const std::string &key, ConnectionSP value);
+  void set(const std::string &key, ConnectionsSP value);
+  void set(const std::string &key, DeviceCharacteristic value);
+  void set(const std::string &key, Value value);
 
   /**
    * @brief Get a parameter value (throws if not found or wrong type)
@@ -34,10 +52,14 @@ public:
       throw std::runtime_error("Parameter not found: " + key);
     }
 
-    try {
-      return std::get<T>(it->second);
-    } catch (const std::bad_variant_access &) {
-      throw std::runtime_error("Type mismatch for parameter: " + key);
+    if constexpr (std::is_same_v<T, Value>) {
+      return it->second;
+    } else {
+      try {
+        return std::get<T>(it->second);
+      } catch (const std::bad_variant_access &) {
+        throw std::runtime_error("Type mismatch for parameter: " + key);
+      }
     }
   }
 

@@ -15,17 +15,21 @@ bison_target(AutotunerParser src/parser.y ${CMAKE_CURRENT_BINARY_DIR}/parser.tab
 flex_target(AutotunerLexer src/lexer.l ${CMAKE_CURRENT_BINARY_DIR}/lexer.yy.cpp)
 add_flex_bison_dependency(AutotunerLexer AutotunerParser)
 
-# Compiler Binary
-add_executable(falcon-atc
-    src/compiler.cpp
+# Library for AST and Parser
+add_library(falcon-atc-core
     ${BISON_AutotunerParser_OUTPUTS}
     ${FLEX_AutotunerLexer_OUTPUTS}
+    src/CompilerLib.cpp
 )
 
-target_include_directories(falcon-atc PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/falcon-atc
-    ${CMAKE_CURRENT_BINARY_DIR}
+target_include_directories(falcon-atc-core PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 )
 
-# Link rules
-target_link_libraries(falcon-atc PRIVATE)
+# Compiler Binary (Validator / Offline Tool)
+add_executable(falcon-atc
+    src/compiler.cpp
+)
+
+target_link_libraries(falcon-atc PRIVATE falcon-atc-core)

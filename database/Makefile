@@ -8,7 +8,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
     PLATFORM := linux
     CMAKE_GENERATOR := Ninja
-    VCPKG_TRIPLET ?= x64-linux-dynamic
+    VCPKG_TRIPLET ?= x64-linux
     NPROC := $(shell nproc 2>/dev/null || echo 4)
     HAS_DOCKER := $(shell command -v docker-compose >/dev/null 2>&1 && echo yes || echo no)
 endif

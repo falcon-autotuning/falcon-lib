@@ -200,8 +200,7 @@ struct AutotunerDecl {
   std::vector<std::string> generic_params;
   std::vector<SpecDecl> spec_inputs;
   std::vector<SpecDecl> spec_outputs;
-  std::vector<std::string>
-    requires;
+  std::vector<std::string> requirements;
   std::vector<ParamDecl> params;
   std::string entry_state;
   std::vector<StateDecl> states;
@@ -215,7 +214,7 @@ struct AutotunerDecl {
                 std::vector<ForLoop> l)
       : name(std::move(n)), inputs(std::move(in)), outputs(std::move(out)),
         generic_params(std::move(gp)), spec_inputs(std::move(si)),
-        spec_outputs(std::move(so)), requires(std::move(req)),
+        spec_outputs(std::move(so)), requirements(std::move(req)),
         params(std::move(p)), entry_state(std::move(entry)),
         states(std::move(s)), loops(std::move(l)) {}
 
