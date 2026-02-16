@@ -10,10 +10,10 @@ using namespace falcon::database;
 class DatabaseUnitTest : public DatabaseTestFixture {};
 
 TEST_F(DatabaseUnitTest, LazyConnectionEstablishment) {
-  LazyReadOnlyDatabaseConnection lazy_db(getDatabaseUrl());
+  LazyReadOnlyDatabaseConnection lazy_db;
 
   // Connection should not be established yet
-  // (We can't directly check this, but it shouldn't throw)
+  EXPECT_FALSE(lazy_db.is_connected());
 
   // First operation should establish connection
   auto result = lazy_db.get_by_name("nonexistent");
@@ -33,7 +33,7 @@ TEST_F(DatabaseUnitTest, GetByName) {
   db_->insert(dc);
 
   // Read via lazy connection
-  LazyReadOnlyDatabaseConnection lazy_db(getDatabaseUrl());
+  LazyReadOnlyDatabaseConnection lazy_db;
   auto result = lazy_db.get_by_name("test_device");
 
   ASSERT_TRUE(result.has_value());
@@ -51,7 +51,7 @@ TEST_F(DatabaseUnitTest, GetMany) {
     db_->insert(dc);
   }
 
-  LazyReadOnlyDatabaseConnection lazy_db(getDatabaseUrl());
+  LazyReadOnlyDatabaseConnection lazy_db;
   std::vector<std::string> names = {"device_0", "device_2", "device_4"};
 
   auto results = lazy_db.get_many(names);
@@ -69,7 +69,7 @@ TEST_F(DatabaseUnitTest, GetAll) {
     db_->insert(dc);
   }
 
-  LazyReadOnlyDatabaseConnection lazy_db(getDatabaseUrl());
+  LazyReadOnlyDatabaseConnection lazy_db;
   auto results = lazy_db.get_all();
 
   EXPECT_EQ(results.size(), 3);
@@ -89,7 +89,7 @@ TEST_F(DatabaseUnitTest, QueryByScope) {
   dc2.characteristic = JSONPrimitive(2.0);
   db_->insert(dc2);
 
-  LazyReadOnlyDatabaseConnection lazy_db(getDatabaseUrl());
+  LazyReadOnlyDatabaseConnection lazy_db;
 
   DeviceCharacteristicQuery query;
   query.scope = "calibration";
@@ -110,7 +110,7 @@ TEST_F(DatabaseUnitTest, Count) {
     db_->insert(dc);
   }
 
-  LazyReadOnlyDatabaseConnection lazy_db(getDatabaseUrl());
+  LazyReadOnlyDatabaseConnection lazy_db;
 
   EXPECT_EQ(lazy_db.count(), 7);
 }
@@ -123,7 +123,7 @@ TEST_F(DatabaseUnitTest, ThreadSafety) {
   dc.characteristic = JSONPrimitive("shared_value");
   db_->insert(dc);
 
-  LazyReadOnlyDatabaseConnection lazy_db(getDatabaseUrl());
+  LazyReadOnlyDatabaseConnection lazy_db;
 
   // Multiple threads accessing the same connection
   std::vector<std::thread> threads;

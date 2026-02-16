@@ -1,100 +1,138 @@
 #pragma once
 
-#include "falcon-database/DeviceCharacteristic.hpp"
+#include "DeviceCharacteristic.hpp"
+#include <memory>
+#include <mutex>
+#include <optional>
 #include <pqxx/pqxx>
+#include <string>
+#include <vector>
+
 namespace falcon::database {
 
 /**
- * @brief Database connection with read-only operations. Useful for contexts
- * where writes are not needed or should be prevented.
+ * @brief Read-only database connection with lazy initialization.
+ *
+ * Connection is established on first database operation, not at construction.
+ * Thread-safe.
+ *
+ * Connection string priority:
+ * 1. Explicit connection_string parameter (if not empty)
+ * 2. FALCON_DATABASE_URL environment variable
+ * 3. Throws error if neither is available
  */
 class ReadOnlyDatabaseConnection {
 public:
-  explicit ReadOnlyDatabaseConnection(const std::string &connection_string);
+  /**
+   * @brief Construct with optional connection string
+   * @param connection_string PostgreSQL connection string (empty = use env var)
+   *
+   * If connection_string is empty, will use FALCON_DATABASE_URL environment
+   * variable. Connection is not established until first database operation.
+   */
+  explicit ReadOnlyDatabaseConnection(
+      const std::string &connection_string = "");
   virtual ~ReadOnlyDatabaseConnection();
 
   /**
-   * @brief Get a characteristic by name
-   * @return Optional DeviceCharacteristic if found
+   * @brief Get device characteristic by name
    */
   std::optional<DeviceCharacteristic> get_by_name(const std::string &name);
 
   /**
-   * @brief Get all characteristics matching a set of names
+   * @brief Get multiple device characteristics by names
    */
   std::vector<DeviceCharacteristic>
   get_many(const std::vector<std::string> &names);
 
   /**
-   * @brief Get characteristics within a range of hashes
+   * @brief Get all device characteristics
+   */
+  std::vector<DeviceCharacteristic> get_all();
+
+  /**
+   * @brief Get device characteristics by hash range
    */
   std::vector<DeviceCharacteristic>
   get_by_hash_range(const std::string &hash_start, const std::string &hash_end);
 
   /**
-   * @brief Get count of all characteristics
-   */
-  size_t count();
-
-  /**
-   * @brief Test database connection
-   */
-  bool test_connection();
-
-  /**
-   * @brief Get all device characteristics from the database
-   * @return Vector of all characteristics
-   */
-  std::vector<DeviceCharacteristic> get_all();
-
-  /**
-   * @brief Get by query from the database. Optional fields are wildcards
-   * @return Vector of all characteristics
+   * @brief Query device characteristics with filters
    */
   std::vector<DeviceCharacteristic>
   get_by_query(const DeviceCharacteristicQuery &query);
 
+  /**
+   * @brief Count all device characteristics
+   */
+  size_t count();
+
+  /**
+   * @brief Test if connection is alive (establishes connection if needed)
+   */
+  bool test_connection();
+
+  /**
+   * @brief Check if connection has been established
+   */
+  bool is_connected() const { return connected_; }
+
 protected:
+  /**
+   * @brief Ensure database connection is established
+   * Thread-safe. Idempotent.
+   */
+  void ensure_connected();
+
+  /**
+   * @brief Get the connection string being used
+   */
+  const std::string &get_connection_string() const { return conn_str_; }
+
   std::unique_ptr<pqxx::connection> conn_;
+  std::string conn_str_;
+  bool connected_{false};
+  mutable std::mutex conn_mutex_;
 };
 
 /**
- * @brief Database connection with read/write operations.
+ * @brief Database connection with write operations
  */
 class ReadWriteDatabaseConnection : public ReadOnlyDatabaseConnection {
 public:
-  explicit ReadWriteDatabaseConnection(const std::string &connection_string);
+  explicit ReadWriteDatabaseConnection(
+      const std::string &connection_string = "");
   ~ReadWriteDatabaseConnection() override;
 
   /**
-   * @brief Insert a device characteristic into the database
+   * @brief Insert a device characteristic
    */
   void insert(const DeviceCharacteristic &dchar);
 
   /**
-   * @brief Delete a characteristic by name
+   * @brief Delete device characteristic by name
    * @return true if deleted, false if not found
    */
   bool delete_by_name(const std::string &name);
 
   /**
-   * @brief Delete a characteristic by hash
-   * @return Number of rows deleted
+   * @brief Delete all device characteristics with given hash
+   * @return number of records deleted
    */
   int delete_by_hash(const std::string &hash);
 };
+
 /**
- * @brief Database connection with administrative operations. This can include
- * schema creation, migrations, and other maintenance tasks. It inherits from
- * ReadWriteDatabaseConnection to allow full access.
+ * @brief Database connection with administrative operations
  */
 class AdminDatabaseConnection : public ReadWriteDatabaseConnection {
 public:
-  explicit AdminDatabaseConnection(const std::string &connection_string);
+  explicit AdminDatabaseConnection(const std::string &connection_string = "");
   ~AdminDatabaseConnection() override;
 
   /**
    * @brief Initialize the database schema
+   * Establishes connection if not already connected.
    */
   void initialize_schema();
 
@@ -103,4 +141,5 @@ public:
    */
   void clear_all();
 };
+
 } // namespace falcon::database
