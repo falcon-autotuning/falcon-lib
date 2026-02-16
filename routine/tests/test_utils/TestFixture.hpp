@@ -14,7 +14,9 @@ protected:
   void SetUp() override { setupEnvironment(); }
 
   void TearDown() override {
-    // Clean up if needed
+    // Clean up environment variables to avoid pollution
+    unsetenv("FALCON_DATABASE_URL");
+    unsetenv("NATS_URL");
   }
 
   void setupEnvironment() {
@@ -28,17 +30,19 @@ protected:
       db_url_ = test_db_url;
     }
 
-    // Set TEST_DATABASE_URL for any code that might use it
-    setenv("TEST_DATABASE_URL", db_url_.c_str(), 1);
+    // Set FALCON_DATABASE_URL for database connections that use env var
+    setenv("FALCON_DATABASE_URL", db_url_.c_str(), 1);
 
     // NATS URL from environment or default
-    const char *nats_url = std::getenv("TEST_NATS_URL");
-    if (nats_url == nullptr) {
+    const char *test_nats_url = std::getenv("TEST_NATS_URL");
+    if (test_nats_url == nullptr) {
       nats_url_ = "nats://localhost:4222";
     } else {
-      nats_url_ = nats_url;
+      nats_url_ = test_nats_url;
     }
-    setenv("TEST_NATS_URL", nats_url_.c_str(), 1);
+
+    // Set NATS_URL for Hub connections
+    setenv("NATS_URL", nats_url_.c_str(), 1);
 
     // Set log level to debug for tests
     setenv("LOG_LEVEL", "debug", 1);

@@ -6,6 +6,8 @@
 #include <string>
 
 namespace {
+using std::string;
+
 template <typename Row>
 std::optional<std::string> get_opt_str(const Row &row, const char *col) {
   return row[col].is_null() ? std::nullopt
@@ -54,7 +56,7 @@ std::string resolve_connection_string(const std::string &explicit_conn_str) {
   // Priority 2: FALCON_DATABASE_URL environment variable
   const char *env_url = std::getenv("FALCON_DATABASE_URL");
   if (env_url != nullptr && strlen(env_url) > 0) {
-    return std::string(env_url);
+    return (string)env_url;
   }
 
   // No valid connection string found
@@ -66,19 +68,17 @@ std::string resolve_connection_string(const std::string &explicit_conn_str) {
 } // namespace
 
 namespace falcon::database {
+thread_local std::unique_ptr<pqxx::connection>
+    ReadOnlyDatabaseConnection::conn_;
+thread_local bool ReadOnlyDatabaseConnection::connected_ = false;
 
 ReadOnlyDatabaseConnection::ReadOnlyDatabaseConnection(
     const std::string &connection_string)
-    : conn_str_(resolve_connection_string(connection_string)),
-      connected_(false) {
-  // Don't connect yet - lazy initialization
-}
+    : conn_str_(resolve_connection_string(connection_string)) {}
 
 ReadOnlyDatabaseConnection::~ReadOnlyDatabaseConnection() = default;
 
 void ReadOnlyDatabaseConnection::ensure_connected() {
-  std::lock_guard<std::mutex> lock(conn_mutex_);
-
   if (connected_ && conn_ && conn_->is_open()) {
     return; // Already connected and alive
   }
