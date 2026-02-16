@@ -18,15 +18,18 @@ protected:
   }
 
   void setupEnvironment() {
-    // Database URL from environment or default
-    const char *db_url = std::getenv("TEST_DATABASE_URL");
-    if (db_url == nullptr) {
-      db_url_ = "postgresql://falcon_test:falcon_test_password@localhost:5433/"
+    // Database URL from TEST_DATABASE_URL environment variable
+    const char *test_db_url = std::getenv("TEST_DATABASE_URL");
+    if (test_db_url == nullptr) {
+      // Default for tests - use 127.0.0.1 to force TCP connection
+      db_url_ = "postgresql://falcon_test:falcon_test_password@127.0.0.1:5433/"
                 "falcon_test";
     } else {
-      db_url_ = db_url;
+      db_url_ = test_db_url;
     }
-    setenv("DATABASE_URL", db_url_.c_str(), 1);
+
+    // Set TEST_DATABASE_URL for any code that might use it
+    setenv("TEST_DATABASE_URL", db_url_.c_str(), 1);
 
     // NATS URL from environment or default
     const char *nats_url = std::getenv("TEST_NATS_URL");
@@ -35,7 +38,7 @@ protected:
     } else {
       nats_url_ = nats_url;
     }
-    setenv("NATS_URL", nats_url_.c_str(), 1);
+    setenv("TEST_NATS_URL", nats_url_.c_str(), 1);
 
     // Set log level to debug for tests
     setenv("LOG_LEVEL", "debug", 1);
@@ -57,7 +60,8 @@ protected:
   void SetUp() override {
     RoutineTestFixture::SetUp();
 
-    // Create database connection and initialize schema
+    // Create database connection with explicit URL
+    // This ensures tests don't accidentally use production database
     db_ = std::make_unique<falcon::database::AdminDatabaseConnection>(
         getDatabaseUrl());
     db_->initialize_schema();

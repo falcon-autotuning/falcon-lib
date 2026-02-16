@@ -201,7 +201,7 @@ docker-logs:
 # Test with Docker (recommended)
 test-with-docker: docker-up build-release
 	@echo "Running tests with Docker services..."
-	@TEST_DATABASE_URL="postgresql://falcon_test:falcon_test_password@localhost:5433/falcon_test" \
+	@TEST_DATABASE_URL="postgresql://falcon_test:falcon_test_password@127.0.0.1:5433/falcon_test" \
 	 TEST_NATS_URL="nats://localhost:4222" \
 	 $(MAKE) test-local || ($(MAKE) docker-down && exit 1)
 	@$(MAKE) docker-down
@@ -218,14 +218,16 @@ test-debug-docker: docker-up build-debug
 # Local tests (assumes services already running)
 test-local: build-release
 	@echo "Running tests with local services..."
-	@if [ -z "$(TEST_DATABASE_URL)" ]; then \
+	@if [ -z "$$TEST_DATABASE_URL" ]; then \
 		echo "Warning: TEST_DATABASE_URL not set"; \
-		echo "Using default: postgresql://falcon_test:falcon_test_password@localhost:5433/falcon_test"; \
-	fi
-	@if [ -z "$(TEST_NATS_URL)" ]; then \
+		echo "Using default: postgresql://falcon_test:falcon_test_password@127.0.0.1:5433/falcon_test"; \
+		export TEST_DATABASE_URL="postgresql://falcon_test:falcon_test_password@127.0.0.1:5433/falcon_test"; \
+	fi; \
+	if [ -z "$$TEST_NATS_URL" ]; then \
 		echo "Warning: TEST_NATS_URL not set"; \
 		echo "Using default: nats://localhost:4222"; \
-	fi
+		export TEST_NATS_URL="nats://localhost:4222"; \
+	fi; \
 	cd $(BUILD_DIR_RELEASE) && ctest --output-on-failure -C Release
 	@echo "✓ All tests passed"
 
