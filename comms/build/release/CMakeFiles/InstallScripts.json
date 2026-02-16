@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/tylerk/falcon-dev/falcon-lib/comms/build/release/cmake_install.cmake",
+		"/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

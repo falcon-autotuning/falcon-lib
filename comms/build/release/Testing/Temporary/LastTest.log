@@ -1,0 +1,645 @@
+Start testing: Feb 16 15:31 CST
+----------------------------------------------------------
+1/22 Testing: NatsManagerUnitTest.LazyConnection
+1/22 Test: NatsManagerUnitTest.LazyConnection
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=NatsManagerUnitTest.LazyConnection" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"NatsManagerUnitTest.LazyConnection" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = NatsManagerUnitTest.LazyConnection
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NatsManagerUnitTest
+[ RUN      ] NatsManagerUnitTest.LazyConnection
+[2026-02-16 15:31:52.144] [info] NATS connected ✓
+[       OK ] NatsManagerUnitTest.LazyConnection (5 ms)
+[----------] 1 test from NatsManagerUnitTest (5 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (5 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.22 sec
+----------------------------------------------------------
+Test Failed.
+"NatsManagerUnitTest.LazyConnection" end time: Feb 16 15:31 CST
+"NatsManagerUnitTest.LazyConnection" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/22 Testing: NatsManagerUnitTest.PublishString
+2/22 Test: NatsManagerUnitTest.PublishString
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=NatsManagerUnitTest.PublishString" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"NatsManagerUnitTest.PublishString" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = NatsManagerUnitTest.PublishString
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NatsManagerUnitTest
+[ RUN      ] NatsManagerUnitTest.PublishString
+[2026-02-16 15:31:52.369] [info] NATS connected ✓
+[       OK ] NatsManagerUnitTest.PublishString (4 ms)
+[----------] 1 test from NatsManagerUnitTest (4 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (4 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.21 sec
+----------------------------------------------------------
+Test Failed.
+"NatsManagerUnitTest.PublishString" end time: Feb 16 15:31 CST
+"NatsManagerUnitTest.PublishString" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/22 Testing: NatsManagerUnitTest.PublishJson
+3/22 Test: NatsManagerUnitTest.PublishJson
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=NatsManagerUnitTest.PublishJson" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"NatsManagerUnitTest.PublishJson" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = NatsManagerUnitTest.PublishJson
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NatsManagerUnitTest
+[ RUN      ] NatsManagerUnitTest.PublishJson
+[2026-02-16 15:31:52.573] [info] NATS connected ✓
+[       OK ] NatsManagerUnitTest.PublishJson (4 ms)
+[----------] 1 test from NatsManagerUnitTest (4 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (4 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.19 sec
+----------------------------------------------------------
+Test Failed.
+"NatsManagerUnitTest.PublishJson" end time: Feb 16 15:31 CST
+"NatsManagerUnitTest.PublishJson" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/22 Testing: NatsManagerUnitTest.RequestReplyWithResponder
+4/22 Test: NatsManagerUnitTest.RequestReplyWithResponder
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=NatsManagerUnitTest.RequestReplyWithResponder" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"NatsManagerUnitTest.RequestReplyWithResponder" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = NatsManagerUnitTest.RequestReplyWithResponder
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NatsManagerUnitTest
+[ RUN      ] NatsManagerUnitTest.RequestReplyWithResponder
+[2026-02-16 15:31:52.877] [info] NATS connected ✓
+[       OK ] NatsManagerUnitTest.RequestReplyWithResponder (114 ms)
+[----------] 1 test from NatsManagerUnitTest (114 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (114 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.30 sec
+----------------------------------------------------------
+Test Failed.
+"NatsManagerUnitTest.RequestReplyWithResponder" end time: Feb 16 15:31 CST
+"NatsManagerUnitTest.RequestReplyWithResponder" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/22 Testing: NatsManagerUnitTest.Subscribe
+5/22 Test: NatsManagerUnitTest.Subscribe
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=NatsManagerUnitTest.Subscribe" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"NatsManagerUnitTest.Subscribe" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = NatsManagerUnitTest.Subscribe
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NatsManagerUnitTest
+[ RUN      ] NatsManagerUnitTest.Subscribe
+[2026-02-16 15:31:53.069] [info] NATS connected ✓
+[2026-02-16 15:31:53.069] [info] Subscribed to NATS subject: test.subscribe
+[       OK ] NatsManagerUnitTest.Subscribe (113 ms)
+[----------] 1 test from NatsManagerUnitTest (113 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (113 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.28 sec
+----------------------------------------------------------
+Test Failed.
+"NatsManagerUnitTest.Subscribe" end time: Feb 16 15:31 CST
+"NatsManagerUnitTest.Subscribe" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/22 Testing: AutotunerCommsUnitTest.RequestState
+6/22 Test: AutotunerCommsUnitTest.RequestState
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=AutotunerCommsUnitTest.RequestState" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"AutotunerCommsUnitTest.RequestState" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = AutotunerCommsUnitTest.RequestState
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from AutotunerCommsUnitTest
+[ RUN      ] AutotunerCommsUnitTest.RequestState
+[2026-02-16 15:31:53.462] [info] NATS connected ✓
+[       OK ] AutotunerCommsUnitTest.RequestState (113 ms)
+[----------] 1 test from AutotunerCommsUnitTest (113 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (113 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.29 sec
+----------------------------------------------------------
+Test Failed.
+"AutotunerCommsUnitTest.RequestState" end time: Feb 16 15:31 CST
+"AutotunerCommsUnitTest.RequestState" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/22 Testing: AutotunerCommsUnitTest.SubscribeStateResponse
+7/22 Test: AutotunerCommsUnitTest.SubscribeStateResponse
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=AutotunerCommsUnitTest.SubscribeStateResponse" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"AutotunerCommsUnitTest.SubscribeStateResponse" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = AutotunerCommsUnitTest.SubscribeStateResponse
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from AutotunerCommsUnitTest
+[ RUN      ] AutotunerCommsUnitTest.SubscribeStateResponse
+[2026-02-16 15:31:53.644] [info] NATS connected ✓
+[2026-02-16 15:31:53.644] [info] Subscribed to NATS subject: INSTRUMENTHUB.STATE_RESPONSE
+[       OK ] AutotunerCommsUnitTest.SubscribeStateResponse (113 ms)
+[----------] 1 test from AutotunerCommsUnitTest (113 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (113 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.28 sec
+----------------------------------------------------------
+Test Failed.
+"AutotunerCommsUnitTest.SubscribeStateResponse" end time: Feb 16 15:31 CST
+"AutotunerCommsUnitTest.SubscribeStateResponse" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/22 Testing: AutotunerCommsUnitTest.RequestStateTimeout
+8/22 Test: AutotunerCommsUnitTest.RequestStateTimeout
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=AutotunerCommsUnitTest.RequestStateTimeout" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"AutotunerCommsUnitTest.RequestStateTimeout" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = AutotunerCommsUnitTest.RequestStateTimeout
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from AutotunerCommsUnitTest
+[ RUN      ] AutotunerCommsUnitTest.RequestStateTimeout
+[2026-02-16 15:31:53.919] [info] NATS connected ✓
+unknown file: Failure
+C++ exception with description "NATS request failed: No responders available for request" thrown in the test body.
+
+[  FAILED  ] AutotunerCommsUnitTest.RequestStateTimeout (2 ms)
+[----------] 1 test from AutotunerCommsUnitTest (2 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (2 ms total)
+[  PASSED  ] 0 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] AutotunerCommsUnitTest.RequestStateTimeout
+
+ 1 FAILED TEST
+<end of output>
+Test time =   0.15 sec
+----------------------------------------------------------
+Test Failed.
+"AutotunerCommsUnitTest.RequestStateTimeout" end time: Feb 16 15:31 CST
+"AutotunerCommsUnitTest.RequestStateTimeout" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/22 Testing: RoutineCommsUnitTest.InheritsFromAutotunerComms
+9/22 Test: RoutineCommsUnitTest.InheritsFromAutotunerComms
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=RoutineCommsUnitTest.InheritsFromAutotunerComms" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"RoutineCommsUnitTest.InheritsFromAutotunerComms" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = RoutineCommsUnitTest.InheritsFromAutotunerComms
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from RoutineCommsUnitTest
+[ RUN      ] RoutineCommsUnitTest.InheritsFromAutotunerComms
+[2026-02-16 15:31:54.175] [info] NATS connected ✓
+[       OK ] RoutineCommsUnitTest.InheritsFromAutotunerComms (112 ms)
+[----------] 1 test from RoutineCommsUnitTest (112 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (112 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.26 sec
+----------------------------------------------------------
+Test Failed.
+"RoutineCommsUnitTest.InheritsFromAutotunerComms" end time: Feb 16 15:31 CST
+"RoutineCommsUnitTest.InheritsFromAutotunerComms" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/22 Testing: RoutineCommsUnitTest.PublishMeasurementCommand
+10/22 Test: RoutineCommsUnitTest.PublishMeasurementCommand
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=RoutineCommsUnitTest.PublishMeasurementCommand" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"RoutineCommsUnitTest.PublishMeasurementCommand" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = RoutineCommsUnitTest.PublishMeasurementCommand
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from RoutineCommsUnitTest
+[ RUN      ] RoutineCommsUnitTest.PublishMeasurementCommand
+[2026-02-16 15:31:54.328] [info] NATS connected ✓
+[2026-02-16 15:31:54.328] [info] Subscribed to NATS subject: INSTRUMENTHUB.MEASURE_COMMAND
+[       OK ] RoutineCommsUnitTest.PublishMeasurementCommand (114 ms)
+[----------] 1 test from RoutineCommsUnitTest (114 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (114 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.25 sec
+----------------------------------------------------------
+Test Failed.
+"RoutineCommsUnitTest.PublishMeasurementCommand" end time: Feb 16 15:31 CST
+"RoutineCommsUnitTest.PublishMeasurementCommand" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/22 Testing: RoutineCommsUnitTest.SubscribeMeasurementResponse
+11/22 Test: RoutineCommsUnitTest.SubscribeMeasurementResponse
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=RoutineCommsUnitTest.SubscribeMeasurementResponse" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"RoutineCommsUnitTest.SubscribeMeasurementResponse" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = RoutineCommsUnitTest.SubscribeMeasurementResponse
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from RoutineCommsUnitTest
+[ RUN      ] RoutineCommsUnitTest.SubscribeMeasurementResponse
+[2026-02-16 15:31:54.574] [info] NATS connected ✓
+[2026-02-16 15:31:54.574] [info] Subscribed to NATS subject: INSTRUMENTHUB.MEASURE_RESPONSE
+[       OK ] RoutineCommsUnitTest.SubscribeMeasurementResponse (112 ms)
+[----------] 1 test from RoutineCommsUnitTest (112 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (112 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.23 sec
+----------------------------------------------------------
+Test Failed.
+"RoutineCommsUnitTest.SubscribeMeasurementResponse" end time: Feb 16 15:31 CST
+"RoutineCommsUnitTest.SubscribeMeasurementResponse" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/22 Testing: RoutineCommsUnitTest.RequestMeasurementWithJetStream
+12/22 Test: RoutineCommsUnitTest.RequestMeasurementWithJetStream
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=RoutineCommsUnitTest.RequestMeasurementWithJetStream" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"RoutineCommsUnitTest.RequestMeasurementWithJetStream" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = RoutineCommsUnitTest.RequestMeasurementWithJetStream
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from RoutineCommsUnitTest
+[ RUN      ] RoutineCommsUnitTest.RequestMeasurementWithJetStream
+[2026-02-16 15:31:55.018] [info] NATS connected ✓
+free(): invalid pointer
+<end of output>
+Test time =   0.39 sec
+----------------------------------------------------------
+Test Failed.
+"RoutineCommsUnitTest.RequestMeasurementWithJetStream" end time: Feb 16 15:31 CST
+"RoutineCommsUnitTest.RequestMeasurementWithJetStream" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/22 Testing: RuntimeCommsUnitTest.RequestDeviceConfig
+13/22 Test: RuntimeCommsUnitTest.RequestDeviceConfig
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=RuntimeCommsUnitTest.RequestDeviceConfig" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"RuntimeCommsUnitTest.RequestDeviceConfig" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = RuntimeCommsUnitTest.RequestDeviceConfig
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from RuntimeCommsUnitTest
+[ RUN      ] RuntimeCommsUnitTest.RequestDeviceConfig
+[2026-02-16 15:31:55.311] [info] NATS connected ✓
+[       OK ] RuntimeCommsUnitTest.RequestDeviceConfig (112 ms)
+[----------] 1 test from RuntimeCommsUnitTest (112 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (112 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.26 sec
+----------------------------------------------------------
+Test Failed.
+"RuntimeCommsUnitTest.RequestDeviceConfig" end time: Feb 16 15:31 CST
+"RuntimeCommsUnitTest.RequestDeviceConfig" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/22 Testing: RuntimeCommsUnitTest.RequestPorts
+14/22 Test: RuntimeCommsUnitTest.RequestPorts
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=RuntimeCommsUnitTest.RequestPorts" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"RuntimeCommsUnitTest.RequestPorts" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = RuntimeCommsUnitTest.RequestPorts
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from RuntimeCommsUnitTest
+[ RUN      ] RuntimeCommsUnitTest.RequestPorts
+[2026-02-16 15:31:55.570] [info] NATS connected ✓
+[       OK ] RuntimeCommsUnitTest.RequestPorts (112 ms)
+[----------] 1 test from RuntimeCommsUnitTest (112 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (112 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.25 sec
+----------------------------------------------------------
+Test Failed.
+"RuntimeCommsUnitTest.RequestPorts" end time: Feb 16 15:31 CST
+"RuntimeCommsUnitTest.RequestPorts" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/22 Testing: RuntimeCommsUnitTest.SubscribeDeviceConfigResponse
+15/22 Test: RuntimeCommsUnitTest.SubscribeDeviceConfigResponse
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=RuntimeCommsUnitTest.SubscribeDeviceConfigResponse" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"RuntimeCommsUnitTest.SubscribeDeviceConfigResponse" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = RuntimeCommsUnitTest.SubscribeDeviceConfigResponse
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from RuntimeCommsUnitTest
+[ RUN      ] RuntimeCommsUnitTest.SubscribeDeviceConfigResponse
+[2026-02-16 15:31:55.713] [info] NATS connected ✓
+[2026-02-16 15:31:55.713] [info] Subscribed to NATS subject: INSTRUMENTHUB.DEVICE_CONFIG_RESPONSE
+[       OK ] RuntimeCommsUnitTest.SubscribeDeviceConfigResponse (112 ms)
+[----------] 1 test from RuntimeCommsUnitTest (112 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (112 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.24 sec
+----------------------------------------------------------
+Test Failed.
+"RuntimeCommsUnitTest.SubscribeDeviceConfigResponse" end time: Feb 16 15:31 CST
+"RuntimeCommsUnitTest.SubscribeDeviceConfigResponse" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/22 Testing: RuntimeCommsUnitTest.SubscribePortPayload
+16/22 Test: RuntimeCommsUnitTest.SubscribePortPayload
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=RuntimeCommsUnitTest.SubscribePortPayload" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"RuntimeCommsUnitTest.SubscribePortPayload" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = RuntimeCommsUnitTest.SubscribePortPayload
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from RuntimeCommsUnitTest
+[ RUN      ] RuntimeCommsUnitTest.SubscribePortPayload
+[2026-02-16 15:31:55.957] [info] NATS connected ✓
+[2026-02-16 15:31:55.958] [info] Subscribed to NATS subject: INSTRUMENTHUB.PORT_PAYLOAD
+[       OK ] RuntimeCommsUnitTest.SubscribePortPayload (112 ms)
+[----------] 1 test from RuntimeCommsUnitTest (112 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (112 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.24 sec
+----------------------------------------------------------
+Test Failed.
+"RuntimeCommsUnitTest.SubscribePortPayload" end time: Feb 16 15:31 CST
+"RuntimeCommsUnitTest.SubscribePortPayload" time elapsed: 00:00:00
+----------------------------------------------------------
+
+17/22 Testing: RuntimeCommsUnitTest.RequestDeviceConfigTimeout
+17/22 Test: RuntimeCommsUnitTest.RequestDeviceConfigTimeout
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=RuntimeCommsUnitTest.RequestDeviceConfigTimeout" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"RuntimeCommsUnitTest.RequestDeviceConfigTimeout" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = RuntimeCommsUnitTest.RequestDeviceConfigTimeout
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from RuntimeCommsUnitTest
+[ RUN      ] RuntimeCommsUnitTest.RequestDeviceConfigTimeout
+[2026-02-16 15:31:56.201] [info] NATS connected ✓
+unknown file: Failure
+C++ exception with description "NATS request failed: No responders available for request" thrown in the test body.
+
+[  FAILED  ] RuntimeCommsUnitTest.RequestDeviceConfigTimeout (2 ms)
+[----------] 1 test from RuntimeCommsUnitTest (2 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (3 ms total)
+[  PASSED  ] 0 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] RuntimeCommsUnitTest.RequestDeviceConfigTimeout
+
+ 1 FAILED TEST
+<end of output>
+Test time =   0.15 sec
+----------------------------------------------------------
+Test Failed.
+"RuntimeCommsUnitTest.RequestDeviceConfigTimeout" end time: Feb 16 15:31 CST
+"RuntimeCommsUnitTest.RequestDeviceConfigTimeout" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/22 Testing: RuntimeCommsUnitTest.RequestPortsTimeout
+18/22 Test: RuntimeCommsUnitTest.RequestPortsTimeout
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_unit_tests" "--gtest_filter=RuntimeCommsUnitTest.RequestPortsTimeout" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"RuntimeCommsUnitTest.RequestPortsTimeout" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = RuntimeCommsUnitTest.RequestPortsTimeout
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from RuntimeCommsUnitTest
+[ RUN      ] RuntimeCommsUnitTest.RequestPortsTimeout
+[2026-02-16 15:31:56.348] [info] NATS connected ✓
+unknown file: Failure
+C++ exception with description "NATS request failed: No responders available for request" thrown in the test body.
+
+[  FAILED  ] RuntimeCommsUnitTest.RequestPortsTimeout (3 ms)
+[----------] 1 test from RuntimeCommsUnitTest (3 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (3 ms total)
+[  PASSED  ] 0 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] RuntimeCommsUnitTest.RequestPortsTimeout
+
+ 1 FAILED TEST
+<end of output>
+Test time =   0.16 sec
+----------------------------------------------------------
+Test Failed.
+"RuntimeCommsUnitTest.RequestPortsTimeout" end time: Feb 16 15:31 CST
+"RuntimeCommsUnitTest.RequestPortsTimeout" time elapsed: 00:00:00
+----------------------------------------------------------
+
+19/22 Testing: IntegrationTest.AutotunerWorkflow
+19/22 Test: IntegrationTest.AutotunerWorkflow
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_integration_tests" "--gtest_filter=IntegrationTest.AutotunerWorkflow" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"IntegrationTest.AutotunerWorkflow" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = IntegrationTest.AutotunerWorkflow
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from IntegrationTest
+[ RUN      ] IntegrationTest.AutotunerWorkflow
+[2026-02-16 15:31:56.614] [info] NATS connected ✓
+[       OK ] IntegrationTest.AutotunerWorkflow (112 ms)
+[----------] 1 test from IntegrationTest (112 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (112 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.27 sec
+----------------------------------------------------------
+Test Failed.
+"IntegrationTest.AutotunerWorkflow" end time: Feb 16 15:31 CST
+"IntegrationTest.AutotunerWorkflow" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/22 Testing: IntegrationTest.RuntimeWorkflow
+20/22 Test: IntegrationTest.RuntimeWorkflow
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_integration_tests" "--gtest_filter=IntegrationTest.RuntimeWorkflow" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"IntegrationTest.RuntimeWorkflow" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = IntegrationTest.RuntimeWorkflow
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from IntegrationTest
+[ RUN      ] IntegrationTest.RuntimeWorkflow
+[2026-02-16 15:31:56.883] [info] NATS connected ✓
+[       OK ] IntegrationTest.RuntimeWorkflow (113 ms)
+[----------] 1 test from IntegrationTest (113 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (113 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.27 sec
+----------------------------------------------------------
+Test Failed.
+"IntegrationTest.RuntimeWorkflow" end time: Feb 16 15:31 CST
+"IntegrationTest.RuntimeWorkflow" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/22 Testing: IntegrationTest.RoutineInheritanceWorkflow
+21/22 Test: IntegrationTest.RoutineInheritanceWorkflow
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_integration_tests" "--gtest_filter=IntegrationTest.RoutineInheritanceWorkflow" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"IntegrationTest.RoutineInheritanceWorkflow" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = IntegrationTest.RoutineInheritanceWorkflow
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from IntegrationTest
+[ RUN      ] IntegrationTest.RoutineInheritanceWorkflow
+[2026-02-16 15:31:57.151] [info] NATS connected ✓
+[2026-02-16 15:31:57.153] [info] JetStream initialized ✓
+[2026-02-16 15:31:57.153] [error] Failed to pull measurement data from JetStream: JetStream subscribe failed: Error
+[       OK ] IntegrationTest.RoutineInheritanceWorkflow (114 ms)
+[----------] 1 test from IntegrationTest (114 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (114 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.27 sec
+----------------------------------------------------------
+Test Failed.
+"IntegrationTest.RoutineInheritanceWorkflow" end time: Feb 16 15:31 CST
+"IntegrationTest.RoutineInheritanceWorkflow" time elapsed: 00:00:00
+----------------------------------------------------------
+
+22/22 Testing: IntegrationTest.AllThreeCommsSimultaneously
+22/22 Test: IntegrationTest.AllThreeCommsSimultaneously
+Command: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_integration_tests" "--gtest_filter=IntegrationTest.AllThreeCommsSimultaneously" "--gtest_also_run_disabled_tests"
+Directory: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
+"IntegrationTest.AllThreeCommsSimultaneously" start time: Feb 16 15:31 CST
+Output:
+----------------------------------------------------------
+Running main() from /home/tylerk/.local/share/vcpkg/buildtrees/gtest/src/v1.17.0-0c449efaff.clean/googletest/src/gtest_main.cc
+Note: Google Test filter = IntegrationTest.AllThreeCommsSimultaneously
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from IntegrationTest
+[ RUN      ] IntegrationTest.AllThreeCommsSimultaneously
+[2026-02-16 15:31:57.424] [info] NATS connected ✓
+[2026-02-16 15:31:57.723] [info] JetStream initialized ✓
+[2026-02-16 15:31:57.723] [error] Failed to pull measurement data from JetStream: JetStream subscribe failed: Error
+[       OK ] IntegrationTest.AllThreeCommsSimultaneously (5210 ms)
+[----------] 1 test from IntegrationTest (5210 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (5210 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   5.22 sec
+----------------------------------------------------------
+Test Passed.
+"IntegrationTest.AllThreeCommsSimultaneously" end time: Feb 16 15:32 CST
+"IntegrationTest.AllThreeCommsSimultaneously" time elapsed: 00:00:05
+----------------------------------------------------------
+
+End testing: Feb 16 15:32 CST

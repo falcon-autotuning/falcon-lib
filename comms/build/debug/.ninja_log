@@ -1,0 +1,19 @@
+# ninja log v7
+2	14	1771277458165441400	tests/CMakeFiles/falcon_comms_unit_tests.dir/unit/test_runtime_comms.cpp.o	34bfd4f9a9312ebc
+2	16	1771277458164441398	tests/CMakeFiles/falcon_comms_unit_tests.dir/unit/test_manager.cpp.o	b367db9f89f6328b
+3	17	1771277458165630645	tests/CMakeFiles/falcon_comms_integration_tests.dir/integration/test_full_workflow.cpp.o	3c476c9ddeb9d43c
+2	21	1771277458165037767	tests/CMakeFiles/falcon_comms_unit_tests.dir/unit/test_autotuner_comms.cpp.o	41315b50c13085e2
+1	2149	1771277458163441396	CMakeFiles/falcon-comms.dir/cmake_pch.hxx.pch	5abe63976996eddc
+2150	3529	1771277460313219206	CMakeFiles/falcon-comms.dir/src/routine_comms.cpp.o	457dcfa263e177d7
+2150	3623	1771277460312445980	CMakeFiles/falcon-comms.dir/src/autotuner_comms.cpp.o	e08f3102e9b8e127
+2149	3697	1771277460310445976	CMakeFiles/falcon-comms.dir/src/natsManager.cpp.o	6373bf6a2c76b873
+2150	3796	1771277460313395704	CMakeFiles/falcon-comms.dir/src/runtime_comms.cpp.o	8973e39658637d7d
+2	3804	1771277458165283990	tests/CMakeFiles/falcon_comms_unit_tests.dir/unit/test_routine_comms.cpp.o	1a9d3b3d72b22abc
+3797	4001	1771277461958449497	libfalcon-comms.so	a05f7f1d71c4f5d7
+4001	4043	1771277462162449934	tests/libfalcon-comms-test-utils.a	b7937c55129597ad
+4043	4243	1771277462402450447	tests/falcon_comms_integration_tests	1e920d11b161f81e
+4043	4243	1771277462402450447	tests/falcon_comms_integration_tests[1]_tests.cmake	1e920d11b161f81e
+4043	4243	1771277462402450447	/home/tylerk/falcon-dev/falcon-lib/comms/build/debug/tests/falcon_comms_integration_tests[1]_tests.cmake	1e920d11b161f81e
+4043	4309	1771277462469450590	tests/falcon_comms_unit_tests	e980ccabcd06227c
+4043	4309	1771277462469450590	tests/falcon_comms_unit_tests[1]_tests.cmake	e980ccabcd06227c
+4043	4309	1771277462469450590	/home/tylerk/falcon-dev/falcon-lib/comms/build/debug/tests/falcon_comms_unit_tests[1]_tests.cmake	e980ccabcd06227c
