@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "AST.hpp"
+#include "falcon-atc/AST.hpp"
 #include "parser.tab.hpp"
 
 #define SAVE_TOKEN yylval.string = new std::string(yytext, yyleng)

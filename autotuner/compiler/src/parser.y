@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "AST.hpp"
+#include "falcon-atc/AST.hpp"
 
 using namespace falcon::atc;
 

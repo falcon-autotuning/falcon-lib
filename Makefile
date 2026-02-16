@@ -7,7 +7,7 @@ VCPKG_TOOLCHAIN ?= $(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Linux)
-    VCPKG_TRIPLET ?= x64-linux-dynamic
+    VCPKG_TRIPLET ?= x64-linux
 endif
 ifeq ($(OS),Windows_NT)
     VCPKG_TRIPLET ?= x64-windows
