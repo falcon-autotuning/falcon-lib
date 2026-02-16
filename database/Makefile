@@ -11,6 +11,7 @@ ifeq ($(UNAME_S),Linux)
     VCPKG_TRIPLET ?= x64-linux-dynamic
     NPROC := $(shell nproc 2>/dev/null || echo 4)
     HAS_DOCKER := $(shell command -v docker-compose >/dev/null 2>&1 && echo yes || echo no)
+    SUDO := sudo
 endif
 ifeq ($(OS),Windows_NT)
     PLATFORM := windows
@@ -18,6 +19,7 @@ ifeq ($(OS),Windows_NT)
     VCPKG_TRIPLET ?= x64-windows
     NPROC := 4
     HAS_DOCKER := $(shell where docker-compose >nul 2>&1 && echo yes || echo no)
+    SUDO :=
 endif
 
 # Paths (relative to database/ directory)
@@ -27,6 +29,10 @@ VCPKG_INSTALLED_DIR ?= $(CURDIR)/../vcpkg_installed
 
 BUILD_DIR_DEBUG := build/debug
 BUILD_DIR_RELEASE := build/release
+
+INSTALL_PREFIX ?= /opt/falcon
+INSTALL_LIBDIR := $(INSTALL_PREFIX)/lib
+INSTALL_INCLUDEDIR := $(INSTALL_PREFIX)/include
 
 # Default target
 all: build-release
@@ -124,13 +130,13 @@ configure: configure-debug configure-release
 
 build-debug: configure-debug
 	@echo "Building debug..."
-	cmake --build $(BUILD_DIR_DEBUG) --config Debug -j$(NPROC)
+	ninja -C $(BUILD_DIR_DEBUG) -j$(NPROC)
 	@echo "✓ Debug build complete"
 	@$(MAKE) clangd-helpers
 
 build-release: configure-release
 	@echo "Building release..."
-	cmake --build $(BUILD_DIR_RELEASE) --config Release -j$(NPROC)
+	ninja -C $(BUILD_DIR_RELEASE) -j$(NPROC)
 	@echo "✓ Release build complete"
 
 # Docker test targets (default)
@@ -231,8 +237,12 @@ test-debug: test-local-debug
 endif
 
 install: build-release
-	@echo "Installing falcon-database..."
-	cmake --install $(BUILD_DIR_RELEASE)
+	@echo "Installing falcon-database to $(INSTALL_PREFIX)..."
+	$(SUDO) cmake --install $(BUILD_DIR_RELEASE) --prefix $(INSTALL_PREFIX)
+	@echo "Copying vcpkg headers and libraries..."
+	$(SUDO) cp -r $(VCPKG_INSTALLED_DIR)/$(VCPKG_TRIPLET)/include/* $(INSTALL_INCLUDEDIR)/
+	$(SUDO) cp -r $(VCPKG_INSTALLED_DIR)/$(VCPKG_TRIPLET)/lib/* $(INSTALL_LIBDIR)/
+	$(SUDO) cp -r $(VCPKG_INSTALLED_DIR)/$(VCPKG_TRIPLET)/bin/* $(INSTALL_LIBDIR)/ || true
 	@echo "✓ Installation complete"
 
 clean:
