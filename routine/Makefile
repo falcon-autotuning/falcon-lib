@@ -79,8 +79,8 @@ check-vcpkg:
 
 check-database:
 	@echo "Checking falcon-database installation..."
-	@if [ ! -d "$(VCPKG_INSTALLED_DIR)/$(VCPKG_TRIPLET)/include/falcon-database" ]; then \
-		echo "Error: falcon-database not installed"; \
+	@if [ ! -d "/opt/falcon/include/falcon-database" ]; then \
+		echo "Error: falcon-database not installed in /opt/falcon/include/falcon-database"; \
 		echo "Run 'make install' in ../database first"; \
 		exit 1; \
 	fi
@@ -94,9 +94,12 @@ configure-debug: check-vcpkg check-database
 		-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_TOOLCHAIN) \
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
+    -Dfalcon-database_DIR=/opt/falcon/lib/cmake/falcon-database \
 		-DBUILD_TESTS=ON \
 		-DUSE_CCACHE=ON \
 		-DENABLE_PCH=ON \
+		-DCMAKE_C_COMPILER=clang \
+		-DCMAKE_CXX_COMPILER=clang++ \
 		-G $(CMAKE_GENERATOR)
 	@echo "✓ Debug build configured"
 
@@ -108,9 +111,12 @@ configure-release: check-vcpkg check-database
 		-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_TOOLCHAIN) \
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
+    -Dfalcon-database_DIR=/opt/falcon/lib/cmake/falcon-database \
 		-DBUILD_TESTS=ON \
 		-DUSE_CCACHE=ON \
 		-DENABLE_PCH=ON \
+		-DCMAKE_C_COMPILER=clang \
+		-DCMAKE_CXX_COMPILER=clang++ \
 		-G $(CMAKE_GENERATOR)
 	@echo "✓ Release build configured"
 
@@ -118,13 +124,13 @@ configure: configure-debug configure-release
 
 build-debug: configure-debug
 	@echo "Building debug..."
-	cmake --build $(BUILD_DIR_DEBUG) --config Debug -j$(NPROC)
+	ninja -C $(BUILD_DIR_DEBUG) -j$(NPROC)
 	@echo "✓ Debug build complete"
 	@$(MAKE) clangd-helpers
 
 build-release: configure-release
 	@echo "Building release..."
-	cmake --build $(BUILD_DIR_RELEASE) --config Release -j$(NPROC)
+	ninja -C $(BUILD_DIR_RELEASE) -j$(NPROC)
 	@echo "✓ Release build complete"
 
 install: build-release

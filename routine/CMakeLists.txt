@@ -39,7 +39,8 @@ endif()
 # Find dependencies
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
-find_package(nats CONFIG REQUIRED)
+find_package(cnats CONFIG REQUIRED)
+find_package(OpenSSL CONFIG REQUIRED)
 
 # Find falcon-database (either in build tree or installed)
 if(NOT TARGET falcon::falcon-database)
@@ -52,7 +53,6 @@ message(STATUS "Found NATS: ${nats_VERSION}")
 
 # Core library
 add_library(falcon-routine SHARED
-  src/database.cpp
   src/hub.cpp
   src/log.cpp
 )
@@ -68,7 +68,7 @@ target_link_libraries(falcon-routine
     falcon::falcon-database
     nlohmann_json::nlohmann_json
     spdlog::spdlog
-    nats
+    cnats::nats
 )
 
 # Compiler warnings

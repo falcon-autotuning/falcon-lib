@@ -130,7 +130,7 @@ install(FILES
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/falcon-database-config-version.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/falcon-databaseConfigVersion.cmake"
   VERSION ${PROJECT_VERSION}
   COMPATIBILITY AnyNewerVersion
 )
@@ -141,13 +141,13 @@ install(EXPORT falcon-database-targets
   DESTINATION lib/cmake/falcon-database
 )
 
-configure_file(cmake/falcon-database-config.cmake.in
-  "${CMAKE_CURRENT_BINARY_DIR}/falcon-database-config.cmake"
+configure_file(cmake/falcon-databaseConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/falcon-databaseConfig.cmake"
   @ONLY
 )
 
 install(FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/falcon-database-config.cmake"
-  "${CMAKE_CURRENT_BINARY_DIR}/falcon-database-config-version.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/falcon-databaseConfig.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/falcon-databaseConfigVersion.cmake"
   DESTINATION lib/cmake/falcon-database
 )
