@@ -70,6 +70,12 @@ public:
                  std::function<void(const std::string &)> callback);
 
   /**
+   * @brief UnSubscribe to a subject with a callback
+   * @param subject NATS subject (can include wildcards)
+   */
+  void unsubscribe(const std::string &subject);
+
+  /**
    * @brief Pull messages from JetStream
    * @param stream Stream name
    * @param consumer Consumer name
@@ -118,6 +124,7 @@ private:
   struct SubscriptionData {
     natsSubscription *subscription;
     std::function<void(const std::string &)> *callback;
+    std::string subject;
   };
 
   natsConnection *conn_ = nullptr;

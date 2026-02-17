@@ -312,48 +312,6 @@ build tests/falcon_comms_unit_tests tests/falcon_comms_unit_tests[1]_tests.cmake
   TARGET_PDB = falcon_comms_unit_tests.dbg
   TARGET_SUPPORT_DIR = tests/CMakeFiles/falcon_comms_unit_tests.dir
 
-# =============================================================================
-# Object build statements for EXECUTABLE target falcon_comms_integration_tests
-
-
-#############################################
-# Order-only phony target for falcon_comms_integration_tests
-
-build cmake_object_order_depends_target_falcon_comms_integration_tests: phony || cmake_object_order_depends_target_falcon-comms cmake_object_order_depends_target_falcon-comms-test-utils
-
-build tests/CMakeFiles/falcon_comms_integration_tests.dir/integration/test_full_workflow.cpp.o: CXX_COMPILER__falcon_comms_integration_tests_unscanned_Release /home/tylerk/falcon-dev/falcon-lib/comms/tests/integration/test_full_workflow.cpp || cmake_object_order_depends_target_falcon_comms_integration_tests
-  CONFIG = Release
-  DEFINES = -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
-  DEP_FILE = tests/CMakeFiles/falcon_comms_integration_tests.dir/integration/test_full_workflow.cpp.o.d
-  FLAGS = -O3 -DNDEBUG -std=gnu++17
-  INCLUDES = -I/home/tylerk/falcon-dev/falcon-lib/comms/include -I/home/tylerk/falcon-dev/falcon-lib/comms/tests/test_utils -isystem /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include
-  LAUNCHER = /usr/bin/ccache 
-  OBJECT_DIR = tests/CMakeFiles/falcon_comms_integration_tests.dir
-  OBJECT_FILE_DIR = tests/CMakeFiles/falcon_comms_integration_tests.dir/integration
-  TARGET_SUPPORT_DIR = tests/CMakeFiles/falcon_comms_integration_tests.dir
-
-
-# =============================================================================
-# Link build statements for EXECUTABLE target falcon_comms_integration_tests
-
-
-#############################################
-# Link the executable tests/falcon_comms_integration_tests
-
-build tests/falcon_comms_integration_tests tests/falcon_comms_integration_tests[1]_tests.cmake | ${cmake_ninja_workdir}tests/falcon_comms_integration_tests[1]_tests.cmake: CXX_EXECUTABLE_LINKER__falcon_comms_integration_tests_Release tests/CMakeFiles/falcon_comms_integration_tests.dir/integration/test_full_workflow.cpp.o | tests/libfalcon-comms-test-utils.a /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/manual-link/libgtest_main.so.1.17.0 libfalcon-comms.so /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libspdlog.so.1.17.0 /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libfmt.so.12.1.0 /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libnats.so.3.12.0 /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libssl.so /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libcrypto.so /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libgtest.so.1.17.0 || libfalcon-comms.so tests/libfalcon-comms-test-utils.a
-  CONFIG = Release
-  DEP_FILE = tests/CMakeFiles/falcon_comms_integration_tests.dir/link.d
-  FLAGS = -O3 -DNDEBUG
-  LINK_FLAGS = -Xlinker --dependency-file=tests/CMakeFiles/falcon_comms_integration_tests.dir/link.d
-  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/manual-link:/home/tylerk/falcon-dev/falcon-lib/comms/build/release:/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib  tests/libfalcon-comms-test-utils.a  /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/manual-link/libgtest_main.so.1.17.0  libfalcon-comms.so  /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libspdlog.so.1.17.0  /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libfmt.so.12.1.0  /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libnats.so.3.12.0  /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libssl.so  /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libcrypto.so  /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libgtest.so.1.17.0
-  OBJECT_DIR = tests/CMakeFiles/falcon_comms_integration_tests.dir
-  POST_BUILD = cd /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests && /usr/bin/cmake -D TEST_TARGET=falcon_comms_integration_tests -D TEST_EXECUTABLE=/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_integration_tests -D TEST_EXECUTOR= -D TEST_WORKING_DIR=/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests -D TEST_EXTRA_ARGS= -D TEST_PROPERTIES= -D TEST_PREFIX= -D TEST_SUFFIX= -D TEST_FILTER= -D NO_PRETTY_TYPES=FALSE -D NO_PRETTY_VALUES=FALSE -D TEST_LIST=falcon_comms_integration_tests_TESTS -D CTEST_FILE=/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/falcon_comms_integration_tests[1]_tests.cmake -D TEST_DISCOVERY_TIMEOUT=5 -D TEST_DISCOVERY_EXTRA_ARGS= -D TEST_XML_OUTPUT_DIR= -P /usr/share/cmake/Modules/GoogleTestAddTests.cmake
-  PRE_LINK = :
-  RESTAT = 1
-  TARGET_FILE = tests/falcon_comms_integration_tests
-  TARGET_PDB = falcon_comms_integration_tests.dbg
-  TARGET_SUPPORT_DIR = tests/CMakeFiles/falcon_comms_integration_tests.dir
-
 
 #############################################
 # Utility command for test
@@ -439,8 +397,6 @@ build falcon-comms: phony libfalcon-comms.so
 
 build falcon-comms-test-utils: phony tests/libfalcon-comms-test-utils.a
 
-build falcon_comms_integration_tests: phony tests/falcon_comms_integration_tests
-
 build falcon_comms_unit_tests: phony tests/falcon_comms_unit_tests
 
 build libfalcon-comms-test-utils.a: phony tests/libfalcon-comms-test-utils.a
@@ -460,7 +416,7 @@ build all: phony libfalcon-comms.so tests/all
 #############################################
 # Folder: /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests
 
-build tests/all: phony tests/libfalcon-comms-test-utils.a tests/falcon_comms_unit_tests tests/falcon_comms_integration_tests
+build tests/all: phony tests/libfalcon-comms-test-utils.a tests/falcon_comms_unit_tests
 
 # =============================================================================
 # Built-in targets

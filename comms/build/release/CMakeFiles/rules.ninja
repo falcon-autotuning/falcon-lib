@@ -71,27 +71,6 @@ rule CXX_EXECUTABLE_LINKER__falcon_comms_unit_tests_Release
 
 
 #############################################
-# Rule for compiling CXX files.
-
-rule CXX_COMPILER__falcon_comms_integration_tests_unscanned_Release
-  depfile = $DEP_FILE
-  deps = gcc
-  command = ${LAUNCHER}${CODE_CHECK}/usr/bin/clang++ $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
-  description = Building CXX object $out
-
-
-#############################################
-# Rule for linking CXX executable.
-
-rule CXX_EXECUTABLE_LINKER__falcon_comms_integration_tests_Release
-  depfile = $DEP_FILE
-  deps = gcc
-  command = $PRE_LINK && /usr/bin/clang++ $FLAGS $LINK_FLAGS $in -o $TARGET_FILE $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
-  description = Linking CXX executable $TARGET_FILE
-  restat = $RESTAT
-
-
-#############################################
 # Rule for re-running cmake.
 
 rule RERUN_CMAKE
