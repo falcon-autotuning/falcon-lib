@@ -141,3 +141,31 @@ TEST(ParameterMapTest, FromJson) {
   EXPECT_EQ(params.get<bool>("bool_val"), true);
   EXPECT_EQ(params.get<std::string>("string_val"), "test");
 }
+TEST(ParameterMapTest, DeviceCharacteristicStorage) {
+  ParameterMap params;
+  DeviceCharacteristic dc;
+  dc.name = "pinchoff";
+  dc.uncertainty = 0.05;
+  dc.hash = "hash123";
+
+  params.set("char", dc);
+  EXPECT_TRUE(params.has("char"));
+
+  auto retrieved = params.get<DeviceCharacteristic>("char");
+  EXPECT_EQ(retrieved.name, "pinchoff");
+  EXPECT_DOUBLE_EQ(retrieved.uncertainty, 0.05);
+  EXPECT_EQ(retrieved.hash, "hash123");
+}
+
+TEST(ParameterMapTest, DeviceCharacteristicJson) {
+  ParameterMap params;
+  DeviceCharacteristic dc;
+  dc.name = "gate_val";
+  dc.uncertainty = 0.1;
+
+  params.set("dc", dc);
+  auto j = params.to_json();
+
+  EXPECT_EQ(j["dc"]["name"], "gate_val");
+  EXPECT_DOUBLE_EQ(j["dc"]["uncertainty"], 0.1);
+}

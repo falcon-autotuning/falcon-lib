@@ -15,27 +15,46 @@ option(ENABLE_PCH "Enable target_precompile_headers to speed up builds" ON)
 
 # Find dependencies (via vcpkg)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(cereal CONFIG REQUIRED)
+find_package(xtensor CONFIG REQUIRED)
+find_package(xtl CONFIG REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
+find_package(OpenSSL REQUIRED)
+find_package(unofficial-sodium CONFIG REQUIRED)
+find_package(cnats CONFIG REQUIRED)
 
-# DSL Compiler Library
+# Add Compiler Sub-project
+add_subdirectory(compiler)
+
+# DSL Runtime Library (core types and logic)
 add_library(falcon-dsl
   src/ParameterMap.cpp
-  src/FalconLexer.cpp
-  src/FalconParser.cpp
-  src/FalconCodeGenerator.cpp
-  src/FalconCompiler.cpp
+  src/ExprEvaluator.cpp
+  src/Interpreter.cpp
 )
 
 target_include_directories(falcon-dsl
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../falcon-core/cpp/include>
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+# Add Falcon Core
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../falcon-core/cpp falcon-core-build)
+
 target_link_libraries(falcon-dsl
   PUBLIC
     nlohmann_json::nlohmann_json
+    falcon-atc-core
+    cereal::cereal
+    xtensor
+    xtl
+    yaml-cpp::yaml-cpp
+    cnats::nats_static
+    falcon_core_cpp
 )
 
 # Compiler warnings
@@ -45,16 +64,6 @@ else()
   target_compile_options(falcon-dsl PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-# DSL Compiler Executable
-add_executable(falcon-dsl-compiler
-  src/main.cpp
-)
-
-target_link_libraries(falcon-dsl-compiler
-  PRIVATE
-    falcon-dsl
-)
-
 # Tests
 if(BUILD_TESTS)
   enable_testing()
@@ -62,7 +71,7 @@ if(BUILD_TESTS)
 endif()
 
 # Installation
-install(TARGETS falcon-dsl falcon-dsl-compiler
+install(TARGETS falcon-dsl falcon-atc
   EXPORT falcon-dsl-targets
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib

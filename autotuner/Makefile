@@ -8,7 +8,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
     PLATFORM := linux
     CMAKE_GENERATOR := Ninja
-    VCPKG_TRIPLET ?= x64-linux-dynamic
+    VCPKG_TRIPLET ?= x64-linux
     NPROC := $(shell nproc 2>/dev/null || echo 4)
 endif
 ifeq ($(OS),Windows_NT)
@@ -76,6 +76,7 @@ configure-release:
 		-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_TOOLCHAIN) \
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
+		-DVCPKG_MANIFEST_DIR=$(CURDIR)/../ \
 		-DBUILD_TESTS=ON \
 		-DBUILD_EXAMPLES=ON \
 		-DBUILD_TOOLS=ON \

@@ -1,4 +1,6 @@
 #include "falcon-autotuner/ParameterMap.hpp"
+#include "falcon_core/physics/device_structures/Connection.hpp"
+#include "falcon_core/physics/device_structures/Connections.hpp"
 
 namespace falcon::autotuner {
 
@@ -15,6 +17,22 @@ void ParameterMap::set(const std::string &key, bool value) {
 }
 
 void ParameterMap::set(const std::string &key, std::string value) {
+  params_[key] = std::move(value);
+}
+
+void ParameterMap::set(const std::string &key, ConnectionSP value) {
+  params_[key] = std::move(value);
+}
+
+void ParameterMap::set(const std::string &key, ConnectionsSP value) {
+  params_[key] = std::move(value);
+}
+
+void ParameterMap::set(const std::string &key, DeviceCharacteristic value) {
+  params_[key] = std::move(value);
+}
+
+void ParameterMap::set(const std::string &key, Value value) {
   params_[key] = std::move(value);
 }
 
@@ -55,7 +73,12 @@ nlohmann::json ParameterMap::to_json() const {
       result[key] = *v;
     } else if (auto v = std::get_if<std::string>(&value)) {
       result[key] = *v;
+    } else if (auto v = std::get_if<DeviceCharacteristic>(&value)) {
+      result[key] = {{"name", v->name},
+                     {"uncertainty", v->uncertainty},
+                     {"hash", v->hash}};
     } else {
+      // falcon-core objects cannot be serialized to JSON easily
       result[key] = nullptr;
     }
   }
