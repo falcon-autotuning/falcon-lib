@@ -52,11 +52,5 @@
   "command": "/usr/bin/clang++ -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/falcon-lib/comms/include -I/home/tylerk/falcon-dev/falcon-lib/comms/tests/test_utils -isystem /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include -O3 -DNDEBUG -std=gnu++17 -o tests/CMakeFiles/falcon_comms_unit_tests.dir/unit/test_runtime_comms.cpp.o -c /home/tylerk/falcon-dev/falcon-lib/comms/tests/unit/test_runtime_comms.cpp",
   "file": "/home/tylerk/falcon-dev/falcon-lib/comms/tests/unit/test_runtime_comms.cpp",
   "output": "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/CMakeFiles/falcon_comms_unit_tests.dir/unit/test_runtime_comms.cpp.o"
-},
-{
-  "directory": "/home/tylerk/falcon-dev/falcon-lib/comms/build/release",
-  "command": "/usr/bin/clang++ -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/falcon-lib/comms/include -I/home/tylerk/falcon-dev/falcon-lib/comms/tests/test_utils -isystem /home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include -O3 -DNDEBUG -std=gnu++17 -o tests/CMakeFiles/falcon_comms_integration_tests.dir/integration/test_full_workflow.cpp.o -c /home/tylerk/falcon-dev/falcon-lib/comms/tests/integration/test_full_workflow.cpp",
-  "file": "/home/tylerk/falcon-dev/falcon-lib/comms/tests/integration/test_full_workflow.cpp",
-  "output": "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/CMakeFiles/falcon_comms_integration_tests.dir/integration/test_full_workflow.cpp.o"
 }
 ]

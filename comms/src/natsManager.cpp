@@ -166,8 +166,21 @@ void NatsManager::subscribe(const std::string &subject,
   }
 
   // Track subscription for cleanup
-  subscriptions_.push_back({sub, cb});
+  subscriptions_.push_back({sub, cb, subject});
   spdlog::info("Subscribed to NATS subject: {}", subject);
+}
+
+void NatsManager::unsubscribe(const std::string &subject) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto it = std::find_if(subscriptions_.begin(), subscriptions_.end(),
+                         [&subject](const SubscriptionData &entry) {
+                           return entry.subject == subject;
+                         });
+  if (it != subscriptions_.end()) {
+    natsSubscription_Destroy(it->subscription);
+    subscriptions_.erase(it);
+    spdlog::info("Unsubscribed from NATS subject: {}", subject);
+  }
 }
 
 std::vector<std::string>

@@ -1,5 +1,0 @@
-if(EXISTS "/home/tylerk/falcon-dev/falcon-lib/comms/build/debug/tests/falcon_comms_integration_tests[1]_tests.cmake")
-  include("/home/tylerk/falcon-dev/falcon-lib/comms/build/debug/tests/falcon_comms_integration_tests[1]_tests.cmake")
-else()
-  add_test(falcon_comms_integration_tests_NOT_BUILT falcon_comms_integration_tests_NOT_BUILT)
-endif()

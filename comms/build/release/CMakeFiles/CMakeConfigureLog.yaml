@@ -86,6 +86,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -103,6 +104,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -120,6 +122,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -152,6 +155,9 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/ninja-build"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/ninja"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/samu"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/ninja-build"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/ninja"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/samu"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/ninja-build"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/ninja"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/samu"
@@ -203,6 +209,9 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/ninja-build"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/ninja"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/samu"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/ninja-build"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/ninja"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/samu"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/ninja-build"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/ninja"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/samu"
@@ -254,6 +263,9 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/ninja-build"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/ninja"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/samu"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/ninja-build"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/ninja"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/samu"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/ninja-build"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/ninja"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/samu"
@@ -280,6 +292,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -327,6 +340,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -344,6 +358,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -361,6 +376,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -379,6 +395,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/clang++"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/clang++"
@@ -396,6 +413,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/clang++"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/clang++"
@@ -413,6 +431,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/clang++"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/clang++"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/clang++"
       - "/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/clang++"
@@ -424,6 +443,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -576,6 +596,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -662,6 +683,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -748,6 +770,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -834,6 +857,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -920,6 +944,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -1006,6 +1031,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -1092,6 +1118,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -1178,6 +1205,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -1264,6 +1292,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -1350,6 +1379,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -1443,6 +1473,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -1603,6 +1634,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -1763,6 +1795,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -1923,6 +1956,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -1952,8 +1986,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-hj4Mwf"
-      binary: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-hj4Mwf"
+      source: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-9flAF7"
+      binary: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-9flAF7"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
       CMAKE_CXX_FLAGS: ""
@@ -1968,10 +2002,10 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: '/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-hj4Mwf'
+        Change Dir: '/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-9flAF7'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_ae84d
-        [1/2] /usr/bin/clang++   -v -MD -MT CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+        Run Build Command(s): /usr/bin/ninja -v cmTC_b3245
+        [1/2] /usr/bin/clang++   -v -MD -MT CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
         clang version 21.1.6
         Target: x86_64-pc-linux-gnu
         Thread model: posix
@@ -1983,7 +2017,7 @@ events:
         Candidate multilib: 32;@m32
         Selected multilib: .;@m64
          (in-process)
-         "/usr/bin/clang++" -cc1 -triple x86_64-pc-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-hj4Mwf -v -fcoverage-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-hj4Mwf -resource-dir /usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1 -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/x86_64-pc-linux-gnu -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/backward -internal-isystem /usr/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../x86_64-pc-linux-gnu/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -stack-protector 2 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+         "/usr/bin/clang++" -cc1 -triple x86_64-pc-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-9flAF7 -v -fcoverage-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-9flAF7 -resource-dir /usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1 -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/x86_64-pc-linux-gnu -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/backward -internal-isystem /usr/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../x86_64-pc-linux-gnu/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -stack-protector 2 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
         clang -cc1 version 21.1.6 based upon LLVM 21.1.6 default target x86_64-pc-linux-gnu
         ignoring nonexistent directory "/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../x86_64-pc-linux-gnu/include"
         ignoring nonexistent directory "/include"
@@ -1996,7 +2030,7 @@ events:
          /usr/local/include
          /usr/include
         End of search list.
-        [2/2] : && /usr/bin/clang++  -v -Wl,-v CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_ae84d   && :
+        [2/2] : && /usr/bin/clang++  -v -Wl,-v CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_b3245   && :
         clang version 21.1.6
         Target: x86_64-pc-linux-gnu
         Thread model: posix
@@ -2007,7 +2041,7 @@ events:
         Candidate multilib: .;@m64
         Candidate multilib: 32;@m32
         Selected multilib: .;@m64
-         "/usr/bin/ld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_ae84d /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o
+         "/usr/bin/ld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_b3245 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o
         GNU ld (GNU Binutils) 2.45.1
         
       exitCode: 0
@@ -2047,10 +2081,10 @@ events:
       Parsed CXX implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|"|[0-9]+>[ 	-]*Build:[ 	0-9]+ ms[ 	]*)?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)))("|,| |$)]
-        ignore line: [Change Dir: '/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-hj4Mwf']
+        ignore line: [Change Dir: '/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-9flAF7']
         ignore line: []
-        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_ae84d]
-        ignore line: [[1/2] /usr/bin/clang++   -v -MD -MT CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_b3245]
+        ignore line: [[1/2] /usr/bin/clang++   -v -MD -MT CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-pc-linux-gnu]
         ignore line: [Thread model: posix]
@@ -2065,7 +2099,7 @@ events:
         ignore line: [Selected multilib: .]
         ignore line: [@m64]
         ignore line: [ (in-process)]
-        ignore line: [ "/usr/bin/clang++" -cc1 -triple x86_64-pc-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-hj4Mwf -v -fcoverage-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-hj4Mwf -resource-dir /usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1 -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/x86_64-pc-linux-gnu -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/backward -internal-isystem /usr/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../x86_64-pc-linux-gnu/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -stack-protector 2 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [ "/usr/bin/clang++" -cc1 -triple x86_64-pc-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-9flAF7 -v -fcoverage-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-9flAF7 -resource-dir /usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1 -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/x86_64-pc-linux-gnu -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/backward -internal-isystem /usr/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../x86_64-pc-linux-gnu/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -stack-protector 2 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
         ignore line: [clang -cc1 version 21.1.6 based upon LLVM 21.1.6 default target x86_64-pc-linux-gnu]
         ignore line: [ignoring nonexistent directory "/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../x86_64-pc-linux-gnu/include"]
         ignore line: [ignoring nonexistent directory "/include"]
@@ -2078,7 +2112,7 @@ events:
         ignore line: [ /usr/local/include]
         ignore line: [ /usr/include]
         ignore line: [End of search list.]
-        ignore line: [[2/2] : && /usr/bin/clang++  -v -Wl -v CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_ae84d   && :]
+        ignore line: [[2/2] : && /usr/bin/clang++  -v -Wl -v CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_b3245   && :]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-pc-linux-gnu]
         ignore line: [Thread model: posix]
@@ -2092,7 +2126,7 @@ events:
         ignore line: [@m32]
         ignore line: [Selected multilib: .]
         ignore line: [@m64]
-        link line: [ "/usr/bin/ld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_ae84d /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o]
+        link line: [ "/usr/bin/ld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_b3245 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o]
           arg [/usr/bin/ld] ==> ignore
           arg [--hash-style=gnu] ==> ignore
           arg [--build-id] ==> ignore
@@ -2103,7 +2137,7 @@ events:
           arg [-dynamic-linker] ==> ignore
           arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
           arg [-o] ==> ignore
-          arg [cmTC_ae84d] ==> ignore
+          arg [cmTC_b3245] ==> ignore
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o]
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o]
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o]
@@ -2114,7 +2148,7 @@ events:
           arg [-L/lib] ==> dir [/lib]
           arg [-L/usr/lib] ==> dir [/usr/lib]
           arg [-v] ==> ignore
-          arg [CMakeFiles/cmTC_ae84d.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+          arg [CMakeFiles/cmTC_b3245.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
           arg [-lstdc++] ==> lib [stdc++]
           arg [-lm] ==> lib [m]
           arg [-lgcc_s] ==> lib [gcc_s]
@@ -2177,6 +2211,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -2211,6 +2246,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -2245,6 +2281,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -2280,6 +2317,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/sccache"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/sccache"
@@ -2314,6 +2352,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/sccache"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/sccache"
@@ -2348,6 +2387,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/sccache"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/sccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/sccache"
       - "/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/sccache"
@@ -2379,6 +2419,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -2434,6 +2475,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -2468,6 +2510,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -2502,6 +2545,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -2537,6 +2581,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/ccache"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/ccache"
@@ -2571,6 +2616,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/ccache"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/ccache"
@@ -2605,6 +2651,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/ccache"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/ccache"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/ccache"
       - "/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/ccache"
@@ -2616,6 +2663,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:
@@ -2737,8 +2785,8 @@ events:
     checks:
       - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
     directories:
-      source: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-Yyn107"
-      binary: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-Yyn107"
+      source: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-KYczn2"
+      binary: "/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-KYczn2"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
       CMAKE_CXX_FLAGS: ""
@@ -2752,11 +2800,11 @@ events:
       variable: "CMAKE_HAVE_LIBC_PTHREAD"
       cached: true
       stdout: |
-        Change Dir: '/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-Yyn107'
+        Change Dir: '/home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-KYczn2'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_0f1f7
-        [1/2] /usr/bin/clang++ -DCMAKE_HAVE_LIBC_PTHREAD  -std=gnu++17 -MD -MT CMakeFiles/cmTC_0f1f7.dir/src.cxx.o -MF CMakeFiles/cmTC_0f1f7.dir/src.cxx.o.d -o CMakeFiles/cmTC_0f1f7.dir/src.cxx.o -c /home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-Yyn107/src.cxx
-        [2/2] : && /usr/bin/clang++   CMakeFiles/cmTC_0f1f7.dir/src.cxx.o -o cmTC_0f1f7   && :
+        Run Build Command(s): /usr/bin/ninja -v cmTC_52819
+        [1/2] /usr/bin/clang++ -DCMAKE_HAVE_LIBC_PTHREAD  -std=gnu++17 -MD -MT CMakeFiles/cmTC_52819.dir/src.cxx.o -MF CMakeFiles/cmTC_52819.dir/src.cxx.o.d -o CMakeFiles/cmTC_52819.dir/src.cxx.o -c /home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/CMakeScratch/TryCompile-KYczn2/src.cxx
+        [2/2] : && /usr/bin/clang++   CMakeFiles/cmTC_52819.dir/src.cxx.o -o cmTC_52819   && :
         
       exitCode: 0
   -
@@ -3562,6 +3610,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -3596,6 +3645,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -3630,6 +3680,7 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/sbin/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/"
       - "/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin/"
@@ -3672,6 +3723,8 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/pkgconf"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/pkg-config"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/pkgconf"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/pkg-config"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/pkgconf"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/pkg-config"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/pkgconf"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/pkg-config"
@@ -3740,6 +3793,8 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/pkgconf"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/pkg-config"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/pkgconf"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/pkg-config"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/pkgconf"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/pkg-config"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/pkgconf"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/pkg-config"
@@ -3808,6 +3863,8 @@ events:
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/pkgconf"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/pkg-config"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/pkgconf"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/pkg-config"
+      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5/pkgconf"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/pkg-config"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf/pkgconf"
       - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin/pkg-config"
@@ -3826,6 +3883,7 @@ events:
     search_context:
       CMAKE_PROGRAM_PATH:
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools"
+        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/hdf5"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/protobuf"
         - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/libpq/bin"
       CMAKE_PREFIX_PATH:

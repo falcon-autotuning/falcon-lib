@@ -8,7 +8,6 @@
 /home/tylerk/falcon-dev/falcon-lib/comms/build/release/CMakeFiles/install/strip.dir
 /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/CMakeFiles/falcon-comms-test-utils.dir
 /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/CMakeFiles/falcon_comms_unit_tests.dir
-/home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/CMakeFiles/falcon_comms_integration_tests.dir
 /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/CMakeFiles/test.dir
 /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/CMakeFiles/edit_cache.dir
 /home/tylerk/falcon-dev/falcon-lib/comms/build/release/tests/CMakeFiles/rebuild_cache.dir

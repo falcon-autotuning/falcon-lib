@@ -1,5 +1,5 @@
 {
-  "tests": 18,
+  "tests": 15,
   "name": "AllTests",
   "testsuites": [
     {
@@ -35,22 +35,17 @@
     },
     {
       "name": "AutotunerCommsUnitTest",
-      "tests": 3,
+      "tests": 2,
       "testsuite": [
-        {
-          "name": "RequestState",
-          "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_autotuner_comms.cpp",
-          "line": 12
-        },
         {
           "name": "SubscribeStateResponse",
           "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_autotuner_comms.cpp",
-          "line": 60
+          "line": 13
         },
         {
-          "name": "RequestStateTimeout",
+          "name": "SubscribeStateResponseTimeout",
           "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_autotuner_comms.cpp",
-          "line": 93
+          "line": 54
         }
       ]
     },
@@ -61,58 +56,48 @@
         {
           "name": "InheritsFromAutotunerComms",
           "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_routine_comms.cpp",
-          "line": 12
+          "line": 13
         },
         {
-          "name": "PublishMeasurementCommand",
+          "name": "SubscribeMeasureResponse",
           "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_routine_comms.cpp",
-          "line": 58
+          "line": 54
         },
         {
-          "name": "SubscribeMeasurementResponse",
+          "name": "SubscribeMeasureResponseTimeout",
           "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_routine_comms.cpp",
-          "line": 91
+          "line": 96
         },
         {
-          "name": "RequestMeasurementWithJetStream",
+          "name": "PullMeasurementData",
           "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_routine_comms.cpp",
-          "line": 126
+          "line": 104
         }
       ]
     },
     {
       "name": "RuntimeCommsUnitTest",
-      "tests": 6,
+      "tests": 4,
       "testsuite": [
         {
-          "name": "RequestDeviceConfig",
+          "name": "SubscribeConfigResponse",
           "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_runtime_comms.cpp",
-          "line": 12
-        },
-        {
-          "name": "RequestPorts",
-          "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_runtime_comms.cpp",
-          "line": 60
-        },
-        {
-          "name": "SubscribeDeviceConfigResponse",
-          "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_runtime_comms.cpp",
-          "line": 108
+          "line": 13
         },
         {
           "name": "SubscribePortPayload",
           "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_runtime_comms.cpp",
-          "line": 143
+          "line": 56
         },
         {
-          "name": "RequestDeviceConfigTimeout",
+          "name": "SubscribeConfigResponseTimeout",
           "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_runtime_comms.cpp",
-          "line": 178
+          "line": 98
         },
         {
-          "name": "RequestPortsTimeout",
+          "name": "SubscribePortPayloadTimeout",
           "file": "\/home\/tylerk\/falcon-dev\/falcon-lib\/comms\/tests\/unit\/test_runtime_comms.cpp",
-          "line": 187
+          "line": 106
         }
       ]
     }
