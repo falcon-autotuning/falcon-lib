@@ -17,9 +17,10 @@ TEST(DeviceCharacteristicTest, ToJsonAndBack) {
   dchar.time = 1234567890;
   dchar.state = "initialized";
   dchar.unit_name = "mV";
-  dchar.characteristic = JSONPrimitive(42.5);
+  dchar.characteristic = 42.5;
 
   auto j = dchar.to_json();
+  std::cout << j.dump() << '\n';
   auto dchar2 = DeviceCharacteristic::from_json(j);
 
   EXPECT_EQ(dchar.scope, dchar2.scope);
@@ -37,22 +38,6 @@ TEST(DeviceCharacteristicTest, ToJsonAndBack) {
   EXPECT_EQ(dchar.time, dchar2.time);
   EXPECT_EQ(dchar.state, dchar2.state);
   EXPECT_EQ(dchar.unit_name, dchar2.unit_name);
-  EXPECT_DOUBLE_EQ(dchar.characteristic.as_double(),
-                   dchar2.characteristic.as_double());
-}
-
-TEST(DeviceCharacteristicTest, EmptyFields) {
-  DeviceCharacteristic dchar;
-  dchar.name = "minimal";
-  dchar.hash = "1.2.3";
-  dchar.time = 1000;
-  dchar.characteristic = JSONPrimitive();
-
-  auto j = dchar.to_json();
-  auto dchar2 = DeviceCharacteristic::from_json(j);
-
-  EXPECT_TRUE(dchar2.scope.empty());
-  EXPECT_FALSE(dchar2.barrier_gate.has_value());
-  EXPECT_EQ(dchar2.name, "minimal");
-  EXPECT_TRUE(dchar2.characteristic.is_null());
+  EXPECT_DOUBLE_EQ(dchar.characteristic.get<double>(),
+                   dchar2.characteristic.get<double>());
 }

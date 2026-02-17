@@ -41,7 +41,7 @@ TEST_F(RuntimeCommsUnitTest, SubscribeConfigResponse) {
     try {
       response = comms.subscribe_config_response(3000, 100000);
     } catch (const std::exception &e) {
-      std::cout << "EXCEPTION in client thread: " << e.what() << std::endl;
+      std::cout << "EXCEPTION in client thread: " << e.what() << '\n';
       throw;
     }
   });

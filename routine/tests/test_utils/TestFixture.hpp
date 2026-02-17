@@ -51,7 +51,6 @@ protected:
   [[nodiscard]] std::string getDatabaseUrl() const { return db_url_; }
   [[nodiscard]] std::string getNatsUrl() const { return nats_url_; }
 
-private:
   std::string db_url_;
   std::string nats_url_;
 };

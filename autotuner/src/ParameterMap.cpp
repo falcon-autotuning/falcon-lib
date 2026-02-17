@@ -28,7 +28,8 @@ void ParameterMap::set(const std::string &key, ConnectionsSP value) {
   params_[key] = std::move(value);
 }
 
-void ParameterMap::set(const std::string &key, DeviceCharacteristic value) {
+void ParameterMap::set(const std::string &key,
+                       database::DeviceCharacteristic value) {
   params_[key] = std::move(value);
 }
 
@@ -73,7 +74,7 @@ nlohmann::json ParameterMap::to_json() const {
       result[key] = *v;
     } else if (auto v = std::get_if<std::string>(&value)) {
       result[key] = *v;
-    } else if (auto v = std::get_if<DeviceCharacteristic>(&value)) {
+    } else if (auto v = std::get_if<database::DeviceCharacteristic>(&value)) {
       result[key] = {{"name", v->name},
                      {"uncertainty", v->uncertainty},
                      {"hash", v->hash}};

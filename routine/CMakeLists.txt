@@ -51,6 +51,8 @@ if(NOT TARGET falcon::falcon-comms)
 endif()
 # After finding falcon_core_cpp
 find_package(falcon_core CONFIG REQUIRED)
+# FIX: necessary until better cmake-config is created
+include_directories(/opt/falcon/include)
 
 message(STATUS "Found nlohmann_json: ${nlohmann_json_VERSION}")
 message(STATUS "Found spdlog: ${spdlog_VERSION}")

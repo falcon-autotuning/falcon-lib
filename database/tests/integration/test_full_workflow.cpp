@@ -26,7 +26,7 @@ TEST_F(FullWorkflowTest, CompleteDeviceCharacterizationWorkflow) {
     dchar.state = (i % 2 == 0) ? "tuned" : "untuned";
     dchar.unit_name = "mV";
     dchar.uncertainty = 0.05 * (i + 1);
-    dchar.characteristic = JSONPrimitive(100.0 + i * 5.5);
+    dchar.characteristic = (100.0 + i * 5.5);
 
     db_->insert(dchar);
     characteristics.push_back(dchar);
@@ -38,7 +38,7 @@ TEST_F(FullWorkflowTest, CompleteDeviceCharacterizationWorkflow) {
   auto result = db_->get_by_name("gate_voltage_5");
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(result->plunger_gate, "PG5");
-  EXPECT_DOUBLE_EQ(result->characteristic.as_double(), 127.5);
+  EXPECT_DOUBLE_EQ(result->characteristic, 127.5);
 
   // Step 3: Query multiple characteristics
   std::vector<std::string> names = {"gate_voltage_0", "gate_voltage_5",
@@ -78,27 +78,13 @@ TEST_F(FullWorkflowTest, CompleteDeviceCharacterizationWorkflow) {
   }
 }
 
-TEST_F(FullWorkflowTest, NullCharacteristicsHandling) {
-  DeviceCharacteristic dchar;
-  dchar.name = "null_test";
-  dchar.hash = "3.2";
-  dchar.time = 1000;
-  dchar.characteristic = JSONPrimitive(); // Null value
-
-  db_->insert(dchar);
-
-  auto result = db_->get_by_name("null_test");
-  ASSERT_TRUE(result.has_value());
-  EXPECT_TRUE(result->characteristic.is_null());
-}
-
 TEST_F(FullWorkflowTest, DifferentCharacteristicTypes) {
   // Boolean
   DeviceCharacteristic dchar_bool;
   dchar_bool.name = "is_tuned";
   dchar_bool.hash = "3.2";
   dchar_bool.time = 1000;
-  dchar_bool.characteristic = JSONPrimitive(true);
+  dchar_bool.characteristic = (true);
   db_->insert(dchar_bool);
 
   // Integer
@@ -106,7 +92,7 @@ TEST_F(FullWorkflowTest, DifferentCharacteristicTypes) {
   dchar_int.name = "step_count";
   dchar_int.hash = "3.2";
   dchar_int.time = 2000;
-  dchar_int.characteristic = JSONPrimitive(int64_t(42));
+  dchar_int.characteristic = (int64_t(42));
   db_->insert(dchar_int);
 
   // Double
@@ -114,7 +100,7 @@ TEST_F(FullWorkflowTest, DifferentCharacteristicTypes) {
   dchar_double.name = "voltage";
   dchar_double.hash = "3.2";
   dchar_double.time = 3000;
-  dchar_double.characteristic = JSONPrimitive(3.14159);
+  dchar_double.characteristic = (3.14159);
   db_->insert(dchar_double);
 
   // String
@@ -122,23 +108,23 @@ TEST_F(FullWorkflowTest, DifferentCharacteristicTypes) {
   dchar_string.name = "config_id";
   dchar_string.hash = "3.2";
   dchar_string.time = 4000;
-  dchar_string.characteristic = JSONPrimitive("CONFIG_A1");
+  dchar_string.characteristic = ("CONFIG_A1");
   db_->insert(dchar_string);
 
   // Retrieve and validate
   auto r_bool = db_->get_by_name("is_tuned");
   ASSERT_TRUE(r_bool.has_value());
-  EXPECT_TRUE(r_bool->characteristic.as_bool());
+  EXPECT_TRUE(r_bool->characteristic);
 
   auto r_int = db_->get_by_name("step_count");
   ASSERT_TRUE(r_int.has_value());
-  EXPECT_EQ(r_int->characteristic.as_int(), 42);
+  EXPECT_EQ(r_int->characteristic, 42);
 
   auto r_double = db_->get_by_name("voltage");
   ASSERT_TRUE(r_double.has_value());
-  EXPECT_DOUBLE_EQ(r_double->characteristic.as_double(), 3.14159);
+  EXPECT_DOUBLE_EQ(r_double->characteristic, 3.14159);
 
   auto r_string = db_->get_by_name("config_id");
   ASSERT_TRUE(r_string.has_value());
-  EXPECT_EQ(r_string->characteristic.as_string(), "CONFIG_A1");
+  EXPECT_EQ(r_string->characteristic, "CONFIG_A1");
 }

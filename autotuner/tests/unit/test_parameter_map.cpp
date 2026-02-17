@@ -143,7 +143,7 @@ TEST(ParameterMapTest, FromJson) {
 }
 TEST(ParameterMapTest, DeviceCharacteristicStorage) {
   ParameterMap params;
-  DeviceCharacteristic dc;
+  falcon::database::DeviceCharacteristic dc;
   dc.name = "pinchoff";
   dc.uncertainty = 0.05;
   dc.hash = "hash123";
@@ -151,15 +151,16 @@ TEST(ParameterMapTest, DeviceCharacteristicStorage) {
   params.set("char", dc);
   EXPECT_TRUE(params.has("char"));
 
-  auto retrieved = params.get<DeviceCharacteristic>("char");
+  auto retrieved = params.get<falcon::database::DeviceCharacteristic>("char");
   EXPECT_EQ(retrieved.name, "pinchoff");
-  EXPECT_DOUBLE_EQ(retrieved.uncertainty, 0.05);
+  EXPECT_TRUE(retrieved.uncertainty.has_value());
+  EXPECT_DOUBLE_EQ(retrieved.uncertainty.value_or(0), 0.05);
   EXPECT_EQ(retrieved.hash, "hash123");
 }
 
 TEST(ParameterMapTest, DeviceCharacteristicJson) {
   ParameterMap params;
-  DeviceCharacteristic dc;
+  falcon::database::DeviceCharacteristic dc;
   dc.name = "gate_val";
   dc.uncertainty = 0.1;
 

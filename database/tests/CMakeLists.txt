@@ -20,7 +20,6 @@ target_include_directories(falcon-db-test-utils
 # Unit tests
 add_executable(falcon_db_unit_tests
   unit/test_device_characteristic.cpp
-  unit/test_json_primitive.cpp
   unit/test_database_operations.cpp
 )
 

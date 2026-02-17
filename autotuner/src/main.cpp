@@ -1,4 +1,4 @@
-#include "falcon-atc/compiler.hpp"
+#include "falcon-atc/Compiler.hpp"
 #include "falcon-autotuner/Interpreter.hpp"
 #include "falcon-autotuner/ParameterMap.hpp"
 #include "falcon_core/physics/config/core/Config.hpp"
@@ -32,10 +32,10 @@ int main(int argc, char **argv) {
 
     // 2. Setup environment (Config and Params)
     // For demonstration, we'll use a default config
-    falcon_core::physics::config::core::Config config;
+    falcon_core::physics::config::core::ConfigSP config;
 
     // 3. Initialize Interpreter
-    falcon::autotuner::Interpreter interpreter(*program, config, nats_url);
+    falcon::autotuner::Interpreter interpreter(*program);
 
     if (!at_name.empty()) {
       std::cout << "Running autotuner: " << at_name << std::endl;

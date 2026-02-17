@@ -16,7 +16,7 @@ TEST_F(DatabaseOperationsTest, InsertAndRetrieve) {
       std::chrono::system_clock::now().time_since_epoch().count());
   dchar.state = std::make_optional<std::string>("tuned");
   dchar.unit_name = std::make_optional<std::string>("mV");
-  dchar.characteristic = JSONPrimitive(150.5);
+  dchar.characteristic = (150.5);
   dchar.uncertainty = std::make_optional<double>(0.02);
 
   db_->insert(dchar);
@@ -26,7 +26,7 @@ TEST_F(DatabaseOperationsTest, InsertAndRetrieve) {
   EXPECT_EQ(retrieved->name, "plunger_voltage");
   ASSERT_TRUE(retrieved->hash.has_value());
   EXPECT_EQ(*retrieved->hash, "98.32");
-  EXPECT_DOUBLE_EQ(retrieved->characteristic.as_double(), 150.5);
+  EXPECT_DOUBLE_EQ(retrieved->characteristic, 150.5);
   ASSERT_TRUE(retrieved->plunger_gate.has_value());
   EXPECT_EQ(*retrieved->plunger_gate, "P1");
   ASSERT_TRUE(retrieved->unit_name.has_value());
@@ -39,7 +39,7 @@ TEST_F(DatabaseOperationsTest, InsertWithOptionalsUnset) {
   DeviceCharacteristic dchar;
   dchar.scope = "test_scope";
   dchar.name = "optional_test";
-  dchar.characteristic = JSONPrimitive(42.0);
+  dchar.characteristic = (42.0);
   // All other optionals left unset
   db_->insert(dchar);
 
@@ -56,7 +56,7 @@ TEST_F(DatabaseOperationsTest, GetByQuery) {
   dchar.scope = "query_scope";
   dchar.name = "query_name";
   dchar.hash = std::make_optional<std::string>("9.8.7");
-  dchar.characteristic = JSONPrimitive(123.0);
+  dchar.characteristic = (123.0);
   db_->insert(dchar);
 
   DeviceCharacteristicQuery query;
@@ -80,7 +80,7 @@ TEST_F(DatabaseOperationsTest, DeleteByName) {
   dchar.name = "to_delete";
   dchar.hash = std::make_optional<std::string>("hash_del");
   dchar.time = std::make_optional<int64_t>(1000);
-  dchar.characteristic = JSONPrimitive(1.0);
+  dchar.characteristic = (1.0);
   db_->insert(dchar);
   EXPECT_TRUE(db_->get_by_name("to_delete").has_value());
   bool deleted = db_->delete_by_name("to_delete");
@@ -93,12 +93,12 @@ TEST_F(DatabaseOperationsTest, DeleteByHash) {
   dc1.name = "char1";
   dc1.hash = std::make_optional<std::string>("same_hash");
   dc1.time = std::make_optional<int64_t>(1000);
-  dc1.characteristic = JSONPrimitive(1.0);
+  dc1.characteristic = (1.0);
   DeviceCharacteristic dc2;
   dc2.name = "char2";
   dc2.hash = std::make_optional<std::string>("same_hash");
   dc2.time = std::make_optional<int64_t>(2000);
-  dc2.characteristic = JSONPrimitive(2.0);
+  dc2.characteristic = (2.0);
   db_->insert(dc1);
   db_->insert(dc2);
   int deleted = db_->delete_by_hash("same_hash");
@@ -111,7 +111,7 @@ TEST_F(DatabaseOperationsTest, GetMany) {
     dchar.name = "char_" + std::to_string(i);
     dchar.hash = std::make_optional<std::string>("hash_" + std::to_string(i));
     dchar.time = std::make_optional<int64_t>(1000 + i);
-    dchar.characteristic = JSONPrimitive(static_cast<double>(i));
+    dchar.characteristic = (static_cast<double>(i));
     db_->insert(dchar);
   }
   std::vector<std::string> names = {"char_0", "char_2", "char_4"};
@@ -125,7 +125,7 @@ TEST_F(DatabaseOperationsTest, GetByHashRange) {
     dchar.name = "char_" + std::to_string(i);
     dchar.hash = std::make_optional<std::string>(std::to_string(i) + ".0.0");
     dchar.time = std::make_optional<int64_t>(1000 + i);
-    dchar.characteristic = JSONPrimitive(static_cast<double>(i));
+    dchar.characteristic = (static_cast<double>(i));
     db_->insert(dchar);
   }
   auto results = db_->get_by_hash_range("2.0.0", "7.0.0");
@@ -153,7 +153,7 @@ TEST_F(DatabaseOperationsTest, GetByQueryWildcard) {
   DeviceCharacteristic dchar;
   dchar.scope = "wildcard_scope";
   dchar.name = "wildcard_name";
-  dchar.characteristic = JSONPrimitive(77.0);
+  dchar.characteristic = (77.0);
   db_->insert(dchar);
 
   DeviceCharacteristicQuery query;
@@ -175,7 +175,7 @@ TEST_F(DatabaseOperationsTest, ClearAll) {
     dchar.name = "char_" + std::to_string(i);
     dchar.hash = std::make_optional<std::string>("hash_" + std::to_string(i));
     dchar.time = std::make_optional<int64_t>(1000 + i);
-    dchar.characteristic = JSONPrimitive(static_cast<double>(i));
+    dchar.characteristic = (static_cast<double>(i));
     db_->insert(dchar);
   }
   EXPECT_EQ(db_->count(), 10);
@@ -190,7 +190,7 @@ TEST_F(DatabaseOperationsTest, Count) {
     dchar.name = "char_" + std::to_string(i);
     dchar.hash = std::make_optional<std::string>("hash_" + std::to_string(i));
     dchar.time = std::make_optional<int64_t>(1000 + i);
-    dchar.characteristic = JSONPrimitive(static_cast<double>(i));
+    dchar.characteristic = (static_cast<double>(i));
     db_->insert(dchar);
   }
   EXPECT_EQ(db_->count(), 7);

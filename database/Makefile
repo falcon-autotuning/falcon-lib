@@ -249,7 +249,12 @@ install: build-release
 	$(SUDO) cp -r $(VCPKG_INSTALLED_DIR)/$(VCPKG_TRIPLET)/bin/* $(INSTALL_LIBDIR)/ || true
 	@echo "✓ Installation complete"
 
-clean:
+uninstall:
+	@echo "Uninstalling falcon-database from $(INSTALL_PREFIX)..."
+	$(SUDO) rm -r $(INSTALL_LIBDIR)/libfalcon-database* $(INSTALL_INCLUDEDIR)/falcon-database* $(INSTALL_PREFIX)/lib/cmake/falcon-database || true
+	@echo "✓ Uninstall complete"
+
+clean: uninstall
 	@echo "Cleaning build artifacts..."
 	rm -rf $(BUILD_DIR_DEBUG) $(BUILD_DIR_RELEASE) build/ compile_commands.json
 	@echo "✓ Clean complete"
