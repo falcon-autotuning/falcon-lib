@@ -1,6 +1,7 @@
 # Falcon Routine Library Makefile
 
 .PHONY: all configure build-debug build-release test clean install help check-vcpkg
+# when installing falcon-core. The falcon_core_cpp and falcon_core_c-api got merged in includes into falcon_core and the cerela types xtensor got added to the cereal library
 
 # Detect OS
 UNAME_S := $(shell uname -s)
@@ -95,6 +96,8 @@ configure-debug: check-vcpkg check-database
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
     -Dfalcon-database_DIR=/opt/falcon/lib/cmake/falcon-database \
+    -Dfalcon-comms_DIR=/opt/falcon/lib/cmake/falcon-comms \
+    -Dfalcon_core_DIR=/opt/falcon/lib/cmake/falcon_core \
 		-DBUILD_TESTS=ON \
 		-DUSE_CCACHE=ON \
 		-DENABLE_PCH=ON \
@@ -112,6 +115,7 @@ configure-release: check-vcpkg check-database
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
     -Dfalcon-database_DIR=/opt/falcon/lib/cmake/falcon-database \
+    -Dfalcon-comms_DIR=/opt/falcon/lib/cmake/falcon-comms \
 		-DBUILD_TESTS=ON \
 		-DUSE_CCACHE=ON \
 		-DENABLE_PCH=ON \

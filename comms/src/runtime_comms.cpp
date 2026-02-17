@@ -1,88 +1,86 @@
 #include "falcon-comms/runtime_comms.hpp"
+#include "falcon-comms/commands_definitions.hpp"
 #include <chrono>
+#include <future>
 #include <spdlog/spdlog.h>
 
+namespace {
+std::string make_port_request_subject() {
+  return "INSTRUMENTHUB." + std::string(PortRequest::NAME);
+}
+std::string make_port_response_subject() {
+  return "FALCON." + std::string(PortPayload::NAME);
+}
+std::string make_config_request_subject() {
+  return "INSTRUMENTHUB." + std::string(DeviceConfigRequest::NAME);
+}
+std::string make_config_response_subject() {
+  return "FALCON." + std::string(DeviceConfigResponse::NAME);
+}
+} // namespace
 namespace falcon::comms {
 
 RuntimeComms::RuntimeComms() : hub_(NatsManager::instance()) {}
 
-std::optional<DeviceConfigResponse>
-RuntimeComms::request_device_config(int timeout_ms) {
-  // Create DeviceConfigRequest
-  DeviceConfigRequest req;
-  req.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-                      std::chrono::system_clock::now().time_since_epoch())
-                      .count();
+DeviceConfigResponse RuntimeComms::subscribe_config_response(int timeout_ms,
+                                                             int time) {
+  std::promise<DeviceConfigResponse> prom;
+  auto fut = prom.get_future();
 
-  // Publish request and wait for response
-  auto response = hub_.request_json(DEVICE_CONFIG_REQUEST_SUBJECT,
-                                    req.to_json(), timeout_ms);
-
-  if (!response) {
-    spdlog::warn("Device config request timed out");
-    return std::nullopt;
-  }
-
-  try {
-    return DeviceConfigResponse::from_json(*response);
-  } catch (const std::exception &e) {
-    spdlog::error("Failed to parse DeviceConfigResponse: {}", e.what());
-    return std::nullopt;
-  }
-}
-
-std::optional<PortPayload> RuntimeComms::request_ports(int timeout_ms) {
-  // Create PortRequest
-  PortRequest req;
-  req.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-                      std::chrono::system_clock::now().time_since_epoch())
-                      .count();
-
-  // Publish request and wait for response
-  auto response =
-      hub_.request_json(PORT_REQUEST_SUBJECT, req.to_json(), timeout_ms);
-
-  if (!response) {
-    spdlog::warn("Port request timed out");
-    return std::nullopt;
-  }
-
-  try {
-    return PortPayload::from_json(*response);
-  } catch (const std::exception &e) {
-    spdlog::error("Failed to parse PortPayload: {}", e.what());
-    return std::nullopt;
-  }
-}
-
-void RuntimeComms::subscribe_device_config_response(
-    std::function<void(const DeviceConfigResponse &)> callback) {
-  hub_.subscribe(
-      DEVICE_CONFIG_RESPONSE_SUBJECT, [callback](const std::string &data) {
-        try {
-          auto json = nlohmann::json::parse(data);
-          DeviceConfigResponse response = DeviceConfigResponse::from_json(json);
-          callback(response);
-        } catch (const std::exception &e) {
-          spdlog::error("Failed to parse DeviceConfigResponse in "
-                        "subscription: {}",
-                        e.what());
-        }
-      });
-}
-
-void RuntimeComms::subscribe_port_payload(
-    std::function<void(const PortPayload &)> callback) {
-  hub_.subscribe(PORT_PAYLOAD_SUBJECT, [callback](const std::string &data) {
+  // Subscribe with a one-shot callback
+  hub_.subscribe(make_config_response_subject(), [&prom](
+                                                     const std::string &data) {
     try {
       auto json = nlohmann::json::parse(data);
-      PortPayload payload = PortPayload::from_json(json);
-      callback(payload);
+      DeviceConfigResponse response = DeviceConfigResponse::from_json(json);
+      prom.set_value(response);
     } catch (const std::exception &e) {
-      spdlog::error("Failed to parse PortPayload in subscription: {}",
+      spdlog::error("Failed to parse DeviceConfigResponse in subscription: {}",
                     e.what());
     }
   });
+
+  StateRequest req;
+  req.timestamp = time;
+
+  hub_.publish(make_config_request_subject(), req.to_json());
+  // Wait for the response or timeout
+  if (fut.wait_for(std::chrono::milliseconds(timeout_ms)) ==
+      std::future_status::ready) {
+    // Optionally unsubscribe here if your hub supports it, using sub_id
+    return fut.get();
+  } // Optionally unsubscribe here if your hub supports it, using sub_id
+  throw std::runtime_error("Timeout waiting for DeviceConfigResponse");
+}
+
+PortPayload RuntimeComms::subscribe_port_payload(int timeout_ms, int time) {
+  std::promise<PortPayload> prom;
+  auto fut = prom.get_future();
+
+  // Subscribe with a one-shot callback
+  hub_.subscribe(
+      make_config_response_subject(), [&prom](const std::string &data) {
+        try {
+          auto json = nlohmann::json::parse(data);
+          PortPayload response = PortPayload::from_json(json);
+          prom.set_value(response);
+        } catch (const std::exception &e) {
+          spdlog::error("Failed to parse PortPayload in subscription: {}",
+                        e.what());
+        }
+      });
+
+  StateRequest req;
+  req.timestamp = time;
+
+  hub_.publish(make_config_request_subject(), req.to_json());
+  // Wait for the response or timeout
+  if (fut.wait_for(std::chrono::milliseconds(timeout_ms)) ==
+      std::future_status::ready) {
+    // Optionally unsubscribe here if your hub supports it, using sub_id
+    return fut.get();
+  } // Optionally unsubscribe here if your hub supports it, using sub_id
+  throw std::runtime_error("Timeout waiting for PortPayload");
 }
 
 } // namespace falcon::comms

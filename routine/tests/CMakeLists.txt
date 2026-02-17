@@ -24,7 +24,6 @@ set_target_properties(falcon-routine-test-utils PROPERTIES
 # Unit tests
 add_executable(falcon_routine_unit_tests
   unit/test_database.cpp
-  unit/test_hub.cpp
   unit/test_log.cpp
 )
 

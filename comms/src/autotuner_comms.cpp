@@ -1,47 +1,47 @@
 #include "falcon-comms/autotuner_comms.hpp"
-#include <chrono>
+#include <future>
 #include <spdlog/spdlog.h>
-
+namespace {
+std::string make_state_request_subject() {
+  return "INSTRUMENTHUB." + std::string(StateRequest::NAME);
+}
+std::string make_state_response_subject() {
+  return "FALCON." + std::string(StateResponse::NAME);
+}
+} // namespace
 namespace falcon::comms {
 
 AutotunerComms::AutotunerComms() : hub_(NatsManager::instance()) {}
 
-std::optional<StateResponse> AutotunerComms::request_state(int timeout_ms) {
-  // Create StateRequest
+StateResponse AutotunerComms::subscribe_state_response(int timeout_ms,
+                                                       int time) {
+  std::promise<StateResponse> prom;
+  auto fut = prom.get_future();
+
+  // Subscribe with a one-shot callback
+  hub_.subscribe(
+      make_state_response_subject(), [&prom](const std::string &data) {
+        try {
+          auto json = nlohmann::json::parse(data);
+          StateResponse response = StateResponse::from_json(json);
+          prom.set_value(response);
+        } catch (const std::exception &e) {
+          spdlog::error("Failed to parse StateResponse in subscription: {}",
+                        e.what());
+        }
+      });
+
   StateRequest req;
-  req.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-                      std::chrono::system_clock::now().time_since_epoch())
-                      .count();
+  req.timestamp = time;
 
-  // Publish request and wait for response
-  auto response =
-      hub_.request_json(STATE_REQUEST_SUBJECT, req.to_json(), timeout_ms);
-
-  if (!response) {
-    spdlog::warn("State request timed out");
-    return std::nullopt;
-  }
-
-  try {
-    return StateResponse::from_json(*response);
-  } catch (const std::exception &e) {
-    spdlog::error("Failed to parse StateResponse: {}", e.what());
-    return std::nullopt;
-  }
-}
-
-void AutotunerComms::subscribe_state_response(
-    std::function<void(const StateResponse &)> callback) {
-  hub_.subscribe(STATE_RESPONSE_SUBJECT, [callback](const std::string &data) {
-    try {
-      auto json = nlohmann::json::parse(data);
-      StateResponse response = StateResponse::from_json(json);
-      callback(response);
-    } catch (const std::exception &e) {
-      spdlog::error("Failed to parse StateResponse in subscription: {}",
-                    e.what());
-    }
-  });
+  hub_.publish(make_state_request_subject(), req.to_json());
+  // Wait for the response or timeout
+  if (fut.wait_for(std::chrono::milliseconds(timeout_ms)) ==
+      std::future_status::ready) {
+    // Optionally unsubscribe here if your hub supports it, using sub_id
+    return fut.get();
+  } // Optionally unsubscribe here if your hub supports it, using sub_id
+  throw std::runtime_error("Timeout waiting for StateResponse");
 }
 
 } // namespace falcon::comms

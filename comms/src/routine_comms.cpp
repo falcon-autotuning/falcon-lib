@@ -1,69 +1,48 @@
 #include "falcon-comms/routine_comms.hpp"
-#include <chrono>
+#include "falcon-comms/commands_definitions.hpp"
+#include <future>
 #include <spdlog/spdlog.h>
 
+namespace {
+std::string make_measure_command_subject() {
+  return "INSTRUMENTHUB." + std::string(MeasureCommand::NAME);
+}
+std::string make_measure_response_subject() {
+  return "FALCON." + std::string(MeasureResponse::NAME);
+}
+} // namespace
 namespace falcon::comms {
 
-RoutineComms::RoutineComms() : AutotunerComms() {}
+RoutineComms::RoutineComms() = default;
+MeasureResponse RoutineComms::subscribe_measure_response(int timeout_ms,
+                                                         int time) {
+  std::promise<MeasureResponse> prom;
+  auto fut = prom.get_future();
 
-void RoutineComms::publish_measurement_command(const std::string &request) {
-  MeasureCommand cmd;
-  cmd.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-                      std::chrono::system_clock::now().time_since_epoch())
-                      .count();
-  cmd.request = request;
+  // Subscribe with a one-shot callback
+  hub_.subscribe(
+      make_measure_response_subject(), [&prom](const std::string &data) {
+        try {
+          auto json = nlohmann::json::parse(data);
+          MeasureResponse response = MeasureResponse::from_json(json);
+          prom.set_value(response);
+        } catch (const std::exception &e) {
+          spdlog::error("Failed to parse MeasureResponse in subscription: {}",
+                        e.what());
+        }
+      });
 
-  hub_.publish_json(MEASURE_COMMAND_SUBJECT, cmd.to_json());
-  spdlog::debug("Published MeasureCommand: {}", request);
-}
+  StateRequest req;
+  req.timestamp = time;
 
-std::optional<std::pair<MeasureResponse, std::vector<std::string>>>
-RoutineComms::request_measurement(const std::string &request, int timeout_ms) {
-  // Create MeasureCommand
-  MeasureCommand cmd;
-  cmd.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-                      std::chrono::system_clock::now().time_since_epoch())
-                      .count();
-  cmd.request = request;
-
-  // Publish command and wait for response
-  auto response =
-      hub_.request_json(MEASURE_COMMAND_SUBJECT, cmd.to_json(), timeout_ms);
-
-  if (!response) {
-    spdlog::warn("Measurement request timed out");
-    return std::nullopt;
-  }
-
-  try {
-    MeasureResponse measure_response = MeasureResponse::from_json(*response);
-
-    spdlog::debug("Received MeasureResponse - stream: {}, channel: {}",
-                  measure_response.stream, measure_response.channel);
-
-    // Pull measurement data from JetStream
-    auto measurement_data = pull_measurement_data(measure_response.stream,
-                                                  measure_response.channel);
-
-    return std::make_pair(measure_response, measurement_data);
-  } catch (const std::exception &e) {
-    spdlog::error("Failed to process measurement response: {}", e.what());
-    return std::nullopt;
-  }
-}
-
-void RoutineComms::subscribe_measurement_response(
-    std::function<void(const MeasureResponse &)> callback) {
-  hub_.subscribe(MEASURE_RESPONSE_SUBJECT, [callback](const std::string &data) {
-    try {
-      auto json = nlohmann::json::parse(data);
-      MeasureResponse response = MeasureResponse::from_json(json);
-      callback(response);
-    } catch (const std::exception &e) {
-      spdlog::error("Failed to parse MeasureResponse in subscription: {}",
-                    e.what());
-    }
-  });
+  hub_.publish(make_measure_command_subject(), req.to_json());
+  // Wait for the response or timeout
+  if (fut.wait_for(std::chrono::milliseconds(timeout_ms)) ==
+      std::future_status::ready) {
+    // Optionally unsubscribe here if your hub supports it, using sub_id
+    return fut.get();
+  } // Optionally unsubscribe here if your hub supports it, using sub_id
+  throw std::runtime_error("Timeout waiting for MeasureResponse");
 }
 
 std::vector<std::string> RoutineComms::pull_measurement_data(

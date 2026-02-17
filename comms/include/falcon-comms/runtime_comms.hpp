@@ -19,46 +19,23 @@ public:
   ~RuntimeComms() = default;
 
   /**
-   * @brief Request device configuration from instrument hub
-   * @param timeout_ms Timeout in milliseconds
-   * @return DeviceConfigResponse if successful, nullopt otherwise
+   * @brief Subscribe to device config with a callback
+   * @param timeout_ms the timeout in milliseconds to wait
+   * @param time current time
+   * @return DeviceConfigResponse if successful
    */
-  std::optional<DeviceConfigResponse>
-  request_device_config(int timeout_ms = 5000);
+  DeviceConfigResponse subscribe_config_response(int timeout_ms, int time);
 
   /**
-   * @brief Request port information from instrument hub
-   * @param timeout_ms Timeout in milliseconds
-   * @return PortPayload if successful, nullopt otherwise
+   * @brief Subscribe to ports with a callback
+   * @param timeout_ms the timeout in milliseconds to wait
+   * @param time current time
+   * @return  PortPayloadif successful
    */
-  std::optional<PortPayload> request_ports(int timeout_ms = 5000);
-
-  /**
-   * @brief Subscribe to device config responses with a callback
-   * @param callback Function to call when device config response received
-   */
-  void subscribe_device_config_response(
-      std::function<void(const DeviceConfigResponse &)> callback);
-
-  /**
-   * @brief Subscribe to port payloads with a callback
-   * @param callback Function to call when port payload received
-   */
-  void
-  subscribe_port_payload(std::function<void(const PortPayload &)> callback);
+  PortPayload subscribe_port_payload(int timeout_ms, int time);
 
 private:
   NatsManager &hub_;
-
-  // Subject constants
-  static constexpr const char *DEVICE_CONFIG_REQUEST_SUBJECT =
-      "INSTRUMENTHUB.DEVICE_CONFIG_REQUEST";
-  static constexpr const char *DEVICE_CONFIG_RESPONSE_SUBJECT =
-      "INSTRUMENTHUB.DEVICE_CONFIG_RESPONSE";
-  static constexpr const char *PORT_REQUEST_SUBJECT =
-      "INSTRUMENTHUB.PORT_REQUEST";
-  static constexpr const char *PORT_PAYLOAD_SUBJECT =
-      "INSTRUMENTHUB.PORT_PAYLOAD";
 };
 
 } // namespace falcon::comms

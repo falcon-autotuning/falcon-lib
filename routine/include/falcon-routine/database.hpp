@@ -4,10 +4,8 @@
 namespace falcon::routine {
 
 /**
- * @brief Alias for ReadOnlyDatabaseConnection for backward compatibility.
- *
- * The base ReadOnlyDatabaseConnection is now lazy by default,
- * so this alias maintains API compatibility with existing code.
+ * @brief Alias for ReadOnlyDatabaseConnection but exposed within the routine
+ * library.
  */
 using LazyReadOnlyDatabaseConnection =
     falcon::database::ReadOnlyDatabaseConnection;
