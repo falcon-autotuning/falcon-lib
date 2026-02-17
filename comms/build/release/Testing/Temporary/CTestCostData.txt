@@ -1,44 +1,23 @@
-NatsManagerUnitTest.LazyConnection 0 0
-NatsManagerUnitTest.PublishString 0 0
-NatsManagerUnitTest.PublishJson 0 0
-NatsManagerUnitTest.RequestReplyWithResponder 0 0
-NatsManagerUnitTest.Subscribe 0 0
-AutotunerCommsUnitTest.RequestState 0 0
-AutotunerCommsUnitTest.SubscribeStateResponse 0 0
-AutotunerCommsUnitTest.RequestStateTimeout 0 0
-RoutineCommsUnitTest.InheritsFromAutotunerComms 0 0
-RoutineCommsUnitTest.PublishMeasurementCommand 0 0
-RoutineCommsUnitTest.SubscribeMeasurementResponse 0 0
-RoutineCommsUnitTest.RequestMeasurementWithJetStream 0 0
-RuntimeCommsUnitTest.RequestDeviceConfig 0 0
-RuntimeCommsUnitTest.RequestPorts 0 0
-RuntimeCommsUnitTest.SubscribeDeviceConfigResponse 0 0
-RuntimeCommsUnitTest.SubscribePortPayload 0 0
-RuntimeCommsUnitTest.RequestDeviceConfigTimeout 0 0
-RuntimeCommsUnitTest.RequestPortsTimeout 0 0
-IntegrationTest.AutotunerWorkflow 0 0
-IntegrationTest.RuntimeWorkflow 0 0
-IntegrationTest.RoutineInheritanceWorkflow 0 0
-IntegrationTest.AllThreeCommsSimultaneously 1 5.21538
+NatsManagerUnitTest.LazyConnection 2 0.00402233
+NatsManagerUnitTest.PublishString 2 0.00285352
+NatsManagerUnitTest.PublishJson 2 0.00364277
+NatsManagerUnitTest.RequestReplyWithResponder 2 0.0598607
+NatsManagerUnitTest.Subscribe 2 0.0598368
+AutotunerCommsUnitTest.RequestState 2 0.0601799
+AutotunerCommsUnitTest.SubscribeStateResponse 2 0.0598935
+AutotunerCommsUnitTest.RequestStateTimeout 2 0.00455481
+RoutineCommsUnitTest.InheritsFromAutotunerComms 2 0.0605093
+RoutineCommsUnitTest.PublishMeasurementCommand 2 0.0599264
+RoutineCommsUnitTest.SubscribeMeasurementResponse 2 0.0598848
+RoutineCommsUnitTest.RequestMeasurementWithJetStream 1 0.321496
+RuntimeCommsUnitTest.RequestDeviceConfig 2 0.0588189
+RuntimeCommsUnitTest.RequestPorts 2 0.0593491
+RuntimeCommsUnitTest.SubscribeDeviceConfigResponse 2 0.0596521
+RuntimeCommsUnitTest.SubscribePortPayload 2 0.0593482
+RuntimeCommsUnitTest.RequestDeviceConfigTimeout 2 0.00398916
+RuntimeCommsUnitTest.RequestPortsTimeout 2 0.00264558
+IntegrationTest.AutotunerWorkflow 2 0.0599527
+IntegrationTest.RuntimeWorkflow 2 0.0603532
+IntegrationTest.RoutineInheritanceWorkflow 2 0.0596796
+IntegrationTest.AllThreeCommsSimultaneously 3 1.73783
 ---
-NatsManagerUnitTest.LazyConnection
-NatsManagerUnitTest.PublishString
-NatsManagerUnitTest.PublishJson
-NatsManagerUnitTest.RequestReplyWithResponder
-NatsManagerUnitTest.Subscribe
-AutotunerCommsUnitTest.RequestState
-AutotunerCommsUnitTest.SubscribeStateResponse
-AutotunerCommsUnitTest.RequestStateTimeout
-RoutineCommsUnitTest.InheritsFromAutotunerComms
-RoutineCommsUnitTest.PublishMeasurementCommand
-RoutineCommsUnitTest.SubscribeMeasurementResponse
-RoutineCommsUnitTest.RequestMeasurementWithJetStream
-RuntimeCommsUnitTest.RequestDeviceConfig
-RuntimeCommsUnitTest.RequestPorts
-RuntimeCommsUnitTest.SubscribeDeviceConfigResponse
-RuntimeCommsUnitTest.SubscribePortPayload
-RuntimeCommsUnitTest.RequestDeviceConfigTimeout
-RuntimeCommsUnitTest.RequestPortsTimeout
-IntegrationTest.AutotunerWorkflow
-IntegrationTest.RuntimeWorkflow
-IntegrationTest.RoutineInheritanceWorkflow

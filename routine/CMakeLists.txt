@@ -46,6 +46,11 @@ find_package(OpenSSL CONFIG REQUIRED)
 if(NOT TARGET falcon::falcon-database)
   find_package(falcon-database CONFIG REQUIRED)
 endif()
+if(NOT TARGET falcon::falcon-comms)
+  find_package(falcon-comms CONFIG REQUIRED)
+endif()
+# After finding falcon_core_cpp
+find_package(falcon_core CONFIG REQUIRED)
 
 message(STATUS "Found nlohmann_json: ${nlohmann_json_VERSION}")
 message(STATUS "Found spdlog: ${spdlog_VERSION}")
@@ -66,6 +71,8 @@ target_include_directories(falcon-routine
 target_link_libraries(falcon-routine
   PUBLIC
     falcon::falcon-database
+    falcon::falcon-comms
+    falcon_core_cpp
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     cnats::nats

@@ -9,12 +9,14 @@ ifeq ($(UNAME_S),Linux)
     CMAKE_GENERATOR := Ninja
     VCPKG_TRIPLET ?= x64-linux-dynamic
     NPROC := $(shell nproc 2>/dev/null || echo 4)
+    SUDO := sudo
 endif
 ifeq ($(OS),Windows_NT)
     PLATFORM := windows
     CMAKE_GENERATOR := "Visual Studio 17 2022"
     VCPKG_TRIPLET ?= x64-windows
     NPROC := 4
+    SUDO :=
 endif
 
 # Paths
@@ -24,6 +26,10 @@ VCPKG_INSTALLED_DIR ?= $(CURDIR)/../vcpkg_installed
 
 BUILD_DIR_DEBUG := build/debug
 BUILD_DIR_RELEASE := build/release
+
+INSTALL_PREFIX ?= /opt/falcon
+INSTALL_LIBDIR := $(INSTALL_PREFIX)/lib
+INSTALL_INCLUDEDIR := $(INSTALL_PREFIX)/include
 
 # Default target
 all: build-release
@@ -122,8 +128,12 @@ build-release: configure-release
 	@echo "✓ Release build complete"
 
 install: build-release
-	@echo "Installing falcon-comms..."
-	cmake --install $(BUILD_DIR_RELEASE)
+	@echo "Installing falcon-comms to $(INSTALL_PREFIX)..."
+	$(SUDO) cmake --install $(BUILD_DIR_RELEASE) --prefix $(INSTALL_PREFIX)
+	@echo "Copying vcpkg headers and libraries..."
+	$(SUDO) cp -r $(VCPKG_INSTALLED_DIR)/$(VCPKG_TRIPLET)/include/* $(INSTALL_INCLUDEDIR)/
+	$(SUDO) cp -r $(VCPKG_INSTALLED_DIR)/$(VCPKG_TRIPLET)/lib/* $(INSTALL_LIBDIR)/
+	$(SUDO) cp -r $(VCPKG_INSTALLED_DIR)/$(VCPKG_TRIPLET)/bin/* $(INSTALL_LIBDIR)/ || true
 	@echo "✓ Installation complete"
 
 clean:

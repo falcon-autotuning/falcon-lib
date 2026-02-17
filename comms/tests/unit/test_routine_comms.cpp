@@ -164,11 +164,10 @@ TEST_F(RoutineCommsUnitTest, RequestMeasurementWithJetStream) {
           jsErrCode errCode;
           natsStatus s =
               js_Publish(&ack, js, "test.measurements.data", data.c_str(),
-                         data.length(), NULL, &errCode);
-          if (ack)
+                         data.length(), nullptr, &errCode);
+          if (ack) {
             jsPubAck_Destroy(ack);
-          if (ack)
-            jsPubAck_Destroy(ack);
+          }
         }
 
         // Wait for publishes to complete

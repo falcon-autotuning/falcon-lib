@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <memory>
 #include <mutex>
 #include <nats/nats.h>
 #include <nlohmann/json.hpp>
@@ -106,16 +105,27 @@ public:
   ~NatsManager();
 
 private:
-  NatsManager() = default;
+  NatsManager();
   NatsManager(const NatsManager &) = delete;
   NatsManager &operator=(const NatsManager &) = delete;
 
   void ensure_connected();
   void ensure_jetstream();
+  void cleanup_subscriptions();
+  void ensure_library_initialized();
+
+  // Subscription tracking structure
+  struct SubscriptionData {
+    natsSubscription *subscription;
+    std::function<void(const std::string &)> *callback;
+  };
 
   natsConnection *conn_ = nullptr;
   jsCtx *js_ = nullptr;
   mutable std::mutex mutex_;
+  std::vector<SubscriptionData> subscriptions_;
+  static bool library_initialized_;
+  static std::mutex library_mutex_;
 };
 
 } // namespace falcon::comms

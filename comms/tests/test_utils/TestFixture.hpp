@@ -1,6 +1,9 @@
 #pragma once
+
+#include "falcon-comms/natsManager.hpp"
 #include <cstdlib>
 #include <gtest/gtest.h>
+#include <nats/nats.h>
 #include <string>
 
 namespace falcon::comms::test {
@@ -15,6 +18,14 @@ protected:
   void TearDown() override {
     // Clean up environment variables to avoid pollution
     unsetenv("NATS_URL");
+
+    // Force disconnect to clean up resources properly
+    // This ensures cleanup happens while NATS library is still valid
+    try {
+      NatsManager::instance().disconnect();
+    } catch (...) {
+      // Ignore errors during test cleanup
+    }
   }
 
   void setupEnvironment() {
@@ -37,6 +48,23 @@ protected:
 
 private:
   std::string nats_url_;
+};
+
+/**
+ * @brief Global test environment to handle NATS library shutdown
+ */
+class NatsTestEnvironment : public ::testing::Environment {
+public:
+  ~NatsTestEnvironment() override = default;
+
+  void SetUp() override {
+    // Library is initialized on first use by NatsManager
+  }
+
+  void TearDown() override {
+    // Clean up NATS library after all tests complete
+    nats_Close();
+  }
 };
 
 } // namespace falcon::comms::test

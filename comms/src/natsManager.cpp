@@ -5,9 +5,28 @@
 
 namespace falcon::comms {
 
+// Static member initialization
+bool NatsManager::library_initialized_ = false;
+std::mutex NatsManager::library_mutex_;
+
 NatsManager &NatsManager::instance() {
   static NatsManager nm;
   return nm;
+}
+
+NatsManager::NatsManager() { ensure_library_initialized(); }
+
+void NatsManager::ensure_library_initialized() {
+  std::lock_guard<std::mutex> lock(library_mutex_);
+  if (!library_initialized_) {
+    natsStatus s = nats_Open(-1);
+    if (s != NATS_OK) {
+      throw std::runtime_error("Failed to initialize NATS library: " +
+                               std::string(natsStatus_GetText(s)));
+    }
+    library_initialized_ = true;
+    spdlog::debug("NATS library initialized");
+  }
 }
 
 void NatsManager::ensure_connected() {
@@ -82,6 +101,11 @@ std::optional<std::string> NatsManager::request(const std::string &subject,
     spdlog::warn("NATS request timeout: {}", subject);
     return std::nullopt;
   }
+  // FIX: Handle "No responders" as a timeout, not an error
+  if (s == NATS_NO_RESPONDERS) {
+    spdlog::warn("NATS request no responders: {}", subject);
+    return std::nullopt;
+  }
   if (s != NATS_OK) {
     throw std::runtime_error("NATS request failed: " +
                              std::string(natsStatus_GetText(s)));
@@ -128,8 +152,9 @@ static void message_handler(natsConnection *nc, natsSubscription *sub,
 void NatsManager::subscribe(const std::string &subject,
                             std::function<void(const std::string &)> callback) {
   ensure_connected();
-  // Allocate callback on heap (will be cleaned up when subscription is
-  // destroyed)
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  // Allocate callback on heap
   auto *cb = new std::function<void(const std::string &)>(callback);
   natsSubscription *sub = nullptr;
   natsStatus s = natsConnection_Subscribe(&sub, conn_, subject.c_str(),
@@ -139,6 +164,9 @@ void NatsManager::subscribe(const std::string &subject,
     throw std::runtime_error("NATS subscribe failed: " +
                              std::string(natsStatus_GetText(s)));
   }
+
+  // Track subscription for cleanup
+  subscriptions_.push_back({sub, cb});
   spdlog::info("Subscribed to NATS subject: {}", subject);
 }
 
@@ -149,17 +177,14 @@ NatsManager::jetstream_pull(const std::string &stream,
   ensure_jetstream();
   std::vector<std::string> messages;
 
-  // Set up subscription options to bind to stream/consumer and enable manual
-  // ack
-  jsSubOptions so;
-  jsSubOptions_Init(&so);
-  so.Stream = stream.c_str();
-  so.Consumer = consumer.c_str();
-  so.ManualAck = true;
+  // Create persistent copies of strings for subscription options
+  std::string stream_copy = stream;
+  std::string consumer_copy = consumer;
 
-  // Synchronous JetStream subscription
+  // Use pull subscribe for JetStream
   natsSubscription *sub = nullptr;
-  natsStatus s = js_SubscribeSync(&sub, js_, stream.c_str(), NULL, &so, NULL);
+  natsStatus s = js_PullSubscribe(&sub, js_, stream.c_str(), consumer.c_str(),
+                                  nullptr, nullptr, nullptr);
   if (s != NATS_OK) {
     throw std::runtime_error("JetStream subscribe failed: " +
                              std::string(natsStatus_GetText(s)));
@@ -177,6 +202,9 @@ NatsManager::jetstream_pull(const std::string &stream,
       break; // No more messages or timeout
     }
   }
+
+  // Clean up subscription
+  natsSubscription_Unsubscribe(sub);
   natsSubscription_Destroy(sub);
 
   return messages;
@@ -196,6 +224,10 @@ void NatsManager::connect(const std::string &url) {
   if (!url.empty()) {
     // Override environment
     std::lock_guard<std::mutex> lock(mutex_);
+
+    // Clean up existing subscriptions before reconnecting
+    cleanup_subscriptions();
+
     if (conn_) {
       if (js_) {
         jsCtx_Destroy(js_);
@@ -220,8 +252,26 @@ void NatsManager::connect(const std::string &url) {
   }
 }
 
+void NatsManager::cleanup_subscriptions() {
+  // Clean up all subscriptions before destroying connection
+  for (auto &sub_data : subscriptions_) {
+    if (sub_data.subscription) {
+      natsSubscription_Unsubscribe(sub_data.subscription);
+      natsSubscription_Destroy(sub_data.subscription);
+    }
+    if (sub_data.callback) {
+      delete sub_data.callback;
+    }
+  }
+  subscriptions_.clear();
+}
+
 void NatsManager::disconnect() {
   std::lock_guard<std::mutex> lock(mutex_);
+
+  // Clean up subscriptions BEFORE destroying connection
+  cleanup_subscriptions();
+
   if (js_) {
     jsCtx_Destroy(js_);
     js_ = nullptr;
@@ -233,6 +283,11 @@ void NatsManager::disconnect() {
   }
 }
 
-NatsManager::~NatsManager() { disconnect(); }
+NatsManager::~NatsManager() {
+  disconnect();
+  // Note: We do NOT call nats_Close() here because the singleton
+  // destructor runs during static destruction, which is too late.
+  // The test fixture should handle library cleanup.
+}
 
 } // namespace falcon::comms
