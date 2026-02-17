@@ -1,70 +1,22 @@
 #include "falcon-database/DeviceCharacteristic.hpp"
-#include <stdexcept>
-
+#include <iostream>
 namespace falcon::database {
 
-// JSONPrimitive implementation
-bool JSONPrimitive::as_bool() const {
-  if (type_ != Type::Boolean) {
-    throw std::runtime_error("JSONPrimitive is not a boolean");
-  }
-  return bool_value_;
+bool DeviceCharacteristicQuery::operator==(
+    const DeviceCharacteristicQuery &other) const {
+  return scope == other.scope && name == other.name &&
+         barrier_gate == other.barrier_gate &&
+         plunger_gate == other.plunger_gate &&
+         reservoir_gate == other.reservoir_gate &&
+         screening_gate == other.screening_gate && extra == other.extra &&
+         uncertainty == other.uncertainty && hash == other.hash &&
+         time == other.time && state == other.state &&
+         unit_name == other.unit_name;
 }
 
-int64_t JSONPrimitive::as_int() const {
-  if (type_ != Type::Integer) {
-    throw std::runtime_error("JSONPrimitive is not an integer");
-  }
-  return int_value_;
-}
-
-double JSONPrimitive::as_double() const {
-  if (type_ != Type::Double) {
-    throw std::runtime_error("JSONPrimitive is not a double");
-  }
-  return double_value_;
-}
-
-std::string JSONPrimitive::as_string() const {
-  if (type_ != Type::String) {
-    throw std::runtime_error("JSONPrimitive is not a string");
-  }
-  return string_value_;
-}
-
-json JSONPrimitive::to_json() const {
-  switch (type_) {
-  case Type::Null:
-    return nullptr;
-  case Type::Boolean:
-    return bool_value_;
-  case Type::Integer:
-    return int_value_;
-  case Type::Double:
-    return double_value_;
-  case Type::String:
-    return string_value_;
-  }
-  return nullptr;
-}
-
-JSONPrimitive JSONPrimitive::from_json(const json &json) {
-  if (json.is_null()) {
-    return {};
-  }
-  if (json.is_boolean()) {
-    return JSONPrimitive(json.get<bool>());
-  }
-  if (json.is_number_integer()) {
-    return JSONPrimitive(json.get<int64_t>());
-  }
-  if (json.is_number_float()) {
-    return JSONPrimitive(json.get<double>());
-  }
-  if (json.is_string()) {
-    return JSONPrimitive(json.get<std::string>());
-  }
-  throw std::runtime_error("Unsupported JSON type for JSONPrimitive");
+bool DeviceCharacteristicQuery::operator!=(
+    const DeviceCharacteristicQuery &other) const {
+  return !(*this == other);
 }
 
 // DeviceCharacteristic implementation
@@ -89,8 +41,7 @@ json DeviceCharacteristic::to_json() const {
   put_opt("recordtime", time);
   put_opt("device_state", state);
   put_opt("unit_name", unit_name);
-
-  json["device_characteristic"] = characteristic.to_json();
+  json["characteristic"] = characteristic;
   return json;
 }
 
@@ -126,11 +77,23 @@ DeviceCharacteristic DeviceCharacteristic::from_json(const json &json) {
   dchar.state = get_opt_str("device_state");
   dchar.unit_name = get_opt_str("unit_name");
 
-  if (json.contains("device_characteristic")) {
-    dchar.characteristic =
-        JSONPrimitive::from_json(json["device_characteristic"]);
-  }
+  dchar.characteristic = json["characteristic"];
   return dchar;
+}
+
+bool DeviceCharacteristic::operator==(const DeviceCharacteristic &other) const {
+  return scope == other.scope && name == other.name &&
+         barrier_gate == other.barrier_gate &&
+         plunger_gate == other.plunger_gate &&
+         reservoir_gate == other.reservoir_gate &&
+         screening_gate == other.screening_gate && extra == other.extra &&
+         uncertainty == other.uncertainty && hash == other.hash &&
+         time == other.time && state == other.state &&
+         unit_name == other.unit_name && characteristic == other.characteristic;
+}
+
+bool DeviceCharacteristic::operator!=(const DeviceCharacteristic &other) const {
+  return !(*this == other);
 }
 
 } // namespace falcon::database

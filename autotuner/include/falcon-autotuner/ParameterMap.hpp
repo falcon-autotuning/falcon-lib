@@ -1,6 +1,6 @@
 #pragma once
 
-#include "falcon-autotuner/DeviceCharacteristic.hpp"
+#include "falcon-database/DeviceCharacteristic.hpp"
 #include <map>
 #include <memory>
 #include <nlohmann/json.hpp>
@@ -29,7 +29,7 @@ using ConnectionsSP =
 class ParameterMap {
 public:
   using Value = std::variant<int64_t, double, bool, std::string, ConnectionSP,
-                             ConnectionsSP, DeviceCharacteristic>;
+                             ConnectionsSP, database::DeviceCharacteristic>;
 
   /**
    * @brief Set a parameter value
@@ -40,7 +40,7 @@ public:
   void set(const std::string &key, std::string value);
   void set(const std::string &key, ConnectionSP value);
   void set(const std::string &key, ConnectionsSP value);
-  void set(const std::string &key, DeviceCharacteristic value);
+  void set(const std::string &key, database::DeviceCharacteristic value);
   void set(const std::string &key, Value value);
 
   /**

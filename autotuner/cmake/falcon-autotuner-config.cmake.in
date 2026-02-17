@@ -2,10 +2,30 @@
 
 include(CMakeFindDependencyMacro)
 
+# Find all dependencies that falcon-autotuner needs
 find_dependency(nlohmann_json REQUIRED)
-find_dependency(Boost REQUIRED COMPONENTS graph)
-find_dependency(fmt REQUIRED)
+find_dependency(cereal REQUIRED)
+find_dependency(xtensor REQUIRED)
+find_dependency(xtl REQUIRED)
+find_dependency(yaml-cpp REQUIRED)
+find_dependency(OpenSSL REQUIRED)
+find_dependency(unofficial-sodium REQUIRED)
+find_dependency(cnats REQUIRED)
 
+# FLEX and BISON are build-time only, not needed for consumers
+# find_dependency(FLEX)
+# find_dependency(BISON)
+
+# Include falcon-core if available
+# Note: This assumes falcon-core is installed separately
+find_package(falcon-core QUIET)
+
+# Include the targets file
 include("${CMAKE_CURRENT_LIST_DIR}/falcon-autotuner-targets.cmake")
+
+# Provide imported targets
+# falcon::falcon-dsl - Main DSL runtime library
+# falcon::falcon-atc-core - Compiler library (for advanced users)
+# falcon::falcon-atc - CLI tool (if installed)
 
 check_required_components(falcon-autotuner)

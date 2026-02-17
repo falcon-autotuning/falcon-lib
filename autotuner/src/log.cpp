@@ -1,4 +1,4 @@
-#include "falcon-routine/log.hpp"
+#include "falcon-autotuner/log.hpp"
 #include <cstdlib>
 #include <mutex>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -6,7 +6,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-namespace falcon::routine::log {
+namespace falcon::autotuner::log {
 
 namespace {
 std::shared_ptr<spdlog::logger> g_logger;
@@ -40,8 +40,8 @@ void initialize_logger() {
     }
 
     // Create multi-sink logger
-    g_logger = std::make_shared<spdlog::logger>("falcon-routine", sinks.begin(),
-                                                sinks.end());
+    g_logger = std::make_shared<spdlog::logger>("falcon-autotuner",
+                                                sinks.begin(), sinks.end());
 
     // Set pattern
     if (log_pattern && strlen(log_pattern) > 0) {
@@ -84,7 +84,7 @@ void initialize_logger() {
   } catch (const spdlog::spdlog_ex &ex) {
     fprintf(stderr, "Log initialization failed: %s\n", ex.what());
     // Create fallback console logger
-    g_logger = spdlog::stdout_color_mt("falcon-routine-fallback");
+    g_logger = spdlog::stdout_color_mt("falcon-autotuner-fallback");
   }
 }
 
@@ -130,4 +130,4 @@ void flush() { get_logger_internal()->flush(); }
 
 std::shared_ptr<spdlog::logger> get_logger() { return get_logger_internal(); }
 
-} // namespace falcon::routine::log
+} // namespace falcon::autotuner::log

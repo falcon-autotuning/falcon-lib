@@ -42,7 +42,7 @@ TEST_F(SnapshotManagerTest, ExportAndImport) {
     dchar.time = 1000 + i;
     dchar.scope = "test_scope";
     dchar.plunger_gate = "P" + std::to_string(i);
-    dchar.characteristic = JSONPrimitive(static_cast<double>(i) * 10.0);
+    dchar.characteristic = (static_cast<double>(i) * 10.0);
     dchar.uncertainty = 0.01;
     db_->insert(dchar);
   }
@@ -65,7 +65,7 @@ TEST_F(SnapshotManagerTest, ExportAndImport) {
   auto retrieved = db_->get_by_name("test_3");
   ASSERT_TRUE(retrieved.has_value());
   EXPECT_EQ(retrieved->hash, "hash_3");
-  EXPECT_DOUBLE_EQ(retrieved->characteristic.as_double(), 30.0);
+  EXPECT_DOUBLE_EQ(retrieved->characteristic, 30.0);
 }
 
 TEST_F(SnapshotManagerTest, ValidateSnapshot) {

@@ -1,9 +1,6 @@
 #include "falcon-autotuner/ExprEvaluator.hpp"
 #include "falcon-atc/AST.hpp"
-#include "falcon-autotuner/DeviceCharacteristic.hpp"
-#include "falcon_core/physics/device_structures/Connection.hpp"
-#include "falcon_core/physics/device_structures/Connections.hpp"
-#include <cmath>
+#include "falcon-database/DeviceCharacteristic.hpp"
 #include <stdexcept>
 
 namespace falcon::autotuner {
@@ -12,7 +9,7 @@ struct ToDouble {
   double operator()(int64_t i) const { return static_cast<double>(i); }
   double operator()(double d) const { return d; }
   double operator()(bool b) const { return b ? 1.0 : 0.0; }
-  double operator()(const DeviceCharacteristic &) const {
+  double operator()(const database::DeviceCharacteristic &) const {
     throw std::runtime_error("Cannot convert DeviceCharacteristic to double");
   }
   template <typename T> double operator()(const T &) const {
@@ -24,7 +21,7 @@ struct ToBool {
   bool operator()(bool b) const { return b; }
   bool operator()(int64_t i) const { return i != 0; }
   bool operator()(double d) const { return d != 0.0; }
-  bool operator()(const DeviceCharacteristic &) const {
+  bool operator()(const database::DeviceCharacteristic &) const {
     return true; // Not null
   }
   template <typename T> bool operator()(const T &) const {
@@ -33,10 +30,11 @@ struct ToBool {
 };
 
 ExprEvaluator::Value ExprEvaluator::evaluate(const atc::Expr *e) {
-  if (!e)
-    return ExprEvaluator::Value(true);
+  if (e == nullptr) {
+    return true;
+  }
 
-  if (auto c = dynamic_cast<const atc::ConstExpr *>(e)) {
+  if (const auto *c = dynamic_cast<const atc::ConstExpr *>(e)) {
     return std::visit(
         [](auto &&arg) -> ExprEvaluator::Value {
           return ExprEvaluator::Value(arg);
@@ -44,41 +42,48 @@ ExprEvaluator::Value ExprEvaluator::evaluate(const atc::Expr *e) {
         c->value);
   }
 
-  if (auto v = dynamic_cast<const atc::VarExpr *>(e)) {
+  if (const auto *v = dynamic_cast<const atc::VarExpr *>(e)) {
     if (v->name == "config") {
-      return ExprEvaluator::Value(true);
+      return true;
     }
     return params_.get<ExprEvaluator::Value>(v->name);
   }
 
-  if (auto m = dynamic_cast<const atc::MemberExpr *>(e)) {
-    if (auto obj_var = dynamic_cast<const atc::VarExpr *>(m->object.get())) {
+  if (const auto *m = dynamic_cast<const atc::MemberExpr *>(e)) {
+    if (const auto *obj_var =
+            dynamic_cast<const atc::VarExpr *>(m->object.get())) {
       if (obj_var->name == "config") {
         if (m->member == "plunger_gates") {
-          return ExprEvaluator::Value(config_.plunger_gates());
+          return config_->plunger_gates();
         }
         if (m->member == "barrier_gates") {
-          return ExprEvaluator::Value(config_.barrier_gates());
+          return config_->barrier_gates();
         }
       }
     }
 
     // Handle Member access for variables in ParameterMap
     auto obj_val = evaluate(m->object.get());
-    if (std::holds_alternative<DeviceCharacteristic>(obj_val)) {
-      const auto &dc = std::get<DeviceCharacteristic>(obj_val);
-      if (m->member == "name")
-        return ExprEvaluator::Value(dc.name);
-      if (m->member == "uncertainty")
-        return ExprEvaluator::Value(dc.uncertainty);
-      if (m->member == "hash")
-        return ExprEvaluator::Value(dc.hash);
-      if (m->member == "record_time")
-        return ExprEvaluator::Value(dc.record_time);
-      if (m->member == "device_state")
-        return ExprEvaluator::Value(dc.device_state);
-      if (m->member == "unit_name")
-        return ExprEvaluator::Value(dc.unit_name);
+    if (std::holds_alternative<database::DeviceCharacteristic>(obj_val)) {
+      const auto &dchar = std::get<database::DeviceCharacteristic>(obj_val);
+      if (m->member == "name") {
+        return dchar.name;
+      }
+      if (m->member == "uncertainty") {
+        return dchar.uncertainty.value_or(0.0);
+      }
+      if (m->member == "hash") {
+        return dchar.hash.value_or("");
+      }
+      if (m->member == "record_time") {
+        return dchar.time.value_or(0);
+      }
+      if (m->member == "device_state") {
+        return dchar.state.value_or("");
+      }
+      if (m->member == "unit_name") {
+        return dchar.unit_name.value_or("");
+      }
     }
 
     throw std::runtime_error("Unsupported member access: " + m->member);
@@ -142,7 +147,7 @@ ExprEvaluator::Value ExprEvaluator::evaluate(const atc::Expr *e) {
     return builtin_handler_(c->name, args);
   }
 
-  return ExprEvaluator::Value(true);
+  return true;
 }
 
 } // namespace falcon::autotuner

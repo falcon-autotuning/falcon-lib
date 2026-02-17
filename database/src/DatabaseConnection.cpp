@@ -42,8 +42,7 @@ falcon::database::DeviceCharacteristic dchar_from_row(const pqxx::row &row) {
   dchar.unit_name = get_opt_str(row, "unit_name");
   if (!row["device_characteristic"].is_null()) {
     const auto *json_str = row["device_characteristic"].c_str();
-    auto json = nlohmann::json::parse(json_str);
-    dchar.characteristic = falcon::database::JSONPrimitive::from_json(json);
+    dchar.characteristic = nlohmann::json::parse(json_str);
   }
   return dchar;
 }
@@ -158,7 +157,7 @@ void ReadWriteDatabaseConnection::insert(const DeviceCharacteristic &dchar) {
 
   try {
     pqxx::work txn(*conn_);
-    auto char_json = dchar.characteristic.to_json().dump();
+    auto char_json = dchar.characteristic.dump();
 
     auto str_or_null =
         [](const std::optional<std::string> &var) -> const char * {

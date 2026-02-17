@@ -20,7 +20,7 @@ class logger;
  *   export LOG_LEVEL=debug
  *   export LOG_FILE=/var/log/falcon-routine.log
  */
-namespace falcon::routine::log {
+namespace falcon::autotuner::log {
 
 /**
  * @brief Log at trace level (very verbose)
@@ -68,4 +68,4 @@ void flush();
  */
 std::shared_ptr<spdlog::logger> get_logger();
 
-} // namespace falcon::routine::log
+} // namespace falcon::autotuner::log
