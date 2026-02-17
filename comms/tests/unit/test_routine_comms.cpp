@@ -78,7 +78,7 @@ TEST_F(RoutineCommsUnitTest, SubscribeMeasureResponse) {
     std::this_thread::yield();
   std::thread client([&]() {
     try {
-      response = comms.subscribe_measure_response(3000, 100000);
+      response = comms.subscribe_measure_response("measure", 3000, 100000);
     } catch (const std::exception &e) {
       std::cout << "EXCEPTION in client thread: " << e.what() << std::endl;
       throw;
@@ -97,7 +97,7 @@ TEST_F(RoutineCommsUnitTest, SubscribeMeasureResponseTimeout) {
   RoutineComms comms;
 
   // No responder, should timeout and throw
-  EXPECT_THROW(comms.subscribe_measure_response(500, 200000),
+  EXPECT_THROW(comms.subscribe_measure_response("measure", 500, 200000),
                std::runtime_error);
 }
 

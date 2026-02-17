@@ -2,6 +2,7 @@
 #include "falcon-comms/commands_definitions.hpp"
 #include <future>
 #include <spdlog/spdlog.h>
+#include <utility>
 
 namespace {
 std::string make_measure_command_subject() {
@@ -14,7 +15,8 @@ std::string make_measure_response_subject() {
 namespace falcon::comms {
 
 RoutineComms::RoutineComms() = default;
-MeasureResponse RoutineComms::subscribe_measure_response(int timeout_ms,
+MeasureResponse RoutineComms::subscribe_measure_response(std::string request,
+                                                         int timeout_ms,
                                                          int time) {
   std::promise<MeasureResponse> prom;
   auto fut = prom.get_future();
@@ -40,6 +42,7 @@ MeasureResponse RoutineComms::subscribe_measure_response(int timeout_ms,
 
   MeasureCommand req;
   req.timestamp = time;
+  req.request = std::move(request);
   hub_.publish(make_measure_command_subject(), req.to_json().dump());
 
   try {
