@@ -31,6 +31,7 @@ add_library(falcon-atc-core
   ${BISON_AutotunerParser_OUTPUTS}
   ${FLEX_AutotunerLexer_OUTPUTS}
   src/CompilerLib.cpp
+  src/ASTHelpers.cpp
 )
 
 target_include_directories(falcon-atc-core

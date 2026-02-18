@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include "falcon-atc/AST.hpp"
+#include "falcon-atc/ASTHelpers.hpp"
 
 using namespace falcon::atc;
 
@@ -92,12 +93,15 @@ static std::vector<std::unique_ptr<Expr>> to_unique_vec(std::vector<Expr*>* v) {
 
 %%
 
-program : autotuners { program_root = new Program{$1 ? std::move(*$1) : std::vector<AutotunerDecl>{}}; delete $1; }
+program : autotuners { program_root = make_program($1); }
         ;
 
-autotuners : autotuner_decl { $$ = new std::vector<AutotunerDecl>(); $$->push_back(std::move(*$1)); delete $1; }
-           | autotuners autotuner_decl { $1->push_back(std::move(*$2)); $$ = $1; delete $2; }
-           ;
+autotuners
+    : autotuner_decl                // base case: single autotuner
+      { $$ = make_autotuner_list(); $$ = append_autotuner($$, $1); }
+    | autotuners autotuner_decl     // recursive case: add to list
+      { $$ = append_autotuner($1, $2); }
+    ;
 
 autotuner_decl : TAUTOTUNER TIDENTIFIER input_params generic_params TARROW output_params TLBRACE requires_clause spec_inputs spec_outputs params_block entry_clause loop_list states TRBRACE
                  { $$ = new AutotunerDecl{*$2, std::move(*$3), std::move(*$6), std::move(*$4), std::move(*$9), std::move(*$10), std::move(*$8), std::move(*$11), *$12, std::move(*$14), std::move(*$13)}; 
