@@ -6,6 +6,30 @@ using namespace falcon::autotuner::test;
 
 class BasicFeaturesTest : public DSLTestBase {};
 
+TEST_F(BasicFeaturesTest, TheSimplest) {
+  const char *dsl = R"(
+autotuner NoTransition () -> (bool completed) {
+  params {
+    bool completed = false;
+  }
+  
+  start -> done;
+  
+  state done {
+    completed = true;
+    terminal;
+  }
+  
+}
+)";
+
+  ParameterMap params;
+  ASSERT_TRUE(compile_and_run(dsl, "NoTransition", params));
+
+  EXPECT_TRUE(params.has("completed"));
+  EXPECT_TRUE(params.get<bool>("completed"));
+}
+
 TEST_F(BasicFeaturesTest, SimpleTransition) {
   const char *dsl = R"(
 autotuner SimpleTransition () -> (bool completed) {

@@ -48,6 +48,7 @@ bool Interpreter::run(const std::string &autotuner_name, ParameterMap &params) {
   // Handle entry state
   std::string start_state = at->entry_state;
   if (start_state.empty()) {
+    log::warn("No entry state specified, defaulting to first state");
     if (!at->states.empty()) {
       start_state = at->states[0].name;
     } else if (!at->loops.empty() && !at->loops[0].states.empty()) {
@@ -87,8 +88,8 @@ bool Interpreter::execute_state(Context &ctx) {
             fmt::format("The characteristic name does not match the name in "
                         "the characteristic. Switching the name from {} to {}",
                         query.name.value_or(""), char_name));
-        query.name = char_name;
       }
+      query.name = char_name;
       auto matches = db_.get_by_query(query);
       //  FIX: either filter the results or return many chars
       //  FIX: currently returning the first match from the db
