@@ -9,9 +9,6 @@ struct ToDouble {
   double operator()(int64_t i) const { return static_cast<double>(i); }
   double operator()(double d) const { return d; }
   double operator()(bool b) const { return b ? 1.0 : 0.0; }
-  double operator()(const database::DeviceCharacteristic &) const {
-    throw std::runtime_error("Cannot convert DeviceCharacteristic to double");
-  }
   template <typename T> double operator()(const T &) const {
     throw std::runtime_error("Cannot convert to double");
   }
