@@ -115,8 +115,10 @@ autotuner Calculator (int a, int b) -> (int sum, int product) {
   start -> calculate;
   
   state calculate {
-    sum = a + b;
-    product = a * b;
+    params {
+      sum = a + b;
+      product = a * b;
+    }
     -> done;
   }
   
