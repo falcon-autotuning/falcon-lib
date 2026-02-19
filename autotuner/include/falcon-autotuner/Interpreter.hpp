@@ -1,6 +1,7 @@
 #pragma once
 
 #include "falcon-atc/AST.hpp"
+#include "falcon-autotuner/ExprEvaluator.hpp"
 #include "falcon-autotuner/ParameterMap.hpp"
 #include "falcon_core/physics/config/core/Config.hpp"
 #include <falcon-comms/runtime_comms.hpp>
@@ -39,9 +40,14 @@ private:
   };
 
   bool execute_state(Context &ctx);
+  ExprEvaluator::Value
+  device_specification_read(const std::vector<ExprEvaluator::Value> &queries);
+  bool device_specification_load(const std::vector<ExprEvaluator::Value> &args);
   const atc::AutotunerDecl *find_autotuner(const std::string &name);
   const atc::StateDecl *find_state(const atc::AutotunerDecl &at,
                                    const std::string &state_name);
+  void evaluate_initial_params(ParameterMap &params,
+                               const atc::AutotunerDecl &atuner);
 };
 
 } // namespace falcon::autotuner

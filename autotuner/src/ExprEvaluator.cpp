@@ -1,6 +1,7 @@
 #include "falcon-autotuner/ExprEvaluator.hpp"
 #include "falcon-atc/AST.hpp"
 #include "falcon-database/DeviceCharacteristic.hpp"
+#include <memory>
 #include <stdexcept>
 
 namespace falcon::autotuner {
@@ -26,12 +27,13 @@ struct ToBool {
   }
 };
 
-ExprEvaluator::Value ExprEvaluator::evaluate(const atc::Expr *e) {
+ExprEvaluator::Value
+ExprEvaluator::evaluate(const std::unique_ptr<atc::Expr> e) {
   if (e == nullptr) {
     return true;
   }
 
-  if (const auto *c = dynamic_cast<const atc::ConstExpr *>(e)) {
+  if (const auto *c = dynamic_cast<const atc::ConstExpr *>(e.get())) {
     return std::visit(
         [](auto &&arg) -> ExprEvaluator::Value {
           return ExprEvaluator::Value(arg);
@@ -39,14 +41,14 @@ ExprEvaluator::Value ExprEvaluator::evaluate(const atc::Expr *e) {
         c->value);
   }
 
-  if (const auto *v = dynamic_cast<const atc::VarExpr *>(e)) {
+  if (const auto *v = dynamic_cast<const atc::VarExpr *>(e.get())) {
     if (v->name == "config") {
       return true;
     }
     return params_.get<ExprEvaluator::Value>(v->name);
   }
 
-  if (const auto *m = dynamic_cast<const atc::MemberExpr *>(e)) {
+  if (const auto *m = dynamic_cast<const atc::MemberExpr *>(e.get())) {
     if (const auto *obj_var =
             dynamic_cast<const atc::VarExpr *>(m->object.get())) {
       if (obj_var->name == "config") {
@@ -60,7 +62,7 @@ ExprEvaluator::Value ExprEvaluator::evaluate(const atc::Expr *e) {
     }
 
     // Handle Member access for variables in ParameterMap
-    auto obj_val = evaluate(m->object.get());
+    auto obj_val = evaluate(m->object->clone());
     if (std::holds_alternative<database::DeviceCharacteristic>(obj_val)) {
       const auto &dchar = std::get<database::DeviceCharacteristic>(obj_val);
       if (m->member == "name") {
@@ -86,9 +88,9 @@ ExprEvaluator::Value ExprEvaluator::evaluate(const atc::Expr *e) {
     throw std::runtime_error("Unsupported member access: " + m->member);
   }
 
-  if (auto b = dynamic_cast<const atc::BinaryExpr *>(e)) {
-    auto left = evaluate(b->left.get());
-    auto right = evaluate(b->right.get());
+  if (auto b = dynamic_cast<const atc::BinaryExpr *>(e.get())) {
+    auto left = evaluate(b->left->clone());
+    auto right = evaluate(b->right->clone());
 
     if (b->op == ">") {
       return std::visit(ToDouble{}, left) > std::visit(ToDouble{}, right);
@@ -122,8 +124,8 @@ ExprEvaluator::Value ExprEvaluator::evaluate(const atc::Expr *e) {
     }
   }
 
-  if (auto u = dynamic_cast<const atc::UnaryExpr *>(e)) {
-    auto val = evaluate(u->expr.get());
+  if (auto u = dynamic_cast<const atc::UnaryExpr *>(e.get())) {
+    auto val = evaluate(u->expr->clone());
     if (u->op == "!") {
       return !std::visit(ToBool{}, val);
     }
@@ -132,14 +134,15 @@ ExprEvaluator::Value ExprEvaluator::evaluate(const atc::Expr *e) {
     }
   }
 
-  if (auto c = dynamic_cast<const atc::CallExpr *>(e)) {
+  if (auto c = dynamic_cast<const atc::CallExpr *>(e.get())) {
     if (!builtin_handler_) {
       throw std::runtime_error("Built-in handler not set for CallExpr: " +
                                c->name);
     }
     std::vector<ExprEvaluator::Value> args;
+    args.reserve(c->args.size());
     for (const auto &arg : c->args) {
-      args.push_back(evaluate(arg.get()));
+      args.push_back(evaluate(arg->clone()));
     }
     return builtin_handler_(c->name, args);
   }

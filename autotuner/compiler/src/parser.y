@@ -293,12 +293,13 @@ param_decl[result]
         $result->type = $type;
         $result->default_value = nullptr;
       }
+    // FIX: default value can come from spec too
     | type_spec[type] IDENTIFIER[name] ASSIGN expr[default_val] SEMICOLON 
       { 
         $result = std::make_unique<ParamDecl>();
         $result->name = std::move($name);
         $result->type = $type;
-        $result->default_value = nullptr;
+        $result->default_value = std::move($default_val);
       }
     ;
 

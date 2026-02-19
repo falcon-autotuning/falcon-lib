@@ -29,7 +29,7 @@ public:
       : params_(std::move(params)), config_(std::move(config)),
         builtin_handler_(std::move(builtin_handler)) {}
 
-  Value evaluate(const atc::Expr *e);
+  Value evaluate(const std::unique_ptr<atc::Expr> e);
 
 private:
   ParameterMap params_;
