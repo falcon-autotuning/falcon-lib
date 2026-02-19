@@ -8,6 +8,7 @@
 %define api.token.prefix {TOK_}
 %define parse.error verbose
 %define parse.trace
+%locations  // ← ADD THIS LINE
 
 // Enable tracing and verbose errors (which may be wrong!)
 %code requires {
@@ -15,6 +16,7 @@
   #include <vector>
   #include <memory>
   #include "falcon-atc/AST.hpp"
+  #include "falcon-atc/ParseError.hpp"  // ← ADD THIS LINE
 }
 
 %code {
@@ -42,8 +44,7 @@
 %type <std::vector<AutotunerDecl>> autotuners
 %type <std::unique_ptr<AutotunerDecl>> autotuner_decl
 %type <std::vector<std::string>> requires_clause generic_params separated_idents separated_strings
-%type <std::vector<ParamDecl>> params_block param_list input_params output_params sig_param_list
-%type <std::vector<ParamDecl>> state_params state_temps
+%type <std::vector<ParamDecl>> params_block param_list input_params output_params sig_param_list state_temps
 %type <std::unique_ptr<ParamDecl>> param_decl sig_param_decl
 %type <ParamType> type_spec
 %type <std::string> entry_clause
@@ -382,7 +383,7 @@ state_decl[result]
     : STATE IDENTIFIER[name] 
       LBRACKET IDENTIFIER[param] RBRACKET 
       LBRACE 
-        state_params[params]
+        params_block[params]
         state_temps[temps]
         measurement_opt[measurement]
         transition_list[transitions]
@@ -400,7 +401,7 @@ state_decl[result]
       }
     | STATE IDENTIFIER[name] 
       LBRACE 
-        state_params[params]
+        params_block[params]
         state_temps[temps]
         measurement_opt[measurement]
         transition_list[transitions]
@@ -416,13 +417,6 @@ state_decl[result]
           std::move($transitions)
         );
       }
-    ;
-
-state_params[result]
-    : PARAMS LBRACE param_list[list] RBRACE 
-      { $result = std::move($list); }
-    | %empty
-      { $result = std::vector<ParamDecl>(); }
     ;
 
 state_temps[result]
@@ -800,6 +794,15 @@ primary_expr[result]
 
 %%
 
-void falcon::atc::Parser::error(const std::string& msg) {
-  std::cerr << "Parse error: " << msg << std::endl;
+void falcon::atc::Parser::error(const location_type& loc, const std::string& msg) {
+  // Collect the error
+  ParseError err{
+    loc.begin.line,
+    loc.begin.column,
+    loc.end.line,
+    loc.end.column,
+    msg
+  };
+  
+  current_errors.push_back(err);
 }

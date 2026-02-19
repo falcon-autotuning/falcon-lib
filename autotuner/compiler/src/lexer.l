@@ -4,7 +4,21 @@
 // Don't try to define yylex in a namespace with YY_DECL
 // Instead, define it in global scope and wrap it
 #undef YY_DECL
-#define YY_DECL falcon::atc::Parser::symbol_type yylex()
+#define YY_DECL falcon::atc::Parser::symbol_type yylex(falcon::atc::Parser::location_type *loc)
+
+// Track column position manually - make it non-static so we can reset it externally
+int yycolumn = 1;  // ← REMOVE 'static' keyword
+
+// Update location on every token
+#define YY_USER_ACTION \
+  loc->begin.line = loc->end.line = yylineno; \
+  loc->begin.column = yycolumn; \
+  loc->end.column = yycolumn + yyleng - 1; \
+  yycolumn += yyleng;
+
+// Override yyterminate to return proper EOF token with location
+#undef yyterminate
+#define yyterminate() return falcon::atc::Parser::make_YYEOF(*loc)
 
 // Using directive so we can use Parser::make_* without qualification
 using namespace falcon::atc;
@@ -15,79 +29,84 @@ using namespace falcon::atc;
 
 %%
 
-"autotuner"     { return Parser::make_AUTOTUNER(); }
-"state"         { return Parser::make_STATE(); }
-"params"        { return Parser::make_PARAMS(); }
-"temp"          { return Parser::make_TEMP(); }
-"measurement"   { return Parser::make_MEASUREMENT(); }
-"run"           { return Parser::make_RUN(); }
-"start"         { return Parser::make_START(); }
-"requires"      { return Parser::make_REQUIRES(); }
-"terminal"      { return Parser::make_TERMINAL(); }
-"if"            { return Parser::make_IF(); }
-"else"          { return Parser::make_ELSE(); }
-"true"          { return Parser::make_TRUE(); }
-"false"         { return Parser::make_FALSE(); }
-"success"       { return Parser::make_SUCCESS(); }
-"fail"          { return Parser::make_FAIL(); }
-"spec_inputs"   { return Parser::make_SPEC_INPUTS(); }
-"spec_outputs"  { return Parser::make_SPEC_OUTPUTS(); }
-"config"        { return Parser::make_CONFIG_VAR(); }
-"next"          { return Parser::make_NEXT(); }
-"for"           { return Parser::make_FOR(); }
-"in"            { return Parser::make_IN(); }
+"autotuner"     { return Parser::make_AUTOTUNER(*loc); }
+"state"         { return Parser::make_STATE(*loc); }
+"params"        { return Parser::make_PARAMS(*loc); }
+"temp"          { return Parser::make_TEMP(*loc); }
+"measurement"   { return Parser::make_MEASUREMENT(*loc); }
+"run"           { return Parser::make_RUN(*loc); }
+"start"         { return Parser::make_START(*loc); }
+"requires"      { return Parser::make_REQUIRES(*loc); }
+"terminal"      { return Parser::make_TERMINAL(*loc); }
+"if"            { return Parser::make_IF(*loc); }
+"else"          { return Parser::make_ELSE(*loc); }
+"true"          { return Parser::make_TRUE(*loc); }
+"false"         { return Parser::make_FALSE(*loc); }
+"success"       { return Parser::make_SUCCESS(*loc); }
+"fail"          { return Parser::make_FAIL(*loc); }
+"spec_inputs"   { return Parser::make_SPEC_INPUTS(*loc); }
+"spec_outputs"  { return Parser::make_SPEC_OUTPUTS(*loc); }
+"config"        { return Parser::make_CONFIG_VAR(*loc); }
+"next"          { return Parser::make_NEXT(*loc); }
+"for"           { return Parser::make_FOR(*loc); }
+"in"            { return Parser::make_IN(*loc); }
 
-"float"         { return Parser::make_FLOAT_KW(); }
-"int"           { return Parser::make_INT_KW(); }
-"bool"          { return Parser::make_BOOL_KW(); }
-"string"        { return Parser::make_STRING_KW(); }
-"quantity"      { return Parser::make_QUANTITY_KW(); }
-"Config"        { return Parser::make_CONFIG_KW(); }
-"Group"         { return Parser::make_GROUP_KW(); }
-"Connection"    { return Parser::make_CONNECTION_KW(); }
+"float"         { return Parser::make_FLOAT_KW(*loc); }
+"int"           { return Parser::make_INT_KW(*loc); }
+"bool"          { return Parser::make_BOOL_KW(*loc); }
+"string"        { return Parser::make_STRING_KW(*loc); }
+"quantity"      { return Parser::make_QUANTITY_KW(*loc); }
+"Config"        { return Parser::make_CONFIG_KW(*loc); }
+"Group"         { return Parser::make_GROUP_KW(*loc); }
+"Connection"    { return Parser::make_CONNECTION_KW(*loc); }
 
-"->"            { return Parser::make_ARROW(); }
-"::"            { return Parser::make_DOUBLECOLON(); }
-"["             { return Parser::make_LBRACKET(); }
-"]"             { return Parser::make_RBRACKET(); }
-"{"             { return Parser::make_LBRACE(); }
-"}"             { return Parser::make_RBRACE(); }
-"("             { return Parser::make_LPAREN(); }
-")"             { return Parser::make_RPAREN(); }
-"="             { return Parser::make_ASSIGN(); }
-","             { return Parser::make_COMMA(); }
-":"             { return Parser::make_COLON(); }
-";"             { return Parser::make_SEMICOLON(); }
-"."             { return Parser::make_DOT(); }
-"+"             { return Parser::make_PLUS(); }
-"-"             { return Parser::make_MINUS(); }
-"*"             { return Parser::make_MUL(); }
-"/"             { return Parser::make_DIV(); }
-"=="            { return Parser::make_EQ(); }
-"!="            { return Parser::make_NE(); }
-"<"             { return Parser::make_LL(); }
-">"             { return Parser::make_GG(); }
-"<="            { return Parser::make_LE(); }
-">="            { return Parser::make_GE(); }
-"&&"            { return Parser::make_AND(); }
-"||"            { return Parser::make_OR(); }
-"!"             { return Parser::make_NOT(); }
+"->"            { return Parser::make_ARROW(*loc); }
+"::"            { return Parser::make_DOUBLECOLON(*loc); }
+"["             { return Parser::make_LBRACKET(*loc); }
+"]"             { return Parser::make_RBRACKET(*loc); }
+"{"             { return Parser::make_LBRACE(*loc); }
+"}"             { return Parser::make_RBRACE(*loc); }
+"("             { return Parser::make_LPAREN(*loc); }
+")"             { return Parser::make_RPAREN(*loc); }
+"="             { return Parser::make_ASSIGN(*loc); }
+","             { return Parser::make_COMMA(*loc); }
+":"             { return Parser::make_COLON(*loc); }
+";"             { return Parser::make_SEMICOLON(*loc); }
+"."             { return Parser::make_DOT(*loc); }
+"+"             { return Parser::make_PLUS(*loc); }
+"-"             { return Parser::make_MINUS(*loc); }
+"*"             { return Parser::make_MUL(*loc); }
+"/"             { return Parser::make_DIV(*loc); }
+"=="            { return Parser::make_EQ(*loc); }
+"!="            { return Parser::make_NE(*loc); }
+"<"             { return Parser::make_LL(*loc); }
+">"             { return Parser::make_GG(*loc); }
+"<="            { return Parser::make_LE(*loc); }
+">="            { return Parser::make_GE(*loc); }
+"&&"            { return Parser::make_AND(*loc); }
+"||"            { return Parser::make_OR(*loc); }
+"!"             { return Parser::make_NOT(*loc); }
 
-[0-9]+          { return Parser::make_INTEGER(yytext); }
-[0-9]+\.[0-9]+  { return Parser::make_DOUBLE(yytext); }
-\"[^\"]*\"      { return Parser::make_STRING(std::string(yytext+1, yyleng-2)); }
-[a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_IDENTIFIER(yytext); }
+[0-9]+          { return Parser::make_INTEGER(yytext, *loc); }
+[0-9]+\.[0-9]+  { return Parser::make_DOUBLE(yytext, *loc); }
+\"[^\"]*\"      { return Parser::make_STRING(std::string(yytext+1, yyleng-2), *loc); }
+[a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_IDENTIFIER(yytext, *loc); }
 
-[ \t\r\n]+      { /* skip whitespace */ }
+[ \t\r]+        { /* skip whitespace (not newlines) */ }
+\n              { yycolumn = 1; /* reset column on newline, then continue */ }
 "//"[^\n]*      { /* skip comments */ }
 
-.               { std::cerr << "Unknown character: " << yytext << std::endl; }
+.               { std::cerr << "Unknown character at line " << yylineno 
+                            << ", col " << yycolumn << ": " << yytext << std::endl; }
 
 %%
 
 // NOW wrap the global yylex() in the namespace the parser expects
 namespace falcon::atc {
+  // Store location for the wrapper to pass
+  static Parser::location_type current_location;
+  
   Parser::symbol_type yylex() {
-    return ::yylex();  // Call the global yylex generated by Flex above
+    return ::yylex(&current_location);  // Pass location to the global yylex
   }
 }

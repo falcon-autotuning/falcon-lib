@@ -30,7 +30,8 @@ add_flex_bison_dependency(AutotunerLexer AutotunerParser)
 add_library(falcon-atc-core
   ${BISON_AutotunerParser_OUTPUTS}
   ${FLEX_AutotunerLexer_OUTPUTS}
-  src/CompilerLib.cpp
+  src/Compiler.cpp
+  src/ParseError.cpp
 )
 
 target_include_directories(falcon-atc-core
