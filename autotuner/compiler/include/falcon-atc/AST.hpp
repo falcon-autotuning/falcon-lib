@@ -106,10 +106,13 @@ public:
   }
 };
 
-struct ParamDecl {
+struct Param {
   std::string name;
-  ParamType type;
   std::unique_ptr<Expr> default_value;
+};
+
+struct ParamDecl : public Param {
+  ParamType type;
 };
 
 struct SpecDecl {

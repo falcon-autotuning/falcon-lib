@@ -28,6 +28,7 @@
   }
   
   std::unique_ptr<falcon::atc::Program> program_root;
+  std::vector<std::string> current_param_names;
 }
 
 // Token declarations
@@ -44,8 +45,10 @@
 %type <std::vector<AutotunerDecl>> autotuners
 %type <std::unique_ptr<AutotunerDecl>> autotuner_decl
 %type <std::vector<std::string>> requires_clause generic_params separated_idents separated_strings
-%type <std::vector<ParamDecl>> params_block param_list input_params output_params sig_param_list state_temps
+%type <std::vector<ParamDecl>> params_decl_block param_decl_list input_params output_params sig_param_list state_temps
+%type <std::vector<Param>> params_block param_list
 %type <std::unique_ptr<ParamDecl>> param_decl sig_param_decl
+%type <std::unique_ptr<Param> param
 %type <ParamType> type_spec
 %type <std::string> entry_clause
 %type <std::vector<StateDecl>> states state_list loop_states
@@ -107,7 +110,7 @@ autotuner_decl[result]
         requires_clause[requires]
         spec_inputs[spec_in]
         spec_outputs[spec_out]
-        params_block[params]
+        params_decl_block[params]
         entry_clause[entry]
         loop_list[loops]
         states[state_list]
@@ -266,23 +269,29 @@ separated_strings[result]
       }
     ;
 
-params_block[result]
-    : PARAMS LBRACE param_list[list] RBRACE 
+params_decl_block[result]
+    : PARAMS LBRACE param_decl_list[list] RBRACE 
       { $result = std::move($list); }
     | %empty
       { $result = std::vector<ParamDecl>(); }
     ;
 
-param_list[result]
+param_decl_list[result]
     : param_decl[decl]
       { 
+        // Erase current list of params when new autotuner_decl
+        current_param_names.clear();
         $result = std::vector<ParamDecl>();
         $result.push_back(std::move(*$decl));
+        // Collects a list of param names to check state params against
+        current_param_names.push_back($decl->name);
       }
-    | param_list[list] param_decl[decl]
+    | param_decl_list[list] param_decl[decl]
       { 
         $result = std::move($list);
         $result.push_back(std::move(*$decl));
+        // Collects a list of param names to check state params against
+        current_param_names.push_back($decl->name);
       }
     ;
 
@@ -418,12 +427,58 @@ state_decl[result]
         );
       }
     ;
+// FIX: params and temps can be merged since the distinguishing factor is if the first character of the param row is a type or not
+params_block[result]
+    : PARAMS LBRACE param_list[list] RBRACE 
+      { $result = std::move($list); }
+    | %empty
+      { $result = std::vector<Param>(); }
+    ;
+
 
 state_temps[result]
     : TEMP LBRACE param_list[list] RBRACE 
       { $result = std::move($list); }
     | %empty
-      { $result = std::vector<ParamDecl>(); }
+      { $result = std::vector<Param>(); }
+    ;
+
+param_list[result]
+    : param[decl]
+      { 
+        $result = std::vector<Param>();
+        $result.push_back(std::move(*$decl));
+      }
+    | param_list[list] param[decl]
+      { 
+        $result = std::move($list);
+        $result.push_back(std::move(*$decl));
+      }
+    ;
+
+param[result]
+    : IDENTIFIER[name] SEMICOLON 
+      {
+        if (std::find(current_param_names.begin(), current_param_names.end(), $name) == current_param_names.end()) {
+          error(@name, "Parameter '" + $name + "' is not declared in this autotuner. "
+                       "Move this to temp and define a type, or declare it in the autotuner params.");
+          YYABORT;
+        }
+        $result = std::make_unique<Param>();
+        $result->name = std::move($name);
+        $result->default_value = nullptr;
+      }
+    | IDENTIFIER[name] ASSIGN expr[default_val] SEMICOLON 
+      {
+        if (std::find(current_param_names.begin(), current_param_names.end(), $name) == current_param_names.end()) {
+          error(@name, "Parameter '" + $name + "' is not declared in this autotuner. "
+                       "Move this to temp and define a type, or declare it in the autotuner params.");
+          YYABORT;
+        }
+        $result = std::make_unique<Param>();
+        $result->name = std::move($name);
+        $result->default_value = std::move($default_val);
+      }
     ;
 
 measurement_opt[result]

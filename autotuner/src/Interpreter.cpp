@@ -148,8 +148,11 @@ bool Interpreter::execute_state(Context &ctx) {
     return false;
   }
   ExprEvaluator eval(ctx.local_params, config_, eval_database);
-  // 1. Evaluate transitions
-  for (const auto &t : ctx.current_state->transitions) {
+
+  evaluate_state_params()
+      // TODO: evaluate_temp_params()
+      // 1. Evaluate transitions
+      for (const auto &t : ctx.current_state->transitions) {
     bool cond = true;
     if (t.condition) {
       auto val = eval.evaluate(t.condition->clone());
