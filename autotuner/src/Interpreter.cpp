@@ -58,6 +58,8 @@ bool Interpreter::run(const std::string &autotuner_name, ParameterMap &params) {
 
   ctx.current_state = find_state(*at, start_state);
 
+  evaluate_initial_params(ctx.local_params, *at);
+
   while (ctx.current_state != nullptr) {
     if (!execute_state(ctx)) {
       return false;
@@ -66,6 +68,63 @@ bool Interpreter::run(const std::string &autotuner_name, ParameterMap &params) {
 
   params = ctx.local_params;
   return true;
+}
+ExprEvaluator::Value Interpreter::device_specification_read(
+    const std::vector<ExprEvaluator::Value> &queries) {
+  if (queries.empty()) {
+    throw std::runtime_error("device-specification access requires args");
+  }
+  std::string char_name = std::get<std::string>(queries[0]);
+  database::DeviceCharacteristicQuery query;
+  query.scope = "device-specification";
+  //  FIX: finish filling out the query
+  if (query.name != char_name) {
+    log::info(
+        fmt::format("The characteristic name does not match the name in "
+                    "the characteristic. Switching the name from {} to {}",
+                    query.name.value_or(""), char_name));
+  }
+  query.name = char_name;
+  auto matches = db_.get_by_query(query);
+  //  FIX: either filter the results or return many chars
+  //  FIX: currently returning the first match from the db
+  return matches[0];
+};
+bool Interpreter::device_specification_load(
+    const std::vector<ExprEvaluator::Value> &args) {
+  if (args.empty()) {
+    throw std::runtime_error("device-specification access requires args");
+  }
+  std::string char_name = std::get<std::string>(args[0]);
+  if (args.size() < 2) {
+    throw std::runtime_error(
+        "spec_load requires name and characteristic arguments");
+  }
+  database::DeviceCharacteristic dchar =
+      std::get<database::DeviceCharacteristic>(args[1]);
+  dchar.name = char_name; // Ensure name matches
+                          //  FIX: finish filling out the optional arguments
+  db_.insert(dchar);
+  return true;
+}
+void Interpreter::evaluate_initial_params(ParameterMap &params,
+                                          const atc::AutotunerDecl &atuner) {
+  auto eval_database = [this](const std::string &name,
+                              const std::vector<ExprEvaluator::Value> &args)
+      -> ExprEvaluator::Value {
+    if (name != DEVICE_SPECIFICATION_READ) {
+      throw std::runtime_error("Unknown built-in function: " + name);
+    }
+    if (args.empty()) {
+      throw std::runtime_error("device-specification access requires args");
+    }
+    return device_specification_read(args);
+  };
+  ExprEvaluator eval(params, config_, eval_database);
+  for (const auto &unevaluated_param : atuner.params) {
+    auto val = eval.evaluate(unevaluated_param.default_value->clone());
+    params.set(unevaluated_param.name, val);
+  }
 }
 bool Interpreter::execute_state(Context &ctx) {
   auto eval_database = [this](const std::string &name,
@@ -80,31 +139,9 @@ bool Interpreter::execute_state(Context &ctx) {
     }
     std::string char_name = std::get<std::string>(args[0]);
     if (name == DEVICE_SPECIFICATION_READ) {
-      database::DeviceCharacteristicQuery query;
-      query.scope = "device-specification";
-      //  FIX: finish filling out the query
-      if (query.name != char_name) {
-        log::info(
-            fmt::format("The characteristic name does not match the name in "
-                        "the characteristic. Switching the name from {} to {}",
-                        query.name.value_or(""), char_name));
-      }
-      query.name = char_name;
-      auto matches = db_.get_by_query(query);
-      //  FIX: either filter the results or return many chars
-      //  FIX: currently returning the first match from the db
-      return matches[0];
+      return device_specification_read(args);
     }
-    // A DEVICE_SPECIFICATION_LOAD
-    if (args.size() < 2) {
-      throw std::runtime_error(
-          "spec_load requires name and characteristic arguments");
-    }
-    database::DeviceCharacteristic dchar =
-        std::get<database::DeviceCharacteristic>(args[1]);
-    dchar.name = char_name; // Ensure name matches
-    db_.insert(dchar);
-    return true;
+    return device_specification_load(args);
   };
 
   if (ctx.current_state == nullptr) {
@@ -115,14 +152,14 @@ bool Interpreter::execute_state(Context &ctx) {
   for (const auto &t : ctx.current_state->transitions) {
     bool cond = true;
     if (t.condition) {
-      auto val = eval.evaluate(t.condition.get());
+      auto val = eval.evaluate(t.condition->clone());
       cond = std::visit(ToBool{}, val);
     }
 
     if (cond) {
       // Apply assignments
       for (const auto &asgn : t.assignments) {
-        auto val = eval.evaluate(asgn.expression.get());
+        auto val = eval.evaluate(asgn.expression->clone());
         for (const auto &target : asgn.targets) {
           ctx.local_params.set(target, val);
         }
@@ -145,7 +182,7 @@ bool Interpreter::execute_state(Context &ctx) {
                 // Find the loop
                 for (const auto &loop : ctx.current_at->loops) {
                   if (loop.variable == loop_var) {
-                    auto it_val = eval.evaluate(loop.iterable.get());
+                    auto it_val = eval.evaluate(loop.iterable->clone());
                     if (auto *conns = std::get_if<ConnectionsSP>(&it_val)) {
                       if (idx < (*conns)->size()) {
                         ctx.local_params.set(loop_var, (*conns)->at(idx));
@@ -191,9 +228,10 @@ bool Interpreter::execute_state(Context &ctx) {
 }
 
 const atc::AutotunerDecl *Interpreter::find_autotuner(const std::string &name) {
-  for (const auto &at : program_.autotuners) {
-    if (at.name == name)
-      return &at;
+  for (const atc::AutotunerDecl &tuner : program_.autotuners) {
+    if (tuner.name == name) {
+      return &tuner;
+    }
   }
   return nullptr;
 }

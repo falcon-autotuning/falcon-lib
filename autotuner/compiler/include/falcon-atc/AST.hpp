@@ -21,22 +21,6 @@ enum class ParamType : std::uint8_t {
 
 using Value = std::variant<int64_t, double, bool, std::string>;
 
-struct ParamDecl {
-  std::string name;
-  ParamType type;
-  std::shared_ptr<Value> default_value;
-};
-
-struct SpecDecl {
-  ParamType type;
-  std::string name;
-  std::string
-      parameter; // e.g. "plunger_gate" in "Quantity pinchoff [plunger_gate]"
-
-  SpecDecl(ParamType t, std::string n, std::string p = "")
-      : type(t), name(std::move(n)), parameter(std::move(p)) {}
-};
-
 class Expr {
 public:
   virtual ~Expr() = default;
@@ -120,6 +104,22 @@ public:
       cloned_args.push_back(arg->clone());
     return std::make_unique<CallExpr>(name, std::move(cloned_args));
   }
+};
+
+struct ParamDecl {
+  std::string name;
+  ParamType type;
+  std::unique_ptr<Expr> default_value;
+};
+
+struct SpecDecl {
+  ParamType type;
+  std::string name;
+  std::string
+      parameter; // e.g. "plunger_gate" in "Quantity pinchoff [plunger_gate]"
+
+  SpecDecl(ParamType t, std::string n, std::string p = "")
+      : type(t), name(std::move(n)), parameter(std::move(p)) {}
 };
 
 struct Assignment {
