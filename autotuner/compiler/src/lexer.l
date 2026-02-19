@@ -1,14 +1,13 @@
 %{
-#include <iostream>
-#include <string>
-#include <vector>
-#include "falcon-atc/AST.hpp"
 #include "parser.tab.hpp"
 
-#define SAVE_TOKEN yylval.string = new std::string(yytext, yyleng)
-#define TOKEN(t) (yylval.token = t)
+// Don't try to define yylex in a namespace with YY_DECL
+// Instead, define it in global scope and wrap it
+#undef YY_DECL
+#define YY_DECL falcon::atc::Parser::symbol_type yylex()
 
-extern int yylex();
+// Using directive so we can use Parser::make_* without qualification
+using namespace falcon::atc;
 %}
 
 %option noyywrap
@@ -16,75 +15,79 @@ extern int yylex();
 
 %%
 
-[ \t]                   ;
-\n                      ;
-"//".*                  ;
+"autotuner"     { return Parser::make_AUTOTUNER(); }
+"state"         { return Parser::make_STATE(); }
+"params"        { return Parser::make_PARAMS(); }
+"temp"          { return Parser::make_TEMP(); }
+"measurement"   { return Parser::make_MEASUREMENT(); }
+"run"           { return Parser::make_RUN(); }
+"start"         { return Parser::make_START(); }
+"requires"      { return Parser::make_REQUIRES(); }
+"terminal"      { return Parser::make_TERMINAL(); }
+"if"            { return Parser::make_IF(); }
+"else"          { return Parser::make_ELSE(); }
+"true"          { return Parser::make_TRUE(); }
+"false"         { return Parser::make_FALSE(); }
+"success"       { return Parser::make_SUCCESS(); }
+"fail"          { return Parser::make_FAIL(); }
+"spec_inputs"   { return Parser::make_SPEC_INPUTS(); }
+"spec_outputs"  { return Parser::make_SPEC_OUTPUTS(); }
+"config"        { return Parser::make_CONFIG_VAR(); }
+"next"          { return Parser::make_NEXT(); }
+"for"           { return Parser::make_FOR(); }
+"in"            { return Parser::make_IN(); }
 
-"float"                 return TOKEN(TFLOAT_KW);
-"int"                   return TOKEN(TINT_KW);
-"bool"                  return TOKEN(TBOOL_KW);
-"string"                return TOKEN(TSTRING_KW);
-"Quantity"              return TOKEN(TQUANTITY_KW);
-"Config"                return TOKEN(TCONFIG_KW);
-"Group"                 return TOKEN(TGROUP_KW);
-"Connection"            return TOKEN(TCONNECTION_KW);
+"Float"         { return Parser::make_FLOAT_KW(); }
+"Int"           { return Parser::make_INT_KW(); }
+"Bool"          { return Parser::make_BOOL_KW(); }
+"String"        { return Parser::make_STRING_KW(); }
+"Quantity"      { return Parser::make_QUANTITY_KW(); }
+"Config"        { return Parser::make_CONFIG_KW(); }
+"Group"         { return Parser::make_GROUP_KW(); }
+"Connection"    { return Parser::make_CONNECTION_KW(); }
 
-"autotuner"             return TOKEN(TAUTOTUNER);
-"state"                 return TOKEN(TSTATE);
-"params"                return TOKEN(TPARAMS);
-"temp"                  return TOKEN(TTEMP);
-"measurement"           return TOKEN(TMEASUREMENT);
-"run"                   return TOKEN(TRUN);
-"start"                 return TOKEN(TSTART);
-"requires"              return TOKEN(TREQUIRES);
-"terminal"              return TOKEN(TTERMINAL);
-"if"                    return TOKEN(TIF);
-"else"                  return TOKEN(TELSE);
-"true"                  return TOKEN(TTRUE);
-"false"                 return TOKEN(TFALSE);
-"success"               return TOKEN(TSUCCESS);
-"fail"                  return TOKEN(TFAIL);
-"spec-inputs"           return TOKEN(TSPEC_INPUTS);
-"spec-outputs"          return TOKEN(TSPEC_OUTPUTS);
-"config"                return TOKEN(TCONFIG_VAR);
-"next"                  return TOKEN(TNEXT);
-"for"                   return TOKEN(TFOR);
-"in"                    return TOKEN(TIN);
+"->"            { return Parser::make_ARROW(); }
+"::"            { return Parser::make_DOUBLECOLON(); }
+"["             { return Parser::make_LBRACKET(); }
+"]"             { return Parser::make_RBRACKET(); }
+"{"             { return Parser::make_LBRACE(); }
+"}"             { return Parser::make_RBRACE(); }
+"("             { return Parser::make_LPAREN(); }
+")"             { return Parser::make_RPAREN(); }
+"="             { return Parser::make_ASSIGN(); }
+","             { return Parser::make_COMMA(); }
+":"             { return Parser::make_COLON(); }
+";"             { return Parser::make_SEMICOLON(); }
+"."             { return Parser::make_DOT(); }
+"+"             { return Parser::make_PLUS(); }
+"-"             { return Parser::make_MINUS(); }
+"*"             { return Parser::make_MUL(); }
+"/"             { return Parser::make_DIV(); }
+"=="            { return Parser::make_EQ(); }
+"!="            { return Parser::make_NE(); }
+"<"             { return Parser::make_LL(); }
+">"             { return Parser::make_GG(); }
+"<="            { return Parser::make_LE(); }
+">="            { return Parser::make_GE(); }
+"&&"            { return Parser::make_AND(); }
+"||"            { return Parser::make_OR(); }
+"!"             { return Parser::make_NOT(); }
 
-"."                     return TOKEN(TDOT);
-"->"                    return TOKEN(TARROW);
-"::"                    return TOKEN(TDOUBLECOLON);
-"["                     return TOKEN(TLBRACKET);
-"]"                     return TOKEN(TRBRACKET);
-"{"                     return TOKEN(TLBRACE);
-"}"                     return TOKEN(TRBRACE);
-"("                     return TOKEN(TLPAREN);
-")"                     return TOKEN(TRPAREN);
-"="                     return TOKEN(TASSIGN);
-","                     return TOKEN(TCOMMA);
-":"                     return TOKEN(TCOLON);
-";"                     return TOKEN(TSEMICOLON);
+[0-9]+          { return Parser::make_INTEGER(yytext); }
+[0-9]+\.[0-9]+  { return Parser::make_DOUBLE(yytext); }
+\"[^\"]*\"      { return Parser::make_STRING(std::string(yytext+1, yyleng-2)); }
+[a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_IDENTIFIER(yytext); }
 
-"+"                     return TOKEN(TPLUS);
-"-"                     return TOKEN(TMINUS);
-"*"                     return TOKEN(TMUL);
-"/"                     return TOKEN(TDIV);
-"=="                    return TOKEN(TEQ);
-"!="                    return TOKEN(TNE);
-"<"                     return TOKEN(TLL);
-">"                     return TOKEN(TGG);
-"<="                    return TOKEN(TLE);
-">="                    return TOKEN(TGE);
-"&&"                    return TOKEN(TAND);
-"||"                    return TOKEN(TOR);
-"!"                     return TOKEN(TNOT);
+[ \t\r\n]+      { /* skip whitespace */ }
+"//"[^\n]*      { /* skip comments */ }
 
-[a-zA-Z_][a-zA-Z0-9_]*  SAVE_TOKEN; return TIDENTIFIER;
-[0-9]+\.[0-9]*([eE][-+]?[0-9]+)? SAVE_TOKEN; return TDOUBLE;
-[0-9]+[eE][-+]?[0-9]+            SAVE_TOKEN; return TDOUBLE;
-[0-9]+                           SAVE_TOKEN; return TINTEGER;
-\"(\\.|[^"\\])*\"                SAVE_TOKEN; return TSTRING;
-
-.                       printf("Unknown token! %s\n", yytext); yyterminate();
+.               { std::cerr << "Unknown character: " << yytext << std::endl; }
 
 %%
+
+// NOW wrap the global yylex() in the namespace the parser expects
+namespace falcon::atc {
+  Parser::symbol_type yylex() {
+    return ::yylex();  // Call the global yylex generated by Flex above
+  }
+}
