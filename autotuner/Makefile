@@ -237,7 +237,7 @@ test-local: build-release
 	@cd $(BUILD_DIR_RELEASE) && \
 		TEST_DATABASE_URL="$(TEST_DATABASE_URL)" \
 		TEST_NATS_URL="$(TEST_NATS_URL)" \
-		ctest --output-on-failure -C Release
+		ctest --verbose -C Release
 	@echo "✓ All tests passed"
 
 test-local-debug: build-debug
