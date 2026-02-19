@@ -174,7 +174,8 @@ protected:
     }
     std::thread client([&]() {
       try {
-        run_autotuner(*program, autotuner_name, params, expect_success);
+        autotuner_result =
+            run_autotuner(*program, autotuner_name, params, expect_success);
       } catch (const std::exception &e) {
         std::cout << "EXCEPTION in client thread: " << e.what() << '\n';
         throw;

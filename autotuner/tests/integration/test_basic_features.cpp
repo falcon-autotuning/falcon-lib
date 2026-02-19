@@ -25,7 +25,6 @@ autotuner NoTransition () -> (bool completed) {
 
   ParameterMap params;
   ASSERT_TRUE(compile_and_run(dsl, "NoTransition", params));
-
   EXPECT_TRUE(params.has("completed"));
   EXPECT_TRUE(params.get<bool>("completed"));
 }
