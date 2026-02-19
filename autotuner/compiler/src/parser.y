@@ -14,13 +14,6 @@ void yyerror(const char *s) { std::cerr << "Error at line " << yylineno << ": " 
 
 Program* program_root;
 
-static std::vector<std::unique_ptr<Expr>> to_unique_vec(std::vector<Expr*>* v) {
-    std::vector<std::unique_ptr<Expr>> res;
-    if (v) {
-        for (auto e : *v) res.push_back(std::unique_ptr<Expr>(e));
-    }
-    return res;
-}
 
 %}
 
@@ -93,262 +86,368 @@ static std::vector<std::unique_ptr<Expr>> to_unique_vec(std::vector<Expr*>* v) {
 
 %%
 
-program : autotuners { program_root = make_program($1); }
-        ;
-
-autotuners
-    : autotuner_decl                // base case: single autotuner
-      { $$ = make_autotuner_list(); $$ = append_autotuner($$, $1); }
-    | autotuners autotuner_decl     // recursive case: add to list
-      { $$ = append_autotuner($1, $2); }
+program 
+    : autotuners 
+      { program_root = Program::make($1); }
     ;
 
-autotuner_decl : TAUTOTUNER TIDENTIFIER input_params generic_params TARROW output_params TLBRACE requires_clause spec_inputs spec_outputs params_block entry_clause loop_list states TRBRACE
-                 { $$ = new AutotunerDecl{*$2, std::move(*$3), std::move(*$6), std::move(*$4), std::move(*$9), std::move(*$10), std::move(*$8), std::move(*$11), *$12, std::move(*$14), std::move(*$13)}; 
-                   delete $2; delete $3; delete $4; delete $6; delete $8; delete $9; delete $10; delete $11; delete $12; delete $13; delete $14; }
-               ;
+autotuners
+    : autotuner_decl 
+      { $$ = make_list<AutotunerDecl>(); $$ = append_item($$, $1); }
+    | autotuners autotuner_decl 
+      { $$ = append_item($1, $2); }
+    ;
 
-input_params : TLPAREN sig_param_list TRPAREN { $$ = $2; }
-             | { $$ = new std::vector<ParamDecl>(); }
-             ;
+autotuner_decl 
+    : TAUTOTUNER TIDENTIFIER input_params generic_params TARROW output_params TLBRACE requires_clause spec_inputs spec_outputs params_block entry_clause loop_list states TRBRACE 
+      { $$ = AutotunerDecl::make($2, $3, $6, $4, $9, $10, $8, $11, $12, $13, $14); }
+    ;
 
-output_params : TLPAREN sig_param_list TRPAREN { $$ = $2; }
-              | { $$ = new std::vector<ParamDecl>(); }
-              ;
+input_params 
+    : TLPAREN sig_param_list TRPAREN 
+      { $$ = $2; }
+    | 
+      { $$ = make_list<ParamDecl>(); }
+    ;
 
-sig_param_list : sig_param_decl { $$ = new std::vector<ParamDecl>(); $$->push_back(std::move(*$1)); delete $1; }
-               | sig_param_list TCOMMA sig_param_decl { $1->push_back(std::move(*$3)); $$ = $1; delete $3; }
-               | { $$ = new std::vector<ParamDecl>(); }
-               ;
+output_params
+    : TLPAREN sig_param_list TRPAREN 
+      { $$ = $2; }
+    | 
+      { $$ = make_list<ParamDecl>(); }
+    ;
 
-sig_param_decl : type_spec TIDENTIFIER { $$ = new ParamDecl{*$2, (ParamType)$1, nullptr}; delete $2; }
-               ;
+sig_param_list
+    : sig_param_decl 
+      { $$ = make_list<ParamDecl>(); $$ = append_item($$, $1); }
+    | sig_param_list TCOMMA sig_param_decl 
+      { $$ = append_item($1, $3); }
+    | 
+      { $$ = make_list<ParamDecl>(); }
+    ;
 
-generic_params : TLBRACKET separated_idents TRBRACKET { $$ = $2; }
-               | { $$ = new std::vector<std::string>(); }
-               ;
+sig_param_decl
+    : type_spec TIDENTIFIER 
+      { $$ = ParamDecl::make($1, $2); }
+    ;
 
-spec_inputs : TSPEC_INPUTS TCOLON TLBRACKET spec_list TRBRACKET { $$ = $4; }
-            | { $$ = new std::vector<SpecDecl>(); }
-            ;
+generic_params 
+    : TLBRACKET separated_idents TRBRACKET 
+      { $$ = $2; }
+    | 
+      { $$ = make_list<std::string>(); }
+    ;
 
-spec_outputs : TSPEC_OUTPUTS TCOLON TLBRACKET spec_list TRBRACKET { $$ = $4; }
-             | { $$ = new std::vector<SpecDecl>(); }
-             ;
+spec_inputs 
+    : TSPEC_INPUTS TCOLON TLBRACKET spec_list TRBRACKET 
+      { $$ = $4; }
+    | 
+      { $$ = make_list<SpecDecl>(); }
+    ;
 
-spec_list : spec_decl { $$ = new std::vector<SpecDecl>(); $$->push_back(std::move(*$1)); delete $1; }
-          | spec_list spec_decl { $1->push_back(std::move(*$2)); $$ = $1; delete $2; }
-          | { $$ = new std::vector<SpecDecl>(); }
-          ;
+spec_outputs 
+    : TSPEC_OUTPUTS TCOLON TLBRACKET spec_list TRBRACKET 
+      { $$ = $4; }
+    | 
+      { $$ = make_list<SpecDecl>(); }
+    ;
 
-spec_decl : type_spec TIDENTIFIER TLBRACKET TIDENTIFIER TRBRACKET
-            { $$ = new SpecDecl{(ParamType)$1, *$2, *$4}; delete $2; delete $4; }
-          | type_spec TIDENTIFIER
-            { $$ = new SpecDecl{(ParamType)$1, *$2, ""}; delete $2; }
-          ;
+spec_list 
+    : spec_decl 
+      { $$ = make_list<SpecDecl>(); $$ = append_item($$, $1); }
+    | spec_list spec_decl 
+      { $$ = append_item($1, $2); }
+    | 
+      { $$ = make_list<SpecDecl>(); }
+    ;
 
-requires_clause : TREQUIRES TCOLON TLBRACKET separated_strings TRBRACKET TSEMICOLON { $$ = $4; }
-                | { $$ = new std::vector<std::string>(); }
-                ;
+spec_decl
+    : type_spec TIDENTIFIER TLBRACKET TIDENTIFIER TRBRACKET
+      { $$ = SpecDecl::make($1, $2, $4); }
+    | type_spec TIDENTIFIER
+      { $$ = SpecDecl::make($1, $2); }
+    ;
 
-separated_idents : TIDENTIFIER { $$ = new std::vector<std::string>(); $$->push_back(std::move(*$1)); delete $1; }
-                 | separated_idents TCOMMA TIDENTIFIER { $1->push_back(std::move(*$3)); $$ = $1; delete $3; }
-                 ;
+requires_clause 
+    : TREQUIRES TCOLON TLBRACKET separated_strings TRBRACKET TSEMICOLON 
+      { $$ = $4; }
+    | 
+      { $$ = make_list<std::string>(); }
+    ;
 
-separated_strings : TSTRING { $$ = new std::vector<std::string>(); $$->push_back(std::move(*$1)); delete $1; }
-                  | TIDENTIFIER { $$ = new std::vector<std::string>(); $$->push_back(std::move(*$1)); delete $1; }
-                  | separated_strings TCOMMA TSTRING { $1->push_back(std::move(*$3)); $$ = $1; delete $3; }
-                  | separated_strings TCOMMA TIDENTIFIER { $1->push_back(std::move(*$3)); $$ = $1; delete $3; }
-                  ;
+separated_idents 
+    : TIDENTIFIER 
+      { $$ = make_list<std::string>(); $$ = append_item($$, $1); }
+    | separated_idents TCOMMA TIDENTIFIER 
+      { $$ = append_item($1, $3); }
+    ;
 
-params_block : TPARAMS TLBRACE param_list TRBRACE { $$ = $3; }
-             | { $$ = new std::vector<ParamDecl>(); }
-             ;
+separated_strings 
+    : TSTRING 
+      { $$ = make_list<std::string>(); $$ = append_item($$, $1); }
+    | TIDENTIFIER 
+      { $$ = make_list<std::string>(); $$ = append_item($$, $1); }
+    | separated_strings TCOMMA TSTRING 
+      { $$ = append_item($1, $3); }
+    | separated_strings TCOMMA TIDENTIFIER 
+      { $$ = append_item($1, $3); }
+    ;
 
-param_list : param_decl { $$ = new std::vector<ParamDecl>(); $$->push_back(std::move(*$1)); delete $1; }
-           | param_list param_decl { $1->push_back(std::move(*$2)); $$ = $1; delete $2; }
-           ;
+params_block 
+    : TPARAMS TLBRACE param_list TRBRACE 
+      { $$ = $3; }
+    | 
+      { $$ = make_list<ParamDecl>(); }
+    ;
 
-param_decl : type_spec TIDENTIFIER TSEMICOLON 
-             { $$ = new ParamDecl{*$2, (ParamType)$1, nullptr}; delete $2; }
-           | type_spec TIDENTIFIER TASSIGN expr TSEMICOLON
-             { /* simplified: only handling literal defaults for now */
-               $$ = new ParamDecl{*$2, (ParamType)$1, nullptr}; delete $2; delete $4; }
-           ;
+param_list 
+    : param_decl 
+      { $$ = make_list<ParamDecl>(); $$ = append_item($$, $1); }
+    | param_list param_decl 
+      { $$ = append_item($1, $2); }
+    ;
 
-type_spec : TFLOAT_KW { $$ = (int)ParamType::Float; }
-          | TINT_KW { $$ = (int)ParamType::Int; }
-          | TBOOL_KW { $$ = (int)ParamType::Bool; }
-          | TSTRING_KW { $$ = (int)ParamType::String; }
-          | TQUANTITY_KW { $$ = (int)ParamType::Quantity; }
-          | TCONFIG_KW { $$ = (int)ParamType::Config; }
-          | TGROUP_KW { $$ = (int)ParamType::Group; }
-          | TCONNECTION_KW { $$ = (int)ParamType::Connection; }
-          ;
+param_decl 
+    : type_spec TIDENTIFIER TSEMICOLON 
+      { $$ = ParamDecl::make($1,$2); }
+    // Fix: only handling literal defaults for now
+    | type_spec TIDENTIFIER TASSIGN expr TSEMICOLON 
+      { $$ = ParamDecl::make($1,$2); delete $4; }
+    ;
 
-entry_clause : TSTART TARROW TIDENTIFIER TSEMICOLON { $$ = $3; }
-             ;
+type_spec 
+    : TFLOAT_KW 
+      { $$ = (int)ParamType::Float; }
+    | TINT_KW 
+      { $$ = (int)ParamType::Int; }
+    | TBOOL_KW 
+      { $$ = (int)ParamType::Bool; }
+    | TSTRING_KW 
+      { $$ = (int)ParamType::String; }
+    | TQUANTITY_KW 
+      { $$ = (int)ParamType::Quantity; }
+    | TCONFIG_KW 
+      { $$ = (int)ParamType::Config; }
+    | TGROUP_KW 
+      { $$ = (int)ParamType::Group; }
+    | TCONNECTION_KW 
+      { $$ = (int)ParamType::Connection; }
+    ;
 
-loop_list : loop_decl { $$ = new std::vector<ForLoop>(); $$->push_back(std::move(*$1)); delete $1; }
-          | loop_list loop_decl { $1->push_back(std::move(*$2)); $$ = $1; delete $2; }
-          | { $$ = new std::vector<ForLoop>(); }
-          ;
+entry_clause 
+    : TSTART TARROW TIDENTIFIER TSEMICOLON 
+      { $$ = $3; }
+    ;
 
-loop_decl : TFOR TIDENTIFIER TIN expr TLBRACE loop_states TRBRACE
-            { $$ = new ForLoop{*$2, std::unique_ptr<Expr>($4), std::move(*$6)}; delete $2; delete $6; }
-          ;
+loop_list 
+    : loop_decl 
+      { $$ = make_list<ForLoop>(); $$ = append_item($$, $1); }
+    | loop_list loop_decl 
+      { $$ = append_item($1, $2); }
+    | 
+      { $$ = make_list<ForLoop>(); }
+    ;
 
-loop_states : state_decl { $$ = new std::vector<StateDecl>(); $$->push_back(std::move(*$1)); delete $1; }
-            | loop_states state_decl { $1->push_back(std::move(*$2)); $$ = $1; delete $2; }
-            ;
+loop_decl 
+    : TFOR TIDENTIFIER TIN expr TLBRACE loop_states TRBRACE 
+      { $$ = ForLoop::make($2, $4, $6); }
+    ;
 
-states : state_list { $$ = $1; }
-       ;
+loop_states 
+    : state_decl 
+      { $$ = make_list<StateDecl>(); $$ = append_item($$, $1); }
+    | loop_states state_decl 
+      { $$ = append_item($1,$2); }
+    ;
 
-state_list : state_decl { $$ = new std::vector<StateDecl>(); $$->push_back(std::move(*$1)); delete $1; }
-           | state_list state_decl { $1->push_back(std::move(*$2)); $$ = $1; delete $2; }
-           | { $$ = new std::vector<StateDecl>(); }
-           ;
+states 
+    : state_list 
+      { $$ = $1; }
+    ;
 
-state_decl : TSTATE TIDENTIFIER TLBRACKET TIDENTIFIER TRBRACKET TLBRACE state_params state_temps measurement_opt transition_list TRBRACE
-             { $$ = new StateDecl{*$2, *$4, std::move(*$7), std::move(*$8), std::unique_ptr<Expr>($9), false, std::move(*$10)}; 
-               delete $2; delete $4; delete $7; delete $8; delete $10; }
-           | TSTATE TIDENTIFIER TLBRACE state_params state_temps measurement_opt transition_list TRBRACE
-             { $$ = new StateDecl{*$2, "", std::move(*$4), std::move(*$5), std::unique_ptr<Expr>($6), false, std::move(*$7)}; 
-               delete $2; delete $4; delete $5; delete $7; }
-           ;
+state_list 
+    : state_decl 
+      { $$ = make_list<StateDecl>(); $$ = append_item($$, $1); }
+    | state_list state_decl 
+      { $$ = append_item($1, $2); }
+    | 
+      { $$ = make_list<StateDecl>(); }
+    ;
 
-state_params : TPARAMS TLBRACE param_list TRBRACE { $$ = $3; }
-             | { $$ = new std::vector<ParamDecl>(); }
-             ;
+state_decl
+    : TSTATE TIDENTIFIER TLBRACKET TIDENTIFIER TRBRACKET TLBRACE state_params state_temps measurement_opt transition_list TRBRACE
+      { $$ = StateDecl::make($2, $7, $8, $9, $10, $4); }
+    | TSTATE TIDENTIFIER TLBRACE state_params state_temps measurement_opt transition_list TRBRACE
+      { $$ = StateDecl::make($2, $4, $5, $6, $7); }
+    ;
 
-state_temps : TTEMP TLBRACE param_list TRBRACE { $$ = $3; }
-            | { $$ = new std::vector<ParamDecl>(); }
-            ;
+state_params 
+    : TPARAMS TLBRACE param_list TRBRACE 
+      { $$ = $3; }
+    | 
+      { $$ = make_list<ParamDecl>(); }
+    ;
 
-measurement_opt : TMEASUREMENT TCOLON TIDENTIFIER TLPAREN arg_list TRPAREN TSEMICOLON { $$ = new CallExpr{*$3, to_unique_vec($5)}; delete $3; delete $5; }
-                | TRUN TCOLON TIDENTIFIER TLPAREN arg_list TRPAREN TSEMICOLON { $$ = new CallExpr{*$3, to_unique_vec($5)}; delete $3; delete $5; }
-                | { $$ = nullptr; }
-                ;
+state_temps 
+    : TTEMP TLBRACE param_list TRBRACE 
+      { $$ = $3; }
+    | 
+      { $$ = make_list<ParamDecl>(); }
+    ;
 
-arg_list : expr { $$ = new std::vector<Expr*>(); $$->push_back($1); }
-         | arg_list TCOMMA expr { $1->push_back($3); $$ = $1; }
-         | { $$ = new std::vector<Expr*>(); }
-         ;
+measurement_opt
+    : TMEASUREMENT TCOLON TIDENTIFIER TLPAREN arg_list TRPAREN TSEMICOLON
+      { $$ = CallExpr::make($3, $5); }
+    | TRUN TCOLON TIDENTIFIER TLPAREN arg_list TRPAREN TSEMICOLON
+      { $$ = CallExpr::make($3, $5); }
+    | 
+      { $$ = nullptr; }
+    ;
 
-transition_list : transition_decl { $$ = $1; }
-                | transition_list transition_decl { $1->insert($1->end(), std::make_move_iterator($2->begin()), std::make_move_iterator($2->end())); delete $2; $$ = $1; }
-                | { $$ = new std::vector<Transition>(); }
-                ;
+arg_list 
+    : expr 
+      { $$ = make_list<Expr*>(); $$ = append_item($$, $1); }
+    | arg_list TCOMMA expr 
+      { $$ = append_item($1, $3); }
+    | 
+      { $$ = make_list<Expr*>(); }
+    ;
 
-transition_decl : simple_transition { $$ = $1; }
-                | TIF TLPAREN expr TRPAREN transition_decl
-                  { 
-                    $$ = $5;
-                    for (auto& t : *$$) {
-                      if (t.condition) t.condition = std::make_unique<BinaryExpr>("&&", $3->clone(), std::move(t.condition));
-                      else t.condition = $3->clone();
-                    }
-                    delete $3;
-                  }
-                | TIF TLPAREN expr TRPAREN simple_transition TELSE transition_decl
-                  {
-                    $$ = $5;
-                    for (auto& t : *$$) {
-                        if (t.condition) t.condition = std::make_unique<BinaryExpr>("&&", $3->clone(), std::move(t.condition));
-                        else t.condition = $3->clone();
-                    }
-                    auto else_part = $7;
-                    auto inv_cond = std::make_unique<UnaryExpr>("!", $3->clone());
-                    for (auto& t : *else_part) {
-                        if (t.condition) t.condition = std::make_unique<BinaryExpr>("&&", inv_cond->clone(), std::move(t.condition));
-                        else t.condition = inv_cond->clone();
-                    }
-                    $$->insert($$->end(), std::make_move_iterator(else_part->begin()), std::make_move_iterator(else_part->end()));
-                    delete else_part;
-                    delete $3;
-                  }
-                ;
+transition_list
+    : transition_decl 
+      { $$ = make_list<Transition>(); $$ = merge_lists($$, $1); }
+    | transition_list transition_decl 
+      { $$ = merge_lists($1, $2); }
+    | 
+      { $$ = make_list<Transition>(); }
+    ;
 
-simple_transition : TSUCCESS TSEMICOLON
-                  { $$ = new std::vector<Transition>(); Transition t; t.is_success = true; $$->push_back(std::move(t)); }
-                | TFAIL TSTRING TSEMICOLON
-                  { $$ = new std::vector<Transition>(); Transition t; t.is_fail = true; t.error_message = *$2; $$->push_back(std::move(t)); delete $2; }
-                | TFAIL TSEMICOLON
-                  { $$ = new std::vector<Transition>(); Transition t; t.is_fail = true; $$->push_back(std::move(t)); }
-                | TTERMINAL TSEMICOLON
-                  { $$ = new std::vector<Transition>(); Transition t; t.target.state_name = "_TERMINAL_"; $$->push_back(std::move(t)); }
-                | TARROW trans_target TSEMICOLON
-                  { $$ = new std::vector<Transition>(); $$->emplace_back(nullptr, std::move(*$2), std::vector<Assignment>{}); delete $2; }
-                | assignment_block TARROW trans_target TSEMICOLON
-                  { $$ = new std::vector<Transition>(); $$->emplace_back(nullptr, std::move(*$3), std::move(*$1)); delete $1; delete $3; }
-                | assignment_decl
-                  { 
-                    $$ = new std::vector<Transition>();
-                    std::vector<Assignment> asgns;
-                    asgns.push_back(std::move(*$1));
-                    $$->emplace_back(nullptr, TransitionTarget("", "", nullptr, {}), std::move(asgns));
-                    delete $1;
-                  }
-                | TLBRACE transition_list TRBRACE
-                  {
-                    $$ = $2;
-                  }
-                ;
+transition_decl
+    : simple_transition 
+      { $$ = $1; }
+    | TIF TLPAREN expr TRPAREN transition_decl
+      { $$ = make_if_transition($3, $5); }
+    | TIF TLPAREN expr TRPAREN simple_transition TELSE transition_decl
+      { $$ = make_if_else_transition($3, $5, $7); }
+    ;
 
-assignment_block : TLBRACE assignment_list TRBRACE { $$ = $2; }
-                 | { $$ = new std::vector<Assignment>(); }
-                 ;
+simple_transition
+    : TSUCCESS TSEMICOLON 
+      { $$ = make_simple_transition(SimpleTransitionKind::Success); }
+    | TFAIL TSTRING TSEMICOLON 
+      { $$ = make_simple_transition(SimpleTransitionKind::Fail, $2); }
+    | TFAIL TSEMICOLON 
+      { $$ = make_simple_transition(SimpleTransitionKind::Fail); }
+    | TTERMINAL TSEMICOLON 
+      { $$ = make_simple_transition(SimpleTransitionKind::Terminal); }
+    | TARROW trans_target TSEMICOLON 
+      { $$ = make_arrow_transition($2); }
+    | assignment_block TARROW trans_target TSEMICOLON 
+      { $$ = make_assignment_arrow_transition($1, $3); }
+    | assignment_decl 
+      { $$ = make_assignment_transition($1); }
+    | TLBRACE transition_list TRBRACE 
+      { $$ = $2; }
+    ;
 
-assignment_list : assignment_decl { $$ = new std::vector<Assignment>(); $$->push_back(std::move(*$1)); delete $1; }
-                | assignment_list assignment_decl { $1->push_back(std::move(*$2)); $$ = $1; delete $2; }
-                ;
+assignment_block
+    : TLBRACE assignment_list TRBRACE 
+      { $$ = $2; }
+    | 
+      { $$ = make_list<Assignment>(); }
+    ;
 
-assignment_decl : separated_idents TASSIGN expr TSEMICOLON { $$ = new Assignment{std::move(*$1), std::unique_ptr<Expr>($3)}; delete $1; }
-                ;
+assignment_list
+    : assignment_decl 
+      { $$ = make_list<Assignment>(); $$ = append_item($$, $1); }
+    | assignment_list assignment_decl 
+      { $$ = append_item($1, $2); }
+    ;
 
-trans_target : TIDENTIFIER TLBRACKET expr TRBRACKET mappings { $$ = new TransitionTarget{"", std::move(*$1), std::unique_ptr<Expr>($3), std::move(*$5)}; delete $1; delete $5; }
-             | TIDENTIFIER mappings { $$ = new TransitionTarget{"", std::move(*$1), nullptr, std::move(*$2)}; delete $1; delete $2; }
-             | TIDENTIFIER TDOUBLECOLON TIDENTIFIER TLBRACKET expr TRBRACKET mappings { $$ = new TransitionTarget{std::move(*$1), std::move(*$3), std::unique_ptr<Expr>($5), std::move(*$7)}; delete $1; delete $3; delete $7; }
-             | TIDENTIFIER TDOUBLECOLON TIDENTIFIER mappings { $$ = new TransitionTarget{std::move(*$1), std::move(*$3), nullptr, std::move(*$4)}; delete $1; delete $3; delete $4; }
-             ;
+assignment_decl
+    : separated_idents TASSIGN expr TSEMICOLON 
+      { $$ = Assignment::make($1, $3); }
+    ;
 
-mappings : TLBRACKET mapping_list TRBRACKET { $$ = $2; }
-         | { $$ = new std::vector<Mapping>(); }
-         ;
+trans_target
+    : TIDENTIFIER TLBRACKET expr TRBRACKET mappings
+      { $$ = TransitionTarget::from_state_expr_mappings($1, $3, $5); }
+    | TIDENTIFIER mappings
+      { $$ = TransitionTarget::from_state_mappings($1, $2); }
+    | TIDENTIFIER TDOUBLECOLON TIDENTIFIER TLBRACKET expr TRBRACKET mappings
+      { $$ = TransitionTarget::from_ns_state_expr_mappings($1, $3, $5, $7); }
+    | TIDENTIFIER TDOUBLECOLON TIDENTIFIER mappings
+      { $$ = TransitionTarget::from_ns_state_mappings($1, $3, $4); }
+    ;
 
-mapping_list : mapping_decl { $$ = new std::vector<Mapping>(); $$->push_back(std::move(*$1)); delete $1; }
-             | mapping_list TCOMMA mapping_decl { $1->push_back(std::move(*$3)); $$ = $1; delete $3; }
-             ;
+mappings
+    : TLBRACKET mapping_list TRBRACKET 
+      { $$ = $2; }
+    | 
+      { $$ = make_list<Mapping>(); }
+    ;
 
-mapping_decl : TIDENTIFIER TCOLON TIDENTIFIER { $$ = new Mapping{*$1, *$3}; delete $1; delete $3; }
-             | TIDENTIFIER { $$ = new Mapping{*$1, *$1}; delete $1; }
-             ;
+mapping_list
+    : mapping_decl 
+      { $$ = make_list<Mapping>(); $$ = append_item($$, $1); }
+    | mapping_list TCOMMA mapping_decl 
+      { $$ = append_item($1, $3); }
+    ;
 
-expr : TINTEGER { $$ = new ConstExpr{std::stoll(*$1)}; delete $1; }
-     | TDOUBLE { $$ = new ConstExpr{std::stod(*$1)}; delete $1; }
-     | TSTRING { $$ = new ConstExpr{*$1}; delete $1; }
-     | TTRUE { $$ = new ConstExpr{true}; }
-     | TFALSE { $$ = new ConstExpr{false}; }
-     | TIDENTIFIER { $$ = new VarExpr{*$1}; delete $1; }
-     | TCONFIG_VAR { $$ = new VarExpr{"config"}; }
-     | TNEXT TIDENTIFIER { $$ = new VarExpr("next " + *$2); delete $2; }
-     | expr TDOT TIDENTIFIER { $$ = new MemberExpr(std::unique_ptr<Expr>($1), *$3); delete $3; }
-     | expr TPLUS expr { $$ = new BinaryExpr("+", std::unique_ptr<Expr>($1), std::unique_ptr<Expr>($3)); }
-     | expr TMINUS expr { $$ = new BinaryExpr("-", std::unique_ptr<Expr>($1), std::unique_ptr<Expr>($3)); }
-     | expr TMUL expr { $$ = new BinaryExpr("*", std::unique_ptr<Expr>($1), std::unique_ptr<Expr>($3)); }
-     | expr TDIV expr { $$ = new BinaryExpr("/", std::unique_ptr<Expr>($1), std::unique_ptr<Expr>($3)); }
-     | expr TEQ expr { $$ = new BinaryExpr("==", std::unique_ptr<Expr>($1), std::unique_ptr<Expr>($3)); }
-     | expr TNE expr { $$ = new BinaryExpr("!=", std::unique_ptr<Expr>($1), std::unique_ptr<Expr>($3)); }
-     | expr TLL expr { $$ = new BinaryExpr("<", std::unique_ptr<Expr>($1), std::unique_ptr<Expr>($3)); }
-     | expr TGG expr { $$ = new BinaryExpr(">", std::unique_ptr<Expr>($1), std::unique_ptr<Expr>($3)); }
-     | expr TLE expr { $$ = new BinaryExpr("<=", std::unique_ptr<Expr>($1), std::unique_ptr<Expr>($3)); }
-     | expr TGE expr { $$ = new BinaryExpr(">=", std::unique_ptr<Expr>($1), std::unique_ptr<Expr>($3)); }
-     | expr TAND expr { $$ = new BinaryExpr("&&", std::unique_ptr<Expr>($1), std::unique_ptr<Expr>($3)); }
-     | expr TOR expr { $$ = new BinaryExpr("||", std::unique_ptr<Expr>($1), std::unique_ptr<Expr>($3)); }
-     | TNOT expr { $$ = new UnaryExpr("!", std::unique_ptr<Expr>($2)); }
-     | TMINUS expr %prec TNOT { $$ = new UnaryExpr("-", std::unique_ptr<Expr>($2)); }
-     | TLPAREN expr TRPAREN { $$ = $2; }
-     ;
+mapping_decl
+    : TIDENTIFIER TCOLON TIDENTIFIER 
+      { $$ = Mapping::make($1, $3); }
+    | TIDENTIFIER 
+      { $$ = Mapping::make($1); }
+    ;
 
-%%
+expr
+    : TINTEGER 
+      { $$ = ConstExpr::from_int($1); }
+    | TDOUBLE 
+      { $$ = ConstExpr::from_double($1); }
+    | TSTRING 
+      { $$ = ConstExpr::from_string($1); }
+    | TTRUE 
+      { $$ = ConstExpr::from_bool(true); }
+    | TFALSE 
+      { $$ = ConstExpr::from_bool(false); }
+    | TIDENTIFIER 
+      { $$ = VarExpr::make($1); }
+    | TCONFIG_VAR 
+      { $$ = VarExpr::make_config(); }
+    | TNEXT TIDENTIFIER 
+      { $$ = VarExpr::make_next($2); }
+    | expr TDOT TIDENTIFIER 
+      { $$ = new MemberExpr(std::unique_ptr<Expr>($1), *$3); delete $3; }
+    | expr TPLUS expr 
+      { $$ = BinaryExpr::make("+", $1, $3); }
+    | expr TMINUS expr 
+      { $$ = BinaryExpr::make("-", $1, $3); }
+    | expr TMUL expr 
+      { $$ = BinaryExpr::make("*", $1, $3); }
+    | expr TDIV expr 
+      { $$ = BinaryExpr::make("/", $1, $3); }
+    | expr TEQ expr 
+      { $$ = BinaryExpr::make("==", $1, $3); }
+    | expr TNE expr 
+      { $$ = BinaryExpr::make("!=", $1, $3); }
+    | expr TLL expr 
+      { $$ = BinaryExpr::make("<", $1, $3); }
+    | expr TGG expr 
+      { $$ = BinaryExpr::make(">", $1, $3); }
+    | expr TLE expr 
+      { $$ = BinaryExpr::make("<=", $1, $3); }
+    | expr TGE expr 
+      { $$ = BinaryExpr::make(">=", $1, $3); }
+    | expr TAND expr 
+      { $$ = BinaryExpr::make("&&", $1, $3); }
+    | expr TOR expr 
+      { $$ = BinaryExpr::make("||", $1, $3); }
+    | TNOT expr 
+      { $$ = UnaryExpr::make("!", $2); }
+    | TMINUS expr %prec TNOT 
+      { $$ = UnaryExpr::make("-", $2); }
+    | TLPAREN expr TRPAREN 
+      { $$ = $2; }
+    ;
