@@ -31,6 +31,22 @@ public:
   using Value = std::variant<int64_t, double, bool, std::string, ConnectionSP,
                              ConnectionsSP, database::DeviceCharacteristic>;
 
+  static std::string value_to_string(const Value &v) {
+    return std::visit(
+        [](const auto &val) -> std::string {
+          using T = std::decay_t<decltype(val)>;
+          if constexpr (std::is_same_v<T, std::string>) {
+            return val;
+          } else if constexpr (std::is_same_v<T, bool>) {
+            return val ? "true" : "false";
+          } else if constexpr (std::is_arithmetic_v<T>) {
+            return std::to_string(val);
+          } else {
+            return "<unprintable>";
+          }
+        },
+        v);
+  }
   /**
    * @brief Set a parameter value
    */

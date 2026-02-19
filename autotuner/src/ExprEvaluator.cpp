@@ -1,6 +1,8 @@
 #include "falcon-autotuner/ExprEvaluator.hpp"
 #include "falcon-atc/AST.hpp"
+#include "falcon-autotuner/ParameterMap.hpp"
 #include "falcon-database/DeviceCharacteristic.hpp"
+#include <fmt/format.h>
 #include <memory>
 #include <stdexcept>
 
@@ -26,6 +28,107 @@ struct ToBool {
     throw std::runtime_error("Cannot convert to bool");
   }
 };
+
+static ExprEvaluator::Value perform_math(const atc::BinaryExpr *b,
+                                         const ExprEvaluator::Value &left,
+                                         const ExprEvaluator::Value &right) {
+  auto both_int = [&]() {
+    return std::holds_alternative<int64_t>(left) &&
+           std::holds_alternative<int64_t>(right);
+  };
+  auto as_int = [&]() {
+    return std::make_pair(std::get<int64_t>(left), std::get<int64_t>(right));
+  };
+  auto as_double = [&]() {
+    return std::make_pair(std::visit(ToDouble{}, left),
+                          std::visit(ToDouble{}, right));
+  };
+
+  const std::string &op = b->op;
+
+  // Equality
+  if (op == "==") {
+    return left == right;
+  }
+  if (op == "!=") {
+    return left != right;
+  }
+
+  if (op == ">" || op == "<" || op == ">=" || op == "<=" || op == "+" ||
+      op == "-" || op == "*") {
+    if (both_int()) {
+      auto [left, right] = as_int();
+      if (op == ">") {
+        return left > right;
+      }
+      if (op == "<") {
+        return left < right;
+      }
+      if (op == ">=") {
+        return left >= right;
+      }
+      if (op == "<=") {
+        return left <= right;
+      }
+      if (op == "+") {
+        return left + right;
+      }
+      if (op == "-") {
+        return left - right;
+      }
+      if (op == "*") {
+        return left * right;
+      }
+    } else {
+      auto [left, right] = as_double();
+      if (op == ">") {
+        return left > right;
+      }
+      if (op == "<") {
+        return left < right;
+      }
+      if (op == ">=") {
+        return left >= right;
+      }
+      if (op == "<=") {
+        return left <= right;
+      }
+      if (op == "+") {
+        return left + right;
+      }
+      if (op == "-") {
+        return left - right;
+      }
+      if (op == "*") {
+        return left * right;
+      }
+    }
+  }
+
+  // Division
+  if (op == "/") {
+    if (both_int()) {
+      auto [left, right] = as_int();
+      if (right == 0) {
+        throw std::runtime_error("Division by zero");
+      }
+      if (left % right == 0) {
+        return left / right;
+      }
+      // else fall through to double
+    }
+    auto [left, right] = as_double();
+    if (right == 0.0) {
+      throw std::runtime_error("Division by zero");
+    }
+    return left / right;
+  }
+
+  throw std::runtime_error(
+      fmt::format("Invalid math to perform. The operation was to be {} {} {}",
+                  ParameterMap::value_to_string(left), op,
+                  ParameterMap::value_to_string(right)));
+}
 
 ExprEvaluator::Value
 ExprEvaluator::evaluate(const std::unique_ptr<atc::Expr> e) {
@@ -91,37 +194,8 @@ ExprEvaluator::evaluate(const std::unique_ptr<atc::Expr> e) {
   if (auto b = dynamic_cast<const atc::BinaryExpr *>(e.get())) {
     auto left = evaluate(b->left->clone());
     auto right = evaluate(b->right->clone());
-
-    if (b->op == ">") {
-      return std::visit(ToDouble{}, left) > std::visit(ToDouble{}, right);
-    }
-    if (b->op == "<") {
-      return std::visit(ToDouble{}, left) < std::visit(ToDouble{}, right);
-    }
-    if (b->op == ">=") {
-      return std::visit(ToDouble{}, left) >= std::visit(ToDouble{}, right);
-    }
-    if (b->op == "<=") {
-      return std::visit(ToDouble{}, left) <= std::visit(ToDouble{}, right);
-    }
-    if (b->op == "==") {
-      return left == right;
-    }
-    if (b->op == "!=") {
-      return left != right;
-    }
-    if (b->op == "+") {
-      return std::visit(ToDouble{}, left) + std::visit(ToDouble{}, right);
-    }
-    if (b->op == "-") {
-      return std::visit(ToDouble{}, left) - std::visit(ToDouble{}, right);
-    }
-    if (b->op == "*") {
-      return std::visit(ToDouble{}, left) * std::visit(ToDouble{}, right);
-    }
-    if (b->op == "/") {
-      return std::visit(ToDouble{}, left) / std::visit(ToDouble{}, right);
-    }
+    // FIX: Need to implement PEMDAS
+    return perform_math(b, left, right);
   }
 
   if (auto u = dynamic_cast<const atc::UnaryExpr *>(e.get())) {
