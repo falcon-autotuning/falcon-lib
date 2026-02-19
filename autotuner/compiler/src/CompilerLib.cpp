@@ -1,6 +1,5 @@
 #include "falcon-atc/Compiler.hpp"
 #include "parser.tab.hpp"
-#include <fstream>
 
 extern std::unique_ptr<falcon::atc::Program> program_root;
 extern FILE *yyin;

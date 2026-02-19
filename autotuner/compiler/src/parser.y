@@ -6,8 +6,10 @@
 %define api.value.type variant
 %define api.token.constructor
 %define api.token.prefix {TOK_}
-%define parse.error detailed
+%define parse.error verbose
+%define parse.trace
 
+// Enable tracing and verbose errors (which may be wrong!)
 %code requires {
   #include <string>
   #include <vector>

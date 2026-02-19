@@ -37,11 +37,11 @@ using namespace falcon::atc;
 "for"           { return Parser::make_FOR(); }
 "in"            { return Parser::make_IN(); }
 
-"Float"         { return Parser::make_FLOAT_KW(); }
-"Int"           { return Parser::make_INT_KW(); }
-"Bool"          { return Parser::make_BOOL_KW(); }
-"String"        { return Parser::make_STRING_KW(); }
-"Quantity"      { return Parser::make_QUANTITY_KW(); }
+"float"         { return Parser::make_FLOAT_KW(); }
+"int"           { return Parser::make_INT_KW(); }
+"bool"          { return Parser::make_BOOL_KW(); }
+"string"        { return Parser::make_STRING_KW(); }
+"quantity"      { return Parser::make_QUANTITY_KW(); }
 "Config"        { return Parser::make_CONFIG_KW(); }
 "Group"         { return Parser::make_GROUP_KW(); }
 "Connection"    { return Parser::make_CONNECTION_KW(); }
