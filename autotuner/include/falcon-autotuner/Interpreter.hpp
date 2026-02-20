@@ -40,6 +40,14 @@ private:
   };
 
   bool execute_state(Context &ctx);
+  /**
+   * @brief Performs garbage collection on the temp vars
+   * A temp var is a variable supplied only in the state
+   * Temp vars must have their type defined explicitly compared to an autotuner
+   * variable
+   */
+  static void garbage_collect_temp_variables(Context &ctx,
+                                             const atc::StateDecl &old_state);
   ExprEvaluator::Value
   device_specification_read(const std::vector<ExprEvaluator::Value> &queries);
   bool device_specification_load(const std::vector<ExprEvaluator::Value> &args);

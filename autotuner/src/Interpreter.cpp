@@ -61,7 +61,10 @@ bool Interpreter::run(const std::string &autotuner_name, ParameterMap &params) {
   evaluate_params(ctx.local_params, at->params);
 
   while (ctx.current_state != nullptr) {
-    if (!execute_state(ctx)) {
+    const atc::StateDecl *old_state = ctx.current_state;
+    bool should_continue = execute_state(ctx);
+    garbage_collect_temp_variables(ctx, *old_state);
+    if (!should_continue) {
       return false;
     }
   }
@@ -256,6 +259,15 @@ bool Interpreter::execute_state(Context &ctx) {
 
   ctx.current_state = nullptr;
   return true;
+}
+
+void Interpreter::garbage_collect_temp_variables(
+    Context &ctx, const atc::StateDecl &old_state) {
+  for (const auto &temp_param : old_state.params) {
+    if (temp_param->type.has_value()) {
+      ctx.local_params.remove(temp_param->name);
+    }
+  }
 }
 
 const atc::AutotunerDecl *Interpreter::find_autotuner(const std::string &name) {
