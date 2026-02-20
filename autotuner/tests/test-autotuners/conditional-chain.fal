@@ -1,0 +1,48 @@
+autotuner ConditionalChain (int value) -> (string category) {
+  string category = "";
+  
+  start -> classify;
+  
+  state classify {
+    if (value < 0) {
+      -> negative;
+    }
+    else if (value == 0) {
+      -> zero;
+    }
+    else if (value < 10) {
+      -> small;
+    }
+    else if (value < 100) {
+      -> medium;
+    }
+    else {
+      -> large;
+    }
+  }
+  
+  state negative {
+    category = "negative";
+    terminal;
+  }
+  
+  state zero {
+    category = "zero";
+    terminal;
+  }
+  
+  state small {
+    category = "small";
+    terminal;
+  }
+  
+  state medium {
+    category = "medium";
+    terminal;
+  }
+  
+  state large {
+    category = "large";
+    terminal;
+  }
+}

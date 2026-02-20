@@ -1,0 +1,14 @@
+autotuner SimpleTransition () -> (bool completed) {
+  bool completed = false;
+  
+  start -> init;
+  
+  state init {
+    completed = true;
+    -> done;
+  }
+  
+  state done {
+    terminal;
+  }
+}

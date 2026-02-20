@@ -1,0 +1,20 @@
+autotuner IterationTest (int max_iterations) -> (int counter) {
+  int counter = 0;
+  
+  start -> loop;
+  
+  state loop {
+    counter = counter + 1;
+    
+    if (counter < max_iterations) {
+      -> loop;
+    }
+    else {
+      -> done;
+    }
+  }
+  
+  state done {
+    terminal;
+  }
+}

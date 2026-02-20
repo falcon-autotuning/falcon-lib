@@ -1,0 +1,15 @@
+autotuner GenericProcessor (float input) [device_id] -> (float output) {
+  float output = 0.0;
+  float multiplier = 2.0;
+  
+  start -> process;
+  
+  state process {
+    output = input * multiplier;
+    -> done;
+  }
+  
+  state done {
+    terminal;
+  }
+}

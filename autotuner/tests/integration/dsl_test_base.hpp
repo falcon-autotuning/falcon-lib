@@ -134,6 +134,29 @@ protected:
     return program;
   }
 
+  bool compile_and_run(const std::filesystem::path &dsl_file,
+                       const std::string &autotuner_name, ParameterMap &params,
+                       bool expect_success = true) {
+    return compile_and_run(std::vector<std::filesystem::path>{dsl_file},
+                           autotuner_name, params, expect_success);
+  }
+  bool compile_and_run(const std::vector<std::filesystem::path> &dsl_files,
+                       const std::string &autotuner_name, ParameterMap &params,
+                       bool expect_success = true) {
+    // Concatenate all DSL files into one string
+    std::stringstream dsl_code;
+    for (const auto &file : dsl_files) {
+      std::ifstream in(file);
+      if (!in.is_open()) {
+        std::cerr << "Failed to open DSL file: " << file << '\n';
+        return false;
+      }
+      dsl_code << in.rdbuf() << "\n";
+    }
+    // Use the existing compile_and_run logic with the concatenated string
+    return compile_and_run(dsl_code.str(), autotuner_name, params,
+                           expect_success);
+  }
   // Helper: Compile and run in one step
   bool compile_and_run(const std::string &dsl_code,
                        const std::string &autotuner_name, ParameterMap &params,

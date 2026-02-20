@@ -1,0 +1,11 @@
+autotuner NoTransition () -> (bool completed) {
+  bool completed = false;
+  
+  start -> done;
+  
+  state done {
+    completed = true;
+    terminal;
+  }
+  
+}
