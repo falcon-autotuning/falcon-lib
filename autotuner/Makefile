@@ -86,7 +86,7 @@ configure-debug: check-vcpkg
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
 		-DCOMPILE_OPTIONS="-g " \
-		-Dfalcon_core_DIR=/opt/falcon/lib/cmake/falcon_core \
+		-Dfalcon_core_DIR=/opt/falcon/include/cmake \
 		-Dfalcon-database_DIR=/opt/falcon/lib/cmake/falcon-database \
 		-Dfalcon-comms_DIR=/opt/falcon/lib/cmake/falcon-comms \
 		-DBUILD_TESTS=ON \
@@ -106,7 +106,7 @@ configure-release: check-vcpkg
 		-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_TOOLCHAIN) \
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
-    -Dfalcon_core_DIR=/opt/falcon/lib/cmake/falcon_core \
+    -Dfalcon_core_DIR=/opt/falcon/include/cmake \
     -Dfalcon-database_DIR=/opt/falcon/lib/cmake/falcon-database \
     -Dfalcon-comms_DIR=/opt/falcon/lib/cmake/falcon-comms \
 		-DBUILD_TESTS=ON \
