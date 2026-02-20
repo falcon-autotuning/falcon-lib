@@ -1,4 +1,4 @@
-autotuner NoTransition () -> (bool completed) {
+autotuner NoTransition -> (bool completed) {
   bool completed = false;
   
   start -> done;
