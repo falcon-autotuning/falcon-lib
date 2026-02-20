@@ -7,11 +7,45 @@ VCPKG_ROOT ?= $(CURDIR)/.vcpkg
 VCPKG_TOOLCHAIN ?= $(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake
 UNAME_S := $(shell uname -s)
 
+# Repo and release configuration
+REPO = falcon-autotuning/falcon-core
+RELEASE_TAG = v1.1.0
+LIBS_RELEASE_TAG = v0.0.2
+LIBS_REPO = falcon-autotuning/falcon-core-libs
+
+# GitHub release download base URL
+GITHUB_RELEASE_URL = https://github.com/$(REPO)/releases/download/$(RELEASE_TAG)
+
+PREFIX ?= /opt/falcon
+LIBDIR := $(PREFIX)/lib
+INCLUDEDIR := $(PREFIX)/include
+
 ifeq ($(UNAME_S),Linux)
-    VCPKG_TRIPLET ?= x64-linux-dynamic
+  VCPKG_TRIPLET ?= x64-linux-dynamic
+	TMPDIR = /tmp/falcon-core-install
+	SUDO := sudo
+  ARCHIVE_CPP = falcon-core-cpp-linux-x64.tar.gz
+  ARCHIVE_CPP_SHA = falcon-core-cpp-linux-x64.tar.gz.sha256
+  ARCHIVE_CAPI = falcon-core-c-api-linux-x64.tar.gz
+  ARCHIVE_CAPI_SHA = falcon-core-c-api-linux-x64.tar.gz.sha256
+  EXTRACT_CPP = tar -xzf $(TMPDIR)/$(ARCHIVE_CPP) -C $(TMPDIR)/cpp
+  EXTRACT_CAPI = tar -xzf $(TMPDIR)/$(ARCHIVE_CAPI) -C $(TMPDIR)/c_api
+  LIBSUBDIR = lib
+
+
 endif
 ifeq ($(OS),Windows_NT)
     VCPKG_TRIPLET ?= x64-windows
+
+  TMPDIR = $(USERPROFILE)/AppData/Local/Temp/falcon-core-install
+  SUDO =
+	ARCHIVE_CPP = falcon-core-cpp-windows-x64.zip
+  ARCHIVE_CPP_SHA := $(shell echo falcon-core-cpp-windows-x64.zip.sha256 | tr -d '\r')
+  ARCHIVE_CAPI = falcon-core-c-api-windows-x64.zip
+  ARCHIVE_CAPI_SHA := $(shell echo falcon-core-c-api-windows-x64.zip.sha256 | tr -d '\r')
+  EXTRACT_CPP = unzip -o $(TMPDIR)/$(ARCHIVE_CPP) -d $(TMPDIR)/cpp
+  EXTRACT_CAPI = unzip -o $(TMPDIR)/$(ARCHIVE_CAPI) -d $(TMPDIR)/c_api
+  LIBSUBDIR = bin
 endif
 
 all: build-all
@@ -27,10 +61,72 @@ deps:
 	fi
 	@echo "✓ vcpkg ready"
 
+
+install-libs:
+	@echo "Fetching latest release assets from GitHub..."
+	mkdir -p $(TMPDIR)
+	$(SUDO) mkdir -p $(LIBDIR)
+	$(SUDO) mkdir -p $(INCLUDEDIR)
+	@echo "Downloading $(ARCHIVE_CPP)..."
+	curl -L -f -o $(TMPDIR)/$(ARCHIVE_CPP) \
+		$(GITHUB_RELEASE_URL)/$(ARCHIVE_CPP)
+	@echo "Downloading $(ARCHIVE_CPP_SHA)..."
+	curl -L -f -o $(TMPDIR)/$(ARCHIVE_CPP_SHA) \
+		$(GITHUB_RELEASE_URL)/$(ARCHIVE_CPP_SHA)
+	@echo "Downloading $(ARCHIVE_CAPI)..."
+	curl -L -f -o $(TMPDIR)/$(ARCHIVE_CAPI) \
+		$(GITHUB_RELEASE_URL)/$(ARCHIVE_CAPI)
+	@echo "Downloading $(ARCHIVE_CAPI_SHA)..."
+	curl -L -f -o $(TMPDIR)/$(ARCHIVE_CAPI_SHA) \
+		$(GITHUB_RELEASE_URL)/$(ARCHIVE_CAPI_SHA)
+ifeq ($(findstring MINGW,$(UNAME_S)),MINGW)
+	dos2unix "$(TMPDIR)/falcon-core-cpp-windows-x64.zip.sha256"
+	dos2unix "$(TMPDIR)/falcon-core-c-api-windows-x64.zip.sha256"
+endif
+	@echo "Verifying checksums..."
+	cd "$(TMPDIR)" && sha256sum -c "$(shell echo $(ARCHIVE_CPP_SHA) | tr -d '\r')"
+	cd "$(TMPDIR)" && sha256sum -c "$(shell echo $(ARCHIVE_CAPI_SHA) | tr -d '\r')"
+	@echo "Extracting Archives..."
+	mkdir -p $(TMPDIR)/cpp
+	mkdir -p $(TMPDIR)/c_api
+	$(EXTRACT_CPP)
+	$(EXTRACT_CAPI)
+	@echo "Installing Shared Libraries..."
+	$(SUDO) install -Dm755 $(TMPDIR)/cpp/$(LIBSUBDIR)/* $(LIBDIR)/
+	$(SUDO) install -Dm755 $(TMPDIR)/c_api/$(LIBSUBDIR)/* $(LIBDIR)/
+	@echo "Extracting and Installing C++ Headers..."
+	$(SUDO) mkdir -p $(INCLUDEDIR)/falcon-core-cpp/falcon_core/
+	$(SUDO) cp -r $(TMPDIR)/cpp/include/falcon_core/* $(INCLUDEDIR)/falcon-core-cpp/falcon_core/
+	@echo "Extracting and Installing C API Headers..."
+	$(SUDO) mkdir -p $(INCLUDEDIR)/falcon-core-c-api/falcon_core/
+	$(SUDO) cp -r $(TMPDIR)/c_api/include/falcon_core/* $(INCLUDEDIR)/falcon-core-c-api/falcon_core/
+	@echo "Installing other Headers..."
+	$(SUDO) find $(TMPDIR)/cpp/include -mindepth 1 -maxdepth 1 ! -name 'falcon_core' -exec cp -r {} $(INCLUDEDIR)/ \;
+	$(SUDO) find $(TMPDIR)/c_api/include -mindepth 1 -maxdepth 1 ! -name 'falcon_core' -exec cp -r {} $(INCLUDEDIR)/ \;
+ifeq ($(UNAME_S),Linux)
+	@echo "Updating linker cache..."
+	$(SUDO) ldconfig
+endif
+	@echo "falcon-core libraries and headers installed successfully."
+	$(SUDO) mkdir -p $(INCLUDEDIR)/falcon_core 
+	$(SUDO) cp -r $(INCLUDEDIR)/falcon-core-cpp/falcon_core/* $(INCLUDEDIR)/falcon_core
+	$(SUDO) cp -r $(INCLUDEDIR)/falcon-core-c-api/falcon_core/* $(INCLUDEDIR)/falcon_core
+	$(SUDO) rm -rf $(INCLUDEDIR)/falcon-core-cpp
+	$(SUDO) rm -rf $(INCLUDEDIR)/falcon-core-c-api
+	@echo ""
+
+
 install-vcpkg-deps: deps
 	@echo "Installing vcpkg dependencies from vcpkg.json..."
 	CC=clang CXX=clang++ MAKELEVEL=0 $(VCPKG_ROOT)/vcpkg install --triplet $(VCPKG_TRIPLET)
+	@echo "Patching cereal install..."
+	mkdir -p $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types
+	curl -sSL https://raw.githubusercontent.com/falcon-autotuning/falcon-core/main/cpp/include/cereal/types/xtensor.hpp -o $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types/xtensor.hpp
+	$(SUDO) mkdir -p $(INCLUDEDIR)/cereal/types
+	$(SUDO) cp $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types/xtensor.hpp $(INCLUDEDIR)/cereal/types/xtensor.hpp
 	@echo "✓ vcpkg dependencies installed"
+
+
 
 build-all: install-vcpkg-deps
 	@echo "Building all components..."
