@@ -1,0 +1,75 @@
+autotuner ConditionalNest() -> (int out, Error err) {
+  requires : Adder, Multiplier;
+  int a = 1;
+  int b = 5;
+  Error outer_err = nil;
+  int out = 0;
+
+  start -> init;
+  
+  state init {
+      int add = 0;
+      Error err = nil;
+      add, err = Adder(a,b);
+      if (err != nil) {
+        -> error_processing(err:error);
+      }
+      else {
+        -> multiplication(add:c);
+      }
+  }
+  state multiplication {
+      int c =0;
+      int multiplication = 0;
+      Error err = nil;
+      multiplication, err = Multiplier(c, b);
+      if (err != nil) {
+          -> error_processing(err:error);
+      }
+      else {
+          -> done(multiplication:out_inside);
+      }
+  }
+  state done {
+      int out_inside;
+      int out = out_inside;
+      terminal;
+  }
+  state error_processing {
+      Error error= nil;
+      log::info("We got an error with {}", error);
+      terminal;
+  }
+}
+autotuner Adder (int a , int b) -> (int add, Error err)  {
+    int add = 0;
+    Error err = nil;
+    start -> init;
+
+    state init {
+        add = a+ b;
+        if (a < b) {
+            err = Error::msg("Cannot add a less than b");
+            terminal;
+        }
+        else {
+            terminal;
+        }
+    }
+}
+autotuner Multiplier (int a , int b) -> (int mult, Error err)  {
+    int mult = 0;
+    Error err = nil;
+    start -> init;
+
+    state init {
+        mult = a* b;
+        if (a < b) {
+            err = Error::msg("Cannot multiply a less than b");
+            terminal;
+        }
+        else {
+            terminal;
+        }
+    }
+}

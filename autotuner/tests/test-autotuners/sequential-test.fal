@@ -1,4 +1,4 @@
-autotuner SequentialTest () -> (int step) {
+autotuner SequentialTest -> (int step) {
   int step = 0;
   
   start -> state1;

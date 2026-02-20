@@ -1,0 +1,11 @@
+autotuner TransitionWrite {
+  bool completed = true;
+  Error err = nil;
+  err = write(scope="device", name="completed", extra="default", value=completed);
+  start -> init;
+  
+  state init {
+    terminal;
+  }
+  
+}

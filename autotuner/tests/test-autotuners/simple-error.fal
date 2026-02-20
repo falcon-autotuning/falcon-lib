@@ -1,0 +1,11 @@
+autotuner SimpleError() -> (Error err) {
+  bool completed = false;
+  Error err = Error::msg("We are broken :<")
+  
+  start -> init;
+  
+  state init {
+      terminal;
+  }
+  
+}

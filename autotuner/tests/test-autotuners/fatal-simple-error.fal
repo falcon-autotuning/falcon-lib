@@ -1,0 +1,10 @@
+autotuner FatalSimpleError() -> (bool completed) {
+  bool completed = false;
+  
+  start -> init;
+  
+  state init {
+      terminal FatalError::msg("We are really broken :(");
+  }
+  
+}

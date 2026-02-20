@@ -1,0 +1,15 @@
+autotuner TransitionRead -> (bool completed) {
+  bool completed = false;
+  Error err = nil;
+  completed, err = read(scope="device", name="completed", extra="default");
+
+  start -> init;
+  
+  state init {
+    -> done;
+  }
+  
+  state done {
+    terminal;
+  }
+}
