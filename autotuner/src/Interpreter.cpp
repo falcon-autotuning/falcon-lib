@@ -3,7 +3,6 @@
 #include "falcon-autotuner/ExprEvaluator.hpp"
 #include "falcon-autotuner/log.hpp"
 #include "falcon_core/physics/device_structures/Connection.hpp"
-#include "falcon_core/physics/device_structures/Connections.hpp"
 #include <falcon_core/communications/Time.hpp>
 #include <falcon_core/physics/config/core/Config.hpp>
 #include <fmt/format.h>
@@ -57,8 +56,8 @@ bool Interpreter::run(const std::string &autotuner_name, ParameterMap &params) {
   }
 
   ctx.current_state = find_state(*at, start_state);
-
-  evaluate_initial_params(ctx.local_params, *at);
+  // inital params evaluation
+  evaluate_params(ctx.local_params, at->params);
 
   while (ctx.current_state != nullptr) {
     if (!execute_state(ctx)) {
@@ -107,8 +106,9 @@ bool Interpreter::device_specification_load(
   db_.insert(dchar);
   return true;
 }
-void Interpreter::evaluate_initial_params(ParameterMap &params,
-                                          const atc::AutotunerDecl &atuner) {
+void Interpreter::evaluate_params(
+    ParameterMap &params,
+    const std::vector<std::unique_ptr<atc::Param>> &unevaluated_params) {
   auto eval_database = [this](const std::string &name,
                               const std::vector<ExprEvaluator::Value> &args)
       -> ExprEvaluator::Value {
@@ -121,9 +121,29 @@ void Interpreter::evaluate_initial_params(ParameterMap &params,
     return device_specification_read(args);
   };
   ExprEvaluator eval(params, config_, eval_database);
-  for (const auto &unevaluated_param : atuner.params) {
-    auto val = eval.evaluate(unevaluated_param.default_value->clone());
-    params.set(unevaluated_param.name, val);
+  for (const auto &unevaluated_param : unevaluated_params) {
+    auto val = eval.evaluate(unevaluated_param->default_value->clone());
+    if (const atc::ParamDecl *decl =
+            dynamic_cast<atc::ParamDecl *>(unevaluated_param.get())) {
+      // ParamDecl: check type against decl->type
+      atc::ParamType expected = decl->type;
+      atc::ParamType actual = val.type;
+      if (expected != actual) {
+        throw std::runtime_error(
+            fmt::format("Type mismatch for parameter '{}': expected {}, got {}",
+                        decl->name, to_string(expected), to_string(actual)));
+      }
+      params.set(decl->name, val.value, expected);
+    } else {
+      atc::ParamType expected = params.get_type(unevaluated_param->name);
+      atc::ParamType actual = val.type;
+      if (expected != actual) {
+        throw std::runtime_error(fmt::format(
+            "Type mismatch for parameter '{}': expected {}, got {}",
+            unevaluated_param->name, to_string(expected), to_string(actual)));
+      }
+      params.set(unevaluated_param->name, val.value, expected);
+    }
   }
 }
 bool Interpreter::execute_state(Context &ctx) {
@@ -149,14 +169,14 @@ bool Interpreter::execute_state(Context &ctx) {
   }
   ExprEvaluator eval(ctx.local_params, config_, eval_database);
 
-  evaluate_state_params()
-      // TODO: evaluate_temp_params()
-      // 1. Evaluate transitions
-      for (const auto &t : ctx.current_state->transitions) {
+  evaluate_params(ctx.local_params, ctx.current_state->params);
+  // TODO: evaluate_temp_params()
+  // 1. Evaluate transitions
+  for (const auto &t : ctx.current_state->transitions) {
     bool cond = true;
     if (t.condition) {
       auto val = eval.evaluate(t.condition->clone());
-      cond = std::visit(ToBool{}, val);
+      cond = std::visit(ToBool{}, val.value);
     }
 
     if (cond) {
@@ -164,7 +184,7 @@ bool Interpreter::execute_state(Context &ctx) {
       for (const auto &asgn : t.assignments) {
         auto val = eval.evaluate(asgn.expression->clone());
         for (const auto &target : asgn.targets) {
-          ctx.local_params.set(target, val);
+          ctx.local_params.set(target, val.value, val.type);
         }
       }
 
@@ -186,9 +206,16 @@ bool Interpreter::execute_state(Context &ctx) {
                 for (const auto &loop : ctx.current_at->loops) {
                   if (loop.variable == loop_var) {
                     auto it_val = eval.evaluate(loop.iterable->clone());
-                    if (auto *conns = std::get_if<ConnectionsSP>(&it_val)) {
-                      if (idx < (*conns)->size()) {
-                        ctx.local_params.set(loop_var, (*conns)->at(idx));
+                    if (it_val.type == atc::ParamType::Connections) {
+                      auto *conns_ptr =
+                          std::get_if<ConnectionsSP>(&(it_val.value));
+                      if ((conns_ptr == nullptr) || !(*conns_ptr)) {
+                        throw std::runtime_error(
+                            "Expected ConnectionsSP in it_val.value but got "
+                            "something else or null.");
+                      }
+                      if (idx < (*conns_ptr)->size()) {
+                        ctx.local_params.set(loop_var, (*conns_ptr)->at(idx));
                         ctx.current_state = loop.states.data();
                         return true;
                       }
@@ -209,14 +236,13 @@ bool Interpreter::execute_state(Context &ctx) {
       }
 
       // Normal transition
-      auto next_at = ctx.current_at;
+      const auto *next_at = ctx.current_at;
       if (!t.target.autotuner_name.empty()) {
         next_at = find_autotuner(t.target.autotuner_name);
       }
 
-      if (!next_at) {
-        std::cerr << "Autotuner not found: " << t.target.autotuner_name
-                  << std::endl;
+      if (next_at == nullptr) {
+        std::cerr << "Autotuner not found: " << t.target.autotuner_name << '\n';
         return false;
       }
 

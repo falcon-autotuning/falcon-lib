@@ -15,9 +15,37 @@ enum class ParamType : std::uint8_t {
   String,
   Quantity,
   Config,
-  Group,
-  Connection
+  Connection,
+  Connections,
+  DeviceCharacteristic,
+  DeviceCharacteristicQuery
 };
+inline std::string to_string(ParamType type) {
+  switch (type) {
+  case ParamType::Int:
+    return "Int";
+  case ParamType::Float:
+    return "Float";
+  case ParamType::Bool:
+    return "Bool";
+  case ParamType::String:
+    return "String";
+  case ParamType::Quantity:
+    return "Quantity";
+  case ParamType::Config:
+    return "Config";
+  case ParamType::Connection:
+    return "Connection";
+  case ParamType::Connections:
+    return "Connections";
+  case ParamType::DeviceCharacteristic:
+    return "DeviceCharacteristic";
+  case ParamType::DeviceCharacteristicQuery:
+    return "DeviceCharacteristicQuery";
+  default:
+    return "<unknown>";
+  }
+}
 
 using Value = std::variant<int64_t, double, bool, std::string>;
 
@@ -107,6 +135,7 @@ public:
 };
 
 struct Param {
+  virtual ~Param() = default;
   std::string name;
   std::unique_ptr<Expr> default_value;
 };
@@ -184,18 +213,17 @@ struct StateDecl {
   std::string name;
   std::string
       parameter; // e.g. "plunger_gate" in "state start_sweep [plunger_gate]"
-  std::vector<ParamDecl> params;
-  std::vector<ParamDecl> temps;
+  std::vector<std::unique_ptr<Param>> params;
   std::unique_ptr<Expr> measurement;
   bool is_terminal = false;
   std::vector<Transition> transitions;
 
-  StateDecl(std::string n, std::string p_name, std::vector<ParamDecl> p,
-            std::vector<ParamDecl> t, std::unique_ptr<Expr> m, bool terminal,
-            std::vector<Transition> trans)
-      : name(std::move(n)), parameter(std::move(p_name)), params(std::move(p)),
-        temps(std::move(t)), measurement(std::move(m)), is_terminal(terminal),
-        transitions(std::move(trans)) {}
+  StateDecl(std::string n, std::string p_name,
+            std::vector<std::unique_ptr<Param>> params, std::unique_ptr<Expr> m,
+            bool terminal, std::vector<Transition> trans)
+      : name(std::move(n)), parameter(std::move(p_name)),
+        params(std::move(params)), measurement(std::move(m)),
+        is_terminal(terminal), transitions(std::move(trans)) {}
 
   StateDecl(StateDecl &&) noexcept = default;
   StateDecl &operator=(StateDecl &&) noexcept = default;
@@ -221,23 +249,23 @@ struct ForLoop {
 
 struct AutotunerDecl {
   std::string name;
-  std::vector<ParamDecl> inputs;
-  std::vector<ParamDecl> outputs;
+  std::vector<std::unique_ptr<ParamDecl>> inputs;
+  std::vector<std::unique_ptr<ParamDecl>> outputs;
   std::vector<std::string> generic_params;
   std::vector<SpecDecl> spec_inputs;
   std::vector<SpecDecl> spec_outputs;
   std::vector<std::string> requirements;
-  std::vector<ParamDecl> params;
+  std::vector<std::unique_ptr<Param>> params;
   std::string entry_state;
   std::vector<StateDecl> states;
   std::vector<ForLoop> loops;
 
-  AutotunerDecl(std::string n, std::vector<ParamDecl> in,
-                std::vector<ParamDecl> out, std::vector<std::string> gp,
-                std::vector<SpecDecl> si, std::vector<SpecDecl> so,
-                std::vector<std::string> req, std::vector<ParamDecl> p,
-                std::string entry, std::vector<StateDecl> s,
-                std::vector<ForLoop> l)
+  AutotunerDecl(std::string n, std::vector<std::unique_ptr<ParamDecl>> in,
+                std::vector<std::unique_ptr<ParamDecl>> out,
+                std::vector<std::string> gp, std::vector<SpecDecl> si,
+                std::vector<SpecDecl> so, std::vector<std::string> req,
+                std::vector<std::unique_ptr<Param>> p, std::string entry,
+                std::vector<StateDecl> s, std::vector<ForLoop> l)
       : name(std::move(n)), inputs(std::move(in)), outputs(std::move(out)),
         generic_params(std::move(gp)), spec_inputs(std::move(si)),
         spec_outputs(std::move(so)), requirements(std::move(req)),

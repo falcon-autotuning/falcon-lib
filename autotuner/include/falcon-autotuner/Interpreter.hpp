@@ -46,8 +46,9 @@ private:
   const atc::AutotunerDecl *find_autotuner(const std::string &name);
   const atc::StateDecl *find_state(const atc::AutotunerDecl &at,
                                    const std::string &state_name);
-  void evaluate_initial_params(ParameterMap &params,
-                               const atc::AutotunerDecl &atuner);
+  void evaluate_params(
+      ParameterMap &params,
+      const std::vector<std::unique_ptr<atc::Param>> &unevaluated_params);
 };
 
 } // namespace falcon::autotuner

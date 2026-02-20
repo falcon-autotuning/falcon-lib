@@ -15,6 +15,7 @@
   #include <string>
   #include <vector>
   #include <memory>
+  #include <algorithm>
   #include "falcon-atc/AST.hpp"
   #include "falcon-atc/ParseError.hpp"  // ← ADD THIS LINE
 }
@@ -29,12 +30,13 @@
   
   std::unique_ptr<falcon::atc::Program> program_root;
   std::vector<std::string> current_param_names;
+  std::vector<std::string> current_temp_state_names;
 }
 
 // Token declarations
 %token <std::string> IDENTIFIER DOUBLE INTEGER STRING
 
-%token AUTOTUNER STATE PARAMS TEMP MEASUREMENT RUN START REQUIRES TERMINAL IF ELSE TRUE FALSE
+%token AUTOTUNER STATE PARAMS MEASUREMENT RUN START REQUIRES TERMINAL IF ELSE TRUE FALSE
 %token SUCCESS FAIL SPEC_INPUTS SPEC_OUTPUTS CONFIG_VAR NEXT FOR IN
 %token FLOAT_KW INT_KW BOOL_KW STRING_KW QUANTITY_KW CONFIG_KW GROUP_KW CONNECTION_KW
 %token ARROW DOUBLECOLON LBRACKET RBRACKET LBRACE RBRACE LPAREN RPAREN ASSIGN COMMA COLON SEMICOLON DOT
@@ -45,10 +47,10 @@
 %type <std::vector<AutotunerDecl>> autotuners
 %type <std::unique_ptr<AutotunerDecl>> autotuner_decl
 %type <std::vector<std::string>> requires_clause generic_params separated_idents separated_strings
-%type <std::vector<ParamDecl>> params_decl_block param_decl_list input_params output_params sig_param_list state_temps
-%type <std::vector<Param>> params_block param_list
+%type <std::vector<std::unique_ptr<ParamDecl>>> input_params output_params sig_param_list 
+%type <std::vector<std::unique_ptr<Param>>> param_param_decl_block param_param_decl_list params_decl_block param_decl_list
 %type <std::unique_ptr<ParamDecl>> param_decl sig_param_decl
-%type <std::unique_ptr<Param> param
+%type <std::unique_ptr<Param>> param
 %type <ParamType> type_spec
 %type <std::string> entry_clause
 %type <std::vector<StateDecl>> states state_list loop_states
@@ -136,29 +138,29 @@ input_params[result]
     : LPAREN sig_param_list[params] RPAREN 
       { $result = std::move($params); }
     | %empty
-      { $result = std::vector<ParamDecl>(); }
+      { $result = std::vector<std::unique_ptr<ParamDecl>>(); }
     ;
 
 output_params[result]
     : LPAREN sig_param_list[params] RPAREN 
       { $result = std::move($params); }
     | %empty
-      { $result = std::vector<ParamDecl>(); }
+      { $result = std::vector<std::unique_ptr<ParamDecl>>(); }
     ;
 
 sig_param_list[result]
     : sig_param_decl[decl]
       { 
-        $result = std::vector<ParamDecl>();
-        $result.push_back(std::move(*$decl));
+        $result = std::vector<std::unique_ptr<ParamDecl>>();
+        $result.push_back(std::move($decl));
       }
     | sig_param_list[list] COMMA sig_param_decl[decl]
       { 
         $result = std::move($list);
-        $result.push_back(std::move(*$decl));
+        $result.push_back(std::move($decl));
       }
     | %empty
-      { $result = std::vector<ParamDecl>(); }
+      { $result = std::vector<std::unique_ptr<ParamDecl>>(); }
     ;
 
 sig_param_decl[result]
@@ -273,7 +275,7 @@ params_decl_block[result]
     : PARAMS LBRACE param_decl_list[list] RBRACE 
       { $result = std::move($list); }
     | %empty
-      { $result = std::vector<ParamDecl>(); }
+      { $result = std::vector<std::unique_ptr<Param>>(); }
     ;
 
 param_decl_list[result]
@@ -281,15 +283,15 @@ param_decl_list[result]
       { 
         // Erase current list of params when new autotuner_decl
         current_param_names.clear();
-        $result = std::vector<ParamDecl>();
-        $result.push_back(std::move(*$decl));
+        $result = std::vector<std::unique_ptr<Param>>();
+        $result.push_back(std::unique_ptr<Param>(std::move($decl)));
         // Collects a list of param names to check state params against
         current_param_names.push_back($decl->name);
       }
     | param_decl_list[list] param_decl[decl]
       { 
         $result = std::move($list);
-        $result.push_back(std::move(*$decl));
+        $result.push_back(std::unique_ptr<Param>(std::move($decl)));
         // Collects a list of param names to check state params against
         current_param_names.push_back($decl->name);
       }
@@ -320,7 +322,6 @@ type_spec[result]
     | STRING_KW   { $result = ParamType::String; }
     | QUANTITY_KW { $result = ParamType::Quantity; }
     | CONFIG_KW   { $result = ParamType::Config; }
-    | GROUP_KW    { $result = ParamType::Group; }
     | CONNECTION_KW { $result = ParamType::Connection; }
     ;
 
@@ -390,19 +391,17 @@ state_list[result]
 
 state_decl[result]
     : STATE IDENTIFIER[name] 
-      LBRACKET IDENTIFIER[param] RBRACKET 
+      LBRACKET IDENTIFIER[generic] RBRACKET 
       LBRACE 
-        params_block[params]
-        state_temps[temps]
+        param_param_decl_block[params]
         measurement_opt[measurement]
         transition_list[transitions]
       RBRACE
       { 
         $result = std::make_unique<StateDecl>(
           std::move($name),
-          std::move($param),
+          std::move($generic),
           std::move($params),
-          std::move($temps),
           std::move($measurement),
           false,
           std::move($transitions)
@@ -410,8 +409,7 @@ state_decl[result]
       }
     | STATE IDENTIFIER[name] 
       LBRACE 
-        params_block[params]
-        state_temps[temps]
+        param_param_decl_block[params]
         measurement_opt[measurement]
         transition_list[transitions]
       RBRACE
@@ -420,54 +418,65 @@ state_decl[result]
           std::move($name),
           "",
           std::move($params),
-          std::move($temps),
           std::move($measurement),
           false,
           std::move($transitions)
         );
       }
     ;
-// FIX: params and temps can be merged since the distinguishing factor is if the first character of the param row is a type or not
-params_block[result]
-    : PARAMS LBRACE param_list[list] RBRACE 
+
+param_param_decl_block[result]
+    : PARAMS LBRACE param_param_decl_list[list] RBRACE 
       { $result = std::move($list); }
     | %empty
-      { $result = std::vector<Param>(); }
+      { 
+        $result = std::vector<std::unique_ptr<Param>>(); 
+      }
     ;
 
-
-state_temps[result]
-    : TEMP LBRACE param_list[list] RBRACE 
-      { $result = std::move($list); }
-    | %empty
-      { $result = std::vector<Param>(); }
-    ;
-
-param_list[result]
+param_param_decl_list[result]
     : param[decl]
       { 
-        $result = std::vector<Param>();
-        $result.push_back(std::move(*$decl));
+        current_temp_state_names.clear();
+        $result = std::vector<std::unique_ptr<Param>>();
+        $result.push_back(std::move($decl));
       }
-    | param_list[list] param[decl]
+    | param_param_decl_list[list] param[decl]
       { 
         $result = std::move($list);
-        $result.push_back(std::move(*$decl));
+        $result.push_back(std::move($decl));
       }
     ;
 
 param[result]
-    : IDENTIFIER[name] SEMICOLON 
+    : param_decl[paramd]
       {
-        if (std::find(current_param_names.begin(), current_param_names.end(), $name) == current_param_names.end()) {
-          error(@name, "Parameter '" + $name + "' is not declared in this autotuner. "
-                       "Move this to temp and define a type, or declare it in the autotuner params.");
+        if (
+          std::find(current_param_names.begin(), current_param_names.end(), $paramd->name) != current_param_names.end() ||
+          std::find(current_temp_state_names.begin(), current_temp_state_names.end(), $paramd->name) != current_temp_state_names.end()
+        ) {
+          error(@paramd, "Parameter '" + $paramd->name + "' is already declared in this autotuner or as a temp variable in this state. "
+                     "Change the name if you want to declare a type.");
+          YYABORT;
+        }
+        $result = std::unique_ptr<Param>(std::move($paramd));
+        current_temp_state_names.push_back($paramd->name);
+      }
+    | IDENTIFIER[name] SEMICOLON 
+      {
+        if (
+          std::find(current_param_names.begin(), current_param_names.end(), $name) == current_param_names.end() &&
+          std::find(current_temp_state_names.begin(), current_temp_state_names.end(), $name) == current_temp_state_names.end()
+        ) {
+          error(@name, "Parameter '" + $name + "' is not declared in this autotuner or as a temp variable in this state. "
+                      "Define a type, or declare it in the autotuner params.");
           YYABORT;
         }
         $result = std::make_unique<Param>();
         $result->name = std::move($name);
         $result->default_value = nullptr;
       }
+    // FIX: default value can come from spec too
     | IDENTIFIER[name] ASSIGN expr[default_val] SEMICOLON 
       {
         if (std::find(current_param_names.begin(), current_param_names.end(), $name) == current_param_names.end()) {
