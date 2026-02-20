@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -134,14 +135,16 @@ public:
   }
 };
 
+/**
+ * @brief A param only needs a name.
+ * And there are two optional arguments <default_value and type>
+ * atleast one of them must be included.
+ * If a type is included this is a type declaration.
+ */
 struct Param {
-  virtual ~Param() = default;
   std::string name;
-  std::unique_ptr<Expr> default_value;
-};
-
-struct ParamDecl : public Param {
-  ParamType type;
+  std::optional<std::unique_ptr<Expr>> default_value;
+  std::optional<ParamType> type;
 };
 
 struct SpecDecl {
@@ -210,18 +213,19 @@ struct Transition {
 };
 
 struct StateDecl {
+  using ParamPtrVec = std::vector<std::unique_ptr<Param>>;
   std::string name;
   std::string
-      parameter; // e.g. "plunger_gate" in "state start_sweep [plunger_gate]"
-  std::vector<std::unique_ptr<Param>> params;
+      generic; // e.g. "plunger_gate" in "state start_sweep [plunger_gate]"
+  ParamPtrVec params;
   std::unique_ptr<Expr> measurement;
   bool is_terminal = false;
   std::vector<Transition> transitions;
 
-  StateDecl(std::string n, std::string p_name,
-            std::vector<std::unique_ptr<Param>> params, std::unique_ptr<Expr> m,
-            bool terminal, std::vector<Transition> trans)
-      : name(std::move(n)), parameter(std::move(p_name)),
+  StateDecl(std::string n, std::string p_name, ParamPtrVec params,
+            std::unique_ptr<Expr> m, bool terminal,
+            std::vector<Transition> trans)
+      : name(std::move(n)), generic(std::move(p_name)),
         params(std::move(params)), measurement(std::move(m)),
         is_terminal(terminal), transitions(std::move(trans)) {}
 
@@ -248,24 +252,27 @@ struct ForLoop {
 };
 
 struct AutotunerDecl {
-  std::string name;
-  std::vector<std::unique_ptr<ParamDecl>> inputs;
-  std::vector<std::unique_ptr<ParamDecl>> outputs;
-  std::vector<std::string> generic_params;
-  std::vector<SpecDecl> spec_inputs;
-  std::vector<SpecDecl> spec_outputs;
-  std::vector<std::string> requirements;
-  std::vector<std::unique_ptr<Param>> params;
-  std::string entry_state;
-  std::vector<StateDecl> states;
-  std::vector<ForLoop> loops;
+  using ParamPtrVec = std::vector<std::unique_ptr<Param>>;
+  using StringVec = std::vector<std::string>;
+  using SpecDeclVec = std::vector<SpecDecl>;
+  using StateDeclVec = std::vector<StateDecl>;
+  using ForLoopVec = std::vector<ForLoop>;
 
-  AutotunerDecl(std::string n, std::vector<std::unique_ptr<ParamDecl>> in,
-                std::vector<std::unique_ptr<ParamDecl>> out,
-                std::vector<std::string> gp, std::vector<SpecDecl> si,
-                std::vector<SpecDecl> so, std::vector<std::string> req,
-                std::vector<std::unique_ptr<Param>> p, std::string entry,
-                std::vector<StateDecl> s, std::vector<ForLoop> l)
+  std::string name;
+  ParamPtrVec inputs;
+  ParamPtrVec outputs;
+  StringVec generic_params;
+  SpecDeclVec spec_inputs;
+  SpecDeclVec spec_outputs;
+  StringVec requirements;
+  ParamPtrVec params;
+  std::string entry_state;
+  StateDeclVec states;
+  ForLoopVec loops;
+
+  AutotunerDecl(std::string n, ParamPtrVec in, ParamPtrVec out, StringVec gp,
+                SpecDeclVec si, SpecDeclVec so, StringVec req, ParamPtrVec p,
+                std::string entry, StateDeclVec s, ForLoopVec l)
       : name(std::move(n)), inputs(std::move(in)), outputs(std::move(out)),
         generic_params(std::move(gp)), spec_inputs(std::move(si)),
         spec_outputs(std::move(so)), requirements(std::move(req)),

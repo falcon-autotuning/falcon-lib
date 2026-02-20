@@ -20,7 +20,10 @@ namespace falcon::autotuner::test {
  */
 class RoutineTestFixture : public ::testing::Test {
 protected:
-  void SetUp() override { setupEnvironment(); }
+  void SetUp() override {
+    setupEnvironment();
+    std::cout << "environment variables set" << '\n';
+  }
 
   void TearDown() override {
     // Clean up environment variables to avoid pollution
