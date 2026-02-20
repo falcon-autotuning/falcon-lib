@@ -598,26 +598,12 @@ transition_decl[result]
     ;
 
 simple_transition[result]
-    : SUCCESS SEMICOLON 
+    : TERMINAL error_message[msg] SEMICOLON 
       { 
         $result = std::vector<Transition>();
         Transition t;
-        t.is_success = true;
-        $result.push_back(std::move(t));
-      }
-    | FAIL STRING[msg] SEMICOLON 
-      { 
-        $result = std::vector<Transition>();
-        Transition t;
-        t.is_fail = true;
         t.error_message = std::move($msg);
-        $result.push_back(std::move(t));
-      }
-    | FAIL SEMICOLON 
-      { 
-        $result = std::vector<Transition>();
-        Transition t;
-        t.is_fail = true;
+        t.target.state_name = "_TERMINAL_";
         $result.push_back(std::move(t));
       }
     | TERMINAL SEMICOLON 
