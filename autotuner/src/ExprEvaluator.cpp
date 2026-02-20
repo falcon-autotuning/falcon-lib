@@ -126,88 +126,77 @@ static ExprEvaluator::Value perform_math(const atc::BinaryExpr *b,
 
   throw std::runtime_error(
       fmt::format("Invalid math to perform. The operation was to be {} {} {}",
-                  ParameterMap::value_to_string(left), op,
-                  ParameterMap::value_to_string(right)));
+                  to_string(ParameterMap::deduce_type(left)), op,
+                  to_string(ParameterMap::deduce_type(right))));
 }
 
-ExprEvaluator::Value
-ExprEvaluator::evaluate(const std::unique_ptr<atc::Expr> e) {
-  if (e == nullptr) {
-    return true;
+EvalResult ExprEvaluator::evaluate(const std::unique_ptr<atc::Expr> &e) {
+  if (!e) {
+    return {true, atc::ParamType::Bool};
   }
-
   if (const auto *c = dynamic_cast<const atc::ConstExpr *>(e.get())) {
-    return std::visit(
+    auto val = std::visit(
         [](auto &&arg) -> ExprEvaluator::Value {
           return ExprEvaluator::Value(arg);
         },
         c->value);
+    return {val, ParameterMap::deduce_type(val)};
   }
-
   if (const auto *v = dynamic_cast<const atc::VarExpr *>(e.get())) {
     if (v->name == "config") {
-      return true;
+      return {true, atc::ParamType::Bool};
     }
-    return params_.get<ExprEvaluator::Value>(v->name);
+    auto val = params_.get<ExprEvaluator::Value>(v->name);
+    return {val, params_.get_type(v->name)};
   }
-
   if (const auto *m = dynamic_cast<const atc::MemberExpr *>(e.get())) {
     if (const auto *obj_var =
             dynamic_cast<const atc::VarExpr *>(m->object.get())) {
       if (obj_var->name == "config") {
         if (m->member == "plunger_gates") {
-          return config_->plunger_gates();
+          auto val = config_->plunger_gates();
+          return {val, atc::ParamType::Connections};
         }
         if (m->member == "barrier_gates") {
-          return config_->barrier_gates();
+          auto val = config_->barrier_gates();
+          return {val, atc::ParamType::Connections};
         }
       }
     }
-
-    // Handle Member access for variables in ParameterMap
-    auto obj_val = evaluate(m->object->clone());
-    if (std::holds_alternative<database::DeviceCharacteristic>(obj_val)) {
-      const auto &dchar = std::get<database::DeviceCharacteristic>(obj_val);
-      if (m->member == "name") {
-        return dchar.name;
-      }
-      if (m->member == "uncertainty") {
-        return dchar.uncertainty.value_or(0.0);
-      }
-      if (m->member == "hash") {
-        return dchar.hash.value_or("");
-      }
-      if (m->member == "record_time") {
-        return dchar.time.value_or(0);
-      }
-      if (m->member == "device_state") {
-        return dchar.state.value_or("");
-      }
-      if (m->member == "unit_name") {
-        return dchar.unit_name.value_or("");
-      }
+    auto obj_res = evaluate(m->object->clone());
+    if (std::holds_alternative<database::DeviceCharacteristic>(obj_res.value)) {
+      const auto &dchar =
+          std::get<database::DeviceCharacteristic>(obj_res.value);
+      if (m->member == "name")
+        return {dchar.name, atc::ParamType::String};
+      if (m->member == "uncertainty")
+        return {dchar.uncertainty.value_or(0.0), atc::ParamType::Float};
+      if (m->member == "hash")
+        return {dchar.hash.value_or(""), atc::ParamType::String};
+      if (m->member == "record_time")
+        return {dchar.time.value_or(0), atc::ParamType::Int};
+      if (m->member == "device_state")
+        return {dchar.state.value_or(""), atc::ParamType::String};
+      if (m->member == "unit_name")
+        return {dchar.unit_name.value_or(""), atc::ParamType::String};
     }
-
     throw std::runtime_error("Unsupported member access: " + m->member);
   }
-
   if (auto b = dynamic_cast<const atc::BinaryExpr *>(e.get())) {
     auto left = evaluate(b->left->clone());
     auto right = evaluate(b->right->clone());
-    // FIX: Need to implement PEMDAS
-    return perform_math(b, left, right);
+    auto val = perform_math(b, left.value, right.value);
+    return {val, ParameterMap::deduce_type(val)};
   }
-
   if (auto u = dynamic_cast<const atc::UnaryExpr *>(e.get())) {
     auto val = evaluate(u->expr->clone());
     if (u->op == "!") {
-      return !std::visit(ToBool{}, val);
+      return {!std::visit(ToBool{}, val.value), atc::ParamType::Bool};
     }
     if (u->op == "-") {
-      return -std::visit(ToDouble{}, val);
+      return {-std::visit(ToDouble{}, val.value), atc::ParamType::Float};
     }
   }
-
   if (auto c = dynamic_cast<const atc::CallExpr *>(e.get())) {
     if (!builtin_handler_) {
       throw std::runtime_error("Built-in handler not set for CallExpr: " +
@@ -216,12 +205,12 @@ ExprEvaluator::evaluate(const std::unique_ptr<atc::Expr> e) {
     std::vector<ExprEvaluator::Value> args;
     args.reserve(c->args.size());
     for (const auto &arg : c->args) {
-      args.push_back(evaluate(arg->clone()));
+      args.push_back(evaluate(arg->clone()).value);
     }
-    return builtin_handler_(c->name, args);
+    auto val = builtin_handler_(c->name, args);
+    return {val, params_.get_type(c->name)};
   }
-
-  return true;
+  return {true, atc::ParamType::Bool};
 }
 
 } // namespace falcon::autotuner

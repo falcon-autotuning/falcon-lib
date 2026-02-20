@@ -1,40 +1,66 @@
 #include "falcon-autotuner/ParameterMap.hpp"
-#include "falcon_core/physics/device_structures/Connection.hpp"
-#include "falcon_core/physics/device_structures/Connections.hpp"
 
 namespace falcon::autotuner {
 
-void ParameterMap::set(const std::string &key, int64_t value) {
+void ParameterMap::set(const std::string &key, const int64_t &value,
+                       const atc::ParamType &type) {
   params_[key] = value;
+  types_[key] = type;
 }
-
-void ParameterMap::set(const std::string &key, double value) {
+void ParameterMap::set(const std::string &key, const double &value,
+                       const atc::ParamType &type) {
   params_[key] = value;
+  types_[key] = type;
 }
-
-void ParameterMap::set(const std::string &key, bool value) {
+void ParameterMap::set(const std::string &key, const bool &value,
+                       const atc::ParamType &type) {
   params_[key] = value;
+  types_[key] = type;
 }
-
-void ParameterMap::set(const std::string &key, std::string value) {
-  params_[key] = std::move(value);
+void ParameterMap::set(const std::string &key, const std::string &value,
+                       const atc::ParamType &type) {
+  params_[key] = value;
+  types_[key] = type;
 }
-
-void ParameterMap::set(const std::string &key, ConnectionSP value) {
-  params_[key] = std::move(value);
+void ParameterMap::set(const std::string &key, const ConnectionSP &value,
+                       const atc::ParamType &type) {
+  params_[key] = value;
+  types_[key] = type;
 }
-
-void ParameterMap::set(const std::string &key, ConnectionsSP value) {
-  params_[key] = std::move(value);
+void ParameterMap::set(const std::string &key, const ConnectionsSP &value,
+                       const atc::ParamType &type) {
+  params_[key] = value;
+  types_[key] = type;
 }
-
 void ParameterMap::set(const std::string &key,
-                       database::DeviceCharacteristic value) {
-  params_[key] = std::move(value);
+                       const database::DeviceCharacteristic &value,
+                       const atc::ParamType &type) {
+  params_[key] = value;
+  types_[key] = type;
 }
-
-void ParameterMap::set(const std::string &key, Value value) {
-  params_[key] = std::move(value);
+void ParameterMap::set(const std::string &key,
+                       const database::DeviceCharacteristicQuery &value,
+                       const atc::ParamType &type) {
+  params_[key] = value;
+  types_[key] = type;
+}
+void ParameterMap::set(const std::string &key,
+                       const falcon_core::math::QuantitySP &value,
+                       const atc::ParamType &type) {
+  params_[key] = value;
+  types_[key] = type;
+}
+void ParameterMap::set(
+    const std::string &key,
+    const falcon_core::physics::config::core::ConfigSP &value,
+    const atc::ParamType &type) {
+  params_[key] = value;
+  types_[key] = type;
+}
+void ParameterMap::set(const std::string &key, const Value &value,
+                       const atc::ParamType &type) {
+  params_[key] = value;
+  types_[key] = type;
 }
 
 bool ParameterMap::has(const std::string &key) const {
@@ -53,12 +79,19 @@ std::vector<std::string> ParameterMap::keys() const {
 void ParameterMap::merge(const ParameterMap &other) {
   for (const auto &kv : other.params_) {
     params_[kv.first] = kv.second;
+    types_[kv.first] = other.types_.at(kv.first);
   }
 }
 
-void ParameterMap::remove(const std::string &key) { params_.erase(key); }
+void ParameterMap::remove(const std::string &key) {
+  params_.erase(key);
+  types_.erase(key);
+}
 
-void ParameterMap::clear() { params_.clear(); }
+void ParameterMap::clear() {
+  params_.clear();
+  types_.clear();
+}
 
 size_t ParameterMap::size() const { return params_.size(); }
 
@@ -75,9 +108,7 @@ nlohmann::json ParameterMap::to_json() const {
     } else if (auto v = std::get_if<std::string>(&value)) {
       result[key] = *v;
     } else if (auto v = std::get_if<database::DeviceCharacteristic>(&value)) {
-      result[key] = {{"name", v->name},
-                     {"uncertainty", v->uncertainty},
-                     {"hash", v->hash}};
+      result[key] = v->to_json();
     } else {
       // falcon-core objects cannot be serialized to JSON easily
       result[key] = nullptr;
@@ -92,17 +123,25 @@ ParameterMap ParameterMap::from_json(const nlohmann::json &j) {
     const auto &key = it.key();
     const auto &value = it.value();
     if (value.is_number_integer()) {
-      map.set(key, value.get<int64_t>());
+      map.set(key, value.get<int64_t>(), atc::ParamType::Int);
     } else if (value.is_number_float()) {
-      map.set(key, value.get<double>());
+      map.set(key, value.get<double>(), atc::ParamType::Float);
     } else if (value.is_boolean()) {
-      map.set(key, value.get<bool>());
+      map.set(key, value.get<bool>(), atc::ParamType::Bool);
     } else if (value.is_string()) {
-      map.set(key, value.get<std::string>());
+      map.set(key, value.get<std::string>(), atc::ParamType::String);
     }
     // Skip unsupported types
   }
   return map;
+}
+
+atc::ParamType ParameterMap::get_type(const std::string &key) const {
+  auto it = types_.find(key);
+  if (it == types_.end()) {
+    throw std::runtime_error("Type not found for parameter: " + key);
+  }
+  return it->second;
 }
 
 } // namespace falcon::autotuner

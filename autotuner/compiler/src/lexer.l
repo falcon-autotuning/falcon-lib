@@ -32,7 +32,6 @@ using namespace falcon::atc;
 "autotuner"     { return Parser::make_AUTOTUNER(*loc); }
 "state"         { return Parser::make_STATE(*loc); }
 "params"        { return Parser::make_PARAMS(*loc); }
-"temp"          { return Parser::make_TEMP(*loc); }
 "measurement"   { return Parser::make_MEASUREMENT(*loc); }
 "run"           { return Parser::make_RUN(*loc); }
 "start"         { return Parser::make_START(*loc); }
@@ -57,7 +56,6 @@ using namespace falcon::atc;
 "string"        { return Parser::make_STRING_KW(*loc); }
 "quantity"      { return Parser::make_QUANTITY_KW(*loc); }
 "Config"        { return Parser::make_CONFIG_KW(*loc); }
-"Group"         { return Parser::make_GROUP_KW(*loc); }
 "Connection"    { return Parser::make_CONNECTION_KW(*loc); }
 
 "->"            { return Parser::make_ARROW(*loc); }

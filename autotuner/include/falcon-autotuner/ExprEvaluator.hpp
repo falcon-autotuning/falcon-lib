@@ -14,6 +14,11 @@ class Expr;
 
 namespace falcon::autotuner {
 
+using Value = ParameterMap::Value;
+struct EvalResult {
+  Value value;
+  atc::ParamType type;
+};
 /**
  * @brief Evaluates AST expressions at runtime.
  */
@@ -29,7 +34,7 @@ public:
       : params_(std::move(params)), config_(std::move(config)),
         builtin_handler_(std::move(builtin_handler)) {}
 
-  Value evaluate(const std::unique_ptr<atc::Expr> e);
+  EvalResult evaluate(const std::unique_ptr<atc::Expr> &e);
 
 private:
   ParameterMap params_;
