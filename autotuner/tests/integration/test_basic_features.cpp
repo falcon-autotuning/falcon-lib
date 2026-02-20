@@ -7,87 +7,26 @@ using namespace falcon::autotuner::test;
 class BasicFeaturesTest : public DSLTestBase {};
 
 TEST_F(BasicFeaturesTest, TheSimplest) {
-  const char *dsl = R"(
-autotuner NoTransition () -> (bool completed) {
-  params {
-    bool completed = false;
-  }
-  
-  start -> done;
-  
-  state done {
-    completed = true;
-    terminal;
-  }
-  
-}
-)";
-
   ParameterMap params;
-  ASSERT_TRUE(compile_and_run(dsl, "NoTransition", params));
+  ASSERT_TRUE(compile_and_run(
+      std::filesystem::path("test-autotuners/no-transition.fal"),
+      "NoTransition", params));
   EXPECT_TRUE(params.has("completed"));
   EXPECT_TRUE(params.get<bool>("completed"));
 }
 
 TEST_F(BasicFeaturesTest, SimpleTransition) {
-  const char *dsl = R"(
-autotuner SimpleTransition () -> (bool completed) {
-  params {
-    bool completed = false;
-  }
-  
-  start -> init;
-  
-  state init {
-    completed = true;
-    -> done;
-  }
-  
-  state done {
-    terminal;
-  }
-}
-)";
-
   ParameterMap params;
-  ASSERT_TRUE(compile_and_run(dsl, "SimpleTransition", params));
+  ASSERT_TRUE(compile_and_run(
+      std::filesystem::path("test-autotuners/simple-transition.fal"),
+      "SimpleTransition", params));
 
   EXPECT_TRUE(params.has("completed"));
   EXPECT_TRUE(params.get<bool>("completed"));
 }
 
 TEST_F(BasicFeaturesTest, ConditionalBranching) {
-  const char *dsl = R"(
-autotuner ConditionalBranch (int threshold) -> (string result) {
-  params {
-    int value = 50;
-    string result = "";
-  }
-  
-  start -> check;
-  
-  state check {
-    if (value > threshold) -> high;
-    else -> low;
-  }
-  
-  state high {
-    result = "high";
-    -> done;
-  }
-  
-  state low {
-    result = "low";
-    -> done;
-  }
-  
-  state done {
-    terminal;
-  }
-}
-)";
-
-  // Test high branch
+  auto dsl = std::filesystem::path("test-autotuners/simple-transition.fal");
   {
     ParameterMap params;
     params.set("threshold", static_cast<int64_t>(30));
@@ -105,101 +44,34 @@ autotuner ConditionalBranch (int threshold) -> (string result) {
 }
 
 TEST_F(BasicFeaturesTest, ParameterInputOutput) {
-  const char *dsl = R"(
-autotuner Calculator (int a, int b) -> (int sum, int product) {
-  params {
-    int sum = 0;
-    int product = 0;
-  }
-  
-  start -> calculate;
-  
-  state calculate {
-    params {
-      sum = a + b;
-      product = a * b;
-    }
-    -> done;
-  }
-  
-  state done {
-    terminal;
-  }
-}
-)";
-
   ParameterMap params;
   params.set("a", static_cast<int64_t>(10));
   params.set("b", static_cast<int64_t>(5));
 
-  ASSERT_TRUE(compile_and_run(dsl, "Calculator", params));
+  ASSERT_TRUE(
+      compile_and_run(std::filesystem::path("test-autotuners/calculator.fal"),
+                      "Calculator", params));
 
   EXPECT_EQ(params.get<int64_t>("sum"), 15);
   EXPECT_EQ(params.get<int64_t>("product"), 50);
 }
 
 TEST_F(BasicFeaturesTest, TempVariables) {
-  const char *dsl = R"(
-autotuner TempVarTest () -> (int final_value) {
-  params {
-    int final_value = 0;
-  }
-  
-  start -> compute;
-  
-  state compute {
-    params {
-      int intermediate = 0;
-      intermediate = 42;
-      final_value = intermediate;
-    }
-    -> done;
-  }
-  
-  state done {
-    terminal;
-  }
-}
-)";
-
   ParameterMap params;
-  ASSERT_TRUE(compile_and_run(dsl, "TempVarTest", params));
+  ASSERT_TRUE(
+      compile_and_run(std::filesystem::path("test-autotuners/temp-vars.fal"),
+                      "TempVars", params));
 
   EXPECT_EQ(params.get<int64_t>("final_value"), 42);
   EXPECT_FALSE(params.has("intermediate")); // Temp var should not persist
 }
 
 TEST_F(BasicFeaturesTest, TerminalState) {
-  const char *dsl = R"(
-autotuner TerminalTest () -> (int steps) {
-  params {
-    int steps = 0;
-  }
-  
-  start -> step1;
-  
-  state step1 {
-    params {
-      steps = 1;
-    }
-    -> step2;
-  }
-  
-  state step2 {
-    params {
-      steps = 2;
-    }
-    -> finish;
-  }
-  
-  state finish {
-    terminal;
-  }
-}
-)";
 
   ParameterMap params;
-  ASSERT_TRUE(compile_and_run(dsl, "TerminalTest", params));
+  ASSERT_TRUE(
+      compile_and_run(std::filesystem::path("test-autotuners/terminal.fal"),
+                      "Terminal", params));
 
   EXPECT_EQ(params.get<int64_t>("steps"), 2);
 }
