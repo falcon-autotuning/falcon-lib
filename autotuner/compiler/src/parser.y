@@ -429,23 +429,19 @@ state_decl[result]
     ;
 
 param_param_decl_block[result]
-    : PARAMS LBRACE param_param_decl_list[list] RBRACE 
+    : PARAMS LBRACE
+        { current_temp_state_names.clear(); } // clearing the names before compiling the list
+      param_param_decl_list[list] RBRACE 
       { $result = std::move($list); }
     | %empty
-      { 
-        $result = std::vector<std::unique_ptr<Param>>(); 
-      }
+      { $result = std::vector<std::unique_ptr<Param>>(); }
     ;
 
 param_param_decl_list[result]
-    : param[decl]
-      { 
-        current_temp_state_names.clear();
-        $result = std::vector<std::unique_ptr<Param>>();
-        $result.push_back(std::move($decl));
-      }
+    : /* empty */
+      { $result = std::vector<std::unique_ptr<Param>>(); }
     | param_param_decl_list[list] param[decl]
-      { 
+      {
         $result = std::move($list);
         $result.push_back(std::move($decl));
       }
@@ -462,15 +458,18 @@ param[result]
                      "Change the name if you want to declare a type.");
           YYABORT;
         }
-        $result = std::move($paramd);
         current_temp_state_names.push_back($paramd->name);
+        $result = std::move($paramd);
       }
     // FIX: default value can come from spec too
     | IDENTIFIER[name] ASSIGN expr[default_val] SEMICOLON 
       {
-        if (std::find(current_param_names.begin(), current_param_names.end(), $name) == current_param_names.end()) {
-          error(@name, "Parameter '" + $name + "' is not declared in this autotuner. "
-                       "Move this to temp and define a type, or declare it in the autotuner params.");
+        if (
+          std::find(current_param_names.begin(), current_param_names.end(), $name) == current_param_names.end() && 
+          std::find(current_temp_state_names.begin(), current_temp_state_names.end(), $name) == current_temp_state_names.end()
+        ) {
+          error(@name, "Parameter '" + $name + "' is not declared in this autotuner or as a temp variable in this state. "
+                     "Declare the type if you want to use " + $name + " as a variable.");
           YYABORT;
         }
         $result = std::make_unique<Param>();

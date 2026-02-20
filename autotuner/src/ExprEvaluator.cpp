@@ -2,6 +2,7 @@
 #include "falcon-atc/AST.hpp"
 #include "falcon-autotuner/ParameterMap.hpp"
 #include "falcon-database/DeviceCharacteristic.hpp"
+#include <falcon-autotuner/log.hpp>
 #include <fmt/format.h>
 #include <memory>
 #include <stdexcept>
@@ -143,6 +144,7 @@ EvalResult ExprEvaluator::evaluate(const std::unique_ptr<atc::Expr> &e) {
     return {val, ParameterMap::deduce_type(val)};
   }
   if (const auto *v = dynamic_cast<const atc::VarExpr *>(e.get())) {
+    log::debug(fmt::format("Evaluating a variable expression for {}", v->name));
     if (v->name == "config") {
       return {true, atc::ParamType::Bool};
     }
