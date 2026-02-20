@@ -171,7 +171,7 @@ autotuner TempVarTest () -> (int final_value) {
 
 TEST_F(BasicFeaturesTest, TerminalState) {
   const char *dsl = R"(
-autotuner TerminalTest () [] -> (int steps) {
+autotuner TerminalTest () -> (int steps) {
   params {
     int steps = 0;
   }
