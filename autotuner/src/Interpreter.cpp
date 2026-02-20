@@ -2,7 +2,6 @@
 #include "falcon-atc/AST.hpp"
 #include "falcon-autotuner/ExprEvaluator.hpp"
 #include "falcon-autotuner/log.hpp"
-#include "falcon_core/physics/device_structures/Connection.hpp"
 #include <falcon_core/communications/Time.hpp>
 #include <falcon_core/physics/config/core/Config.hpp>
 #include <fmt/format.h>
@@ -25,6 +24,7 @@ struct ToBool {
 };
 
 Interpreter::Interpreter(const atc::Program &prog) : program_(prog) {
+  log::info("Interpreter booted up");
   auto resp = comms_.subscribe_config_response(INSTRUMENT_SERVER_LATENCY,
                                                (int)Time().time());
   config_ = falcon_core::physics::config::core::Config::from_json_string<
@@ -34,6 +34,7 @@ Interpreter::Interpreter(const atc::Program &prog) : program_(prog) {
 Interpreter::~Interpreter() = default;
 
 bool Interpreter::run(const std::string &autotuner_name, ParameterMap &params) {
+  log::info(fmt::format("Starting autotuner {}", autotuner_name));
   auto at = find_autotuner(autotuner_name);
   if (at == nullptr) {
     std::cerr << "Autotuner not found: " << autotuner_name << '\n';
@@ -122,18 +123,16 @@ void Interpreter::evaluate_params(
   };
   ExprEvaluator eval(params, config_, eval_database);
   for (const auto &unevaluated_param : unevaluated_params) {
-    auto val = eval.evaluate(unevaluated_param->default_value->clone());
-    if (const atc::ParamDecl *decl =
-            dynamic_cast<atc::ParamDecl *>(unevaluated_param.get())) {
-      // ParamDecl: check type against decl->type
-      atc::ParamType expected = decl->type;
+    auto val = eval.evaluate(unevaluated_param->default_value.value());
+    if (unevaluated_param->type.has_value()) { // Declaration
+      atc::ParamType expected = unevaluated_param->type.value();
       atc::ParamType actual = val.type;
       if (expected != actual) {
-        throw std::runtime_error(
-            fmt::format("Type mismatch for parameter '{}': expected {}, got {}",
-                        decl->name, to_string(expected), to_string(actual)));
+        throw std::runtime_error(fmt::format(
+            "Type mismatch for parameter '{}': expected {}, got {}",
+            unevaluated_param->name, to_string(expected), to_string(actual)));
       }
-      params.set(decl->name, val.value, expected);
+      params.set(unevaluated_param->name, val.value, expected);
     } else {
       atc::ParamType expected = params.get_type(unevaluated_param->name);
       atc::ParamType actual = val.type;
@@ -170,7 +169,6 @@ bool Interpreter::execute_state(Context &ctx) {
   ExprEvaluator eval(ctx.local_params, config_, eval_database);
 
   evaluate_params(ctx.local_params, ctx.current_state->params);
-  // TODO: evaluate_temp_params()
   // 1. Evaluate transitions
   for (const auto &t : ctx.current_state->transitions) {
     bool cond = true;

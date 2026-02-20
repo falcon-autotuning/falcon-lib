@@ -47,10 +47,8 @@
 %type <std::vector<AutotunerDecl>> autotuners
 %type <std::unique_ptr<AutotunerDecl>> autotuner_decl
 %type <std::vector<std::string>> requires_clause generic_params separated_idents separated_strings
-%type <std::vector<std::unique_ptr<ParamDecl>>> input_params output_params sig_param_list 
-%type <std::vector<std::unique_ptr<Param>>> param_param_decl_block param_param_decl_list params_decl_block param_decl_list
-%type <std::unique_ptr<ParamDecl>> param_decl sig_param_decl
-%type <std::unique_ptr<Param>> param
+%type <std::vector<std::unique_ptr<Param>>> input_params output_params sig_param_list param_param_decl_block param_param_decl_list params_decl_block param_decl_list
+%type <std::unique_ptr<Param>> param_decl sig_param_decl param
 %type <ParamType> type_spec
 %type <std::string> entry_clause
 %type <std::vector<StateDecl>> states state_list loop_states
@@ -138,20 +136,20 @@ input_params[result]
     : LPAREN sig_param_list[params] RPAREN 
       { $result = std::move($params); }
     | %empty
-      { $result = std::vector<std::unique_ptr<ParamDecl>>(); }
+      { $result = std::vector<std::unique_ptr<Param>>(); }
     ;
 
 output_params[result]
     : LPAREN sig_param_list[params] RPAREN 
       { $result = std::move($params); }
     | %empty
-      { $result = std::vector<std::unique_ptr<ParamDecl>>(); }
+      { $result = std::vector<std::unique_ptr<Param>>(); }
     ;
 
 sig_param_list[result]
     : sig_param_decl[decl]
       { 
-        $result = std::vector<std::unique_ptr<ParamDecl>>();
+        $result = std::vector<std::unique_ptr<Param>>();
         $result.push_back(std::move($decl));
       }
     | sig_param_list[list] COMMA sig_param_decl[decl]
@@ -160,16 +158,15 @@ sig_param_list[result]
         $result.push_back(std::move($decl));
       }
     | %empty
-      { $result = std::vector<std::unique_ptr<ParamDecl>>(); }
+      { $result = std::vector<std::unique_ptr<Param>>(); }
     ;
 
 sig_param_decl[result]
     : type_spec[type] IDENTIFIER[name]
       { 
-        $result = std::make_unique<ParamDecl>();
+        $result = std::make_unique<Param>();
         $result->name = std::move($name);
         $result->type = $type;
-        $result->default_value = nullptr;
       }
     ;
 
@@ -284,31 +281,30 @@ param_decl_list[result]
         // Erase current list of params when new autotuner_decl
         current_param_names.clear();
         $result = std::vector<std::unique_ptr<Param>>();
-        $result.push_back(std::unique_ptr<Param>(std::move($decl)));
         // Collects a list of param names to check state params against
         current_param_names.push_back($decl->name);
+        $result.push_back(std::move($decl));
       }
     | param_decl_list[list] param_decl[decl]
       { 
         $result = std::move($list);
-        $result.push_back(std::unique_ptr<Param>(std::move($decl)));
         // Collects a list of param names to check state params against
         current_param_names.push_back($decl->name);
+        $result.push_back(std::move($decl));
       }
     ;
 
 param_decl[result]
     : type_spec[type] IDENTIFIER[name] SEMICOLON 
       { 
-        $result = std::make_unique<ParamDecl>();
+        $result = std::make_unique<Param>();
         $result->name = std::move($name);
         $result->type = $type;
-        $result->default_value = nullptr;
       }
     // FIX: default value can come from spec too
     | type_spec[type] IDENTIFIER[name] ASSIGN expr[default_val] SEMICOLON 
       { 
-        $result = std::make_unique<ParamDecl>();
+        $result = std::make_unique<Param>();
         $result->name = std::move($name);
         $result->type = $type;
         $result->default_value = std::move($default_val);
@@ -316,13 +312,20 @@ param_decl[result]
     ;
 
 type_spec[result]
-    : FLOAT_KW    { $result = ParamType::Float; }
-    | INT_KW      { $result = ParamType::Int; }
-    | BOOL_KW     { $result = ParamType::Bool; }
-    | STRING_KW   { $result = ParamType::String; }
-    | QUANTITY_KW { $result = ParamType::Quantity; }
-    | CONFIG_KW   { $result = ParamType::Config; }
-    | CONNECTION_KW { $result = ParamType::Connection; }
+    : FLOAT_KW    
+      { $result = ParamType::Float; }
+    | INT_KW      
+      { $result = ParamType::Int; }
+    | BOOL_KW     
+      { $result = ParamType::Bool; }
+    | STRING_KW   
+      { $result = ParamType::String; }
+    | QUANTITY_KW 
+      { $result = ParamType::Quantity; }
+    | CONFIG_KW   
+      { $result = ParamType::Config; }
+    | CONNECTION_KW 
+      { $result = ParamType::Connection; }
     ;
 
 entry_clause[result]
@@ -459,22 +462,8 @@ param[result]
                      "Change the name if you want to declare a type.");
           YYABORT;
         }
-        $result = std::unique_ptr<Param>(std::move($paramd));
+        $result = std::move($paramd);
         current_temp_state_names.push_back($paramd->name);
-      }
-    | IDENTIFIER[name] SEMICOLON 
-      {
-        if (
-          std::find(current_param_names.begin(), current_param_names.end(), $name) == current_param_names.end() &&
-          std::find(current_temp_state_names.begin(), current_temp_state_names.end(), $name) == current_temp_state_names.end()
-        ) {
-          error(@name, "Parameter '" + $name + "' is not declared in this autotuner or as a temp variable in this state. "
-                      "Define a type, or declare it in the autotuner params.");
-          YYABORT;
-        }
-        $result = std::make_unique<Param>();
-        $result->name = std::move($name);
-        $result->default_value = nullptr;
       }
     // FIX: default value can come from spec too
     | IDENTIFIER[name] ASSIGN expr[default_val] SEMICOLON 

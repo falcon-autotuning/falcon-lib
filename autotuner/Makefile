@@ -85,9 +85,10 @@ configure-debug: check-vcpkg
 		-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_TOOLCHAIN) \
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
-    -Dfalcon_core_DIR=/opt/falcon/lib/cmake/falcon_core \
-    -Dfalcon-database_DIR=/opt/falcon/lib/cmake/falcon-database \
-    -Dfalcon-comms_DIR=/opt/falcon/lib/cmake/falcon-comms \
+		-DCOMPILE_OPTIONS="-g " \
+		-Dfalcon_core_DIR=/opt/falcon/lib/cmake/falcon_core \
+		-Dfalcon-database_DIR=/opt/falcon/lib/cmake/falcon-database \
+		-Dfalcon-comms_DIR=/opt/falcon/lib/cmake/falcon-comms \
 		-DBUILD_TESTS=ON \
 		-DBUILD_TOOLS=ON \
 		-DUSE_CCACHE=ON \
@@ -253,7 +254,7 @@ test-local-debug: build-debug
 	@cd $(BUILD_DIR_DEBUG) && \
 		TEST_DATABASE_URL="$(TEST_DATABASE_URL)" \
 		TEST_NATS_URL="$(TEST_NATS_URL)" \
-		ctest --output-on-failure -C Debug
+		ctest --verbose -C Debug
 	@echo "✓ All tests passed"
 
 # Keep services running for interactive testing
