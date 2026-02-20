@@ -28,16 +28,16 @@ public:
   using BuiltinFunc =
       std::function<Value(const std::string &, const std::vector<Value> &)>;
 
-  ExprEvaluator(ParameterMap params,
+  ExprEvaluator(ParameterMap &params,
                 falcon_core::physics::config::core::ConfigSP config,
                 BuiltinFunc builtin_handler = nullptr)
-      : params_(std::move(params)), config_(std::move(config)),
+      : params_(params), config_(std::move(config)),
         builtin_handler_(std::move(builtin_handler)) {}
 
   EvalResult evaluate(const std::unique_ptr<atc::Expr> &e);
 
 private:
-  ParameterMap params_;
+  ParameterMap &params_;
   falcon_core::physics::config::core::ConfigSP config_;
   BuiltinFunc builtin_handler_;
 };

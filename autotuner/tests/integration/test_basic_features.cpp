@@ -140,7 +140,7 @@ autotuner Calculator (int a, int b) -> (int sum, int product) {
 
 TEST_F(BasicFeaturesTest, TempVariables) {
   const char *dsl = R"(
-autotuner TempVarTest () [] -> (int final_value) {
+autotuner TempVarTest () -> (int final_value) {
   params {
     int final_value = 0;
   }
@@ -148,12 +148,11 @@ autotuner TempVarTest () [] -> (int final_value) {
   start -> compute;
   
   state compute {
-    temp {
+    params {
       int intermediate = 0;
+      intermediate = 42;
+      final_value = intermediate;
     }
-    
-    intermediate = 42;
-    final_value = intermediate;
     -> done;
   }
   
@@ -180,12 +179,16 @@ autotuner TerminalTest () [] -> (int steps) {
   start -> step1;
   
   state step1 {
-    steps = 1;
+    params {
+      steps = 1;
+    }
     -> step2;
   }
   
   state step2 {
-    steps = 2;
+    params {
+      steps = 2;
+    }
     -> finish;
   }
   

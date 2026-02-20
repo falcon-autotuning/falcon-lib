@@ -24,7 +24,7 @@ struct ToBool {
 };
 
 Interpreter::Interpreter(const atc::Program &prog) : program_(prog) {
-  log::info("Interpreter booted up");
+  log::debug("Interpreter booted up");
   auto resp = comms_.subscribe_config_response(INSTRUMENT_SERVER_LATENCY,
                                                (int)Time().time());
   config_ = falcon_core::physics::config::core::Config::from_json_string<
@@ -34,7 +34,7 @@ Interpreter::Interpreter(const atc::Program &prog) : program_(prog) {
 Interpreter::~Interpreter() = default;
 
 bool Interpreter::run(const std::string &autotuner_name, ParameterMap &params) {
-  log::info(fmt::format("Starting autotuner {}", autotuner_name));
+  log::debug(fmt::format("Running autotuner {}", autotuner_name));
   auto at = find_autotuner(autotuner_name);
   if (at == nullptr) {
     std::cerr << "Autotuner not found: " << autotuner_name << '\n';
@@ -132,6 +132,8 @@ void Interpreter::evaluate_params(
             "Type mismatch for parameter '{}': expected {}, got {}",
             unevaluated_param->name, to_string(expected), to_string(actual)));
       }
+      log::debug(
+          fmt::format("Declaring parameter {}", unevaluated_param->name));
       params.set(unevaluated_param->name, val.value, expected);
     } else {
       atc::ParamType expected = params.get_type(unevaluated_param->name);
@@ -141,6 +143,7 @@ void Interpreter::evaluate_params(
             "Type mismatch for parameter '{}': expected {}, got {}",
             unevaluated_param->name, to_string(expected), to_string(actual)));
       }
+      log::debug(fmt::format("Setting parameter {}", unevaluated_param->name));
       params.set(unevaluated_param->name, val.value, expected);
     }
   }
@@ -162,6 +165,7 @@ bool Interpreter::execute_state(Context &ctx) {
     }
     return device_specification_load(args);
   };
+  log::debug(fmt::format("Executing state {}", ctx.current_state->name));
 
   if (ctx.current_state == nullptr) {
     return false;
