@@ -8,7 +8,7 @@ class ExpressionsTest : public DSLTestBase {};
 
 TEST_F(ExpressionsTest, ArithmeticOperations) {
   const char *dsl = R"(
-autotuner ArithmeticTest (float x, float y) [] -> (float add, float sub, float mul, float div) {
+autotuner ArithmeticTest (float x, float y) -> (float add, float sub, float mul, float div) {
   params {
     float add = 0.0;
     float sub = 0.0;
@@ -19,10 +19,12 @@ autotuner ArithmeticTest (float x, float y) [] -> (float add, float sub, float m
   start -> calculate;
   
   state calculate {
-    add = x + y;
-    sub = x - y;
-    mul = x * y;
-    div = x / y;
+    params {
+      add = x + y;
+      sub = x - y;
+      mul = x * y;
+      div = x / y;
+    }
     -> done;
   }
   
@@ -46,7 +48,7 @@ autotuner ArithmeticTest (float x, float y) [] -> (float add, float sub, float m
 
 TEST_F(ExpressionsTest, ComparisonOperators) {
   const char *dsl = R"(
-autotuner ComparisonTest (int a, int b) [] -> (bool gt, bool lt, bool eq, bool gte, bool lte) {
+autotuner ComparisonTest (int a, int b) -> (bool gt, bool lt, bool eq, bool gte, bool lte) {
   params {
     bool gt = false;
     bool lt = false;
@@ -58,11 +60,13 @@ autotuner ComparisonTest (int a, int b) [] -> (bool gt, bool lt, bool eq, bool g
   start -> compare;
   
   state compare {
-    gt = a > b;
-    lt = a < b;
-    eq = a == b;
-    gte = a >= b;
-    lte = a <= b;
+    params {
+      gt = a > b;
+      lt = a < b;
+      eq = a == b;
+      gte = a >= b;
+      lte = a <= b;
+    }
     -> done;
   }
   
@@ -87,7 +91,7 @@ autotuner ComparisonTest (int a, int b) [] -> (bool gt, bool lt, bool eq, bool g
 
 TEST_F(ExpressionsTest, LogicalOperations) {
   const char *dsl = R"(
-autotuner LogicalTest (bool flag1, bool flag2) [] -> (string result) {
+autotuner LogicalTest (bool flag1, bool flag2) -> (string result) {
   params {
     string result = "";
   }
@@ -127,7 +131,7 @@ autotuner LogicalTest (bool flag1, bool flag2) [] -> (string result) {
 
 TEST_F(ExpressionsTest, UnaryOperators) {
   const char *dsl = R"(
-autotuner UnaryTest (int value, bool flag) [] -> (int negated, bool inverted) {
+autotuner UnaryTest (int value, bool flag) -> (int negated, bool inverted) {
   params {
     int negated = 0;
     bool inverted = false;
@@ -136,8 +140,10 @@ autotuner UnaryTest (int value, bool flag) [] -> (int negated, bool inverted) {
   start -> compute;
   
   state compute {
-    negated = -value;
-    inverted = !flag;
+    params {
+      negated = -value;
+      inverted = !flag;
+    }
     -> done;
   }
   
@@ -159,7 +165,7 @@ autotuner UnaryTest (int value, bool flag) [] -> (int negated, bool inverted) {
 
 TEST_F(ExpressionsTest, ComplexExpressions) {
   const char *dsl = R"(
-autotuner ComplexExprTest (int a, int b, int c) [] -> (int result) {
+autotuner ComplexExprTest (int a, int b, int c) -> (int result) {
   params {
     int result = 0;
   }
@@ -167,7 +173,9 @@ autotuner ComplexExprTest (int a, int b, int c) [] -> (int result) {
   start -> compute;
   
   state compute {
-    result = (a + b) * c - 10;
+    params {
+      result = (a + b) * c - 10;
+    }
     -> done;
   }
   
