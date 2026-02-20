@@ -8,7 +8,7 @@
 %define api.token.prefix {TOK_}
 %define parse.error verbose
 %define parse.trace
-%locations  // ← ADD THIS LINE
+%locations
 
 // Enable tracing and verbose errors (which may be wrong!)
 %code requires {
@@ -17,7 +17,7 @@
   #include <memory>
   #include <algorithm>
   #include "falcon-atc/AST.hpp"
-  #include "falcon-atc/ParseError.hpp"  // ← ADD THIS LINE
+  #include "falcon-atc/ParseError.hpp" 
 }
 
 %code {
@@ -439,7 +439,7 @@ param_param_decl_block[result]
 
 param_param_decl_list[result]
     : /* empty */
-      { $result = std::vector<std::unique_ptr<Param>>(); }
+       %empty { $result = std::vector<std::unique_ptr<Param>>(); }
     | param_param_decl_list[list] param[decl]
       {
         $result = std::move($list);
@@ -598,21 +598,21 @@ transition_decl[result]
     ;
 
 simple_transition[result]
-    : TERMINAL error_message[msg] SEMICOLON 
-      { 
-        $result = std::vector<Transition>();
-        Transition t;
-        t.error_message = std::move($msg);
-        t.target.state_name = "_TERMINAL_";
-        $result.push_back(std::move(t));
-      }
-    | TERMINAL SEMICOLON 
+    : TERMINAL SEMICOLON 
       { 
         $result = std::vector<Transition>();
         Transition t;
         t.target.state_name = "_TERMINAL_";
         $result.push_back(std::move(t));
       }
+    // | TERMINAL error_message[msg] SEMICOLON 
+    //   { 
+    //     $result = std::vector<Transition>();
+    //     Transition t;
+    //     t.error_message = std::move($msg);
+    //     t.target.state_name = "_TERMINAL_";
+    //     $result.push_back(std::move(t));
+    //   }
     | ARROW trans_target[target] SEMICOLON 
       { 
         $result = std::vector<Transition>();
