@@ -1,29 +1,17 @@
 #include "falcon-autotuner/Interpreter.hpp"
-#include "falcon-atc/AST.hpp"
-#include "falcon-autotuner/ExprEvaluator.hpp"
 #include "falcon-autotuner/log.hpp"
 #include <falcon_core/communications/Time.hpp>
-#include <falcon_core/physics/config/core/Config.hpp>
-#include <fmt/format.h>
 #include <iostream>
 namespace {
 const int INSTRUMENT_SERVER_LATENCY = 1000;
-constexpr std::string_view DEVICE_SPECIFICATION_READ = "spec_read";
-constexpr std::string_view DEVICE_SPECIFICATION_LOAD = "spec_load";
-} // namespace
+}
 namespace falcon::autotuner {
 using falcon_core::communications::Time;
+Interpreter::Interpreter(std::shared_ptr<FunctionRegistry> functions,
+                         std::shared_ptr<TypeRegistry> types)
+    : functions_(std::move(functions)), types_(std::move(types)) {
 
-struct ToBool {
-  bool operator()(bool var) const { return var; }
-  bool operator()(int64_t var) const { return var != 0; }
-  bool operator()(double var) const { return var != 0.0; }
-  template <typename T> bool operator()(const T & /*unused*/) const {
-    return false;
-  }
-};
-
-Interpreter::Interpreter(const atc::Program &prog) : program_(prog) {
+  log::debug("Interpreter booting up");
   log::debug("Interpreter booted up");
   auto resp = comms_.subscribe_config_response(INSTRUMENT_SERVER_LATENCY,
                                                (int)Time().time());
@@ -31,267 +19,149 @@ Interpreter::Interpreter(const atc::Program &prog) : program_(prog) {
       falcon_core::physics::config::core::Config>(resp.response);
 }
 
-Interpreter::~Interpreter() = default;
+ParameterMap Interpreter::run(const atc::AutotunerDecl &autotuner,
+                              const ParameterMap &inputs) {
+  // Clear previous state
+  variables_.clear();
 
-bool Interpreter::run(const std::string &autotuner_name, ParameterMap &params) {
-  log::debug(fmt::format("Running autotuner {}", autotuner_name));
-  auto at = find_autotuner(autotuner_name);
-  if (at == nullptr) {
-    std::cerr << "Autotuner not found: " << autotuner_name << '\n';
-    return false;
-  }
+  // Step 1: Initialize autotuner-level variables
+  initialize_variables(autotuner);
 
-  Context ctx;
-  ctx.local_params = params;
-  ctx.current_at = at;
+  // Step 2: Set input parameters
+  set_input_parameters(autotuner, inputs);
 
-  // Handle entry state
-  std::string start_state = at->entry_state;
-  if (start_state.empty()) {
-    log::warn("No entry state specified, defaulting to first state");
-    if (!at->states.empty()) {
-      start_state = at->states[0].name;
-    } else if (!at->loops.empty() && !at->loops[0].states.empty()) {
-      start_state = at->loops[0].states[0].name;
+  // Step 3: Initialize output parameters (to defaults or unset)
+  for (const auto &output_param : autotuner.output_params) {
+    if (output_param.default_value.has_value()) {
+      ExprEvaluator eval(variables_, functions_, types_);
+      variables_[output_param.name] =
+          eval.evaluate(*output_param.default_value.value());
     }
+    // Otherwise leave uninitialized (will be set before terminal)
   }
 
-  ctx.current_state = find_state(*at, start_state);
-  // inital params evaluation
-  evaluate_params(ctx.local_params, at->params);
+  // Step 4: Execute state machine starting from entry state
+  std::string current_state = autotuner.entry_state;
+  std::optional<RuntimeValue> state_param;
 
-  while (ctx.current_state != nullptr) {
-    const atc::StateDecl *old_state = ctx.current_state;
-    bool should_continue = execute_state(ctx);
-    garbage_collect_temp_variables(ctx, *old_state);
-    if (!should_continue) {
-      return false;
-    }
+  // Evaluate entry parameter if provided
+  if (autotuner.entry_parameter.has_value()) {
+    ExprEvaluator eval(variables_, functions_, types_);
+    state_param = eval.evaluate(*autotuner.entry_parameter.value());
   }
 
-  params = ctx.local_params;
-  return true;
-}
-ExprEvaluator::Value Interpreter::device_specification_read(
-    const std::vector<ExprEvaluator::Value> &queries) {
-  if (queries.empty()) {
-    throw std::runtime_error("device-specification access requires args");
-  }
-  std::string char_name = std::get<std::string>(queries[0]);
-  database::DeviceCharacteristicQuery query;
-  query.scope = "device-specification";
-  //  FIX: finish filling out the query
-  if (query.name != char_name) {
-    log::info(
-        fmt::format("The characteristic name does not match the name in "
-                    "the characteristic. Switching the name from {} to {}",
-                    query.name.value_or(""), char_name));
-  }
-  query.name = char_name;
-  auto matches = db_.get_by_query(query);
-  //  FIX: either filter the results or return many chars
-  //  FIX: currently returning the first match from the db
-  return matches[0];
-};
-bool Interpreter::device_specification_load(
-    const std::vector<ExprEvaluator::Value> &args) {
-  if (args.empty()) {
-    throw std::runtime_error("device-specification access requires args");
-  }
-  std::string char_name = std::get<std::string>(args[0]);
-  if (args.size() < 2) {
-    throw std::runtime_error(
-        "spec_load requires name and characteristic arguments");
-  }
-  database::DeviceCharacteristic dchar =
-      std::get<database::DeviceCharacteristic>(args[1]);
-  dchar.name = char_name; // Ensure name matches
-                          //  FIX: finish filling out the optional arguments
-  db_.insert(dchar);
-  return true;
-}
-void Interpreter::evaluate_params(
-    ParameterMap &params,
-    const std::vector<std::unique_ptr<atc::Param>> &unevaluated_params) {
-  auto eval_database = [this](const std::string &name,
-                              const std::vector<ExprEvaluator::Value> &args)
-      -> ExprEvaluator::Value {
-    if (name != DEVICE_SPECIFICATION_READ) {
-      throw std::runtime_error("Unknown built-in function: " + name);
+  // State machine execution loop
+  while (true) {
+    const atc::StateDecl *state = find_state(autotuner, current_state);
+    if (!state) {
+      throw EvaluationError("Unknown state: " + current_state);
     }
-    if (args.empty()) {
-      throw std::runtime_error("device-specification access requires args");
-    }
-    return device_specification_read(args);
-  };
-  ExprEvaluator eval(params, config_, eval_database);
-  for (const auto &unevaluated_param : unevaluated_params) {
-    auto val = eval.evaluate(unevaluated_param->default_value.value());
-    if (unevaluated_param->type.has_value()) { // Declaration
-      atc::ParamType expected = unevaluated_param->type.value();
-      atc::ParamType actual = val.type;
-      if (expected != actual) {
-        throw std::runtime_error(fmt::format(
-            "Type mismatch for parameter '{}': expected {}, got {}",
-            unevaluated_param->name, to_string(expected), to_string(actual)));
-      }
-      log::debug(
-          fmt::format("Declaring parameter {}", unevaluated_param->name));
-      params.set(unevaluated_param->name, val.value, expected);
+
+    std::cout << "[Interpreter] Entering state: " << current_state << std::endl;
+
+    auto flow = execute_state(*state, state_param);
+
+    if (flow.type == ControlFlow::Type::Terminal) {
+      std::cout << "[Interpreter] Reached terminal state" << std::endl;
+      break;
+    } else if (flow.type == ControlFlow::Type::Transition) {
+      current_state = flow.target_state;
+      state_param = flow.parameter;
     } else {
-      atc::ParamType expected = params.get_type(unevaluated_param->name);
-      atc::ParamType actual = val.type;
-      if (expected != actual) {
-        throw std::runtime_error(fmt::format(
-            "Type mismatch for parameter '{}': expected {}, got {}",
-            unevaluated_param->name, to_string(expected), to_string(actual)));
-      }
-      log::debug(fmt::format("Setting parameter {}", unevaluated_param->name));
-      params.set(unevaluated_param->name, val.value, expected);
-    }
-  }
-}
-bool Interpreter::execute_state(Context &ctx) {
-  auto eval_database = [this](const std::string &name,
-                              const std::vector<ExprEvaluator::Value> &args)
-      -> ExprEvaluator::Value {
-    if (name != DEVICE_SPECIFICATION_READ &&
-        name != DEVICE_SPECIFICATION_LOAD) {
-      throw std::runtime_error("Unknown built-in function: " + name);
-    }
-    if (args.empty()) {
-      throw std::runtime_error("device-specification access requires args");
-    }
-    std::string char_name = std::get<std::string>(args[0]);
-    if (name == DEVICE_SPECIFICATION_READ) {
-      return device_specification_read(args);
-    }
-    return device_specification_load(args);
-  };
-  log::debug(fmt::format("Executing state {}", ctx.current_state->name));
-
-  if (ctx.current_state == nullptr) {
-    return false;
-  }
-  ExprEvaluator eval(ctx.local_params, config_, eval_database);
-
-  evaluate_params(ctx.local_params, ctx.current_state->params);
-  // 1. Evaluate transitions
-  for (const auto &t : ctx.current_state->transitions) {
-    bool cond = true;
-    if (t.condition) {
-      auto val = eval.evaluate(t.condition->clone());
-      cond = std::visit(ToBool{}, val.value);
-    }
-
-    if (cond) {
-      // Apply assignments
-      for (const auto &asgn : t.assignments) {
-        auto val = eval.evaluate(asgn.expression->clone());
-        for (const auto &target : asgn.targets) {
-          ctx.local_params.set(target, val.value, val.type);
-        }
-      }
-
-      // Check success/fail
-      if (t.is_success || t.target.state_name == "_SUCCESS_") {
-        // In a loop, success might mean "next item"
-        if (t.target.parameter) {
-          if (const auto *var = dynamic_cast<const atc::MemberExpr *>(
-                  t.target.parameter.get())) {
-            if (var->member == "next") {
-              // Advance loop
-              if (const auto *obj_var =
-                      dynamic_cast<const atc::VarExpr *>(var->object.get())) {
-                std::string loop_var = obj_var->name;
-                auto &idx = ctx.loop_indices[loop_var];
-                idx++;
-
-                // Find the loop
-                for (const auto &loop : ctx.current_at->loops) {
-                  if (loop.variable == loop_var) {
-                    auto it_val = eval.evaluate(loop.iterable->clone());
-                    if (it_val.type == atc::ParamType::Connections) {
-                      auto *conns_ptr =
-                          std::get_if<ConnectionsSP>(&(it_val.value));
-                      if ((conns_ptr == nullptr) || !(*conns_ptr)) {
-                        throw std::runtime_error(
-                            "Expected ConnectionsSP in it_val.value but got "
-                            "something else or null.");
-                      }
-                      if (idx < (*conns_ptr)->size()) {
-                        ctx.local_params.set(loop_var, (*conns_ptr)->at(idx));
-                        ctx.current_state = loop.states.data();
-                        return true;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-        ctx.current_state = nullptr;
-        return true;
-      }
-
-      if (t.is_fail || t.target.state_name == "_FAIL_") {
-        ctx.current_state = nullptr;
-        return false;
-      }
-
-      // Normal transition
-      const auto *next_at = ctx.current_at;
-      if (!t.target.autotuner_name.empty()) {
-        next_at = find_autotuner(t.target.autotuner_name);
-      }
-
-      if (next_at == nullptr) {
-        std::cerr << "Autotuner not found: " << t.target.autotuner_name << '\n';
-        return false;
-      }
-
-      ctx.current_at = next_at;
-      ctx.current_state = find_state(*next_at, t.target.state_name);
-      return true;
+      throw EvaluationError("State must end with transition or terminal: " +
+                            state->name);
     }
   }
 
-  ctx.current_state = nullptr;
-  return true;
+  // Step 5: Extract and return output parameters
+  return extract_outputs(autotuner);
 }
 
-void Interpreter::garbage_collect_temp_variables(
-    Context &ctx, const atc::StateDecl &old_state) {
-  for (const auto &temp_param : old_state.params) {
-    if (temp_param->type.has_value()) {
-      ctx.local_params.remove(temp_param->name);
+void Interpreter::initialize_variables(const atc::AutotunerDecl &autotuner) {
+  StmtExecutor executor(variables_, functions_, types_);
+
+  for (const auto &var_decl : autotuner.autotuner_variables) {
+    executor.execute(*var_decl);
+  }
+}
+
+void Interpreter::set_input_parameters(const atc::AutotunerDecl &autotuner,
+                                       const ParameterMap &inputs) {
+  for (const auto &input_param : autotuner.input_params) {
+    auto it = inputs.find(input_param.name);
+
+    if (it != inputs.end()) {
+      // Use provided value
+      variables_[input_param.name] = it->second;
+    } else if (input_param.default_value.has_value()) {
+      // Use default value
+      ExprEvaluator eval(variables_, functions_, types_);
+      variables_[input_param.name] =
+          eval.evaluate(*input_param.default_value.value());
+    } else {
+      throw EvaluationError("Missing required input parameter: " +
+                            input_param.name);
     }
   }
 }
 
-const atc::AutotunerDecl *Interpreter::find_autotuner(const std::string &name) {
-  for (const atc::AutotunerDecl &tuner : program_.autotuners) {
-    if (tuner.name == name) {
-      return &tuner;
+ControlFlow
+Interpreter::execute_state(const atc::StateDecl &state,
+                           std::optional<RuntimeValue> input_param) {
+  // Set up state input parameter if present
+  if (state.has_input_parameter()) {
+    const auto &param_decl = state.input_parameter.value();
+
+    if (input_param.has_value()) {
+      variables_[param_decl.name] = input_param.value();
+    } else if (param_decl.default_value.has_value()) {
+      ExprEvaluator eval(variables_, functions_, types_);
+      variables_[param_decl.name] =
+          eval.evaluate(*param_decl.default_value.value());
+    } else {
+      throw EvaluationError("State '" + state.name +
+                            "' requires input parameter: " + param_decl.name);
+    }
+  }
+
+  // Execute state body
+  StmtExecutor executor(variables_, functions_, types_);
+  auto flow = executor.execute_block(state.body);
+
+  // Clean up state input parameter (out of scope)
+  if (state.has_input_parameter()) {
+    variables_.erase(state.input_parameter.value().name);
+  }
+
+  // TODO: Clean up state-local variables
+  // (Need to track which variables were declared in this state)
+
+  return flow;
+}
+
+const atc::StateDecl *
+Interpreter::find_state(const atc::AutotunerDecl &autotuner,
+                        const std::string &name) {
+  for (const auto &state : autotuner.states) {
+    if (state.name == name) {
+      return &state;
     }
   }
   return nullptr;
 }
 
-const atc::StateDecl *Interpreter::find_state(const atc::AutotunerDecl &at,
-                                              const std::string &state_name) {
-  for (const auto &s : at.states) {
-    if (s.name == state_name)
-      return &s;
-  }
-  for (const auto &loop : at.loops) {
-    for (const auto &s : loop.states) {
-      if (s.name == state_name)
-        return &s;
+ParameterMap Interpreter::extract_outputs(const atc::AutotunerDecl &autotuner) {
+  ParameterMap outputs;
+
+  for (const auto &output_param : autotuner.output_params) {
+    auto it = variables_.find(output_param.name);
+    if (it == variables_.end()) {
+      throw EvaluationError("Output parameter not set: " + output_param.name);
     }
+    outputs[output_param.name] = it->second;
   }
-  return nullptr;
+
+  return outputs;
 }
 
 } // namespace falcon::autotuner
