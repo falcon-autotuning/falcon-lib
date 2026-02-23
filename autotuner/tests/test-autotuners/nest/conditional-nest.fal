@@ -30,8 +30,7 @@ autotuner ConditionalNest(int a, int b) -> (int out, Error err) {
           -> done(multiplication:out_inside);
       }
   }
-  state done {
-      int out_inside;
+  state done (int out_inside) {
       int out = out_inside;
       terminal;
   }
