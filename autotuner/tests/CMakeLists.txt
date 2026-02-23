@@ -25,6 +25,7 @@ add_executable(falcon_dsl_integration_tests
   integration/dsl_test_base.cpp
   integration/test_config.cpp
   integration/test_database_access.cpp
+  integraion/test_nest.cpp
 )
 
 target_link_libraries(falcon_dsl_integration_tests
@@ -43,14 +44,16 @@ target_include_directories(falcon_dsl_integration_tests
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-# Copy test .fal files to build directory
+# Copy test .fal and .json files to build directory
 file(GLOB_RECURSE TEST_FAL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/test-autotuners/*.fal")
-foreach(FAL_FILE ${TEST_FAL_FILES})
-  file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/test-autotuners" "${FAL_FILE}")
-  configure_file(
-        "${FAL_FILE}"
-        "${CMAKE_CURRENT_BINARY_DIR}/test-autotuners/${REL_PATH}"
-        COPYONLY
-    )
-endforeach()
+file(GLOB_RECURSE TEST_JSON_FILES "${CMAKE_CURRENT_SOURCE_DIR}/test-autotuners/*.json")
+set(TEST_DATA_FILES ${TEST_FAL_FILES} ${TEST_JSON_FILES})
 
+foreach(DATA_FILE ${TEST_DATA_FILES})
+  file(RELATIVE_PATH REL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/test-autotuners" "${DATA_FILE}")
+  configure_file(
+    "${DATA_FILE}"
+    "${CMAKE_CURRENT_BINARY_DIR}/test-autotuners/${REL_PATH}"
+    COPYONLY
+  )
+endforeach()
