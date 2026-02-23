@@ -1,4 +1,4 @@
-autotuner ConditionalNest() -> (int out, Error err) {
+autotuner ConditionalNest(int a, int b) -> (int out, Error err) {
   requires : Adder, Multiplier;
   int a = 1;
   int b = 5;
@@ -63,12 +63,12 @@ autotuner Multiplier (int a , int b) -> (int mult, Error err)  {
     start -> init;
 
     state init {
-        mult = a* b;
         if (a < b) {
             err = Error::msg("Cannot multiply a less than b");
             terminal;
         }
         else {
+            mult = a* b;
             terminal;
         }
     }

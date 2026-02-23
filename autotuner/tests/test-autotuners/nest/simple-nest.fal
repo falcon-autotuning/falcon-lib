@@ -21,7 +21,7 @@ autotuner ErrorViewer() -> (bool completed) {
 }
   
 autotuner DoNothing -> (bool completed) {
-  bool completed = false;
+  bool completed = true;
   
   start -> init;
   
