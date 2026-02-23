@@ -1,0 +1,8 @@
+[
+  {
+    "scope": "device",
+    "name": "completed",
+    "extra": "default",
+    "value": false
+  }
+]
