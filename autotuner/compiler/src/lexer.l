@@ -1,26 +1,20 @@
 %{
 #include "parser.tab.hpp"
 
-// Don't try to define yylex in a namespace with YY_DECL
-// Instead, define it in global scope and wrap it
 #undef YY_DECL
 #define YY_DECL falcon::atc::Parser::symbol_type yylex(falcon::atc::Parser::location_type *loc)
 
-// Track column position manually - make it non-static so we can reset it externally
-int yycolumn = 1;  // ← REMOVE 'static' keyword
+int yycolumn = 1;
 
-// Update location on every token
 #define YY_USER_ACTION \
   loc->begin.line = loc->end.line = yylineno; \
   loc->begin.column = yycolumn; \
   loc->end.column = yycolumn + yyleng - 1; \
   yycolumn += yyleng;
 
-// Override yyterminate to return proper EOF token with location
 #undef yyterminate
 #define yyterminate() return falcon::atc::Parser::make_YYEOF(*loc)
 
-// Using directive so we can use Parser::make_* without qualification
 using namespace falcon::atc;
 %}
 
@@ -30,10 +24,8 @@ using namespace falcon::atc;
 %%
 
 "autotuner"     { return Parser::make_AUTOTUNER(*loc); }
+"routine"       { return Parser::make_ROUTINE(*loc); }
 "state"         { return Parser::make_STATE(*loc); }
-"params"        { return Parser::make_PARAMS(*loc); }
-"measurement"   { return Parser::make_MEASUREMENT(*loc); }
-"run"           { return Parser::make_RUN(*loc); }
 "start"         { return Parser::make_START(*loc); }
 "requires"      { return Parser::make_REQUIRES(*loc); }
 "terminal"      { return Parser::make_TERMINAL(*loc); }
@@ -41,22 +33,19 @@ using namespace falcon::atc;
 "else"          { return Parser::make_ELSE(*loc); }
 "true"          { return Parser::make_TRUE(*loc); }
 "false"         { return Parser::make_FALSE(*loc); }
-"success"       { return Parser::make_SUCCESS(*loc); }
-"fail"          { return Parser::make_FAIL(*loc); }
-"spec_inputs"   { return Parser::make_SPEC_INPUTS(*loc); }
-"spec_outputs"  { return Parser::make_SPEC_OUTPUTS(*loc); }
+"nil"           { return Parser::make_NIL(*loc); }
 "config"        { return Parser::make_CONFIG_VAR(*loc); }
-"next"          { return Parser::make_NEXT(*loc); }
-"for"           { return Parser::make_FOR(*loc); }
-"in"            { return Parser::make_IN(*loc); }
 
 "float"         { return Parser::make_FLOAT_KW(*loc); }
 "int"           { return Parser::make_INT_KW(*loc); }
 "bool"          { return Parser::make_BOOL_KW(*loc); }
 "string"        { return Parser::make_STRING_KW(*loc); }
-"quantity"      { return Parser::make_QUANTITY_KW(*loc); }
+"Quantity"      { return Parser::make_QUANTITY_KW(*loc); }
 "Config"        { return Parser::make_CONFIG_KW(*loc); }
 "Connection"    { return Parser::make_CONNECTION_KW(*loc); }
+"Connections"   { return Parser::make_CONNECTIONS_KW(*loc); }
+"Gname"         { return Parser::make_GNAME_KW(*loc); }
+"Error"         { return Parser::make_ERROR_KW(*loc); }
 
 "->"            { return Parser::make_ARROW(*loc); }
 "::"            { return Parser::make_DOUBLECOLON(*loc); }
@@ -90,8 +79,8 @@ using namespace falcon::atc;
 \"[^\"]*\"      { return Parser::make_STRING(std::string(yytext+1, yyleng-2), *loc); }
 [a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_IDENTIFIER(yytext, *loc); }
 
-[ \t\r]+        { /* skip whitespace (not newlines) */ }
-\n              { yycolumn = 1; /* reset column on newline, then continue */ }
+[ \t\r]+        { /* skip whitespace */ }
+\n              { yycolumn = 1; }
 "//"[^\n]*      { /* skip comments */ }
 
 .               { std::cerr << "Unknown character at line " << yylineno 
@@ -99,12 +88,10 @@ using namespace falcon::atc;
 
 %%
 
-// NOW wrap the global yylex() in the namespace the parser expects
 namespace falcon::atc {
-  // Store location for the wrapper to pass
   static Parser::location_type current_location;
   
   Parser::symbol_type yylex() {
-    return ::yylex(&current_location);  // Pass location to the global yylex
+    return ::yylex(&current_location);
   }
 }

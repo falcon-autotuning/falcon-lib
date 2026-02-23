@@ -1124,16 +1124,53 @@ struct AutotunerDecl {
   AutotunerDecl &operator=(const AutotunerDecl &) = delete;
 };
 
+// Add after StateDecl (around line 1013)
+
 /**
- * @brief Complete program (collection of autotuners).
+ * @brief Routine declaration (external C++ function signature).
  *
- * A .fal file can contain multiple autotuner definitions.
+ * Routines are measurement/helper functions implemented in C++ and
+ * compiled into .so files. They are declared in .fal files but not
+ * defined - their implementation is loaded at runtime.
+ *
+ * Example:
+ *   routine Adder (int a, int b) -> (int sum, Error err)
+ *
+ * This would be implemented as:
+ *   extern "C" ParameterMap ConditionalNest_Adder(const ParameterMap& params);
+ */
+struct RoutineDecl {
+  std::string name;
+
+  // Input/output parameters (same as autotuner)
+  std::vector<ParamDecl> input_params;
+  std::vector<ParamDecl> output_params;
+
+  RoutineDecl(std::string n, std::vector<ParamDecl> inputs,
+              std::vector<ParamDecl> outputs)
+      : name(std::move(n)), input_params(std::move(inputs)),
+        output_params(std::move(outputs)) {}
+
+  RoutineDecl(RoutineDecl &&) noexcept = default;
+  RoutineDecl &operator=(RoutineDecl &&) noexcept = default;
+  RoutineDecl(const RoutineDecl &) = delete;
+  RoutineDecl &operator=(const RoutineDecl &) = delete;
+};
+
+/**
+ * @brief Complete program (collection of autotuners and routines).
+ *
+ * A .fal file can contain:
+ * - Multiple autotuner definitions
+ * - Multiple routine declarations
  */
 struct Program {
   std::vector<AutotunerDecl> autotuners;
+  std::vector<RoutineDecl> routines; // Add this
 
   // Filled in during semantic analysis for fast lookup
   mutable std::map<std::string, const AutotunerDecl *> autotuner_index;
+  mutable std::map<std::string, const RoutineDecl *> routine_index; // Add this
 };
 
 // ============================================================================
