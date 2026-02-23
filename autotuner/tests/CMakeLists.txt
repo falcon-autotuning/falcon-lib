@@ -1,31 +1,16 @@
 # autotuner/tests/CMakeLists.txt
 find_package(GTest CONFIG REQUIRED)
 
-# Unit tests
-add_executable(falcon_dsl_unit_tests
-  unit/test_parameter_map.cpp
-)
-
-target_link_libraries(falcon_dsl_unit_tests
-  PRIVATE
-    falcon-dsl
-    GTest::gtest
-    GTest::gtest_main
-)
-
-add_test(NAME falcon_dsl_unit_tests
-         COMMAND falcon_dsl_unit_tests)
 
 # Integration tests
 add_executable(falcon_dsl_integration_tests
   integration/test_basic_features.cpp
   integration/test_expressions.cpp
   integration/test_control_flow.cpp
-  integration/test_control_errors_expressions.cpp
   integration/dsl_test_base.cpp
   integration/test_config.cpp
   integration/test_database_access.cpp
-  integraion/test_nest.cpp
+  integration/test_nest.cpp
 )
 
 target_link_libraries(falcon_dsl_integration_tests

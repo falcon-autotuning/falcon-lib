@@ -1,4 +1,5 @@
 #include "falcon-autotuner/FunctionRegistry.hpp"
+#include "falcon-autotuner/log.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -130,23 +131,21 @@ void register_all_builtins(FunctionRegistry &registry) {
       "log::info", [](const ParameterMap &params) -> ParameterMap {
         // Format string support with {} placeholders
         std::string format = std::get<std::string>(params.at("format"));
-
-        // TODO: Implement proper format string parsing with arguments
-        std::cout << "[INFO] " << format << std::endl;
+        log::info(format);
         return {};
       });
 
   registry.register_builtin(
       "log::warn", [](const ParameterMap &params) -> ParameterMap {
         std::string format = std::get<std::string>(params.at("format"));
-        std::cerr << "[WARN] " << format << std::endl;
+        log::warn(format);
         return {};
       });
 
   registry.register_builtin(
       "log::error", [](const ParameterMap &params) -> ParameterMap {
         std::string format = std::get<std::string>(params.at("format"));
-        std::cerr << "[ERROR] " << format << std::endl;
+        log::error(format);
         return {};
       });
 

@@ -63,7 +63,11 @@ include_directories(/opt/falcon/include)
 
 # 3. Build DSL Runtime Library (falcon-dsl)
 add_library(falcon-dsl SHARED
-  src/ParameterMap.cpp
+  src/AutotunerEngine.cpp
+  src/FunctionRegistry.cpp
+  src/RuntimeValue.cpp
+  src/StmtExecutor.cpp
+  src/TypeRegistry.cpp
   src/ExprEvaluator.cpp
   src/Interpreter.cpp
   src/log.cpp
@@ -109,17 +113,7 @@ if(ENABLE_PCH)
   )
 endif()
 
-# 4. Build Runtime Executable (optional CLI tool)
-add_executable(falcon-atc
-  src/main.cpp
-)
 
-target_link_libraries(falcon-atc
-  PRIVATE
-    falcon-dsl
-)
-
-# 5. Tests
 if(BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
