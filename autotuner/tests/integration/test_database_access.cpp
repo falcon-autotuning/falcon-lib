@@ -1,4 +1,5 @@
 #include "dsl_test_base.hpp"
+#include <gtest/gtest.h>
 using namespace falcon::autotuner;
 using namespace falcon::autotuner::test;
 
@@ -13,7 +14,7 @@ TEST_F(DatabaseAccessTest, StateRead0) {
       std::filesystem::path(
           "test-autotuners/database_access/state-read-0.json")};
   ASSERT_TRUE(compile_and_run(cenv));
-  EXPECT_EQ(params.get<bool>("completed"), false);
+  EXPECT_FALSE(std::get<bool>(params.at("completed")));
 }
 
 TEST_F(DatabaseAccessTest, StateRead1) {
@@ -25,7 +26,7 @@ TEST_F(DatabaseAccessTest, StateRead1) {
       std::filesystem::path(
           "test-autotuners/database_access/state-read-1.json")};
   ASSERT_TRUE(compile_and_run(cenv));
-  EXPECT_EQ(params.get<bool>("completed"), true);
+  EXPECT_TRUE(std::get<bool>(params.at("completed")));
 }
 
 TEST_F(DatabaseAccessTest, StateWrite) {
@@ -60,7 +61,7 @@ TEST_F(DatabaseAccessTest, TransitionRead) {
       std::filesystem::path(
           "test-autotuners/database_access/transition-read.json")};
   ASSERT_TRUE(compile_and_run(cenv));
-  EXPECT_EQ(params.get<bool>("completed"), true);
+  EXPECT_TRUE(std::get<bool>(params.at("completed")));
 }
 
 TEST_F(DatabaseAccessTest, TransitionWrite) {

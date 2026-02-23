@@ -48,7 +48,8 @@ enum class ParamType : std::uint8_t {
   // Special types
   Nil,   // Represents null/absence (only for Error type checking)
   Tuple, // Multiple return values (e.g., (int, Error))
-  Void   // No return value (for procedures with side effects only)
+  Void,  // No return value (for procedures with side effects only)
+  Union
 };
 
 inline std::string to_string(ParamType type) {
@@ -111,6 +112,7 @@ struct TypeDescriptor {
   // For error types: specific error variant (Error, FatalError, etc.)
   // All variants have base_type = ParamType::Error
   std::string error_variant;
+  std::vector<TypeDescriptor> union_types; // For union types
 
   // Simple type constructor
   explicit TypeDescriptor(ParamType t) : base_type(t) {}
@@ -127,21 +129,38 @@ struct TypeDescriptor {
       throw std::logic_error("Only Error type can have variants");
     }
   }
+  static TypeDescriptor make_union(std::vector<TypeDescriptor> types) {
+    TypeDescriptor desc(ParamType::Union);
+    desc.union_types = std::move(types);
+    return desc;
+  }
 
-  bool is_tuple() const { return base_type == ParamType::Tuple; }
-  bool is_error() const { return base_type == ParamType::Error; }
-  bool is_nil() const { return base_type == ParamType::Nil; }
-  bool is_void() const { return base_type == ParamType::Void; }
+  [[nodiscard]] bool is_tuple() const { return base_type == ParamType::Tuple; }
+  [[nodiscard]] bool is_error() const { return base_type == ParamType::Error; }
+  [[nodiscard]] bool is_nil() const { return base_type == ParamType::Nil; }
+  [[nodiscard]] bool is_void() const { return base_type == ParamType::Void; }
+  [[nodiscard]] bool is_union() const { return base_type == ParamType::Union; }
 
   // Get tuple arity (number of elements)
-  size_t tuple_size() const { return tuple_elements.size(); }
+  [[nodiscard]] size_t tuple_size() const { return tuple_elements.size(); }
 
-  std::string to_string() const {
+  [[nodiscard]] std::string to_string() const {
+    if (is_union()) {
+      std::string result = "(";
+      for (size_t i = 0; i < union_types.size(); ++i) {
+        if (i > 0)
+          result += " | ";
+        result += union_types[i].to_string();
+      }
+      result += ")";
+      return result;
+    }
     if (is_tuple()) {
       std::string result = "(";
       for (size_t i = 0; i < tuple_elements.size(); ++i) {
-        if (i > 0)
+        if (i > 0) {
           result += ", ";
+        }
         result += tuple_elements[i].to_string();
       }
       result += ")";
@@ -157,12 +176,23 @@ struct TypeDescriptor {
   bool operator==(const TypeDescriptor &other) const {
     if (base_type != other.base_type)
       return false;
-    if (is_tuple()) {
-      if (tuple_elements.size() != other.tuple_elements.size())
+    if (is_union()) {
+      if (union_types.size() != other.union_types.size())
         return false;
-      for (size_t i = 0; i < tuple_elements.size(); ++i) {
-        if (!(tuple_elements[i] == other.tuple_elements[i]))
+      for (size_t i = 0; i < union_types.size(); ++i) {
+        if (union_types[i] != other.union_types[i])
           return false;
+      }
+      return true;
+    }
+    if (is_tuple()) {
+      if (tuple_elements.size() != other.tuple_elements.size()) {
+        return false;
+      }
+      for (size_t i = 0; i < tuple_elements.size(); ++i) {
+        if (!(tuple_elements[i] == other.tuple_elements[i])) {
+          return false;
+        }
       }
       return true;
     }
@@ -994,12 +1024,12 @@ struct StateDecl {
   // Input parameter (optional) - replaces old generic parameter
   // Passed when transitioning to this state
   // Example: state loop (Connection plunger_gate)
-  std::optional<ParamDecl> input_parameter;
+  std::vector<ParamDecl> input_parameter;
 
   // State body: sequence of statements executed on entry
   std::vector<std::unique_ptr<Stmt>> body;
 
-  StateDecl(std::string n, std::optional<ParamDecl> input_param = std::nullopt,
+  StateDecl(std::string n, std::vector<ParamDecl> input_param = {},
             std::vector<std::unique_ptr<Stmt>> b = {})
       : name(std::move(n)), input_parameter(std::move(input_param)),
         body(std::move(b)) {}
@@ -1009,7 +1039,9 @@ struct StateDecl {
   StateDecl(const StateDecl &) = delete;
   StateDecl &operator=(const StateDecl &) = delete;
 
-  bool has_input_parameter() const { return input_parameter.has_value(); }
+  [[nodiscard]] bool has_input_parameter() const {
+    return !input_parameter.empty();
+  }
 };
 
 /**
@@ -1217,7 +1249,10 @@ struct BuiltinSignature {
 class BuiltinFunctionRegistry {
 public:
   void register_builtin(const BuiltinSignature &sig) {
-    builtins_[sig.qualified_name] = sig;
+    // Use insert instead of operator[] to avoid default construction
+    builtins_.insert({sig.qualified_name, sig});
+    // OR use emplace:
+    // builtins_.emplace(sig.qualified_name, sig);
   }
 
   const BuiltinSignature *lookup(const std::string &qualified_name) const {
@@ -1229,7 +1264,6 @@ public:
     return builtins_.find(qualified_name) != builtins_.end();
   }
 
-  // Initialize with all builtin functions
   static BuiltinFunctionRegistry create_default();
 
 private:

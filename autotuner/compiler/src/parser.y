@@ -84,10 +84,10 @@
 // Type declarations for grammar rules
 %type <std::unique_ptr<Program>> program
 %type <std::vector<AutotunerDecl>> autotuner_list
-%type <AutotunerDecl> autotuner_decl
+%type <std::unique_ptr<AutotunerDecl>> autotuner_decl
 %type <std::vector<ParamDecl>> param_decl_list input_params output_params
-%type <ParamDecl> param_decl
-%type <std::optional<ParamDecl>> state_input_param
+%type <std::unique_ptr<ParamDecl>> param_decl
+%type <std::vector<ParamDecl>> state_input_param
 %type <TypeDescriptor> type_spec
 %type <std::vector<std::string>> requires_clause identifier_list
 %type <std::vector<std::unique_ptr<VarDeclStmt>>> autotuner_var_decls
@@ -95,14 +95,14 @@
 %type <std::string> entry_state
 %type <std::optional<std::unique_ptr<Expr>>> entry_param_opt
 %type <std::vector<StateDecl>> state_list
-%type <StateDecl> state_decl
+%type <std::unique_ptr<StateDecl>> state_decl
 %type <std::vector<std::unique_ptr<Stmt>>> stmt_list
 %type <std::unique_ptr<Stmt>> stmt
 %type <std::unique_ptr<Expr>> expr primary_expr postfix_expr
 %type <std::vector<std::unique_ptr<Expr>>> expr_list expr_list_opt
 %type <std::vector<NamedArg>> named_arg_list named_arg_list_opt
 %type <NamedArg> named_arg%type <std::vector<RoutineDecl>> routine_list
-%type <RoutineDecl> routine_decl
+%type <std::unique_ptr<RoutineDecl>> routine_decl
 
 %left OR
 %left AND
@@ -136,12 +136,12 @@ autotuner_list[result]
     : autotuner_decl[first_autotuner]
       {
         $result = std::vector<AutotunerDecl>();
-        $result.push_back(std::move($first_autotuner));
+        $result.push_back(std::move(*$first_autotuner));
       }
     | autotuner_list[existing_list] autotuner_decl[next_autotuner]
       {
         $result = std::move($existing_list);
-        $result.push_back(std::move($next_autotuner));
+        $result.push_back(std::move(*$next_autotuner));
       }
     ;
 
@@ -149,12 +149,12 @@ routine_list[result]
     : routine_decl[first_routine]
       {
         $result = std::vector<RoutineDecl>();
-        $result.push_back(std::move($first_routine));
+        $result.push_back(std::move(*$first_routine));
       }
     | routine_list[existing_routines] routine_decl[next_routine]
       {
         $result = std::move($existing_routines);
-        $result.push_back(std::move($next_routine));
+        $result.push_back(std::move(*$next_routine));
       }
     | %empty
       {
@@ -169,7 +169,7 @@ routine_list[result]
 routine_decl[result]
     : ROUTINE IDENTIFIER[name] input_params[inputs] ARROW output_params[outputs]
       {
-        $result = RoutineDecl(
+        $result = std::make_unqiue<RoutineDecl>(
           std::move($name),
           std::move($inputs),
           std::move($outputs)
@@ -197,7 +197,7 @@ autotuner_decl[result]
         state_list[states]
       RBRACE
       {
-        $result = AutotunerDecl(
+        $result = std::make_unique<AutotunerDecl>(
           std::move($name),
           std::move($inputs),
           std::move($outputs),
@@ -264,23 +264,23 @@ param_decl_list[result]
     : param_decl[first_param]
       {
         $result = std::vector<ParamDecl>();
-        $result.push_back(std::move($first_param));
+        $result.push_back(std::move(*$first_param));
       }
     | param_decl_list[existing_params] COMMA param_decl[next_param]
       {
         $result = std::move($existing_params);
-        $result.push_back(std::move($next_param));
+        $result.push_back(std::move(*$next_param));
       }
     ;
 
 param_decl[result]
     : type_spec[type] IDENTIFIER[name]
       {
-        $result = ParamDecl(std::move($type), std::move($name), std::nullopt);
+        $result = std::make_unique<ParamDecl>(std::move($type), std::move($name));
       }
     | type_spec[type] IDENTIFIER[name] ASSIGN expr[default_value]
       {
-        $result = ParamDecl(
+        $result = std::make_unique<ParamDecl>(
           std::move($type), 
           std::move($name), 
           std::make_optional(std::move($default_value))
@@ -298,11 +298,10 @@ state_input_param[result]
         }
         state_input_param.insert($name);
         
-        $result = std::make_optional(ParamDecl(
+        $result = std::make_unique<ParamDecl>(
           std::move($type), 
-          std::move($name), 
-          std::nullopt
-        ));
+          std::move($name)
+        );
       }
     | LPAREN type_spec[type] IDENTIFIER[name] ASSIGN expr[default_value] RPAREN
       {
@@ -313,11 +312,11 @@ state_input_param[result]
         }
         state_input_param.insert($name);
         
-        $result = std::make_optional(ParamDecl(
+        $result = std::make_unique<ParamDecl>(
           std::move($type), 
           std::move($name), 
-          std::make_optional(std::move($default_value))
-        ));
+          std::move($default_value)
+        );
       }
     | %empty
       {
@@ -427,12 +426,12 @@ state_list[result]
     : state_decl[first_state]
       {
         $result = std::vector<StateDecl>();
-        $result.push_back(std::move($first_state));
+        $result.push_back(std::move(*$first_state));
       }
     | state_list[existing_states] state_decl[next_state]
       {
         $result = std::move($existing_states);
-        $result.push_back(std::move($next_state));
+        $result.push_back(std::move(*$next_state));
       }
     ;
 
@@ -447,7 +446,7 @@ state_decl[result]
         stmt_list[body] 
       RBRACE
       {
-        $result = StateDecl(
+        $result = std::make_unique<StateDecl>(
           std::move($name), 
           std::move($input_param), 
           std::move($body)
@@ -812,15 +811,6 @@ named_arg[result]
       }
     ;
 
-// Add to grammar
-routine_decl[result]
-    : ROUTINE IDENTIFIER[name] input_params[inputs] ARROW output_params[outputs]
-      {
-        // Routine declarations are just signatures, no body
-        // They are loaded from .so files at runtime
-        $result = RoutineDecl(std::move($name), std::move($inputs), std::move($outputs));
-      }
-    ;
 %%
 
 void falcon::atc::Parser::error(const location_type& loc, const std::string& msg) {
