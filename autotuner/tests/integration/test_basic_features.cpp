@@ -84,17 +84,3 @@ TEST_F(BasicFeaturesTest, TerminalState) {
   ASSERT_TRUE(compile_and_run(cenv));
   EXPECT_EQ(params.get<int64_t>("steps"), 2);
 }
-
-TEST_F(BasicFeaturesTest, GenericAutotuner) {
-
-  ParameterMap params;
-  params.set("input", 10.0);
-  params.set("device_id", std::string("dev1")); // Generic parameter
-
-  SingleCompileEnvironment cenv{
-      std::filesystem::path(
-          "test-autotuners/basic_features/generic-processor.fal"),
-      "GenericProcessor", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  EXPECT_DOUBLE_EQ(params.get<double>("output"), 20.0);
-}

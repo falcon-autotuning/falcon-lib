@@ -35,8 +35,7 @@ autotuner ConditionalNest(int a, int b) -> (int out, Error err) {
       int out = out_inside;
       terminal;
   }
-  state error_processing {
-      Error error= nil;
+  state error_processing (Error error) {
       log::info("We got an error with {}", error);
       terminal;
   }
