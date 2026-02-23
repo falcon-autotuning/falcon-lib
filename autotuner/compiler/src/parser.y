@@ -88,7 +88,7 @@
 %type <std::vector<ParamDecl>> param_decl_list input_params output_params
 %type <std::unique_ptr<ParamDecl>> param_decl
 %type <std::vector<ParamDecl>> state_input_param
-%type <TypeDescriptor> type_spec
+%type <std::unique_ptr<TypeDescriptor>> type_spec
 %type <std::vector<std::string>> requires_clause identifier_list
 %type <std::vector<std::unique_ptr<VarDeclStmt>>> autotuner_var_decls
 %type <std::unique_ptr<VarDeclStmt>> var_decl_stmt
@@ -101,7 +101,7 @@
 %type <std::unique_ptr<Expr>> expr primary_expr postfix_expr
 %type <std::vector<std::unique_ptr<Expr>>> expr_list expr_list_opt
 %type <std::vector<NamedArg>> named_arg_list named_arg_list_opt
-%type <NamedArg> named_arg%type <std::vector<RoutineDecl>> routine_list
+%type <std::unique_ptr<NamedArg>> named_arg%type <std::vector<RoutineDecl>> routine_list
 %type <std::unique_ptr<RoutineDecl>> routine_decl
 
 %left OR
@@ -169,7 +169,7 @@ routine_list[result]
 routine_decl[result]
     : ROUTINE IDENTIFIER[name] input_params[inputs] ARROW output_params[outputs]
       {
-        $result = std::make_unqiue<RoutineDecl>(
+        $result = std::make_unique<RoutineDecl>(
           std::move($name),
           std::move($inputs),
           std::move($outputs)
@@ -330,25 +330,25 @@ state_input_param[result]
 
 type_spec[result]
     : INT_KW           
-      { $result = TypeDescriptor(ParamType::Int); }
+      { $result = std::make_unique<TypeDescriptor>(ParamType::Int); }
     | FLOAT_KW         
-      { $result = TypeDescriptor(ParamType::Float); }
+      { $result = std::make_unique<TypeDescriptor>(ParamType::Float); }
     | BOOL_KW          
-      { $result = TypeDescriptor(ParamType::Bool); }
+      { $result = std::make_unique<TypeDescriptor>(ParamType::Bool); }
     | STRING_KW        
-      { $result = TypeDescriptor(ParamType::String); }
+      { $result = std::make_unique<TypeDescriptor>(ParamType::String); }
     | QUANTITY_KW      
-      { $result = TypeDescriptor(ParamType::Quantity); }
+      { $result = std::make_unique<TypeDescriptor>(ParamType::Quantity); }
     | CONFIG_KW        
-      { $result = TypeDescriptor(ParamType::Config); }
+      { $result = std::make_unique<TypeDescriptor>(ParamType::Config); }
     | CONNECTION_KW    
-      { $result = TypeDescriptor(ParamType::Connection); }
+      { $result = std::make_unique<TypeDescriptor>(ParamType::Connection); }
     | CONNECTIONS_KW   
-      { $result = TypeDescriptor(ParamType::Connections); }
+      { $result = std::make_unique<TypeDescriptor>(ParamType::Connections); }
     | GNAME_KW         
-      { $result = TypeDescriptor(ParamType::Gname); }
+      { $result = std::make_unique<TypeDescriptor>(ParamType::Gname); }
     | ERROR_KW         
-      { $result = TypeDescriptor(ParamType::Error, "Error"); }
+      { $result = std::make_unique<TypeDescriptor>(ParamType::Error, "Error"); }
     ;
 
 // ============================================================================
@@ -795,7 +795,7 @@ named_arg_list[result]
     : named_arg[first_arg]
       {
         $result = std::vector<NamedArg>();
-        $result.push_back(std::move($first_arg));
+        $result.push_back(std::move(*$first_arg));
       }
     | named_arg_list[existing_args] COMMA named_arg[next_arg]
       {
@@ -807,7 +807,7 @@ named_arg_list[result]
 named_arg[result]
     : IDENTIFIER[param_name] ASSIGN expr[param_value]
       {
-        $result = NamedArg(std::move($param_name), std::move($param_value));
+        $result = std::make_unique<NamedArg>(std::move($param_name), std::move($param_value));
       }
     ;
 
