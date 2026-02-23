@@ -6,9 +6,9 @@
   "items": {
     "type": "object",
     "required": [
+      "scope",
       "name",
-      "hash",
-      "recordtime"
+      "value"
     ],
     "properties": {
       "scope": {
@@ -64,9 +64,6 @@
       "device_characteristic": {
         "description": "The actual characteristic value",
         "oneOf": [
-          {
-            "type": "null"
-          },
           {
             "type": "boolean"
           },

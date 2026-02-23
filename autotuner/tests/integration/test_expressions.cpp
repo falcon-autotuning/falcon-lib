@@ -11,10 +11,10 @@ TEST_F(ExpressionsTest, ArithmeticOperations) {
   params.set("x", 10.0);
   params.set("y", 3.0);
 
-  ASSERT_TRUE(compile_and_run(
-      std::filesystem::path("test-autotuners/arithmetic-test.fal"),
-      "ArithmeticTest", params));
-
+  SingleCompileEnvironment cenv{
+      std::filesystem::path("test-autotuners/expressions/arithmetic-test.fal"),
+      "ArithmeticTest", params, true};
+  ASSERT_TRUE(compile_and_run(cenv));
   EXPECT_DOUBLE_EQ(params.get<double>("add"), 13.0);
   EXPECT_DOUBLE_EQ(params.get<double>("sub"), 7.0);
   EXPECT_DOUBLE_EQ(params.get<double>("mul"), 30.0);
@@ -27,10 +27,10 @@ TEST_F(ExpressionsTest, ComparisonOperators) {
   params.set("a", static_cast<int64_t>(10));
   params.set("b", static_cast<int64_t>(20));
 
-  ASSERT_TRUE(compile_and_run(
-      std::filesystem::path("test-autotuners/comparison-test.fal"),
-      "ComparisonTest", params));
-
+  SingleCompileEnvironment cenv{
+      std::filesystem::path("test-autotuners/expressions/comparison-test.fal"),
+      "ComparisonTest", params, true};
+  ASSERT_TRUE(compile_and_run(cenv));
   EXPECT_FALSE(params.get<bool>("gt"));
   EXPECT_TRUE(params.get<bool>("lt"));
   EXPECT_FALSE(params.get<bool>("eq"));
@@ -44,10 +44,10 @@ TEST_F(ExpressionsTest, LogicalOperations) {
   params.set("flag1", true);
   params.set("flag2", false);
 
-  ASSERT_TRUE(
-      compile_and_run(std::filesystem::path("test-autotuners/logical-test.fal"),
-                      "LogicalTest", params));
-
+  SingleCompileEnvironment cenv{
+      std::filesystem::path("test-autotuners/expressions/logical-test.fal"),
+      "LogicalTest", params, true};
+  ASSERT_TRUE(compile_and_run(cenv));
   EXPECT_EQ(params.get<std::string>("result"), "expected");
 }
 
@@ -57,10 +57,10 @@ TEST_F(ExpressionsTest, UnaryOperators) {
   params.set("value", static_cast<int64_t>(42));
   params.set("flag", true);
 
-  ASSERT_TRUE(
-      compile_and_run(std::filesystem::path("test-autotuners/unary-test.fal"),
-                      "UnaryTest", params));
-
+  SingleCompileEnvironment cenv{
+      std::filesystem::path("test-autotuners/expressions/unary-test.fal"),
+      "UnaryTest", params, true};
+  ASSERT_TRUE(compile_and_run(cenv));
   EXPECT_EQ(params.get<int64_t>("negated"), -42);
   EXPECT_FALSE(params.get<bool>("inverted"));
 }
@@ -72,10 +72,11 @@ TEST_F(ExpressionsTest, ComplexExpressions) {
   params.set("b", static_cast<int64_t>(3));
   params.set("c", static_cast<int64_t>(4));
 
-  ASSERT_TRUE(compile_and_run(
-      std::filesystem::path("test-autotuners/complex-expr-test.fal"),
-      "ComplexExprTest", params));
-
+  SingleCompileEnvironment cenv{
+      std::filesystem::path(
+          "test-autotuners/expressions/complex-expr-test.fal"),
+      "ComplexExprTest", params, true};
+  ASSERT_TRUE(compile_and_run(cenv));
   // (5 + 3) * 4 - 10 = 8 * 4 - 10 = 32 - 10 = 22
   EXPECT_EQ(params.get<int64_t>("result"), 22);
 }

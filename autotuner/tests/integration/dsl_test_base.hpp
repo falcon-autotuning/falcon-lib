@@ -4,6 +4,7 @@
 #include "falcon-atc/Compiler.hpp"
 #include "falcon-autotuner/Interpreter.hpp"
 #include "falcon-autotuner/ParameterMap.hpp"
+#include "falcon-database/SnapshotManager.hpp"
 #include <falcon_core/communications/Time.hpp>
 #include <falcon_core/physics/config/Loader.hpp>
 #include <falcon_core/physics/config/core/Config.hpp>
@@ -12,8 +13,49 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <thread>
+#include <utility>
 
 namespace falcon::autotuner::test {
+struct CompileEnvironment {
+  std::vector<std::filesystem::path> dsl_files;
+  std::string autotuner_name;
+  ParameterMap &params;
+  bool expect_success;
+  std::optional<std::filesystem::path> globals;
+  std::filesystem::path device_config;
+  std::optional<std::vector<std::filesystem::path>> routine_libs;
+
+  CompileEnvironment(
+      std::vector<std::filesystem::path> dsl_files_,
+      std::string autotuner_name_, ParameterMap &params_,
+      std::optional<bool> expect_success_ = true,
+      std::optional<std::filesystem::path> globals_ = std::nullopt,
+      std::filesystem::path device_config_ =
+          std::filesystem::path(__FILE__).parent_path().parent_path() /
+          "device-configs/three-dot.yml",
+      std::optional<std::vector<std::filesystem::path>> routine_libs_ =
+          std::nullopt)
+      : dsl_files(std::move(dsl_files_)),
+        autotuner_name(std::move(autotuner_name_)), params(params_),
+        expect_success(expect_success_), globals(std::move(globals_)),
+        device_config(std::move(device_config_)),
+        routine_libs(std::move(routine_libs_)) {}
+};
+struct SingleCompileEnvironment : public CompileEnvironment {
+  SingleCompileEnvironment(
+      std::filesystem::path dsl_file_, std::string autotuner_name_,
+      ParameterMap &params_, bool expect_success_ = true,
+      std::optional<std::filesystem::path> globals_ = std::nullopt,
+      std::filesystem::path device_config_ =
+          std::filesystem::path(__FILE__).parent_path().parent_path() /
+          "device-configs/three-dot.yml",
+      std::optional<std::vector<std::filesystem::path>> routine_libs_ =
+          std::nullopt)
+      : CompileEnvironment({std::move(dsl_file_)}, std::move(autotuner_name_),
+                           params_, expect_success_, std::move(globals_),
+                           std::move(device_config_),
+                           std::move(routine_libs_)) {}
+};
 
 /**
  * @brief Base test fixture with environment setup
@@ -77,7 +119,7 @@ protected:
 
     // Create database connection with explicit URL
     // This ensures tests don't accidentally use production database
-    db_ = std::make_unique<falcon::database::AdminDatabaseConnection>(
+    db_ = std::make_shared<falcon::database::AdminDatabaseConnection>(
         getDatabaseUrl());
     db_->initialize_schema();
     db_->clear_all();
@@ -90,7 +132,7 @@ protected:
     RoutineTestFixture::TearDown();
   }
 
-  std::unique_ptr<falcon::database::AdminDatabaseConnection> db_;
+  std::shared_ptr<falcon::database::AdminDatabaseConnection> db_;
 };
 /**
  * @brief Test fixture for compiling .fal programs and running the interpretter
@@ -133,19 +175,13 @@ protected:
     EXPECT_NE(program, nullptr) << "Failed to parse: " << file_path;
     return program;
   }
-
-  bool compile_and_run(const std::filesystem::path &dsl_file,
-                       const std::string &autotuner_name, ParameterMap &params,
-                       bool expect_success = true) {
-    return compile_and_run(std::vector<std::filesystem::path>{dsl_file},
-                           autotuner_name, params, expect_success);
-  }
-  bool compile_and_run(const std::vector<std::filesystem::path> &dsl_files,
-                       const std::string &autotuner_name, ParameterMap &params,
-                       bool expect_success = true) {
-    // Concatenate all DSL files into one string
+  // Helper: Compile and run in one step
+  bool compile_and_run(CompileEnvironment &cenv) {
+    std::atomic<bool> autotuner_result{false};
+    std::atomic<bool> responder_ready{false};
+    std::atomic<bool> request_received{false};
     std::stringstream dsl_code;
-    for (const auto &file : dsl_files) {
+    for (const auto &file : cenv.dsl_files) {
       std::ifstream in(file);
       if (!in.is_open()) {
         std::cerr << "Failed to open DSL file: " << file << '\n';
@@ -153,23 +189,18 @@ protected:
       }
       dsl_code << in.rdbuf() << "\n";
     }
-    // Use the existing compile_and_run logic with the concatenated string
-    return compile_and_run(dsl_code.str(), autotuner_name, params,
-                           expect_success);
-  }
-  // Helper: Compile and run in one step
-  bool compile_and_run(const std::string &dsl_code,
-                       const std::string &autotuner_name, ParameterMap &params,
-                       bool expect_success = true) {
-    std::atomic<bool> autotuner_result{false};
-    std::atomic<bool> responder_ready{false};
-    std::atomic<bool> request_received{false};
 
-    auto file_path = write_dsl_file(dsl_code);
+    auto file_path = write_dsl_file(dsl_code.str());
     auto program = compile_dsl(file_path);
     if (!program) {
       return false;
     }
+    // Fill database
+    database::SnapshotManager snapm(db_);
+    if (cenv.globals.has_value()) {
+      snapm.import_from_json(cenv.globals.value());
+    }
+
     // Start responder thread
     std::thread responder([&]() {
       auto &hub = comms::NatsManager::instance();
@@ -180,9 +211,7 @@ protected:
             DeviceConfigResponse response;
             response.timestamp =
                 (int)falcon_core::communications::Time().time();
-            falcon_core::physics::config::Loader loader(
-                std::filesystem::path(__FILE__).parent_path().parent_path() /
-                "device-configs/three-dot.yml");
+            falcon_core::physics::config::Loader loader(cenv.device_config);
             const falcon_core::physics::config::core::ConfigSP config =
                 loader.config();
             response.response = config->to_json_string();
@@ -200,8 +229,8 @@ protected:
     }
     std::thread client([&]() {
       try {
-        autotuner_result =
-            run_autotuner(*program, autotuner_name, params, expect_success);
+        autotuner_result = run_autotuner(*program, cenv.autotuner_name,
+                                         cenv.params, cenv.expect_success);
       } catch (const std::exception &e) {
         std::cout << "EXCEPTION in client thread: " << e.what() << '\n';
         throw;
@@ -212,6 +241,10 @@ protected:
     responder.join();
 
     return autotuner_result;
+  }
+  void export_snapshot(const std::filesystem::path &path) {
+    database::SnapshotManager snapm(db_);
+    snapm.export_to_json(path);
   }
 
   std::filesystem::path test_dir_;

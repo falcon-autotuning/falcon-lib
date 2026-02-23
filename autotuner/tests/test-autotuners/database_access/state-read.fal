@@ -4,9 +4,7 @@ autotuner StateRead -> (bool completed) {
   start -> init;
   
   state init {
-    Error err = nil;
     // state reads should happen only to predefined variables
-    completed, err = read(scope="globals", name="completed", extra="default");
     int number = 0;
     Error nerr = nil;
     number, nerr = read(scope="globals", name="number", extra="default");
@@ -20,6 +18,7 @@ autotuner StateRead -> (bool completed) {
   }
   
   state done {
+    completed = true;
     terminal;
   }
   state fail {
