@@ -108,8 +108,6 @@ autotuner_decl[result]
       output_params[outputs] 
       LBRACE 
         requires_clause[requires]
-        spec_inputs[spec_in]
-        spec_outputs[spec_out]
         params_decl_block[params]
         entry_clause[entry]
         loop_list[loops]
@@ -175,54 +173,6 @@ generic_params[result]
       { $result = std::move($idents); }
     | %empty
       { $result = std::vector<std::string>(); }
-    ;
-
-spec_inputs[result]
-    : SPEC_INPUTS COLON LBRACKET spec_list[list] RBRACKET 
-      { $result = std::move($list); }
-    | %empty
-      { $result = std::vector<SpecDecl>(); }
-    ;
-
-spec_outputs[result]
-    : SPEC_OUTPUTS COLON LBRACKET spec_list[list] RBRACKET 
-      { $result = std::move($list); }
-    | %empty
-      { $result = std::vector<SpecDecl>(); }
-    ;
-
-spec_list[result]
-    : spec_decl[decl]
-      { 
-        $result = std::vector<SpecDecl>();
-        $result.push_back(std::move(*$decl));
-      }
-    | spec_list[list] spec_decl[decl]
-      { 
-        $result = std::move($list);
-        $result.push_back(std::move(*$decl));
-      }
-    | %empty
-      { $result = std::vector<SpecDecl>(); }
-    ;
-
-spec_decl[result]
-    : type_spec[type] IDENTIFIER[name] LBRACKET IDENTIFIER[param] RBRACKET
-      { 
-        $result = std::make_unique<SpecDecl>(
-          $type, 
-          std::move($name), 
-          std::move($param)
-        );
-      }
-    | type_spec[type] IDENTIFIER[name]
-      { 
-        $result = std::make_unique<SpecDecl>(
-          $type, 
-          std::move($name), 
-          ""
-        );
-      }
     ;
 
 requires_clause[result]

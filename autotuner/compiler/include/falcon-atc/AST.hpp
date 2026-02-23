@@ -254,7 +254,6 @@ struct ForLoop {
 struct AutotunerDecl {
   using ParamPtrVec = std::vector<std::unique_ptr<Param>>;
   using StringVec = std::vector<std::string>;
-  using SpecDeclVec = std::vector<SpecDecl>;
   using StateDeclVec = std::vector<StateDecl>;
   using ForLoopVec = std::vector<ForLoop>;
 
@@ -262,8 +261,6 @@ struct AutotunerDecl {
   ParamPtrVec inputs;
   ParamPtrVec outputs;
   StringVec generic_params;
-  SpecDeclVec spec_inputs;
-  SpecDeclVec spec_outputs;
   StringVec requirements;
   ParamPtrVec params;
   std::string entry_state;
@@ -271,11 +268,10 @@ struct AutotunerDecl {
   ForLoopVec loops;
 
   AutotunerDecl(std::string n, ParamPtrVec in, ParamPtrVec out, StringVec gp,
-                SpecDeclVec si, SpecDeclVec so, StringVec req, ParamPtrVec p,
-                std::string entry, StateDeclVec s, ForLoopVec l)
+                StringVec req, ParamPtrVec p, std::string entry, StateDeclVec s,
+                ForLoopVec l)
       : name(std::move(n)), inputs(std::move(in)), outputs(std::move(out)),
-        generic_params(std::move(gp)), spec_inputs(std::move(si)),
-        spec_outputs(std::move(so)), requirements(std::move(req)),
+        generic_params(std::move(gp)), requirements(std::move(req)),
         params(std::move(p)), entry_state(std::move(entry)),
         states(std::move(s)), loops(std::move(l)) {}
 
