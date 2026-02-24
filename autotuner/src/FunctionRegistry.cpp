@@ -1,5 +1,6 @@
 #include "falcon-autotuner/FunctionRegistry.hpp"
 #include "falcon-autotuner/log.hpp"
+#include <falcon-database/DatabaseConnection.hpp>
 #include <iostream>
 #include <stdexcept>
 
@@ -208,9 +209,11 @@ void register_all_builtins(FunctionRegistry &registry) {
       "read", [](const ParameterMap &params) -> ParameterMap {
         std::string scope = std::get<std::string>(params.at("scope"));
         std::string name = std::get<std::string>(params.at("name"));
-
-        std::cout << "[STUB] read(scope=" << scope << ", name=" << name << ")"
-                  << std::endl;
+        database::ReadOnlyDatabaseConnection db;
+        database::DeviceCharacteristicQuery query;
+        query.scope = scope;
+        query.name = name;
+        auto dchars = db.get_by_query(query);
 
         // Return (value, error) tuple
         return {

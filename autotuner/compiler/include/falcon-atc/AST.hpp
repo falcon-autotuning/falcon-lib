@@ -1206,11 +1206,11 @@ struct RoutineDecl {
  */
 struct Program {
   std::vector<AutotunerDecl> autotuners;
-  std::vector<RoutineDecl> routines; // Add this
+  std::vector<RoutineDecl> routines;
 
   // Filled in during semantic analysis for fast lookup
   mutable std::map<std::string, const AutotunerDecl *> autotuner_index;
-  mutable std::map<std::string, const RoutineDecl *> routine_index; // Add this
+  mutable std::map<std::string, const RoutineDecl *> routine_index;
 };
 
 // ============================================================================
