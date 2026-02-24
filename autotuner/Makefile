@@ -254,7 +254,7 @@ test-local-debug: build-debug
 	@cd $(BUILD_DIR_DEBUG)/tests && \
 		TEST_DATABASE_URL="$(TEST_DATABASE_URL)" \
 		TEST_NATS_URL="$(TEST_NATS_URL)" \
-		./falcon_dsl_integration_tests --gtest_filter="$(GTEST_FILTER)"
+		./falcon_dsl_integration_tests $(if $(GTEST_FILTER),--gtest_filter="$(GTEST_FILTER)",)
 	@echo "✓ All tests passed"
 
 # Keep services running for interactive testing
