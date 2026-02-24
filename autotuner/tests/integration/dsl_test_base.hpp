@@ -140,7 +140,7 @@ protected:
     // Fill database
     database::SnapshotManager snapm(db_);
     if (cenv.globals.has_value()) {
-      snapm.import_from_json(cenv.globals.value());
+      snapm.import_from_json(cenv.globals.value().string(), true);
     }
 
     std::atomic<bool> responder_ready{false};

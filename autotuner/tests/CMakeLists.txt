@@ -29,6 +29,10 @@ target_include_directories(falcon_dsl_integration_tests
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+set_tests_properties(falcon_dsl_integration_tests PROPERTIES
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
 # Copy test .fal and .json files to build directory
 file(GLOB_RECURSE TEST_FAL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/test-autotuners/*.fal")
 file(GLOB_RECURSE TEST_JSON_FILES "${CMAKE_CURRENT_SOURCE_DIR}/test-autotuners/*.json")
