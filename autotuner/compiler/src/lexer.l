@@ -30,6 +30,7 @@ using namespace falcon::atc;
 "requires"      { return Parser::make_REQUIRES(*loc); }
 "terminal"      { return Parser::make_TERMINAL(*loc); }
 "if"            { return Parser::make_IF(*loc); }
+"elif"            { return Parser::make_ELIF(*loc); }
 "else"          { return Parser::make_ELSE(*loc); }
 "true"          { return Parser::make_TRUE(*loc); }
 "false"         { return Parser::make_FALSE(*loc); }
