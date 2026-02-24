@@ -22,8 +22,8 @@ using ExternalFunction = std::function<ParameterMap(const ParameterMap &)>;
 struct RoutineInfo {
   std::string name;
   std::string namespace_name; // Autotuner namespace
-  std::vector<atc::ParamDecl> input_params;
-  std::vector<atc::ParamDecl> output_params;
+  std::vector<std::unique_ptr<atc::ParamDecl>> input_params;
+  std::vector<std::unique_ptr<atc::ParamDecl>> output_params;
   void *library_handle;
   ExternalFunction function;
 };
@@ -57,11 +57,11 @@ public:
    * Symbol name convention: <namespace>_<routine_name>
    * Example: ConditionalNest_Adder
    */
-  void load_routine(const std::string &routine_name,
-                    const std::string &namespace_name,
-                    const std::string &library_path,
-                    const std::vector<atc::ParamDecl> &input_params,
-                    const std::vector<atc::ParamDecl> &output_params);
+  void load_routine(
+      const std::string &routine_name, const std::string &namespace_name,
+      const std::string &library_path,
+      const std::vector<std::unique_ptr<atc::ParamDecl>> &input_params,
+      const std::vector<std::unique_ptr<atc::ParamDecl>> &output_params);
 
   /**
    * @brief Register an autotuner as a callable function.

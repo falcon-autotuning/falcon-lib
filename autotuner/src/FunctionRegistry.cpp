@@ -24,8 +24,8 @@ void FunctionRegistry::register_builtin(const std::string &qualified_name,
 void FunctionRegistry::load_routine(
     const std::string &routine_name, const std::string &namespace_name,
     const std::string &library_path,
-    const std::vector<atc::ParamDecl> &input_params,
-    const std::vector<atc::ParamDecl> &output_params) {
+    const std::vector<std::unique_ptr<atc::ParamDecl>> &input_params,
+    const std::vector<std::unique_ptr<atc::ParamDecl>> &output_params) {
   // Load the shared library
   void *handle = dlopen(library_path.c_str(), RTLD_LAZY);
   if (handle == nullptr) {
@@ -57,8 +57,14 @@ void FunctionRegistry::load_routine(
   // Store routine info
   RoutineInfo info;
   info.name = routine_name;
-  info.input_params = input_params;
-  info.output_params = output_params;
+  info.input_params.clear();
+  for (const auto &param : input_params) {
+    info.input_params.push_back(param->clone());
+  }
+  info.output_params.clear();
+  for (const auto &param : input_params) {
+    info.output_params.push_back(param->clone());
+  }
   info.library_handle = handle;
   info.function = std::move(func);
 
