@@ -12,25 +12,24 @@
 namespace falcon::autotuner {
 
 struct ControlFlow {
-  enum class Type { Continue, Transition, Terminal };
+  enum class Type {
+    None,       // Continue execution
+    Transition, // Move to another state
+    Terminal    // End autotuner execution
+  };
 
-  Type type = Type::Continue;
-  std::string target_state;
-  std::optional<RuntimeValue> parameter;
+  Type type = Type::None;
+  std::string target_state;             // For Transition
+  std::vector<RuntimeValue> parameters; // For Transition
 
-  static ControlFlow continue_flow() {
-    return ControlFlow{Type::Continue, "", std::nullopt};
+  static ControlFlow none() { return ControlFlow{Type::None, "", {}}; }
+
+  static ControlFlow transition(std::string state,
+                                std::vector<RuntimeValue> params = {}) {
+    return ControlFlow{Type::Transition, std::move(state), std::move(params)};
   }
 
-  static ControlFlow
-  transition(const std::string &state,
-             std::optional<RuntimeValue> param = std::nullopt) {
-    return ControlFlow{Type::Transition, state, std::move(param)};
-  }
-
-  static ControlFlow terminal() {
-    return ControlFlow{Type::Terminal, "", std::nullopt};
-  }
+  static ControlFlow terminal() { return ControlFlow{Type::Terminal, "", {}}; }
 };
 
 class StmtExecutor {

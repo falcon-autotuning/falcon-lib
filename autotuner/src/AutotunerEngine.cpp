@@ -88,7 +88,8 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
 
       // Store the autotuner (move it since AutotunerDecl is move-only)
       std::string name = autotuner.name;
-      loaded_autotuners_[name] = std::move(autotuner);
+      loaded_autotuners_.erase(name);
+      loaded_autotuners_.insert({name, std::move(autotuner)});
 
       // Register as callable function
       register_autotuner_as_function(loaded_autotuners_[name]);

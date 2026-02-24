@@ -35,7 +35,7 @@
   std::set<std::string> autotuner_input_params;   // Input parameters (read-only)
   std::set<std::string> autotuner_output_params;  // Output parameters (read/write)
   std::set<std::string> state_local_scope;    // State-local variables
-  std::set<std::string> state_input_param;    // Current state's input parameter
+  std::set<std::string> state_input_params;    // Current state's input parameter
   
   void clear_autotuner_scope() {
     autotuner_scope.clear();
@@ -45,7 +45,7 @@
   
   void clear_state_scope() {
     state_local_scope.clear();
-    state_input_param.clear();
+    state_input_params.clear();
   }
   
   bool is_variable_declared(const std::string& name) {
@@ -53,7 +53,7 @@
            autotuner_input_params.count(name) > 0 ||
            autotuner_output_params.count(name) > 0 ||
            state_local_scope.count(name) > 0 ||
-           state_input_param.count(name) > 0;
+           state_input_params.count(name) > 0;
   }
   
   bool is_redeclaration(const std::string& name, bool in_state) {
@@ -62,7 +62,7 @@
       return autotuner_scope.count(name) > 0 ||
              autotuner_input_params.count(name) > 0 ||
              autotuner_output_params.count(name) > 0 ||
-             state_input_param.count(name) > 0 ||
+             state_input_params.count(name) > 0 ||
              state_local_scope.count(name) > 0;
     } else {
       // At autotuner level: can't redeclare autotuner vars, input params, or output params
@@ -85,21 +85,20 @@
 %type <std::unique_ptr<Program>> program
 %type <std::vector<AutotunerDecl>> autotuner_list
 %type <std::unique_ptr<AutotunerDecl>> autotuner_decl
-%type <std::vector<ParamDecl>> param_decl_list input_params output_params
+%type <std::vector<std::unique_ptr<ParamDecl>>> param_decl_list input_params output_params state_input_params
 %type <std::unique_ptr<ParamDecl>> param_decl
-%type <std::vector<ParamDecl>> state_input_param
 %type <std::unique_ptr<TypeDescriptor>> type_spec
 %type <std::vector<std::string>> requires_clause identifier_list
 %type <std::vector<std::unique_ptr<VarDeclStmt>>> autotuner_var_decls
 %type <std::unique_ptr<VarDeclStmt>> var_decl_stmt
 %type <std::string> entry_state
-%type <std::optional<std::unique_ptr<Expr>>> entry_param_opt
+%type <std::vector<std::unique_ptr<Expr>>> entry_params
 %type <std::vector<StateDecl>> state_list
 %type <std::unique_ptr<StateDecl>> state_decl
 %type <std::vector<std::unique_ptr<Stmt>>> stmt_list
 %type <std::unique_ptr<Stmt>> stmt
 %type <std::unique_ptr<Expr>> expr primary_expr postfix_expr
-%type <std::vector<std::unique_ptr<Expr>>> expr_list expr_list_opt
+%type <std::vector<std::unique_ptr<Expr>>> expr_list 
 %type <std::vector<NamedArg>> named_arg_list named_arg_list_opt
 %type <std::unique_ptr<NamedArg>> named_arg%type <std::vector<RoutineDecl>> routine_list
 %type <std::unique_ptr<RoutineDecl>> routine_decl
@@ -193,7 +192,7 @@ autotuner_decl[result]
       LBRACE
         requires_clause[requires]
         autotuner_var_decls[vars]
-        entry_state[entry] entry_param_opt[entry_param] SEMICOLON
+        entry_state[entry] entry_params[entry_params] SEMICOLON
         state_list[states]
       RBRACE
       {
@@ -204,7 +203,7 @@ autotuner_decl[result]
           std::move($requires),
           std::move($vars),
           std::move($entry),
-          std::move($entry_param),
+          std::move($entry_params),
           std::move($states)
         );
       }
@@ -219,11 +218,85 @@ input_params[result]
       {
         // Register input parameters in scope (read-only)
         for (const auto& param : $params) {
-          if (autotuner_input_params.count(param.name) > 0) {
-            error(@params, "Duplicate input parameter: " + param.name);
+          if (autotuner_input_params.count(param->name) > 0) {
+            error(@params, "Duplicate input parameter: " + param->name);
             YYABORT;
           }
-          autotuner_input_params.insert(param.name);
+          autotuner_input_params.insert(param->name);
+        }
+        $result = std::move($params);
+      }
+    | LPAREN RPAREN
+      { 
+        $result = std::vector<std::unique_ptr<ParamDecl>>(); 
+      }
+    | %empty
+      { 
+        $result = std::vector<std::unique_ptr<ParamDecl>>(); 
+      }
+    ;
+
+output_params[result]
+    : LPAREN param_decl_list[params] RPAREN
+      {
+        // Register output parameters in scope (read/write)
+        for (const auto& param : $params) {
+          if (autotuner_output_params.count(param->name) > 0) {
+            error(@params, "Duplicate output parameter: " + param->name);
+            YYABORT;
+          }
+          if (autotuner_input_params.count(param.name) > 0) {
+            error(@params, "Output parameter '" + param->name + "' conflicts with input parameter");
+            YYABORT;
+          }
+          autotuner_output_params.insert(param->name);
+        }
+        $result = std::move($params);
+      }
+    | %empty
+      { 
+        $result = std::vector<std::unique_ptr<ParamDecl>>(); 
+      }
+    ;
+
+param_decl_list[result]
+    : param_decl[first_param]
+      {
+        $result = std::vector<std::unique_ptr<ParamDecl>>();
+        $result.push_back(std::move($first_param));
+      }
+    | param_decl_list[existing_params] COMMA param_decl[next_param]
+      {
+        $result = std::move($existing_params);
+        $result.push_back(std::move($next_param));
+      }
+    ;
+
+param_decl[result]
+    : type_spec[type] IDENTIFIER[name]
+      {
+        $result = std::make_unique<ParamDecl>(std::move(*$type), std::move($name));
+      }
+    | type_spec[type] IDENTIFIER[name] ASSIGN expr[default_value]
+      {
+        $result = std::make_unique<ParamDecl>(
+          std::move(*$type), 
+          std::move($name), 
+          std::make_optional(std::move($default_value))
+        );
+      }
+    ;
+
+state_input_params[result]
+    : LPAREN param_decl_list[params] RPAREN
+      {
+        // Register input parameters in scope (read-only)
+        for (const auto& param : $params) {
+          if (is_redeclaration(param.name, true)) {
+            error(@params, "State input parameter '" + param.name + "' conflicts with autotuner-level declaration");
+            YYABORT;
+          }
+          state_input_params.insert(param.name);
         }
         $result = std::move($params);
       }
@@ -234,93 +307,6 @@ input_params[result]
     | %empty
       { 
         $result = std::vector<ParamDecl>(); 
-      }
-    ;
-
-output_params[result]
-    : LPAREN param_decl_list[params] RPAREN
-      {
-        // Register output parameters in scope (read/write)
-        for (const auto& param : $params) {
-          if (autotuner_output_params.count(param.name) > 0) {
-            error(@params, "Duplicate output parameter: " + param.name);
-            YYABORT;
-          }
-          if (autotuner_input_params.count(param.name) > 0) {
-            error(@params, "Output parameter '" + param.name + "' conflicts with input parameter");
-            YYABORT;
-          }
-          autotuner_output_params.insert(param.name);
-        }
-        $result = std::move($params);
-      }
-    | %empty
-      { 
-        $result = std::vector<ParamDecl>(); 
-      }
-    ;
-
-param_decl_list[result]
-    : param_decl[first_param]
-      {
-        $result = std::vector<ParamDecl>();
-        $result.push_back(std::move(*$first_param));
-      }
-    | param_decl_list[existing_params] COMMA param_decl[next_param]
-      {
-        $result = std::move($existing_params);
-        $result.push_back(std::move(*$next_param));
-      }
-    ;
-
-param_decl[result]
-    : type_spec[type] IDENTIFIER[name]
-      {
-        $result = std::make_unique<ParamDecl>(std::move($type), std::move($name));
-      }
-    | type_spec[type] IDENTIFIER[name] ASSIGN expr[default_value]
-      {
-        $result = std::make_unique<ParamDecl>(
-          std::move($type), 
-          std::move($name), 
-          std::make_optional(std::move($default_value))
-        );
-      }
-    ;
-
-state_input_param[result]
-    : LPAREN type_spec[type] IDENTIFIER[name] RPAREN
-      {
-        // Register state input parameter (read-only in state)
-        if (is_redeclaration($name, false)) {
-          error(@name, "State input parameter '" + $name + "' conflicts with autotuner-level declaration");
-          YYABORT;
-        }
-        state_input_param.insert($name);
-        
-        $result = std::make_unique<ParamDecl>(
-          std::move($type), 
-          std::move($name)
-        );
-      }
-    | LPAREN type_spec[type] IDENTIFIER[name] ASSIGN expr[default_value] RPAREN
-      {
-        // Register state input parameter with default
-        if (is_redeclaration($name, false)) {
-          error(@name, "State input parameter '" + $name + "' conflicts with autotuner-level declaration");
-          YYABORT;
-        }
-        state_input_param.insert($name);
-        
-        $result = std::make_unique<ParamDecl>(
-          std::move($type), 
-          std::move($name), 
-          std::move($default_value)
-        );
-      }
-    | %empty
-      {
-        $result = std::nullopt;
       }
     ;
 
@@ -407,14 +393,14 @@ entry_state[result]
       }
     ;
 
-entry_param_opt[result]
-    : LPAREN expr[param] RPAREN
+entry_params[result]
+    : LPAREN expr_list[params] RPAREN
       { 
-        $result = std::make_optional(std::move($param)); 
+        $result = std::move($params); 
       }
     | %empty
       { 
-        $result = std::nullopt; 
+        $result = std::vector<std::unique_ptr<Expr>>(); 
       }
     ;
 
@@ -441,7 +427,7 @@ state_decl[result]
         // Clear state-local scope when entering new state
         clear_state_scope();
       }
-      state_input_param[input_param] 
+      state_input_params[input_param] 
       LBRACE 
         stmt_list[body] 
       RBRACE
@@ -489,7 +475,7 @@ stmt[result]
             YYABORT;
           }
           // Check if trying to assign to input parameter (read-only)
-          if (autotuner_input_params.count(target) > 0 || state_input_param.count(target) > 0) {
+          if (autotuner_input_params.count(target) > 0 || state_input_params.count(target) > 0) {
             error(@targets, "Cannot assign to read-only input parameter: " + target);
             YYABORT;
           }
@@ -523,15 +509,14 @@ stmt[result]
     | ARROW IDENTIFIER[target_state] SEMICOLON
       {
         $result = std::make_unique<TransitionStmt>(
-          std::move($target_state), 
-          std::nullopt
+          std::move($target_state)
         );
       }
-    | ARROW IDENTIFIER[target_state] LPAREN expr[param] RPAREN SEMICOLON
+    | ARROW IDENTIFIER[target_state] LPAREN expr_list[params] RPAREN SEMICOLON
       {
         $result = std::make_unique<TransitionStmt>(
           std::move($target_state), 
-          std::make_optional(std::move($param))
+          std::move($params)
         );
       }
     | TERMINAL SEMICOLON
@@ -544,7 +529,7 @@ var_decl_stmt[result]
     : type_spec[type] IDENTIFIER[name] SEMICOLON
       {
         // Determine if we're in a state or at autotuner level
-        bool in_state = !state_local_scope.empty() || !state_input_param.empty() || 
+        bool in_state = !state_local_scope.empty() || !state_input_params.empty() || 
                        (current_errors.empty()); // Heuristic: if no errors, assume we're parsing normally
         
         // Check for redeclaration
@@ -561,7 +546,7 @@ var_decl_stmt[result]
         }
         
         $result = std::make_unique<VarDeclStmt>(
-          std::move($type), 
+          std::move(*$type), 
           std::move($name), 
           std::nullopt
         );
@@ -569,7 +554,7 @@ var_decl_stmt[result]
     | type_spec[type] IDENTIFIER[name] ASSIGN expr[initializer] SEMICOLON
       {
         // Determine if we're in a state or at autotuner level
-        bool in_state = !state_local_scope.empty() || !state_input_param.empty();
+        bool in_state = !state_local_scope.empty() || !state_input_params.empty();
         
         // Check for redeclaration
         if (is_redeclaration($name, in_state)) {
@@ -585,7 +570,7 @@ var_decl_stmt[result]
         }
         
         $result = std::make_unique<VarDeclStmt>(
-          std::move($type), 
+          std::move(*$type), 
           std::move($name), 
           std::make_optional(std::move($initializer))
         );
@@ -671,7 +656,7 @@ postfix_expr[result]
           std::move($member_name)
         ); 
       }
-    | expr[object] DOT IDENTIFIER[method_name] LPAREN expr_list_opt[args] RPAREN
+    | expr[object] DOT IDENTIFIER[method_name] LPAREN expr_list[args] RPAREN
       { 
         $result = std::make_unique<MethodCallExpr>(
           std::move($object), 
@@ -686,7 +671,7 @@ postfix_expr[result]
           std::move($index)
         ); 
       }
-    | IDENTIFIER[qualifier] DOUBLECOLON IDENTIFIER[function_name] LPAREN expr_list_opt[positional_args] RPAREN
+    | IDENTIFIER[qualifier] DOUBLECOLON IDENTIFIER[function_name] LPAREN expr_list[positional_args] RPAREN
       { 
         $result = std::make_unique<QualifiedCallExpr>(
           std::move($qualifier), 
@@ -704,7 +689,7 @@ postfix_expr[result]
           std::move($named_args)
         ); 
       }
-    | IDENTIFIER[function_name] LPAREN expr_list_opt[args] RPAREN
+    | IDENTIFIER[function_name] LPAREN expr_list[args] RPAREN
       { 
         $result = std::make_unique<CallExpr>(
           std::move($function_name), 
@@ -756,17 +741,6 @@ primary_expr[result]
       }
     ;
 
-expr_list_opt[result]
-    : expr_list[list]
-      { 
-        $result = std::move($list); 
-      }
-    | %empty
-      { 
-        $result = std::vector<std::unique_ptr<Expr>>(); 
-      }
-    ;
-
 expr_list[result]
     : expr[first_expr]
       {
@@ -800,7 +774,7 @@ named_arg_list[result]
     | named_arg_list[existing_args] COMMA named_arg[next_arg]
       {
         $result = std::move($existing_args);
-        $result.push_back(std::move($next_arg));
+        $result.push_back(std::move(*$next_arg));
       }
     ;
 

@@ -33,13 +33,13 @@ ControlFlow StmtExecutor::execute_block(
     auto flow = execute(*stmt);
 
     // If we hit a control flow change, stop executing and return it
-    if (flow.type != ControlFlow::Type::Continue) {
+    if (flow.type != ControlFlow::Type::None) {
       return flow;
     }
   }
 
   // All statements executed normally
-  return ControlFlow::continue_flow();
+  return ControlFlow::none();
 }
 
 ControlFlow StmtExecutor::exec_var_decl(const atc::VarDeclStmt &stmt) {
@@ -76,7 +76,7 @@ ControlFlow StmtExecutor::exec_var_decl(const atc::VarDeclStmt &stmt) {
   // Add to variable environment
   variables_[stmt.name] = initial_value;
 
-  return ControlFlow::continue_flow();
+  return ControlFlow::none();
 }
 
 ControlFlow StmtExecutor::exec_assign(const atc::AssignStmt &stmt) {
@@ -99,14 +99,14 @@ ControlFlow StmtExecutor::exec_assign(const atc::AssignStmt &stmt) {
     }
   }
 
-  return ControlFlow::continue_flow();
+  return ControlFlow::none();
 }
 
 ControlFlow StmtExecutor::exec_expr(const atc::ExprStmt &stmt) {
   // Execute expression for side effects (e.g., log::info(...))
   evaluator_.evaluate(*stmt.expression);
 
-  return ControlFlow::continue_flow();
+  return ControlFlow::none();
 }
 
 ControlFlow StmtExecutor::exec_if(const atc::IfStmt &stmt) {
@@ -125,17 +125,17 @@ ControlFlow StmtExecutor::exec_if(const atc::IfStmt &stmt) {
     return execute_block(stmt.else_body);
   }
 
-  return ControlFlow::continue_flow();
+  return ControlFlow::none();
 }
 
 ControlFlow StmtExecutor::exec_transition(const atc::TransitionStmt &stmt) {
-  std::optional<RuntimeValue> param;
-
-  if (stmt.has_parameter()) {
-    param = evaluator_.evaluate(*stmt.parameter.value());
+  std::vector<RuntimeValue> params;
+  if (stmt.has_parameters()) {
+    for (const auto &expr : stmt.parameters) {
+      params.push_back(evaluator_.evaluate(*expr));
+    }
   }
-
-  return ControlFlow::transition(stmt.target_state, std::move(param));
+  return ControlFlow::transition(stmt.target_state, std::move(params));
 }
 
 ControlFlow StmtExecutor::exec_terminal(const atc::TerminalStmt &stmt) {

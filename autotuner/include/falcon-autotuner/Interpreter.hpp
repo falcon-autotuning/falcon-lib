@@ -51,7 +51,7 @@ private:
   void set_input_parameters(const atc::AutotunerDecl &autotuner,
                             const ParameterMap &inputs);
   ControlFlow execute_state(const atc::StateDecl &state,
-                            std::optional<RuntimeValue> input_param);
+                            const std::vector<RuntimeValue> &input_param);
   const atc::StateDecl *find_state(const atc::AutotunerDecl &autotuner,
                                    const std::string &name);
   ParameterMap extract_outputs(const atc::AutotunerDecl &autotuner);
