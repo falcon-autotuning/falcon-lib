@@ -76,7 +76,7 @@
 // Token declarations
 %token <std::string> IDENTIFIER DOUBLE INTEGER STRING
 
-%token AUTOTUNER ROUTINE STATE START REQUIRES TERMINAL IF ELSE TRUE FALSE NIL CONFIG_VAR
+%token AUTOTUNER ROUTINE STATE START REQUIRES TERMINAL IF ELIF ELSE TRUE FALSE NIL CONFIG_VAR
 %token FLOAT_KW INT_KW BOOL_KW STRING_KW QUANTITY_KW CONFIG_KW CONNECTION_KW CONNECTIONS_KW GNAME_KW ERROR_KW
 %token ARROW DOUBLECOLON LBRACKET RBRACKET LBRACE RBRACE LPAREN RPAREN ASSIGN COMMA COLON SEMICOLON DOT
 %token PLUS MINUS MUL DIV EQ NE LL GG LE GE AND OR NOT
@@ -95,7 +95,7 @@
 %type <std::vector<std::unique_ptr<Expr>>> entry_params
 %type <std::vector<StateDecl>> state_list
 %type <std::unique_ptr<StateDecl>> state_decl
-%type <std::vector<std::unique_ptr<Stmt>>> stmt_list
+%type <std::vector<std::unique_ptr<Stmt>>> stmt_list elif_chain
 %type <std::unique_ptr<Stmt>> stmt
 %type <std::unique_ptr<Expr>> expr primary_expr postfix_expr
 %type <std::vector<std::unique_ptr<Expr>>> expr_list 
@@ -490,19 +490,11 @@ stmt[result]
       {
         $result = std::make_unique<ExprStmt>(std::move($side_effect_expr));
       }
-    | IF LPAREN expr[condition] RPAREN LBRACE stmt_list[then_body] RBRACE
+    | IF LPAREN expr[condition] RPAREN LBRACE stmt_list[then_body] RBRACE elif_chain[else_body]
       {
         $result = std::make_unique<IfStmt>(
-          std::move($condition), 
-          std::move($then_body)
-        );
-      }
-    | IF LPAREN expr[condition] RPAREN LBRACE stmt_list[then_body] RBRACE 
-      ELSE LBRACE stmt_list[else_body] RBRACE
-      {
-        $result = std::make_unique<IfStmt>(
-          std::move($condition), 
-          std::move($then_body), 
+          std::move($condition),
+          std::move($then_body),
           std::move($else_body)
         );
       }
@@ -523,6 +515,23 @@ stmt[result]
       {
         $result = std::make_unique<TerminalStmt>();
       }
+    ;
+
+elif_chain[result]
+    : ELIF LPAREN expr[condition] RPAREN LBRACE stmt_list[then_body] RBRACE elif_chain[next_else]
+      {
+        std::vector<std::unique_ptr<Stmt>> else_vec;
+        else_vec.push_back(std::make_unique<IfStmt>(
+          std::move($condition),
+          std::move($then_body),
+          std::move($next_else)
+        ));
+        $result = std::move(else_vec);
+      }
+    | ELSE LBRACE stmt_list[else_body] RBRACE
+      { $result = std::move($else_body); }
+    | /* empty */
+      { $result = std::vector<std::unique_ptr<Stmt>>(); }
     ;
 
 var_decl_stmt[result]
