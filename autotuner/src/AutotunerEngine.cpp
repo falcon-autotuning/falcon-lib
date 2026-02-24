@@ -214,7 +214,7 @@ bool AutotunerEngine::load_routine_library(const std::string &routine_name,
 }
 
 ParameterMap AutotunerEngine::run_autotuner(const std::string &autotuner_name,
-                                            const ParameterMap &inputs) {
+                                            ParameterMap &inputs) {
   auto it = loaded_autotuners_.find(autotuner_name);
   if (it == loaded_autotuners_.end()) {
     throw std::runtime_error("Autotuner not loaded: " + autotuner_name);
@@ -279,8 +279,8 @@ AutotunerEngine::get_autotuner(const std::string &name) const {
 void AutotunerEngine::register_autotuner_as_function(
     const atc::AutotunerDecl &autotuner) {
   // Wrap autotuner in callable function
-  auto func = [this, name = autotuner.name](
-                  const ParameterMap &inputs) -> ParameterMap {
+  auto func = [this,
+               name = autotuner.name](ParameterMap &inputs) -> ParameterMap {
     auto it = loaded_autotuners_.find(name);
     return interpreter_->run(it->second, inputs);
   };

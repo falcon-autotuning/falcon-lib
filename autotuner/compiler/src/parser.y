@@ -89,7 +89,7 @@
 %type <std::unique_ptr<ParamDecl>> param_decl
 %type <std::unique_ptr<TypeDescriptor>> type_spec
 %type <std::vector<std::string>> requires_clause identifier_list
-%type <std::vector<std::unique_ptr<VarDeclStmt>>> autotuner_var_decls
+%type <std::vector<std::unique_ptr<Stmt>>> autotuner_var_decls
 %type <std::unique_ptr<VarDeclStmt>> var_decl_stmt
 %type <std::string> entry_state
 %type <std::vector<std::unique_ptr<Expr>>> entry_params
@@ -370,19 +370,19 @@ identifier_list[result]
     ;
 
 autotuner_var_decls[result]
-    : var_decl_stmt[first_var]
+    : stmt[first_var]
       {
-        $result = std::vector<std::unique_ptr<VarDeclStmt>>();
+        $result = std::vector<std::unique_ptr<Stmt>>();
         $result.push_back(std::move($first_var));
       }
-    | autotuner_var_decls[existing_vars] var_decl_stmt[next_var]
+    | autotuner_var_decls[existing_vars] stmt[next_var]
       {
         $result = std::move($existing_vars);
         $result.push_back(std::move($next_var));
       }
     | %empty
       {
-        $result = std::vector<std::unique_ptr<VarDeclStmt>>();
+        $result = std::vector<std::unique_ptr<Stmt>>();
       }
     ;
 

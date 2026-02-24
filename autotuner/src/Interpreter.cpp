@@ -20,7 +20,7 @@ Interpreter::Interpreter(std::shared_ptr<FunctionRegistry> functions,
 }
 
 ParameterMap Interpreter::run(const atc::AutotunerDecl &autotuner,
-                              const ParameterMap &inputs) {
+                              ParameterMap &inputs) {
   // Clear previous state
   variables_.clear();
 
@@ -88,7 +88,7 @@ void Interpreter::initialize_variables(const atc::AutotunerDecl &autotuner) {
 }
 
 void Interpreter::set_input_parameters(const atc::AutotunerDecl &autotuner,
-                                       const ParameterMap &inputs) {
+                                       ParameterMap &inputs) {
   for (const auto &input_param : autotuner.input_params) {
     auto it = inputs.find(input_param->name);
 
@@ -109,7 +109,7 @@ void Interpreter::set_input_parameters(const atc::AutotunerDecl &autotuner,
 
 ControlFlow
 Interpreter::execute_state(const atc::StateDecl &state,
-                           const std::vector<RuntimeValue> &input_params) {
+                           std::vector<RuntimeValue> &input_params) {
   // Set up state input parameters if present
   if (!state.input_parameters.empty()) {
     // Check parameter count matches

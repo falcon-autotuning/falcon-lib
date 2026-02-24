@@ -14,7 +14,7 @@ namespace falcon::autotuner {
 /**
  * @brief Function signature for external functions.
  */
-using ExternalFunction = std::function<ParameterMap(const ParameterMap &)>;
+using ExternalFunction = std::function<ParameterMap(ParameterMap &)>;
 
 /**
  * @brief Information about a loaded routine from .so file.

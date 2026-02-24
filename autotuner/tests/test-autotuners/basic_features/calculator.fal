@@ -1,6 +1,6 @@
 autotuner Calculator (int a, int b) -> (int sum, int product) {
-  int sum = 0;
-  int product = 0;
+  sum = 0;
+  product = 0;
   
   start -> calculate;
   

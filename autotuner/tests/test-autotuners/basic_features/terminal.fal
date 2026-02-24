@@ -1,5 +1,5 @@
 autotuner Terminal() -> (int steps) {
-  int steps = 0;
+  steps = 0;
   
   start -> step1;
   

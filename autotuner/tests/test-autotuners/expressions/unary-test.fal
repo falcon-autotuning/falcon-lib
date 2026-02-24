@@ -1,6 +1,6 @@
 autotuner UnaryTest (int value, bool flag) -> (int negated, bool inverted) {
-  int negated = 0;
-  bool inverted = false;
+  negated = 0;
+  inverted = false;
   
   start -> compute;
   
