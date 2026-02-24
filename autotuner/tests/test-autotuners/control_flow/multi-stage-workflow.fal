@@ -15,7 +15,9 @@ autotuner MultiStageWorkflow -> (string stage, bool initialized) {
       stage = "processing";
       -> validate;
     }
-    else -> error_state;
+    else {
+        -> error_state;
+    }
   }
   
   state validate {
@@ -23,7 +25,9 @@ autotuner MultiStageWorkflow -> (string stage, bool initialized) {
       stage = "validated";
       -> finalize;
     }
-    else -> error_state;
+    else {
+        -> error_state;
+    }
   }
   
   state finalize {

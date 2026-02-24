@@ -87,7 +87,7 @@ TEST_F(ControlFlowTest, ConditionalChainingLarge) {
 
 TEST_F(ControlFlowTest, SimpleSweep) {
   ParameterMap params;
-  params.emplace("start", 0.0);
+  params.emplace("begin", 0.0);
   params.emplace("end", 1.0);
   params.emplace("step", 0.1);
   SingleCompileEnvironment cenv{

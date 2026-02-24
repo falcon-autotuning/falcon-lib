@@ -251,10 +251,10 @@ test-local-debug: build-debug
 		echo "⚠ Warning: TEST_NATS_URL not set"; \
 		exit 1; \
 	fi
-	@cd $(BUILD_DIR_DEBUG) && \
+	@cd $(BUILD_DIR_DEBUG)/tests && \
 		TEST_DATABASE_URL="$(TEST_DATABASE_URL)" \
 		TEST_NATS_URL="$(TEST_NATS_URL)" \
-		ctest --verbose -C Debug
+		./falcon_dsl_integration_tests --gtest_filter="$(GTEST_FILTER)"
 	@echo "✓ All tests passed"
 
 # Keep services running for interactive testing
