@@ -1138,7 +1138,7 @@ struct AutotunerDecl {
   std::vector<std::string> required_autotuners;
 
   // Persistent variables (autotuner scope - available to all states)
-  std::vector<std::unique_ptr<VarDeclStmt>> autotuner_variables;
+  std::vector<std::unique_ptr<Stmt>> autotuner_variables;
 
   // Entry point (which state to execute first, optionally with parameters)
   std::string entry_state;
@@ -1151,8 +1151,7 @@ struct AutotunerDecl {
   AutotunerDecl(std::string n, std::vector<std::unique_ptr<ParamDecl>> inputs,
                 std::vector<std::unique_ptr<ParamDecl>> outputs,
                 std::vector<std::string> requires,
-                std::vector<std::unique_ptr<VarDeclStmt>> vars,
-                std::string entry,
+                std::vector<std::unique_ptr<Stmt>> vars, std::string entry,
                 std::vector<std::unique_ptr<Expr>> entry_params,
                 std::vector<StateDecl> sts)
       : name(std::move(n)), input_params(std::move(inputs)),

@@ -31,8 +31,7 @@ public:
   /**
    * @brief Run an autotuner with given input parameters.
    */
-  ParameterMap run(const atc::AutotunerDecl &autotuner,
-                   const ParameterMap &inputs);
+  ParameterMap run(const atc::AutotunerDecl &autotuner, ParameterMap &inputs);
 
   /**
    * @brief Get current variable environment (for debugging).
@@ -49,9 +48,9 @@ public:
 private:
   void initialize_variables(const atc::AutotunerDecl &autotuner);
   void set_input_parameters(const atc::AutotunerDecl &autotuner,
-                            const ParameterMap &inputs);
+                            ParameterMap &inputs);
   ControlFlow execute_state(const atc::StateDecl &state,
-                            const std::vector<RuntimeValue> &input_param);
+                            std::vector<RuntimeValue> &input_param);
   const atc::StateDecl *find_state(const atc::AutotunerDecl &autotuner,
                                    const std::string &name);
   ParameterMap extract_outputs(const atc::AutotunerDecl &autotuner);

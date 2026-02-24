@@ -55,7 +55,7 @@ public:
    * @return Output parameter values
    */
   ParameterMap run_autotuner(const std::string &autotuner_name,
-                             const ParameterMap &inputs);
+                             ParameterMap &inputs);
 
   /**
    * @brief Get list of loaded autotuner names.

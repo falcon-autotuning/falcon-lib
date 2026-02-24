@@ -72,7 +72,7 @@ void FunctionRegistry::load_routine(
   loaded_libraries_.push_back(handle);
 
   std::cout << "[FunctionRegistry] Loaded routine: " << routine_name << " from "
-            << library_path << std::endl;
+            << library_path << '\n';
 }
 
 void FunctionRegistry::register_autotuner(const std::string &name,

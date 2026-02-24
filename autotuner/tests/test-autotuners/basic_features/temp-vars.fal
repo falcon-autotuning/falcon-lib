@@ -1,5 +1,5 @@
 autotuner TempVars() -> (int final_value) {
-  int final_value = 0;
+  final_value = 0;
   
   start -> compute;
   

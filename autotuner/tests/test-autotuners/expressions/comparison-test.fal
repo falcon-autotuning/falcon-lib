@@ -1,9 +1,9 @@
 autotuner ComparisonTest (int a, int b) -> (bool gt, bool lt, bool eq, bool gte, bool lte) {
-  bool gt = false;
-  bool lt = false;
-  bool eq = false;
-  bool gte = false;
-  bool lte = false;
+  gt = false;
+  lt = false;
+  eq = false;
+  gte = false;
+  lte = false;
   
   start -> compare;
   

@@ -1,6 +1,6 @@
 autotuner ConditionalBranch (int threshold) -> (string result) {
   int value = 50;
-  string result = "";
+  result = "";
   
   start -> check;
   

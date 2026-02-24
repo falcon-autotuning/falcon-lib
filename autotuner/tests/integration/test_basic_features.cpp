@@ -25,7 +25,7 @@ TEST_F(BasicFeaturesTest, SimpleTransition) {
   EXPECT_TRUE(std::get<bool>(params.at("completed")));
 }
 
-TEST_F(BasicFeaturesTest, ConditionalBranchingLow) {
+TEST_F(BasicFeaturesTest, ConditionalBranchingHigh) {
   ParameterMap params;
   params["threshold"] = static_cast<int64_t>(40);
   SingleCompileEnvironment cenv{
@@ -34,10 +34,10 @@ TEST_F(BasicFeaturesTest, ConditionalBranchingLow) {
       "ConditionalBranch", params, true};
   ASSERT_TRUE(compile_and_run(cenv));
   ASSERT_NE(params.find("result"), params.end());
-  EXPECT_EQ(std::get<std::string>(params.at("result")), "low");
+  EXPECT_EQ(std::get<std::string>(params.at("result")), "high");
 }
 
-TEST_F(BasicFeaturesTest, ConditionalBranchingHigh) {
+TEST_F(BasicFeaturesTest, ConditionalBranchingLow) {
   ParameterMap params;
   params["threshold"] = static_cast<int64_t>(60);
   SingleCompileEnvironment cenv{
@@ -46,7 +46,7 @@ TEST_F(BasicFeaturesTest, ConditionalBranchingHigh) {
       "ConditionalBranch", params, true};
   ASSERT_TRUE(compile_and_run(cenv));
   ASSERT_NE(params.find("result"), params.end());
-  EXPECT_EQ(std::get<std::string>(params.at("result")), "high");
+  EXPECT_EQ(std::get<std::string>(params.at("result")), "low");
 }
 
 TEST_F(BasicFeaturesTest, ParameterInputOutput) {

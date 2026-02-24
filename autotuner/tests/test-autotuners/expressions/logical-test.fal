@@ -1,5 +1,5 @@
 autotuner LogicalTest (bool flag1, bool flag2) -> (string result) {
-  string result = "";
+  result = "";
   
   start -> evaluate;
   

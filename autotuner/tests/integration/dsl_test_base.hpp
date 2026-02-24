@@ -136,27 +136,11 @@ protected:
   }
 
   bool compile_and_run(CompileEnvironment &cenv) {
-    falcon::autotuner::AutotunerEngine engine;
 
     // Fill database
     database::SnapshotManager snapm(db_);
     if (cenv.globals.has_value()) {
       snapm.import_from_json(cenv.globals.value());
-    }
-
-    // Load all DSL files
-    for (const auto &file : cenv.dsl_files) {
-      EXPECT_TRUE(engine.load_fal_file(file.string()))
-          << "Failed to load: " << file;
-    }
-
-    // Load routine libraries
-    for (const auto &lib_path : cenv.routine_libs) {
-      std::string routine_name = lib_path.stem().string();
-      std::string namespace_name = "default";
-      EXPECT_TRUE(engine.load_routine_library(routine_name, namespace_name,
-                                              lib_path.string()))
-          << "Failed to load routine: " << lib_path;
     }
 
     std::atomic<bool> responder_ready{false};
@@ -191,8 +175,23 @@ protected:
 
     std::thread client([&]() {
       try {
-        ParameterMap output =
-            engine.run_autotuner(cenv.autotuner_name, cenv.params);
+        falcon::autotuner::AutotunerEngine engine;
+        // Load all DSL files
+        for (const auto &file : cenv.dsl_files) {
+          EXPECT_TRUE(engine.load_fal_file(file.string()))
+              << "Failed to load: " << file;
+        }
+
+        // Load routine libraries
+        for (const auto &lib_path : cenv.routine_libs) {
+          std::string routine_name = lib_path.stem().string();
+          std::string namespace_name = "default";
+          EXPECT_TRUE(engine.load_routine_library(routine_name, namespace_name,
+                                                  lib_path.string()))
+              << "Failed to load routine: " << lib_path;
+        }
+
+        cenv.params = engine.run_autotuner(cenv.autotuner_name, cenv.params);
         autotuner_result = true;
       } catch (const std::exception &e) {
         std::cout << "EXCEPTION in client thread: " << e.what() << '\n';
