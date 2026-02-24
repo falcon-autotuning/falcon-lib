@@ -880,20 +880,23 @@ public:
 
   // Parameter to pass to target state (optional)
   // Must match target state's input parameter type
-  std::optional<std::unique_ptr<Expr>> parameter;
+  std::vector<std::unique_ptr<Expr>> parameters;
 
   TransitionStmt(std::string state,
-                 std::optional<std::unique_ptr<Expr>> param = std::nullopt)
-      : target_state(std::move(state)), parameter(std::move(param)) {}
+                 std::vector<std::unique_ptr<Expr>> param = {})
+      : target_state(std::move(state)), parameters(std::move(param)) {}
 
   std::unique_ptr<Stmt> clone() const override {
-    auto cloned_param =
-        parameter ? std::make_optional((*parameter)->clone()) : std::nullopt;
+    std::vector<std::unique_ptr<Expr>> param_clones;
+    param_clones.reserve(parameters.size());
+    for (const auto &expr : parameters) {
+      param_clones.push_back(expr ? expr->clone() : nullptr);
+    }
     return std::make_unique<TransitionStmt>(target_state,
-                                            std::move(cloned_param));
+                                            std::move(param_clones));
   }
 
-  bool has_parameter() const { return parameter.has_value(); }
+  bool has_parameters() const { return !parameters.empty(); }
 };
 
 /**
@@ -1024,14 +1027,15 @@ struct StateDecl {
   // Input parameter (optional) - replaces old generic parameter
   // Passed when transitioning to this state
   // Example: state loop (Connection plunger_gate)
-  std::vector<ParamDecl> input_parameter;
+  std::vector<std::unique_ptr<ParamDecl>> input_parameters;
 
   // State body: sequence of statements executed on entry
   std::vector<std::unique_ptr<Stmt>> body;
 
-  StateDecl(std::string n, std::vector<ParamDecl> input_param = {},
+  StateDecl(std::string n,
+            std::vector<std::unique_ptr<ParamDecl>> input_param = {},
             std::vector<std::unique_ptr<Stmt>> b = {})
-      : name(std::move(n)), input_parameter(std::move(input_param)),
+      : name(std::move(n)), input_parameters(std::move(input_param)),
         body(std::move(b)) {}
 
   StateDecl(StateDecl &&) noexcept = default;
@@ -1039,8 +1043,8 @@ struct StateDecl {
   StateDecl(const StateDecl &) = delete;
   StateDecl &operator=(const StateDecl &) = delete;
 
-  [[nodiscard]] bool has_input_parameter() const {
-    return !input_parameter.empty();
+  [[nodiscard]] bool has_input_parameters() const {
+    return !input_parameters.empty();
   }
 };
 
@@ -1119,8 +1123,9 @@ struct AutotunerDecl {
   std::string name;
 
   // Interface
-  std::vector<ParamDecl> input_params; // Read-only in autotuner
-  std::vector<ParamDecl>
+  std::vector<std::unique_ptr<ParamDecl>>
+      input_params; // Read-only in autotuner
+  std::vector<std::unique_ptr<ParamDecl>>
       output_params; // Read/write (can refine multiple times)
 
   // Dependencies (other autotuners that can be called)
@@ -1129,34 +1134,32 @@ struct AutotunerDecl {
   // Persistent variables (autotuner scope - available to all states)
   std::vector<std::unique_ptr<VarDeclStmt>> autotuner_variables;
 
-  // Entry point (which state to execute first, optionally with parameter)
+  // Entry point (which state to execute first, optionally with parameters)
   std::string entry_state;
-  std::optional<std::unique_ptr<Expr>>
-      entry_parameter; // For: start -> loop(gates[0]);
+  std::vector<std::unique_ptr<Expr>>
+      entry_parameters; // For: start -> loop(gates[0], some_value);
 
   // State machine
   std::vector<StateDecl> states;
 
-  AutotunerDecl(std::string n, std::vector<ParamDecl> inputs,
-                std::vector<ParamDecl> outputs,
+  AutotunerDecl(std::string n, std::vector<std::unique_ptr<ParamDecl>> inputs,
+                std::vector<std::unique_ptr<ParamDecl>> outputs,
                 std::vector<std::string> requires,
                 std::vector<std::unique_ptr<VarDeclStmt>> vars,
                 std::string entry,
-                std::optional<std::unique_ptr<Expr>> entry_param,
+                std::vector<std::unique_ptr<Expr>> entry_params,
                 std::vector<StateDecl> sts)
       : name(std::move(n)), input_params(std::move(inputs)),
         output_params(std::move(outputs)),
         required_autotuners(std::move(requires)),
         autotuner_variables(std::move(vars)), entry_state(std::move(entry)),
-        entry_parameter(std::move(entry_param)), states(std::move(sts)) {}
+        entry_parameters(std::move(entry_params)), states(std::move(sts)) {}
 
   AutotunerDecl(AutotunerDecl &&) noexcept = default;
   AutotunerDecl &operator=(AutotunerDecl &&) noexcept = default;
   AutotunerDecl(const AutotunerDecl &) = delete;
   AutotunerDecl &operator=(const AutotunerDecl &) = delete;
 };
-
-// Add after StateDecl (around line 1013)
 
 /**
  * @brief Routine declaration (external C++ function signature).
@@ -1175,11 +1178,11 @@ struct RoutineDecl {
   std::string name;
 
   // Input/output parameters (same as autotuner)
-  std::vector<ParamDecl> input_params;
-  std::vector<ParamDecl> output_params;
+  std::vector<std::unique_ptr<ParamDecl>> input_params;
+  std::vector<std::unique_ptr<ParamDecl>> output_params;
 
-  RoutineDecl(std::string n, std::vector<ParamDecl> inputs,
-              std::vector<ParamDecl> outputs)
+  RoutineDecl(std::string n, std::vector<std::unique_ptr<ParamDecl>> inputs,
+              std::vector<std::unique_ptr<ParamDecl>> outputs)
       : name(std::move(n)), input_params(std::move(inputs)),
         output_params(std::move(outputs)) {}
 

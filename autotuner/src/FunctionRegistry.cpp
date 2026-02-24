@@ -28,7 +28,7 @@ void FunctionRegistry::load_routine(
     const std::vector<atc::ParamDecl> &output_params) {
   // Load the shared library
   void *handle = dlopen(library_path.c_str(), RTLD_LAZY);
-  if (!handle) {
+  if (handle == nullptr) {
     throw std::runtime_error("Failed to load routine library: " +
                              std::string(dlerror()));
   }
@@ -42,7 +42,7 @@ void FunctionRegistry::load_routine(
   auto func_ptr =
       reinterpret_cast<RoutineFuncPtr>(dlsym(handle, symbol_name.c_str()));
 
-  if (!func_ptr) {
+  if (func_ptr == nullptr) {
     dlclose(handle);
     throw std::runtime_error("Failed to find routine symbol: " + symbol_name +
                              " - " + std::string(dlerror()));
