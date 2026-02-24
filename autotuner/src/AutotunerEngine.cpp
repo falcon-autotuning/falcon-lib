@@ -92,7 +92,10 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
       loaded_autotuners_.insert({name, std::move(autotuner)});
 
       // Register as callable function
-      register_autotuner_as_function(loaded_autotuners_[name]);
+      auto it = loaded_autotuners_.find(name);
+      if (it != loaded_autotuners_.end()) {
+        register_autotuner_as_function(it->second);
+      }
     }
 
     // Process ALL routine declarations in the file
@@ -113,7 +116,8 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
 
       // Store routine declaration (for later .so loading)
       std::string name = routine.name;
-      routine_declarations_[name] = std::move(routine);
+      routine_declarations_.erase(name);
+      routine_declarations_.insert({name, std::move(routine)});
     }
 
     return true;
@@ -277,7 +281,8 @@ void AutotunerEngine::register_autotuner_as_function(
   // Wrap autotuner in callable function
   auto func = [this, name = autotuner.name](
                   const ParameterMap &inputs) -> ParameterMap {
-    return interpreter_->run(loaded_autotuners_[name], inputs);
+    auto it = loaded_autotuners_.find(name);
+    return interpreter_->run(it->second, inputs);
   };
 
   function_registry_->register_autotuner(autotuner.name, func);

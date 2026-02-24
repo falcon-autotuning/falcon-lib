@@ -34,6 +34,8 @@ add_library(falcon-atc-core
   src/ParseError.cpp
 )
 
+set_target_properties(falcon-atc-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 target_include_directories(falcon-atc-core
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

@@ -963,6 +963,12 @@ struct ParamDecl {
   ParamDecl(TypeDescriptor t, std::string n,
             std::optional<std::unique_ptr<Expr>> def = std::nullopt)
       : type(std::move(t)), name(std::move(n)), default_value(std::move(def)) {}
+  std::unique_ptr<ParamDecl> clone() const {
+    auto cloned_default = default_value
+                              ? std::make_optional((*default_value)->clone())
+                              : std::nullopt;
+    return std::make_unique<ParamDecl>(type, name, std::move(cloned_default));
+  }
 
   ParamDecl(const ParamDecl &) = delete;
   ParamDecl(ParamDecl &&) noexcept = default;

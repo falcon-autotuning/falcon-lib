@@ -99,7 +99,7 @@
 %type <std::unique_ptr<Stmt>> stmt
 %type <std::unique_ptr<Expr>> expr primary_expr postfix_expr
 %type <std::vector<std::unique_ptr<Expr>>> expr_list 
-%type <std::vector<NamedArg>> named_arg_list named_arg_list_opt
+%type <std::vector<NamedArg>> named_arg_list 
 %type <std::unique_ptr<NamedArg>> named_arg%type <std::vector<RoutineDecl>> routine_list
 %type <std::unique_ptr<RoutineDecl>> routine_decl
 
@@ -192,7 +192,7 @@ autotuner_decl[result]
       LBRACE
         requires_clause[requires]
         autotuner_var_decls[vars]
-        entry_state[entry] entry_params[entry_params] SEMICOLON
+        entry_state[entry] entry_params[params] SEMICOLON
         state_list[states]
       RBRACE
       {
@@ -203,7 +203,7 @@ autotuner_decl[result]
           std::move($requires),
           std::move($vars),
           std::move($entry),
-          std::move($entry_params),
+          std::move($params),
           std::move($states)
         );
       }
@@ -245,7 +245,7 @@ output_params[result]
             error(@params, "Duplicate output parameter: " + param->name);
             YYABORT;
           }
-          if (autotuner_input_params.count(param.name) > 0) {
+          if (autotuner_input_params.count(param->name) > 0) {
             error(@params, "Output parameter '" + param->name + "' conflicts with input parameter");
             YYABORT;
           }
@@ -292,21 +292,21 @@ state_input_params[result]
       {
         // Register input parameters in scope (read-only)
         for (const auto& param : $params) {
-          if (is_redeclaration(param.name, true)) {
-            error(@params, "State input parameter '" + param.name + "' conflicts with autotuner-level declaration");
+          if (is_redeclaration(param->name, true)) {
+            error(@params, "State input parameter '" + param->name + "' conflicts with autotuner-level declaration");
             YYABORT;
           }
-          state_input_params.insert(param.name);
+          state_input_params.insert(param->name);
         }
         $result = std::move($params);
       }
     | LPAREN RPAREN
       { 
-        $result = std::vector<ParamDecl>(); 
+        $result = std::vector<std::unique_ptr<ParamDecl>>(); 
       }
     | %empty
       { 
-        $result = std::vector<ParamDecl>(); 
+        $result = std::vector<std::unique_ptr<ParamDecl>>(); 
       }
     ;
 
@@ -751,17 +751,6 @@ expr_list[result]
       {
         $result = std::move($existing_exprs);
         $result.push_back(std::move($next_expr));
-      }
-    ;
-
-named_arg_list_opt[result]
-    : named_arg_list[list]
-      { 
-        $result = std::move($list); 
-      }
-    | %empty
-      { 
-        $result = std::vector<NamedArg>(); 
       }
     ;
 
