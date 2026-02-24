@@ -1,5 +1,5 @@
 autotuner ConditionalChain (int value) -> (string category) {
-  string category = "";
+  category = "";
   
   start -> classify;
   
@@ -7,13 +7,13 @@ autotuner ConditionalChain (int value) -> (string category) {
     if (value < 0) {
       -> negative;
     }
-    else if (value == 0) {
+    elif (value == 0) {
       -> zero;
     }
-    else if (value < 10) {
+    elif (value < 10) {
       -> small;
     }
-    else if (value < 100) {
+    elif (value < 100) {
       -> medium;
     }
     else {

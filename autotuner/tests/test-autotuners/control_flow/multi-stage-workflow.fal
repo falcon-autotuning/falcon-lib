@@ -1,6 +1,6 @@
 autotuner MultiStageWorkflow -> (string stage, bool initialized) {
-  bool initialized = false;
-  string stage = "none";
+  initialized = false;
+  stage = "none";
   
   start -> initialize;
   
