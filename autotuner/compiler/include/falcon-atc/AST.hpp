@@ -532,16 +532,23 @@ public:
  *   - Can't mix positional and named args (all or nothing)
  *   - Required parameters must be present
  */
-struct NamedArg {
-  std::string name;
+struct CallArg {
+  std::optional<std::string> name; // nullopt for positional, set for named
   std::unique_ptr<Expr> value;
-
-  NamedArg(std::string n, std::unique_ptr<Expr> v)
+  CallArg(std::unique_ptr<Expr> v) : name(std::nullopt), value(std::move(v)) {}
+  CallArg(std::string n, std::unique_ptr<Expr> v)
       : name(std::move(n)), value(std::move(v)) {}
 
-  NamedArg(const NamedArg &) = delete;
-  NamedArg(NamedArg &&) noexcept = default;
-  NamedArg &operator=(NamedArg &&) noexcept = default;
+  [[nodiscard]] [[nodiscard]] CallArg clone() const {
+    if (name.has_value()) {
+      return {name.value(), value ? value->clone() : nullptr};
+    }
+    return {value ? value->clone() : nullptr};
+  }
+
+  CallArg(const CallArg &) = delete;
+  CallArg(CallArg &&) noexcept = default;
+  CallArg &operator=(CallArg &&) noexcept = default;
 };
 
 /**
@@ -565,30 +572,19 @@ struct NamedArg {
 class CallExpr : public Expr {
 public:
   std::string name;
+  std::vector<CallArg> arguments;
 
-  // Arguments can be positional or named (but not mixed)
-  std::vector<std::unique_ptr<Expr>> args;
-  std::vector<NamedArg> named_args;
-
-  CallExpr(std::string n, std::vector<std::unique_ptr<Expr>> a,
-           std::vector<NamedArg> named = {})
-      : name(std::move(n)), args(std::move(a)), named_args(std::move(named)) {}
+  CallExpr(std::string n, std::vector<CallArg> args)
+      : name(std::move(n)), arguments(std::move(args)) {}
 
   std::unique_ptr<Expr> clone() const override {
-    std::vector<std::unique_ptr<Expr>> cloned_args;
-    for (const auto &arg : args)
-      cloned_args.push_back(arg->clone());
-
-    std::vector<NamedArg> cloned_named;
-    for (const auto &arg : named_args)
-      cloned_named.push_back(NamedArg(arg.name, arg.value->clone()));
-
-    return std::make_unique<CallExpr>(name, std::move(cloned_args),
-                                      std::move(cloned_named));
+    std::vector<CallArg> cloned_args;
+    cloned_args.reserve(arguments.size());
+    for (const auto &arg : arguments) {
+      cloned_args.push_back(arg.clone());
+    }
+    return std::make_unique<CallExpr>(name, std::move(cloned_args));
   }
-
-  bool has_named_args() const { return !named_args.empty(); }
-  bool has_positional_args() const { return !args.empty(); }
 };
 
 // ============================================================================

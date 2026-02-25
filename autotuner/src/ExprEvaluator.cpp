@@ -154,19 +154,12 @@ RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
   }
 
   ParameterMap params;
-
-  // Handle positional arguments
-  if (expr.has_positional_args()) {
-    auto args = evaluate_list(expr.args);
-    for (size_t i = 0; i < args.size(); ++i) {
-      params["arg" + std::to_string(i)] = args[i];
-    }
-  }
-
-  // Handle named arguments
-  if (expr.has_named_args()) {
-    for (const auto &named_arg : expr.named_args) {
-      params[named_arg.name] = evaluate(*named_arg.value);
+  for (size_t i = 0; i < expr.arguments.size(); ++i) {
+    const auto &arg = expr.arguments[i];
+    if (arg.name.has_value()) {
+      params[arg.name.value()] = evaluate(*arg.value);
+    } else {
+      params["arg" + std::to_string(i)] = evaluate(*arg.value);
     }
   }
 

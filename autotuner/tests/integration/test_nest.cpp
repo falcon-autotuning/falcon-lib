@@ -9,7 +9,7 @@ TEST_F(NestTest, SimpleNest) {
   ParameterMap params;
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/nest/simple-nest.fal"),
-      "SimpleNest", params, true};
+      "ErrorViewer", params, true};
   auto [success, outputs] = compile_and_run(cenv);
   ASSERT_TRUE(success);
   ASSERT_GE(outputs.size(), 2);
