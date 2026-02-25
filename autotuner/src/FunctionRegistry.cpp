@@ -3,7 +3,42 @@
 #include "falcon-autotuner/log.hpp"
 #include <falcon-database/DatabaseConnection.hpp>
 #include <stdexcept>
-
+namespace {
+falcon::autotuner::RuntimeValue json_to_runtime_value(const nlohmann::json &j) {
+  if (j.is_null()) {
+    return nullptr;
+  }
+  if (j.is_boolean()) {
+    return j.get<bool>();
+  }
+  if (j.is_number_integer()) {
+    return static_cast<int64_t>(j.get<int64_t>());
+  }
+  if (j.is_number_float()) {
+    return j.get<double>();
+  }
+  if (j.is_string()) {
+    return j.get<std::string>();
+  }
+  throw std::runtime_error("Unsupported JSON type for RuntimeValue");
+}
+nlohmann::json runtime_value_to_json(const falcon::autotuner::RuntimeValue &v) {
+  return std::visit(
+      [](auto &&arg) -> nlohmann::json {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, double> ||
+                      std::is_same_v<T, bool> ||
+                      std::is_same_v<T, std::string> ||
+                      std::is_same_v<T, std::nullptr_t>) {
+          return arg;
+        } else {
+          throw std::runtime_error(
+              "Unsupported RuntimeValue type for JSON conversion");
+        }
+      },
+      v);
+}
+} // namespace
 namespace falcon::autotuner {
 
 FunctionRegistry::FunctionRegistry()
@@ -75,36 +110,87 @@ std::shared_ptr<FunctionRegistry> FunctionRegistry::create_default() {
   return registry;
 }
 
+// Helper for loading optional string fields from ParameterMap
+void load_optional_string(const ParameterMap &params, const char *key,
+                          std::optional<std::string> &field) {
+  auto it = params.find(key);
+  if (it != params.end())
+    field = std::get<std::string>(it->second);
+}
+
+// Helper for loading optional double fields from ParameterMap
+void load_optional_double(const ParameterMap &params, const char *key,
+                          std::optional<double> &field) {
+  auto it = params.find(key);
+  if (it != params.end())
+    field = std::get<double>(it->second);
+}
+
+// Helper for loading optional int64_t fields from ParameterMap
+void load_optional_int64(const ParameterMap &params, const char *key,
+                         std::optional<int64_t> &field) {
+  auto it = params.find(key);
+  if (it != params.end())
+    field = std::get<int64_t>(it->second);
+}
 void register_all_builtins(FunctionRegistry &registry) {
 
   // ========================================================================
   // DATABASE FUNCTIONS
   // ========================================================================
 
-  // Just provide the name - signature is looked up automatically!
   registry.register_builtin(
-      "read", [](const ParameterMap &params) -> FunctionResult {
+      "readLatest", [](const ParameterMap &params) -> FunctionResult {
         std::string scope = std::get<std::string>(params.at("scope"));
         std::string name = std::get<std::string>(params.at("name"));
-
         database::ReadOnlyDatabaseConnection db;
         database::DeviceCharacteristicQuery query;
         query.scope = scope;
         query.name = name;
 
+        load_optional_string(params, "barrier_gate", query.barrier_gate);
+        load_optional_string(params, "plunger_gate", query.plunger_gate);
+        load_optional_string(params, "reservoir_gate", query.reservoir_gate);
+        load_optional_string(params, "screening_gate", query.screening_gate);
+        load_optional_string(params, "extra", query.extra);
+        load_optional_double(params, "uncertainty", query.uncertainty);
+        load_optional_string(params, "hash", query.hash);
+        load_optional_int64(params, "time", query.time);
+        load_optional_string(params, "state", query.state);
+        load_optional_string(params, "unit_name", query.unit_name);
+
         try {
           auto dchars = db.get_by_query(query);
-
           if (dchars.empty()) {
             // No value found - return (nil, error)
             return FunctionResult{
                 {nullptr, ErrorObject{"Value not found", false}}};
           }
 
-          // TODO: Parse actual value from database based on type
-          // For now, return dummy value
-          RuntimeValue value = static_cast<int64_t>(42);
-          RuntimeValue error = nullptr; // nil
+          // Find the DeviceCharacteristic with the highest time, if any have
+          // time
+          auto best_it = std::max_element(
+              dchars.begin(), dchars.end(),
+              [](const database::DeviceCharacteristic &a,
+                 const database::DeviceCharacteristic &b) {
+                if (a.time && b.time) {
+                  return *a.time < *b.time;
+                }
+                if (a.time) {
+                  return false; // a has time, b does not
+                }
+                if (b.time) {
+                  return true; // b has time, a does not
+                }
+                return false; // neither has time, keep original order
+              });
+
+          const database::DeviceCharacteristic &chosen =
+              (best_it != dchars.end() && best_it->time) ? *best_it
+                                                         : dchars.front();
+
+          RuntimeValue value = json_to_runtime_value(chosen.characteristic);
+          RuntimeValue error = nullptr;
 
           return FunctionResult{value, error};
 
@@ -118,14 +204,24 @@ void register_all_builtins(FunctionRegistry &registry) {
       "write", [](const ParameterMap &params) -> FunctionResult {
         std::string scope = std::get<std::string>(params.at("scope"));
         std::string name = std::get<std::string>(params.at("name"));
-        RuntimeValue value = params.at("value");
-
+        RuntimeValue value = params.at("characteristic");
         database::ReadWriteDatabaseConnection db;
         database::DeviceCharacteristic dchar;
         dchar.scope = scope;
         dchar.name = name;
+        dchar.characteristic = runtime_value_to_json(value);
 
-        // TODO: Convert RuntimeValue to database value
+        // Optionally fill out other fields from params if needed
+        load_optional_string(params, "barrier_gate", dchar.barrier_gate);
+        load_optional_string(params, "plunger_gate", dchar.plunger_gate);
+        load_optional_string(params, "reservoir_gate", dchar.reservoir_gate);
+        load_optional_string(params, "screening_gate", dchar.screening_gate);
+        load_optional_string(params, "extra", dchar.extra);
+        load_optional_double(params, "uncertainty", dchar.uncertainty);
+        load_optional_string(params, "hash", dchar.hash);
+        load_optional_int64(params, "time", dchar.time);
+        load_optional_string(params, "state", dchar.state);
+        load_optional_string(params, "unit_name", dchar.unit_name);
 
         try {
           db.insert(dchar);

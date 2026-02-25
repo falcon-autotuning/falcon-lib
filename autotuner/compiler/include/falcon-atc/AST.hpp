@@ -1155,6 +1155,7 @@ struct Program {
 // BUILTIN FUNCTION REGISTRY (for parse-time validation)
 // ============================================================================
 
+enum class NamedArgs : uint8_t { No, Uses };
 /**
  * @brief Signature of a builtin function for validation.
  *
@@ -1181,9 +1182,11 @@ struct BuiltinSignature {
   bool supports_named_args;
 
   BuiltinSignature(std::string name, std::vector<ParamSpec> params,
-                   std::vector<ParamSpec> returns, bool named_args = false)
+                   std::vector<ParamSpec> returns,
+                   NamedArgs named_args = NamedArgs::No)
       : qualified_name(std::move(name)), parameters(std::move(params)),
-        return_params(std::move(returns)), supports_named_args(named_args) {}
+        return_params(std::move(returns)),
+        supports_named_args(named_args == NamedArgs::Uses) {}
 
   [[nodiscard]] std::vector<std::string> get_return_names() const {
     std::vector<std::string> names;

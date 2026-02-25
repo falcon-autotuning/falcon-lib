@@ -1,7 +1,7 @@
-autotuner TransitionWrite {
-  bool completed = true;
+autotuner TransitionWrite -> (bool completed) {
+  completed = true;
   Error err = nil;
-  err = write(scope="device", name="completed", extra="default", value=completed);
+  err = write(scope="device", name="completed", extra="default", characteristic=completed);
   start -> init;
   
   state init {

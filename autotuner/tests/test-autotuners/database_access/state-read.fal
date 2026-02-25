@@ -7,7 +7,7 @@ autotuner StateRead -> (bool completed) {
     // state reads should happen only to predefined variables
     int number = 0;
     Error nerr = nil;
-    number, nerr = read(scope="globals", name="number", extra="default");
+    number, nerr = readLatest(scope="globals", name="number", extra="default");
     if (number==0) {
         -> fail;
     }
