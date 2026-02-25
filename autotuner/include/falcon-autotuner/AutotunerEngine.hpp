@@ -47,7 +47,7 @@ public:
    * @brief Load a user routine from compiled .so file.
    * @return true if successful
    */
-  bool load_routine_library(RoutineConfig info);
+  bool load_routine_library(const RoutineConfig &info);
 
   /**
    * @brief Run an autotuner.
