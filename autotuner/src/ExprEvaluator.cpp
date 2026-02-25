@@ -136,19 +136,27 @@ RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
 }
 
 RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
-  // Simple function call (measurement function or autotuner)
+  // Simple function call (measurement function, autotuner, or builtin)
   auto *func = functions_->lookup_simple(expr.name);
-  if (!func) {
+  if (func == nullptr) {
     throw EvaluationError("Unknown function: " + expr.name);
   }
 
-  // Evaluate arguments
-  auto args = evaluate_list(expr.args);
-
-  // Build parameter map (positional parameters become "arg0", "arg1", etc.)
   ParameterMap params;
-  for (size_t i = 0; i < args.size(); ++i) {
-    params["arg" + std::to_string(i)] = args[i];
+
+  // Handle positional arguments
+  if (expr.has_positional_args()) {
+    auto args = evaluate_list(expr.args);
+    for (size_t i = 0; i < args.size(); ++i) {
+      params["arg" + std::to_string(i)] = args[i];
+    }
+  }
+
+  // Handle named arguments
+  if (expr.has_named_args()) {
+    for (const auto &named_arg : expr.named_args) {
+      params[named_arg.name] = evaluate(*named_arg.value);
+    }
   }
 
   auto result = (*func)(params);
@@ -160,8 +168,9 @@ RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
   if (result.size() == 1) {
     return result.begin()->second; // single return
   }
-  // TODO: Handle tuple returns
-  throw EvaluationError("Tuple returns not yet implemented");
+  // For tuple returns
+  // TODO: Implement tuple return handling if needed
+  throw EvaluationError("Tuple returns not yet fully implemented");
 }
 
 RuntimeValue
