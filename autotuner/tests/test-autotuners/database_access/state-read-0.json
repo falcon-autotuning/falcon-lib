@@ -3,6 +3,6 @@
     "scope": "globals",
     "name": "number",
     "extra": "default",
-    "value": 0
+    "characteristic": 0
   }
 ]

@@ -8,7 +8,7 @@
     "required": [
       "scope",
       "name",
-      "value"
+      "characteristic"
     ],
     "properties": {
       "scope": {
@@ -49,11 +49,11 @@
         "type": "string",
         "description": "Hash identifier for the characteristic"
       },
-      "recordtime": {
+      "time": {
         "type": "integer",
         "description": "Unix timestamp of record creation"
       },
-      "device_state": {
+      "state": {
         "type": "string",
         "description": "State of the device when characteristic was recorded"
       },
@@ -61,7 +61,7 @@
         "type": "string",
         "description": "Unit of measurement"
       },
-      "device_characteristic": {
+      "characteristic": {
         "description": "The actual characteristic value",
         "oneOf": [
           {

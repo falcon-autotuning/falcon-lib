@@ -2,6 +2,7 @@
 
 #include "falcon-autotuner/AutotunerEngine.hpp"
 #include "falcon-autotuner/RuntimeValue.hpp"
+#include "falcon-autotuner/log.hpp"
 #include "falcon-database/SnapshotManager.hpp"
 #include <atomic>
 #include <falcon-comms/natsManager.hpp>
@@ -12,7 +13,6 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
-#include <sstream>
 #include <string>
 #include <thread>
 #include <utility>
@@ -63,7 +63,7 @@ class RoutineTestFixture : public ::testing::Test {
 protected:
   void SetUp() override {
     setupEnvironment();
-    std::cout << "environment variables set" << '\n';
+    log::debug("environment variables set");
   }
   void TearDown() override {
     unsetenv("FALCON_DATABASE_URL");
@@ -139,9 +139,11 @@ protected:
 
     // Fill database
     database::SnapshotManager snapm(db_);
+    log::debug("The snapshot manager is started");
     if (cenv.globals.has_value()) {
       snapm.import_from_json(cenv.globals.value().string(), true);
     }
+    log::debug("Imported the snapshot from the json");
 
     std::atomic<bool> responder_ready{false};
     std::atomic<bool> request_received{false};

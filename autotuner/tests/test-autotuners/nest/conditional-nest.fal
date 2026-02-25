@@ -1,5 +1,5 @@
-autotuner ConditionalNest(int a, int b) -> (int out, Error err) {
-  requires : Adder, Multiplier;
+autotuner ConditionalNest (int a, int b) -> (int out, Error err) {
+  requires : [Adder, Multiplier];
   int a = 1;
   int b = 5;
   Error outer_err = nil;
