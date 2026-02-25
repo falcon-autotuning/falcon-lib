@@ -2,7 +2,9 @@
 #include "falcon-atc/Compiler.hpp"
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/log.hpp"
+#include <dlfcn.h>
 #include <filesystem>
+#include <fmt/format.h>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -174,14 +176,13 @@ bool AutotunerEngine::save_fal_compiled(const std::string &output_path) {
   }
 }
 
-bool AutotunerEngine::load_routine_library(RoutineConfig info) {
+bool AutotunerEngine::load_routine_library(const RoutineConfig &info) {
   // Check if routine was declared
-  auto it = routine_declarations_.find(info.name);
-  if (it == routine_declarations_.end()) {
+  auto decl_it = routine_declarations_.find(info.name);
+  if (decl_it == routine_declarations_.end()) {
     std::ostringstream oss;
     oss << "Routine '" << info.name << "' not declared in any loaded .fal file";
     log::error(oss.str());
-
     // Build list of available routines
     std::ostringstream list_oss;
     list_oss << "Available routines: ";
@@ -192,19 +193,55 @@ bool AutotunerEngine::load_routine_library(RoutineConfig info) {
     return false;
   }
 
-  try {
-    function_registry_->register_routine(info);
-
+  // Load the .so file
+  void *handle = dlopen(info.library_path.c_str(), RTLD_LAZY);
+  if (handle == nullptr) {
     std::ostringstream oss;
-    oss << "Loaded routine: " << info.name << " from " << info.library_path;
-    log::info(oss.str());
-    return true;
-  } catch (const std::exception &e) {
-    std::ostringstream oss;
-    oss << "Failed to load routine: " << e.what();
+    oss << "Failed to load library: " << info.library_path << " (" << dlerror()
+        << ")";
     log::error(oss.str());
     return false;
   }
+
+  // Compose the symbol name (namespace + routine name)
+  std::string symbol =
+      info.name_space.empty() ? info.name : info.name_space + "::" + info.name;
+
+  // Clear dlerror before dlsym
+  dlerror();
+
+  void *sym = dlsym(handle, symbol.c_str());
+  const char *dlsym_error = dlerror();
+  if (dlsym_error != nullptr) { /* error handling */
+  }
+
+  auto func_ptr = reinterpret_cast<FunctionResult (*)(ParameterMap &)>(sym);
+
+  ExternalFunction ext_func = [func_ptr](ParameterMap &params) {
+    return func_ptr(params);
+  };
+
+  // Build BuiltinSignature from RoutineDecl
+  const auto &decl = decl_it->second;
+  std::vector<atc::BuiltinSignature::ParamSpec> params;
+  std::vector<atc::BuiltinSignature::ParamSpec> returns;
+  params.reserve(decl.input_params.size());
+  for (const auto &p : decl.input_params) {
+    params.emplace_back(p->name, p->type, true);
+  }
+  returns.reserve(decl.output_params.size());
+  for (const auto &p : decl.output_params) {
+    returns.emplace_back(p->name, p->type, true);
+  }
+  atc::BuiltinSignature sig(decl.name, std::move(params), std::move(returns),
+                            false);
+
+  RoutineInfo routine_info{info.name, info.library_path, ext_func, &sig};
+  function_registry_->register_routine(routine_info);
+
+  log::debug(fmt::format("Loaded routine: {} from {} (symbol: {})", info.name,
+                         info.library_path, symbol));
+  return true;
 }
 
 FunctionResult AutotunerEngine::run_autotuner(const std::string &autotuner_name,
