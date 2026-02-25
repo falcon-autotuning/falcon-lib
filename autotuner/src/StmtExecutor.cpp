@@ -89,14 +89,12 @@ ControlFlow StmtExecutor::exec_assign(const atc::AssignStmt &stmt) {
     // TODO: Implement tuple destructuring
     // For now, this is a placeholder
     throw EvaluationError("Tuple assignment not yet implemented");
+  }
+  // Single assignment
+  auto value = evaluator_.evaluate(*stmt.value);
 
-  } else {
-    // Single assignment
-    auto value = evaluator_.evaluate(*stmt.value);
-
-    for (const auto &target : stmt.targets) {
-      variables_[target] = value;
-    }
+  for (const auto &target : stmt.targets) {
+    variables_[target] = value;
   }
 
   return ControlFlow::none();
@@ -120,7 +118,8 @@ ControlFlow StmtExecutor::exec_if(const atc::IfStmt &stmt) {
   if (std::get<bool>(condition)) {
     // Execute then branch
     return execute_block(stmt.then_body);
-  } else if (stmt.has_else()) {
+  }
+  if (stmt.has_else()) {
     // Execute else branch
     return execute_block(stmt.else_body);
   }
@@ -138,7 +137,7 @@ ControlFlow StmtExecutor::exec_transition(const atc::TransitionStmt &stmt) {
   return ControlFlow::transition(stmt.target_state, std::move(params));
 }
 
-ControlFlow StmtExecutor::exec_terminal(const atc::TerminalStmt &stmt) {
+ControlFlow StmtExecutor::exec_terminal(const atc::TerminalStmt & /*stmt*/) {
   return ControlFlow::terminal();
 }
 

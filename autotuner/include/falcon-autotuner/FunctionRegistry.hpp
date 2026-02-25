@@ -69,14 +69,9 @@ public:
   void register_autotuner(const std::string &name, ExternalFunction func);
 
   /**
-   * @brief Look up qualified function (Type::function).
+   * @brief Look up function
    */
-  ExternalFunction *lookup_qualified(const std::string &qualified_name);
-
-  /**
-   * @brief Look up simple function (routine or autotuner).
-   */
-  ExternalFunction *lookup_simple(const std::string &name);
+  ExternalFunction *lookup(const std::string &name);
 
   /**
    * @brief Get routine info.
