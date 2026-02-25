@@ -698,11 +698,20 @@ postfix_expr[result]
           std::move($named_args)
         ); 
       }
+    | IDENTIFIER[function_name] LPAREN named_arg_list[named_args] RPAREN
+      { 
+        $result = std::make_unique<CallExpr>(
+          std::move($function_name), 
+          std::vector<std::unique_ptr<Expr>>(),
+          std::move($named_args)
+        ); 
+      }
     | IDENTIFIER[function_name] LPAREN expr_list[args] RPAREN
       { 
         $result = std::make_unique<CallExpr>(
           std::move($function_name), 
-          std::move($args)
+          std::move($args),
+          std::vector<NamedArg>()
         ); 
       }
     ;

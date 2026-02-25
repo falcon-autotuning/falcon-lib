@@ -518,47 +518,6 @@ public:
 };
 
 /**
- * @brief Simple function call expression.
- *
- * Examples:
- *   initialize()                  (measurement function, no args)
- *   measure_voltage(gate)         (measurement function, positional args)
- *   InnerAutotuner(x, y)          (autotuner call - composition)
- *
- * Why: This is for:
- *   1. User-defined measurement functions (implemented in C++)
- *   2. Autotuner composition (calling other autotuners)
- *
- * NOT used for:
- *   - Builtin functions (use QualifiedCallExpr instead)
- *   - Methods (use MethodCallExpr instead)
- *
- * Resolution:
- *   1. Check if name matches a required autotuner -> autotuner call
- *   2. Otherwise treat as measurement function (validated at link time)
- *
- * Measurement functions:
- *   - Implemented in C++ in autotuner's namespace
- *   - Take ParameterMap as input, return ParameterMap
- *   - Example: namespace MyAutotuner { ParameterMap measure(...) }
- */
-class CallExpr : public Expr {
-public:
-  std::string name;
-  std::vector<std::unique_ptr<Expr>> args;
-
-  CallExpr(std::string n, std::vector<std::unique_ptr<Expr>> a)
-      : name(std::move(n)), args(std::move(a)) {}
-
-  std::unique_ptr<Expr> clone() const override {
-    std::vector<std::unique_ptr<Expr>> cloned_args;
-    for (const auto &arg : args)
-      cloned_args.push_back(arg->clone());
-    return std::make_unique<CallExpr>(name, std::move(cloned_args));
-  }
-};
-
-/**
  * @brief Named argument for function calls.
  *
  * Examples:
@@ -583,6 +542,53 @@ struct NamedArg {
   NamedArg(const NamedArg &) = delete;
   NamedArg(NamedArg &&) noexcept = default;
   NamedArg &operator=(NamedArg &&) noexcept = default;
+};
+
+/**
+ * @brief Simple function call expression.
+ *
+ * Examples:
+ *   initialize()                  (measurement function, no args)
+ *   measure_voltage(gate)         (measurement function, positional args)
+ *   InnerAutotuner(x, y)          (autotuner call - composition)
+ *   read(scope="globals", name="x")  (builtin with named args)
+ *
+ * Why: This is for:
+ *   1. User-defined measurement functions (implemented in C++)
+ *   2. Autotuner composition (calling other autotuners)
+ *   3. Builtin functions (without :: qualifier)
+ *
+ * NOT used for:
+ *   - Qualified builtin functions (use QualifiedCallExpr instead)
+ *   - Methods (use MethodCallExpr instead)
+ */
+class CallExpr : public Expr {
+public:
+  std::string name;
+
+  // Arguments can be positional or named (but not mixed)
+  std::vector<std::unique_ptr<Expr>> args;
+  std::vector<NamedArg> named_args;
+
+  CallExpr(std::string n, std::vector<std::unique_ptr<Expr>> a,
+           std::vector<NamedArg> named = {})
+      : name(std::move(n)), args(std::move(a)), named_args(std::move(named)) {}
+
+  std::unique_ptr<Expr> clone() const override {
+    std::vector<std::unique_ptr<Expr>> cloned_args;
+    for (const auto &arg : args)
+      cloned_args.push_back(arg->clone());
+
+    std::vector<NamedArg> cloned_named;
+    for (const auto &arg : named_args)
+      cloned_named.push_back(NamedArg(arg.name, arg.value->clone()));
+
+    return std::make_unique<CallExpr>(name, std::move(cloned_args),
+                                      std::move(cloned_named));
+  }
+
+  bool has_named_args() const { return !named_args.empty(); }
+  bool has_positional_args() const { return !args.empty(); }
 };
 
 /**

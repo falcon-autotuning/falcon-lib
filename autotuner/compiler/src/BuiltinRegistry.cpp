@@ -42,8 +42,12 @@ BuiltinFunctionRegistry BuiltinFunctionRegistry::create_default() {
       "read",
       {BuiltinSignature::ParamSpec("scope", TypeDescriptor(ParamType::String),
                                    true),
-       BuiltinSignature::ParamSpec("name", TypeDescriptor(ParamType::String))},
-      TypeDescriptor(ParamType::Nil), false));
+       BuiltinSignature::ParamSpec("name", TypeDescriptor(ParamType::String),
+                                   true)},
+      TypeDescriptor::make_union(
+          {TypeDescriptor(ParamType::Int), TypeDescriptor(ParamType::Float),
+           TypeDescriptor(ParamType::Bool), TypeDescriptor(ParamType::String)}),
+      true));
 
   registry.register_builtin(BuiltinSignature(
       "write",
@@ -52,7 +56,7 @@ BuiltinFunctionRegistry BuiltinFunctionRegistry::create_default() {
        BuiltinSignature::ParamSpec("name", TypeDescriptor(ParamType::String),
                                    true),
        BuiltinSignature::ParamSpec(
-           "value",
+           "characteristic",
            TypeDescriptor::make_union({TypeDescriptor(ParamType::Int),
                                        TypeDescriptor(ParamType::Float),
                                        TypeDescriptor(ParamType::Bool),
