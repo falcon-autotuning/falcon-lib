@@ -41,6 +41,8 @@
     autotuner_scope.clear();
     autotuner_input_params.clear();
     autotuner_output_params.clear();
+    state_local_scope.clear();
+    state_input_params.clear();
   }
   
   void clear_state_scope() {
@@ -107,8 +109,9 @@
 %type <std::unique_ptr<Stmt>> stmt
 %type <std::unique_ptr<Expr>> expr primary_expr postfix_expr
 %type <std::vector<std::unique_ptr<Expr>>> expr_list 
-%type <std::vector<NamedArg>> named_arg_list 
-%type <std::unique_ptr<NamedArg>> named_arg%type <std::vector<RoutineDecl>> routine_list
+%type <std::vector<CallArg>> call_arg_list 
+%type <std::unique_ptr<CallArg>> call_arg
+%type <std::vector<RoutineDecl>> routine_list
 %type <std::unique_ptr<RoutineDecl>> routine_decl
 
 %left OR
@@ -695,21 +698,19 @@ postfix_expr[result]
           std::move($index)
         ); 
       }
-    | IDENTIFIER[function_name] LPAREN named_arg_list[named_args] RPAREN
-      { 
+    | IDENTIFIER[function_name] LPAREN RPAREN
+      {
         $result = std::make_unique<CallExpr>(
-          std::move($function_name), 
-          std::vector<std::unique_ptr<Expr>>(),
-          std::move($named_args)
-        ); 
+          std::move($function_name),
+          std::vector<CallArg>() // empty argument list
+        );
       }
-    | IDENTIFIER[function_name] LPAREN expr_list[args] RPAREN
-      { 
+    | IDENTIFIER[function_name] LPAREN call_arg_list[call_args] RPAREN
+      {
         $result = std::make_unique<CallExpr>(
-          std::move($function_name), 
-          std::move($args),
-          std::vector<NamedArg>()
-        ); 
+          std::move($function_name),
+          std::move($call_args)
+        );
       }
     ;
 
@@ -769,23 +770,27 @@ expr_list[result]
       }
     ;
 
-named_arg_list[result]
-    : named_arg[first_arg]
+call_arg_list[result]
+    : call_arg[first_arg]
       {
-        $result = std::vector<NamedArg>();
+        $result = std::vector<CallArg>();
         $result.push_back(std::move(*$first_arg));
       }
-    | named_arg_list[existing_args] COMMA named_arg[next_arg]
+    | call_arg_list[existing_args] COMMA call_arg[next_arg]
       {
         $result = std::move($existing_args);
         $result.push_back(std::move(*$next_arg));
       }
     ;
 
-named_arg[result]
-    : IDENTIFIER[param_name] ASSIGN expr[param_value]
+call_arg[result]
+    : expr[arg_expr]
       {
-        $result = std::make_unique<NamedArg>(std::move($param_name), std::move($param_value));
+        $result = std::make_unique<CallArg>(std::move($arg_expr));
+      }
+    | IDENTIFIER[param_name] ASSIGN expr[param_value]
+      {
+        $result = std::make_unique<CallArg>(std::move($param_name), std::move($param_value));
       }
     ;
 

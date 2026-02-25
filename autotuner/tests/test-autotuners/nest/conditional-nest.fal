@@ -48,7 +48,7 @@ autotuner Adder (int a , int b) -> (int add, Error err)  {
     state init {
         add = a+ b;
         if (a < b) {
-            err = Error::msg("Cannot add a less than b");
+            err = errorMsg("Cannot add a less than b");
             terminal;
         }
         else {
@@ -63,7 +63,7 @@ autotuner Multiplier (int a , int b) -> (int mult, Error err)  {
 
     state init {
         if (a < b) {
-            err = Error::msg("Cannot multiply a less than b");
+            err = errorMsg("Cannot multiply a less than b");
             terminal;
         }
         else {

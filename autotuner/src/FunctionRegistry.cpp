@@ -262,13 +262,13 @@ void register_all_builtins(FunctionRegistry &registry) {
 
   registry.register_builtin(
       "errorMsg", [](const ParameterMap &params) -> FunctionResult {
-        std::string message = std::get<std::string>(params.at("message"));
+        std::string message = std::get<std::string>(params.at("arg0"));
         return FunctionResult{ErrorObject{message, false}};
       });
 
   registry.register_builtin(
       "fatalErrorMsg", [](const ParameterMap &params) -> FunctionResult {
-        std::string message = std::get<std::string>(params.at("message"));
+        std::string message = std::get<std::string>(params.at("arg0"));
         return FunctionResult{ErrorObject{message, true}};
       });
 }
