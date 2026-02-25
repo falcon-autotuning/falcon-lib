@@ -64,6 +64,9 @@ struct TupleValue {
     return values == other.values;
   }
   bool operator!=(const TupleValue &other) const { return !(*this == other); }
+  [[nodiscard]] size_t size() const { return values.size(); }
+  RuntimeValue &operator[](size_t idx) { return values[idx]; }
+  const RuntimeValue &operator[](size_t idx) const { return values[idx]; }
 };
 
 /**

@@ -6,7 +6,6 @@
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/TypeRegistry.hpp"
 #include <memory>
-#include <optional>
 #include <string>
 
 namespace falcon::autotuner {
@@ -54,9 +53,13 @@ private:
   ControlFlow exec_transition(const atc::TransitionStmt &stmt);
   static ControlFlow exec_terminal(const atc::TerminalStmt &stmt);
 
+  // Helper to wrap execution with error context
+  template <typename Func>
+  ControlFlow execute_with_context(const atc::Stmt &stmt, Func func);
+
   ParameterMap &variables_;
   std::shared_ptr<FunctionRegistry> functions_;
-  std::shared_ptr<TypeRegistry> types_; // Added TypeRegistry
+  std::shared_ptr<TypeRegistry> types_;
   ExprEvaluator evaluator_;
 };
 
