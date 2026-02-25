@@ -27,7 +27,7 @@ using namespace falcon::atc;
 "routine"       { return Parser::make_ROUTINE(*loc); }
 "state"         { return Parser::make_STATE(*loc); }
 "start"         { return Parser::make_START(*loc); }
-"requires"      { return Parser::make_REQUIRES(*loc); }
+"uses"          { return Parser::make_USES(*loc); }
 "terminal"      { return Parser::make_TERMINAL(*loc); }
 "if"            { return Parser::make_IF(*loc); }
 "elif"            { return Parser::make_ELIF(*loc); }
@@ -49,7 +49,6 @@ using namespace falcon::atc;
 "Error"         { return Parser::make_ERROR_KW(*loc); }
 
 "->"            { return Parser::make_ARROW(*loc); }
-"::"            { return Parser::make_DOUBLECOLON(*loc); }
 "["             { return Parser::make_LBRACKET(*loc); }
 "]"             { return Parser::make_RBRACKET(*loc); }
 "{"             { return Parser::make_LBRACE(*loc); }
@@ -58,7 +57,6 @@ using namespace falcon::atc;
 ")"             { return Parser::make_RPAREN(*loc); }
 "="             { return Parser::make_ASSIGN(*loc); }
 ","             { return Parser::make_COMMA(*loc); }
-":"             { return Parser::make_COLON(*loc); }
 ";"             { return Parser::make_SEMICOLON(*loc); }
 "."             { return Parser::make_DOT(*loc); }
 "+"             { return Parser::make_PLUS(*loc); }

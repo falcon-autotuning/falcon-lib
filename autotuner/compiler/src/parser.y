@@ -76,9 +76,9 @@
 // Token declarations
 %token <std::string> IDENTIFIER DOUBLE INTEGER STRING
 
-%token AUTOTUNER ROUTINE STATE START REQUIRES TERMINAL IF ELIF ELSE TRUE FALSE NIL CONFIG_VAR
+%token AUTOTUNER ROUTINE STATE START USES TERMINAL IF ELIF ELSE TRUE FALSE NIL CONFIG_VAR
 %token FLOAT_KW INT_KW BOOL_KW STRING_KW QUANTITY_KW CONFIG_KW CONNECTION_KW CONNECTIONS_KW GNAME_KW ERROR_KW
-%token ARROW DOUBLECOLON LBRACKET RBRACKET LBRACE RBRACE LPAREN RPAREN ASSIGN COMMA COLON SEMICOLON DOT
+%token ARROW LBRACKET RBRACKET LBRACE RBRACE LPAREN RPAREN ASSIGN COMMA SEMICOLON DOT
 %token PLUS MINUS MUL DIV EQ NE LL GG LE GE AND OR NOT
 
 // Type declarations for grammar rules
@@ -190,7 +190,7 @@ autotuner_decl[result]
       ARROW 
       output_params[outputs] 
       LBRACE
-        requires_clause[requires]
+        requires_clause[uses]
         autotuner_var_decls[vars]
         entry_state[entry] entry_params[params] SEMICOLON
         state_list[states]
@@ -200,7 +200,7 @@ autotuner_decl[result]
           std::move($name),
           std::move($inputs),
           std::move($outputs),
-          std::move($requires),
+          std::move($uses),
           std::move($vars),
           std::move($entry),
           std::move($params),
@@ -342,9 +342,9 @@ type_spec[result]
 // ============================================================================
 
 requires_clause[result]
-    : REQUIRES COLON LBRACKET identifier_list[required_autotuners] RBRACKET SEMICOLON
+    : USES identifier_list[required_deps] SEMICOLON
       { 
-        $result = std::move($required_autotuners); 
+        $result = std::move($required_deps); 
       }
     | %empty
       { 
@@ -678,24 +678,6 @@ postfix_expr[result]
         $result = std::make_unique<IndexExpr>(
           std::move($array), 
           std::move($index)
-        ); 
-      }
-    | IDENTIFIER[qualifier] DOUBLECOLON IDENTIFIER[function_name] LPAREN expr_list[positional_args] RPAREN
-      { 
-        $result = std::make_unique<QualifiedCallExpr>(
-          std::move($qualifier), 
-          std::move($function_name), 
-          std::move($positional_args), 
-          std::vector<NamedArg>()
-        ); 
-      }
-    | IDENTIFIER[qualifier] DOUBLECOLON IDENTIFIER[function_name] LPAREN named_arg_list[named_args] RPAREN
-      { 
-        $result = std::make_unique<QualifiedCallExpr>(
-          std::move($qualifier), 
-          std::move($function_name), 
-          std::vector<std::unique_ptr<Expr>>(), 
-          std::move($named_args)
         ); 
       }
     | IDENTIFIER[function_name] LPAREN named_arg_list[named_args] RPAREN

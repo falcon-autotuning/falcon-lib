@@ -1,5 +1,6 @@
 autotuner ConditionalNest (int a, int b) -> (int out, Error err) {
-  requires : [Adder, Multiplier];
+  uses Adder, Multiplier;
+
   int a = 1;
   int b = 5;
   Error outer_err = nil;
@@ -35,7 +36,7 @@ autotuner ConditionalNest (int a, int b) -> (int out, Error err) {
       terminal;
   }
   state error_processing (Error error) {
-      log::info("We got an error with {}", error);
+      logInfo("We got an error with {}", error);
       terminal;
   }
 }

@@ -30,9 +30,6 @@ RuntimeValue ExprEvaluator::evaluate(const atc::Expr &expr) {
     return eval_index(*idx);
   } else if (auto *call = dynamic_cast<const atc::CallExpr *>(&expr)) {
     return eval_call(*call);
-  } else if (auto *qcall =
-                 dynamic_cast<const atc::QualifiedCallExpr *>(&expr)) {
-    return eval_qualified_call(*qcall);
   } else {
     throw EvaluationError("Unknown expression type");
   }
@@ -170,47 +167,6 @@ RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
   }
   // For tuple returns
   // TODO: Implement tuple return handling if needed
-  throw EvaluationError("Tuple returns not yet fully implemented");
-}
-
-RuntimeValue
-ExprEvaluator::eval_qualified_call(const atc::QualifiedCallExpr &expr) {
-  // Qualified call like Config::get_group_plunger_gates(name)
-  std::string qualified_name = expr.qualifier + "::" + expr.function_name;
-
-  auto *func = functions_->lookup_qualified(qualified_name);
-  if (!func) {
-    throw EvaluationError("Unknown function: " + qualified_name);
-  }
-
-  ParameterMap params;
-
-  // Handle positional arguments
-  if (expr.has_positional_args()) {
-    auto args = evaluate_list(expr.positional_args);
-    for (size_t i = 0; i < args.size(); ++i) {
-      params["arg" + std::to_string(i)] = args[i];
-    }
-  }
-
-  // Handle named arguments
-  if (expr.has_named_args()) {
-    for (const auto &named_arg : expr.named_args) {
-      params[named_arg.name] = evaluate(*named_arg.value);
-    }
-  }
-
-  auto result = (*func)(params);
-
-  // Handle return value
-  if (result.empty()) {
-    return nullptr; // void return
-  }
-  if (result.size() == 1) {
-    return result.begin()->second; // single return
-  }
-  // For tuple returns, we need to handle multiple values
-  // TODO: Implement tuple return handling
   throw EvaluationError("Tuple returns not yet fully implemented");
 }
 
