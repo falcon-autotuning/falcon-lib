@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <variant>
+#include <vector>
 
 namespace falcon::autotuner {
 
@@ -26,6 +27,8 @@ struct ErrorObject {
   bool operator!=(const ErrorObject &other) const { return !(*this == other); }
 };
 
+// Forward declaration
+struct TupleValue;
 /**
  * @brief Runtime value that can hold any parameter value.
  *
@@ -40,13 +43,34 @@ using RuntimeValue =
                  falcon_core::physics::device_structures::ConnectionSP,
                  falcon_core::physics::device_structures::ConnectionsSP,
                  falcon_core::math::QuantitySP,
-                 falcon_core::autotuner_interfaces::names::GnameSP,
-                 ErrorObject>;
+                 falcon_core::autotuner_interfaces::names::GnameSP, ErrorObject,
+                 TupleValue>;
+
+/**
+ * @brief Wrapper for tuple values (multiple return values).
+ *
+ * This is a temporary container used during tuple destructuring:
+ *   a, b = read(scope="x", name="y")
+ *
+ * The TupleValue holds the ordered values until they're assigned.
+ */
+struct TupleValue {
+  std::vector<RuntimeValue> values;
+
+  explicit TupleValue(std::vector<RuntimeValue> vals)
+      : values(std::move(vals)) {}
+
+  bool operator==(const TupleValue &other) const {
+    return values == other.values;
+  }
+  bool operator!=(const TupleValue &other) const { return !(*this == other); }
+};
 
 /**
  * @brief Parameter map for passing values to/from functions.
  */
 using ParameterMap = std::map<std::string, RuntimeValue>;
+using FunctionResult = std::vector<RuntimeValue>;
 
 /**
  * @brief Helper to get type name as string.

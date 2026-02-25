@@ -12,6 +12,14 @@
 namespace falcon::autotuner {
 
 /**
+ * @brief Information about a loaded routine from .so file.
+ */
+struct RoutineConfig {
+  std::string name;
+  std::string library_path;
+  std::string name_space;
+};
+/**
  * @brief Main user-facing API for running autotuners.
  *
  * Workflow:
@@ -37,15 +45,9 @@ public:
 
   /**
    * @brief Load a user routine from compiled .so file.
-   *
-   * @param routine_name Routine name (must match declaration in loaded .fal)
-   * @param namespace_name Autotuner namespace (usually autotuner name)
-   * @param library_path Path to .so file
    * @return true if successful
    */
-  bool load_routine_library(const std::string &routine_name,
-                            const std::string &namespace_name,
-                            const std::string &library_path);
+  bool load_routine_library(RoutineConfig info);
 
   /**
    * @brief Run an autotuner.
@@ -54,28 +56,29 @@ public:
    * @param inputs Input parameter values
    * @return Output parameter values
    */
-  ParameterMap run_autotuner(const std::string &autotuner_name,
-                             ParameterMap &inputs);
+  FunctionResult run_autotuner(const std::string &autotuner_name,
+                               ParameterMap &inputs);
 
   /**
    * @brief Get list of loaded autotuner names.
    */
-  std::vector<std::string> get_loaded_autotuners() const;
+  [[nodiscard]] std::vector<std::string> get_loaded_autotuners() const;
 
   /**
    * @brief Get list of loaded routine names.
    */
-  std::vector<std::string> get_loaded_routines() const;
+  [[nodiscard]] std::vector<std::string> get_loaded_routines() const;
 
   /**
    * @brief Check if autotuner is loaded.
    */
-  bool has_autotuner(const std::string &name) const;
+  [[nodiscard]] bool has_autotuner(const std::string &name) const;
 
   /**
    * @brief Get autotuner declaration (for inspection).
    */
-  const atc::AutotunerDecl *get_autotuner(const std::string &name) const;
+  [[nodiscard]] const atc::AutotunerDecl *
+  get_autotuner(const std::string &name) const;
   /**
    * @brief Load pre-compiled .fal file (faster than parsing).
    */
@@ -89,7 +92,7 @@ public:
   /**
    * @brief Get list of declared routines (may not all be loaded yet).
    */
-  std::vector<std::string> get_declared_routines() const;
+  [[nodiscard]] std::vector<std::string> get_declared_routines() const;
 
   // Advanced access
   std::shared_ptr<FunctionRegistry> get_function_registry() {

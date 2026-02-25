@@ -1,4 +1,5 @@
 #include "falcon-autotuner/FunctionRegistry.hpp"
+#include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/log.hpp"
 #include <falcon-database/DatabaseConnection.hpp>
 #include <iostream>
@@ -6,115 +7,61 @@
 
 namespace falcon::autotuner {
 
-FunctionRegistry::FunctionRegistry() {}
-
-FunctionRegistry::~FunctionRegistry() {
-  // Clean up loaded libraries
-  for (void *handle : loaded_libraries_) {
-    if (handle) {
-      dlclose(handle);
-    }
-  }
+FunctionRegistry::FunctionRegistry()
+    : builtin_registry_(atc::BuiltinFunctionRegistry::create_default()) {
+  // Builtin registry is initialized with all signatures
 }
 
-void FunctionRegistry::register_builtin(const std::string &qualified_name,
+void FunctionRegistry::register_builtin(const std::string &name,
                                         ExternalFunction func) {
-  builtin_functions_[qualified_name] = std::move(func);
+
+  // Look up signature from the unified builtin registry
+  const atc::BuiltinSignature *sig = builtin_registry_.lookup(name);
+  if (!sig) {
+    throw std::runtime_error(
+        "Cannot register builtin '" + name +
+        "': signature not found in BuiltinFunctionRegistry. "
+        "Did you forget to add it to BuiltinRegistry.cpp?");
+  }
+
+  functions_[name] = std::move(func);
+  signatures_[name] = sig;
 }
 
-void FunctionRegistry::load_routine(
-    const std::string &routine_name, const std::string &namespace_name,
-    const std::string &library_path,
-    const std::vector<std::unique_ptr<atc::ParamDecl>> &input_params,
-    const std::vector<std::unique_ptr<atc::ParamDecl>> &output_params) {
-  // Load the shared library
-  void *handle = dlopen(library_path.c_str(), RTLD_LAZY);
-  if (handle == nullptr) {
-    throw std::runtime_error("Failed to load routine library: " +
-                             std::string(dlerror()));
-  }
-
-  // Construct the symbol name: <namespace>::<routine_name>
-  // C++ name mangling is avoided by using extern "C" in the .so
-  std::string symbol_name = namespace_name + "_" + routine_name;
-
-  // Look up the function
-  using RoutineFuncPtr = ParameterMap (*)(const ParameterMap &);
-  auto func_ptr =
-      reinterpret_cast<RoutineFuncPtr>(dlsym(handle, symbol_name.c_str()));
-
-  if (func_ptr == nullptr) {
-    dlclose(handle);
-    throw std::runtime_error("Failed to find routine symbol: " + symbol_name +
-                             " - " + std::string(dlerror()));
-  }
-
-  // Wrap in std::function
-  ExternalFunction func =
-      [func_ptr](const ParameterMap &params) -> ParameterMap {
-    return func_ptr(params);
-  };
-
-  // Store routine info
-  RoutineInfo info;
-  info.name = routine_name;
-  info.input_params.clear();
-  for (const auto &param : input_params) {
-    info.input_params.push_back(param->clone());
-  }
-  info.output_params.clear();
-  for (const auto &param : input_params) {
-    info.output_params.push_back(param->clone());
-  }
-  info.library_handle = handle;
-  info.function = std::move(func);
-
-  user_routines_[routine_name] = std::move(info);
-  loaded_libraries_.push_back(handle);
-
-  std::cout << "[FunctionRegistry] Loaded routine: " << routine_name << " from "
-            << library_path << '\n';
-}
-
-void FunctionRegistry::register_autotuner(const std::string &name,
-                                          ExternalFunction func) {
-  autotuner_functions_[name] = std::move(func);
+void FunctionRegistry::register_routine(const RoutineInfo &routine) {
+  functions_[routine.name] = routine.function;
+  signatures_[routine.name] = routine.signature;
+  routines_[routine.name] = routine;
 }
 
 ExternalFunction *FunctionRegistry::lookup(const std::string &name) {
-  // First check builtin functions
-  auto it = builtin_functions_.find(name);
-  if (it != builtin_functions_.end()) {
+  auto it = functions_.find(name);
+  if (it != functions_.end()) {
     return &it->second;
   }
-  // Then check user routines
-  auto routine_it = user_routines_.find(name);
-  if (routine_it != user_routines_.end()) {
-    return &routine_it->second.function;
-  }
+  return nullptr;
+}
 
-  // Then check autotuners
-  auto autotuner_it = autotuner_functions_.find(name);
-  if (autotuner_it != autotuner_functions_.end()) {
-    return &autotuner_it->second;
+const atc::BuiltinSignature *
+FunctionRegistry::get_signature(const std::string &name) const {
+  auto it = signatures_.find(name);
+  if (it != signatures_.end()) {
+    return it->second;
   }
-
   return nullptr;
 }
 
 const RoutineInfo *
 FunctionRegistry::get_routine_info(const std::string &name) const {
-  auto it = user_routines_.find(name);
-  return it != user_routines_.end() ? &it->second : nullptr;
+  auto it = routines_.find(name);
+  if (it != routines_.end()) {
+    return &it->second;
+  }
+  return nullptr;
 }
 
-bool FunctionRegistry::has_qualified(const std::string &qualified_name) const {
-  return builtin_functions_.find(qualified_name) != builtin_functions_.end();
-}
-
-bool FunctionRegistry::has_simple(const std::string &name) const {
-  return user_routines_.find(name) != user_routines_.end() ||
-         autotuner_functions_.find(name) != autotuner_functions_.end();
+bool FunctionRegistry::has_function(const std::string &name) const {
+  return functions_.find(name) != functions_.end();
 }
 
 std::shared_ptr<FunctionRegistry> FunctionRegistry::create_default() {
@@ -123,95 +70,106 @@ std::shared_ptr<FunctionRegistry> FunctionRegistry::create_default() {
   return registry;
 }
 
-// ============================================================================
-// BUILTIN FUNCTION IMPLEMENTATIONS (Hardcoded in Falcon)
-// ============================================================================
-
 void register_all_builtins(FunctionRegistry &registry) {
 
-  // ------------------------------------------------------------------------
-  // Logging functions (log::*)
-  // ------------------------------------------------------------------------
+  // ========================================================================
+  // DATABASE FUNCTIONS
+  // ========================================================================
 
+  // Just provide the name - signature is looked up automatically!
   registry.register_builtin(
-      "log::info", [](const ParameterMap &params) -> ParameterMap {
-        // Format string support with {} placeholders
-        std::string format = std::get<std::string>(params.at("format"));
-        log::info(format);
-        return {};
-      });
-
-  registry.register_builtin(
-      "log::warn", [](const ParameterMap &params) -> ParameterMap {
-        std::string format = std::get<std::string>(params.at("format"));
-        log::warn(format);
-        return {};
-      });
-
-  registry.register_builtin(
-      "log::error", [](const ParameterMap &params) -> ParameterMap {
-        std::string format = std::get<std::string>(params.at("format"));
-        log::error(format);
-        return {};
-      });
-
-  // ------------------------------------------------------------------------
-  // Error constructors (Error::*, FatalError::*)
-  // ------------------------------------------------------------------------
-
-  registry.register_builtin(
-      "Error::msg", [](const ParameterMap &params) -> ParameterMap {
-        std::string msg = std::get<std::string>(params.at("message"));
-
-        ErrorObject err;
-        err.message = msg;
-        err.is_fatal = false;
-
-        return {{"result", err}};
-      });
-
-  registry.register_builtin(
-      "FatalError::msg", [](const ParameterMap &params) -> ParameterMap {
-        std::string msg = std::get<std::string>(params.at("message"));
-
-        ErrorObject err;
-        err.message = msg;
-        err.is_fatal = true;
-
-        return {{"result", err}};
-      });
-
-  // ------------------------------------------------------------------------
-  // Database functions
-  // ------------------------------------------------------------------------
-
-  registry.register_builtin(
-      "read", [](const ParameterMap &params) -> ParameterMap {
+      "read", [](const ParameterMap &params) -> FunctionResult {
         std::string scope = std::get<std::string>(params.at("scope"));
         std::string name = std::get<std::string>(params.at("name"));
+
         database::ReadOnlyDatabaseConnection db;
         database::DeviceCharacteristicQuery query;
         query.scope = scope;
         query.name = name;
-        auto dchars = db.get_by_query(query);
 
-        // Return (value, error) tuple
-        return {
-            {"value", static_cast<int64_t>(42)}, {"error", nullptr} // nil
-        };
+        try {
+          auto dchars = db.get_by_query(query);
+
+          if (dchars.empty()) {
+            // No value found - return (nil, error)
+            return FunctionResult{
+                {nullptr, ErrorObject{"Value not found", false}}};
+          }
+
+          // TODO: Parse actual value from database based on type
+          // For now, return dummy value
+          RuntimeValue value = static_cast<int64_t>(42);
+          RuntimeValue error = nullptr; // nil
+
+          return FunctionResult{value, error};
+
+        } catch (const std::exception &e) {
+          // Database error
+          return FunctionResult{nullptr, ErrorObject{e.what(), false}};
+        }
       });
 
   registry.register_builtin(
-      "write", [](const ParameterMap &params) -> ParameterMap {
+      "write", [](const ParameterMap &params) -> FunctionResult {
         std::string scope = std::get<std::string>(params.at("scope"));
         std::string name = std::get<std::string>(params.at("name"));
+        RuntimeValue value = params.at("value");
 
-        std::cout << "[STUB] write(scope=" << scope << ", name=" << name << ")"
-                  << std::endl;
-        return {};
+        database::ReadWriteDatabaseConnection db;
+        database::DeviceCharacteristic dchar;
+        dchar.scope = scope;
+        dchar.name = name;
+
+        // TODO: Convert RuntimeValue to database value
+
+        try {
+          db.insert(dchar);
+          return FunctionResult{nullptr}; // nil error (success)
+        } catch (const std::exception &e) {
+          return FunctionResult{ErrorObject{e.what(), false}};
+        }
       });
 
-  // Add more builtin functions as needed...
+  // ========================================================================
+  // LOGGING FUNCTIONS
+  // ========================================================================
+
+  registry.register_builtin(
+      "logInfo", [](const ParameterMap &params) -> FunctionResult {
+        std::string format = std::get<std::string>(params.at("format"));
+        log::info(format);
+        return FunctionResult{nullptr};
+      });
+
+  registry.register_builtin(
+      "logWarn", [](const ParameterMap &params) -> FunctionResult {
+        std::string format = std::get<std::string>(params.at("format"));
+        log::warn(format);
+        return FunctionResult{nullptr};
+      });
+
+  registry.register_builtin(
+      "logError", [](const ParameterMap &params) -> FunctionResult {
+        std::string format = std::get<std::string>(params.at("format"));
+        log::error(format);
+        return FunctionResult{nullptr};
+      });
+
+  // ========================================================================
+  // ERROR CONSTRUCTION
+  // ========================================================================
+
+  registry.register_builtin(
+      "errorMsg", [](const ParameterMap &params) -> FunctionResult {
+        std::string message = std::get<std::string>(params.at("message"));
+        return FunctionResult{ErrorObject{message, false}};
+      });
+
+  registry.register_builtin(
+      "fatalErrorMsg", [](const ParameterMap &params) -> FunctionResult {
+        std::string message = std::get<std::string>(params.at("message"));
+        return FunctionResult{ErrorObject{message, true}};
+      });
 }
 
 } // namespace falcon::autotuner

@@ -84,7 +84,7 @@ target_link_libraries(falcon-dsl
     nlohmann_json::nlohmann_json
     falcon::falcon-database
     falcon::falcon-comms
-    falcon-atc-core              # Compiler library
+    falcon-atc-core
     cereal::cereal
     xtensor
     xtl

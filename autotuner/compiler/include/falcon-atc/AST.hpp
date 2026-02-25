@@ -1175,15 +1175,33 @@ struct BuiltinSignature {
   };
 
   std::vector<ParamSpec> parameters;
-  TypeDescriptor return_type;
+  std::vector<ParamSpec> return_params;
 
   // Does this function support named arguments?
   bool supports_named_args;
 
   BuiltinSignature(std::string name, std::vector<ParamSpec> params,
-                   TypeDescriptor ret, bool named_args = false)
+                   std::vector<ParamSpec> returns, bool named_args = false)
       : qualified_name(std::move(name)), parameters(std::move(params)),
-        return_type(std::move(ret)), supports_named_args(named_args) {}
+        return_params(std::move(returns)), supports_named_args(named_args) {}
+
+  [[nodiscard]] std::vector<std::string> get_return_names() const {
+    std::vector<std::string> names;
+    names.reserve(return_params.size());
+    for (const auto &param : return_params) {
+      names.push_back(param.name);
+    }
+    return names;
+  }
+
+  [[nodiscard]] std::vector<std::string> get_param_names() const {
+    std::vector<std::string> names;
+    names.reserve(parameters.size());
+    for (const auto &param : parameters) {
+      names.push_back(param.name);
+    }
+    return names;
+  }
 };
 
 /**
