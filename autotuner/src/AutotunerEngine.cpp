@@ -303,8 +303,8 @@ bool AutotunerEngine::has_autotuner(const std::string &name) const {
 
 const atc::AutotunerDecl *
 AutotunerEngine::get_autotuner(const std::string &name) const {
-  auto it = loaded_autotuners_.find(name);
-  return it != loaded_autotuners_.end() ? &it->second : nullptr;
+  auto iter = loaded_autotuners_.find(name);
+  return iter != loaded_autotuners_.end() ? &iter->second : nullptr;
 }
 
 void AutotunerEngine::register_autotuner_as_function(
@@ -312,11 +312,27 @@ void AutotunerEngine::register_autotuner_as_function(
   // Wrap autotuner in callable function
   auto func = [this,
                name = autotuner.name](ParameterMap &inputs) -> FunctionResult {
-    auto it = loaded_autotuners_.find(name);
-    return interpreter_->run(it->second, inputs);
+    auto iter = loaded_autotuners_.find(name);
+    return interpreter_->run(iter->second, inputs);
   };
 
-  function_registry_->register_builtin(autotuner.name, func);
+  // Build BuiltinSignature from RoutineDecl
+  std::vector<atc::BuiltinSignature::ParamSpec> params;
+  std::vector<atc::BuiltinSignature::ParamSpec> returns;
+  params.reserve(autotuner.input_params.size());
+  for (const auto &param : autotuner.input_params) {
+    params.emplace_back(param->name, param->type, true);
+  }
+  returns.reserve(autotuner.output_params.size());
+  for (const auto &param : autotuner.output_params) {
+    returns.emplace_back(param->name, param->type, true);
+  }
+  const atc::BuiltinSignature sig(autotuner.name, std::move(params),
+                                  std::move(returns), false);
+
+  function_registry_->register_autotuner(&sig, func);
+
+  log::debug(fmt::format("Loaded autotuner: {}", autotuner.name));
 }
 
 } // namespace falcon::autotuner
