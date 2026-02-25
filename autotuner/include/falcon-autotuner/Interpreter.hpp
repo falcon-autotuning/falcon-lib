@@ -2,6 +2,7 @@
 
 #include "falcon-atc/AST.hpp"
 #include "falcon-autotuner/FunctionRegistry.hpp"
+#include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/StmtExecutor.hpp"
 #include "falcon-autotuner/TypeRegistry.hpp"
 #include <falcon-comms/runtime_comms.hpp>
@@ -31,7 +32,7 @@ public:
   /**
    * @brief Run an autotuner with given input parameters.
    */
-  ParameterMap run(const atc::AutotunerDecl &autotuner, ParameterMap &inputs);
+  FunctionResult run(const atc::AutotunerDecl &autotuner, ParameterMap &inputs);
 
   /**
    * @brief Get current variable environment (for debugging).
@@ -53,7 +54,7 @@ private:
                             std::vector<RuntimeValue> &input_param);
   const atc::StateDecl *find_state(const atc::AutotunerDecl &autotuner,
                                    const std::string &name);
-  ParameterMap extract_outputs(const atc::AutotunerDecl &autotuner);
+  FunctionResult extract_outputs(const atc::AutotunerDecl &autotuner);
 
   // Initialize NATS and fetch config
   void initialize_config();

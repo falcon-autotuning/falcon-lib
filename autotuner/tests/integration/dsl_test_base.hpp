@@ -188,12 +188,13 @@ protected:
         for (const auto &lib_path : cenv.routine_libs) {
           std::string routine_name = lib_path.stem().string();
           std::string namespace_name = "default";
-          EXPECT_TRUE(engine.load_routine_library(routine_name, namespace_name,
-                                                  lib_path.string()))
+          RoutineConfig routine{routine_name, lib_path.string(),
+                                namespace_name};
+          EXPECT_TRUE(engine.load_routine_library(routine))
               << "Failed to load routine: " << lib_path;
         }
 
-        cenv.params = engine.run_autotuner(cenv.autotuner_name, cenv.params);
+        auto _ = engine.run_autotuner(cenv.autotuner_name, cenv.params);
         autotuner_result = true;
       } catch (const std::exception &e) {
         std::cout << "EXCEPTION in client thread: " << e.what() << '\n';

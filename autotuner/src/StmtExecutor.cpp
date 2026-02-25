@@ -80,23 +80,50 @@ ControlFlow StmtExecutor::exec_var_decl(const atc::VarDeclStmt &stmt) {
 }
 
 ControlFlow StmtExecutor::exec_assign(const atc::AssignStmt &stmt) {
-  if (stmt.is_tuple_assignment()) {
-    // Multiple assignment: a, b = expr
-    // The expression must return a tuple (implemented as ParameterMap with
-    // multiple values)
-    auto result = evaluator_.evaluate(*stmt.value);
-
-    // TODO: Implement tuple destructuring
-    // For now, this is a placeholder
-    throw EvaluationError("Tuple assignment not yet implemented");
-  }
-  // Single assignment
+  // Evaluate RHS
   auto value = evaluator_.evaluate(*stmt.value);
 
-  for (const auto &target : stmt.targets) {
-    variables_[target] = value;
-  }
+  if (stmt.is_tuple_assignment()) {
+    // Multi-target assignment: a, b = func()
+    // Value must be a TupleValue
+    if (!std::holds_alternative<TupleValue>(value)) {
+      throw EvaluationError(
+          "Tuple assignment requires function to return tuple, got " +
+          get_runtime_type_name(value));
+    }
 
+    const auto &tuple = std::get<TupleValue>(value);
+
+    if (tuple.values.size() != stmt.targets.size()) {
+      throw EvaluationError("Tuple assignment arity mismatch: expected " +
+                            std::to_string(stmt.targets.size()) +
+                            " values, got " +
+                            std::to_string(tuple.values.size()));
+    }
+
+    // Assign each value to corresponding target
+    for (size_t i = 0; i < stmt.targets.size(); ++i) {
+      variables_[stmt.targets[i]] = tuple.values[i];
+    }
+  } else {
+    // Single assignment: a = value
+    if (stmt.targets.size() != 1) {
+      throw EvaluationError("Single assignment must have exactly one target");
+    }
+
+    // If value is a tuple with single element, unwrap it
+    if (std::holds_alternative<TupleValue>(value)) {
+      const auto &tuple = std::get<TupleValue>(value);
+      if (tuple.values.size() == 1) {
+        variables_[stmt.targets[0]] = tuple.values[0];
+      } else {
+        throw EvaluationError(
+            "Cannot assign tuple to single variable (use tuple destructuring)");
+      }
+    } else {
+      variables_[stmt.targets[0]] = value;
+    }
+  }
   return ControlFlow::none();
 }
 

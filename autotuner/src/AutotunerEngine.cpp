@@ -1,5 +1,6 @@
 #include "falcon-autotuner/AutotunerEngine.hpp"
 #include "falcon-atc/Compiler.hpp"
+#include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/log.hpp"
 #include <filesystem>
 #include <fstream>
@@ -173,15 +174,12 @@ bool AutotunerEngine::save_fal_compiled(const std::string &output_path) {
   }
 }
 
-bool AutotunerEngine::load_routine_library(const std::string &routine_name,
-                                           const std::string &namespace_name,
-                                           const std::string &library_path) {
+bool AutotunerEngine::load_routine_library(RoutineConfig info) {
   // Check if routine was declared
-  auto it = routine_declarations_.find(routine_name);
+  auto it = routine_declarations_.find(info.name);
   if (it == routine_declarations_.end()) {
     std::ostringstream oss;
-    oss << "Routine '" << routine_name
-        << "' not declared in any loaded .fal file";
+    oss << "Routine '" << info.name << "' not declared in any loaded .fal file";
     log::error(oss.str());
 
     // Build list of available routines
@@ -194,15 +192,11 @@ bool AutotunerEngine::load_routine_library(const std::string &routine_name,
     return false;
   }
 
-  const atc::RoutineDecl &routine_decl = it->second;
-
   try {
-    function_registry_->load_routine(routine_name, namespace_name, library_path,
-                                     routine_decl.input_params,
-                                     routine_decl.output_params);
+    function_registry_->register_routine(info);
 
     std::ostringstream oss;
-    oss << "Loaded routine: " << routine_name << " from " << library_path;
+    oss << "Loaded routine: " << info.name << " from " << info.library_path;
     log::info(oss.str());
     return true;
   } catch (const std::exception &e) {
@@ -213,8 +207,8 @@ bool AutotunerEngine::load_routine_library(const std::string &routine_name,
   }
 }
 
-ParameterMap AutotunerEngine::run_autotuner(const std::string &autotuner_name,
-                                            ParameterMap &inputs) {
+FunctionResult AutotunerEngine::run_autotuner(const std::string &autotuner_name,
+                                              ParameterMap &inputs) {
   auto it = loaded_autotuners_.find(autotuner_name);
   if (it == loaded_autotuners_.end()) {
     throw std::runtime_error("Autotuner not loaded: " + autotuner_name);
@@ -223,7 +217,7 @@ ParameterMap AutotunerEngine::run_autotuner(const std::string &autotuner_name,
   // Validate that all required dependencies are available
   const auto &autotuner = it->second;
   for (const auto &required : autotuner.required_autotuners) {
-    if (!function_registry_->has_simple(required)) {
+    if (!function_registry_->has_function(required)) {
       throw std::runtime_error("Required dependency '" + required +
                                "' not loaded for autotuner '" + autotuner_name +
                                "'");
@@ -250,7 +244,7 @@ std::vector<std::string> AutotunerEngine::get_loaded_routines() const {
   std::vector<std::string> names;
   for (const auto &pair : routine_declarations_) {
     // Check if the routine has been loaded from .so
-    if (function_registry_->has_simple(pair.first)) {
+    if (function_registry_->has_function(pair.first)) {
       names.push_back(pair.first);
     }
   }
@@ -280,12 +274,12 @@ void AutotunerEngine::register_autotuner_as_function(
     const atc::AutotunerDecl &autotuner) {
   // Wrap autotuner in callable function
   auto func = [this,
-               name = autotuner.name](ParameterMap &inputs) -> ParameterMap {
+               name = autotuner.name](ParameterMap &inputs) -> FunctionResult {
     auto it = loaded_autotuners_.find(name);
     return interpreter_->run(it->second, inputs);
   };
 
-  function_registry_->register_autotuner(autotuner.name, func);
+  function_registry_->register_builtin(autotuner.name, func);
 }
 
 } // namespace falcon::autotuner

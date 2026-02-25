@@ -141,10 +141,16 @@ RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
 }
 
 RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
-  // Simple function call (measurement function, autotuner, or builtin)
+  // Look up function
   auto *func = functions_->lookup(expr.name);
   if (func == nullptr) {
     throw EvaluationError("Unknown function: " + expr.name);
+  }
+
+  // Get signature to understand return type
+  const atc::BuiltinSignature *sig = functions_->get_signature(expr.name);
+  if (!sig) {
+    throw EvaluationError("No signature found for function: " + expr.name);
   }
 
   ParameterMap params;
@@ -164,18 +170,21 @@ RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
     }
   }
 
-  auto result = (*func)(params);
+  // Call function
+  FunctionResult result = (*func)(params);
 
-  // Handle return value
+  // Handle return value based on signature
   if (result.empty()) {
     return nullptr; // void return
   }
+
   if (result.size() == 1) {
-    return result.begin()->second; // single return
+    // Single return value
+    return result[0];
   }
-  // For tuple returns
-  // TODO: Implement tuple return handling if needed
-  throw EvaluationError("Tuple returns not yet fully implemented");
+
+  // Tuple return - wrap for later destructuring
+  return TupleValue(result);
 }
 
 // ============================================================================

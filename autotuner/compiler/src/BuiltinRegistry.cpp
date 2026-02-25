@@ -5,50 +5,70 @@ namespace falcon::atc {
 BuiltinFunctionRegistry BuiltinFunctionRegistry::create_default() {
   BuiltinFunctionRegistry registry;
 
-  // Register log::* functions
-  registry.register_builtin(
-      BuiltinSignature("logInfo",
-                       {BuiltinSignature::ParamSpec(
-                           "format", TypeDescriptor(ParamType::String), true)},
-                       TypeDescriptor(ParamType::Nil), false));
+  // ========================================================================
+  // LOGGING FUNCTIONS
+  // ========================================================================
 
-  registry.register_builtin(
-      BuiltinSignature("logWarn",
-                       {BuiltinSignature::ParamSpec(
-                           "format", TypeDescriptor(ParamType::String), true)},
-                       TypeDescriptor(ParamType::Nil), false));
+  registry.register_builtin(BuiltinSignature(
+      "logInfo",
+      {BuiltinSignature::ParamSpec("format", TypeDescriptor(ParamType::String),
+                                   true)},
+      {BuiltinSignature::ParamSpec("out", TypeDescriptor(ParamType::Void))},
+      true));
 
-  registry.register_builtin(
-      BuiltinSignature("logError",
-                       {BuiltinSignature::ParamSpec(
-                           "format", TypeDescriptor(ParamType::String), true)},
-                       TypeDescriptor(ParamType::Nil), false));
+  registry.register_builtin(BuiltinSignature(
+      "logWarn",
+      {BuiltinSignature::ParamSpec("format", TypeDescriptor(ParamType::String),
+                                   true)},
+      {BuiltinSignature::ParamSpec("out", TypeDescriptor(ParamType::Void))},
+      true));
 
-  // Register Error::* functions
-  registry.register_builtin(
-      BuiltinSignature("errorMsg",
-                       {BuiltinSignature::ParamSpec(
-                           "message", TypeDescriptor(ParamType::String), true)},
-                       TypeDescriptor(ParamType::Error), false));
+  registry.register_builtin(BuiltinSignature(
+      "logError",
+      {BuiltinSignature::ParamSpec("format", TypeDescriptor(ParamType::String),
+                                   true)},
+      {BuiltinSignature::ParamSpec("out", TypeDescriptor(ParamType::Void))},
+      true));
 
-  registry.register_builtin(
-      BuiltinSignature("fatalErrorMsg",
-                       {BuiltinSignature::ParamSpec(
-                           "message", TypeDescriptor(ParamType::String), true)},
-                       TypeDescriptor(ParamType::Error), false));
+  // ========================================================================
+  // ERROR CONSTRUCTION
+  // ========================================================================
 
-  // Register database functions
+  registry.register_builtin(BuiltinSignature(
+      "errorMsg",
+      {BuiltinSignature::ParamSpec("message", TypeDescriptor(ParamType::String),
+                                   true)},
+      {BuiltinSignature::ParamSpec("out", TypeDescriptor(ParamType::Error))},
+      true));
+
+  registry.register_builtin(BuiltinSignature(
+      "fatalErrorMsg",
+      {BuiltinSignature::ParamSpec("message", TypeDescriptor(ParamType::String),
+                                   true)},
+      {BuiltinSignature::ParamSpec("out", TypeDescriptor(ParamType::Error))},
+      true));
+
+  // ========================================================================
+  // DATABASE FUNCTIONS
+  // ========================================================================
+
+  // read(scope, name) -> (union<int|float|bool|string|nil>, Error)
   registry.register_builtin(BuiltinSignature(
       "read",
       {BuiltinSignature::ParamSpec("scope", TypeDescriptor(ParamType::String),
                                    true),
        BuiltinSignature::ParamSpec("name", TypeDescriptor(ParamType::String),
                                    true)},
-      TypeDescriptor::make_union(
-          {TypeDescriptor(ParamType::Int), TypeDescriptor(ParamType::Float),
-           TypeDescriptor(ParamType::Bool), TypeDescriptor(ParamType::String)}),
+      {BuiltinSignature::ParamSpec(
+           "characteristic",
+           TypeDescriptor::make_union({TypeDescriptor(ParamType::Int),
+                                       TypeDescriptor(ParamType::Float),
+                                       TypeDescriptor(ParamType::Bool),
+                                       TypeDescriptor(ParamType::String)})),
+       BuiltinSignature::ParamSpec("error", TypeDescriptor(ParamType::Error))},
       true));
 
+  // write(scope, name, value) -> Error
   registry.register_builtin(BuiltinSignature(
       "write",
       {BuiltinSignature::ParamSpec("scope", TypeDescriptor(ParamType::String),
@@ -56,13 +76,14 @@ BuiltinFunctionRegistry BuiltinFunctionRegistry::create_default() {
        BuiltinSignature::ParamSpec("name", TypeDescriptor(ParamType::String),
                                    true),
        BuiltinSignature::ParamSpec(
-           "characteristic",
+           "value",
            TypeDescriptor::make_union({TypeDescriptor(ParamType::Int),
                                        TypeDescriptor(ParamType::Float),
                                        TypeDescriptor(ParamType::Bool),
                                        TypeDescriptor(ParamType::String)}),
            true)},
-      TypeDescriptor(ParamType::Nil), false));
+      {BuiltinSignature::ParamSpec("out", TypeDescriptor(ParamType::Error))},
+      true));
 
   return registry;
 }

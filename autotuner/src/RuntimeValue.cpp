@@ -20,6 +20,12 @@ std::string get_runtime_type_name(const RuntimeValue &value) {
   if (std::holds_alternative<std::nullptr_t>(value)) {
     return "nil";
   }
+  if (std::holds_alternative<ErrorObject>(value)) {
+    return "Error";
+  }
+  if (std::holds_alternative<TupleValue>(value)) {
+    return "tuple";
+  }
   if (std::holds_alternative<
           falcon_core::physics::device_structures::ConnectionSP>(value)) {
     return "Connection";
@@ -35,10 +41,7 @@ std::string get_runtime_type_name(const RuntimeValue &value) {
           value)) {
     return "Gname";
   }
-  if (std::holds_alternative<ErrorObject>(value)) {
-    return "Error";
-  }
-  return "unknown";
+  return "<unknown>";
 }
 
 std::string runtime_value_to_string(const RuntimeValue &value) {
@@ -59,13 +62,18 @@ std::string runtime_value_to_string(const RuntimeValue &value) {
   }
   if (std::holds_alternative<ErrorObject>(value)) {
     const auto &err = std::get<ErrorObject>(value);
-    return "Error(\"" + err.message + "\")";
+    return "Error(" + err.message + ")";
   }
-  if (std::holds_alternative<falcon_core::autotuner_interfaces::names::GnameSP>(
-          value)) {
-    const auto &gname =
-        std::get<falcon_core::autotuner_interfaces::names::GnameSP>(value);
-    return "Gname(\"" + gname->name() + "\")";
+  if (std::holds_alternative<TupleValue>(value)) {
+    const auto &tuple = std::get<TupleValue>(value);
+    std::string result = "(";
+    for (size_t i = 0; i < tuple.values.size(); ++i) {
+      if (i > 0)
+        result += ", ";
+      result += runtime_value_to_string(tuple.values[i]);
+    }
+    result += ")";
+    return result;
   }
 
   return "<object:" + get_runtime_type_name(value) + ">";

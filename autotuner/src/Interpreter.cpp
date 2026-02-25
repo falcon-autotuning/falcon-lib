@@ -1,4 +1,5 @@
 #include "falcon-autotuner/Interpreter.hpp"
+#include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/log.hpp"
 #include <falcon_core/communications/Time.hpp>
 #include <iostream>
@@ -19,8 +20,8 @@ Interpreter::Interpreter(std::shared_ptr<FunctionRegistry> functions,
       falcon_core::physics::config::core::Config>(resp.response);
 }
 
-ParameterMap Interpreter::run(const atc::AutotunerDecl &autotuner,
-                              ParameterMap &inputs) {
+FunctionResult Interpreter::run(const atc::AutotunerDecl &autotuner,
+                                ParameterMap &inputs) {
   // Clear previous state
   variables_.clear();
 
@@ -178,15 +179,16 @@ Interpreter::find_state(const atc::AutotunerDecl &autotuner,
   return nullptr;
 }
 
-ParameterMap Interpreter::extract_outputs(const atc::AutotunerDecl &autotuner) {
-  ParameterMap outputs;
+FunctionResult
+Interpreter::extract_outputs(const atc::AutotunerDecl &autotuner) {
+  FunctionResult outputs;
 
   for (const auto &output_param : autotuner.output_params) {
     auto it = variables_.find(output_param->name);
     if (it == variables_.end()) {
       throw EvaluationError("Output parameter not set: " + output_param->name);
     }
-    outputs[output_param->name] = it->second;
+    outputs.push_back(it->second);
   }
 
   return outputs;
