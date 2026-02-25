@@ -85,7 +85,7 @@ bool SnapshotManager::validate_snapshot(const std::string &filename) {
 
     return std::all_of(json.begin(), json.end(), [](const auto &item) {
       return item.is_object() && item.contains("name") &&
-             item.contains("hash") && item.contains("recordtime");
+             item.contains("scope") && item.contains("characteristic");
     });
 
   } catch (...) {

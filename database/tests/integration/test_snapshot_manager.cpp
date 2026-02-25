@@ -30,7 +30,7 @@ TEST_F(SnapshotManagerTest, GetSchema) {
   auto schema = SnapshotManager::get_json_schema();
   EXPECT_FALSE(schema.empty());
   EXPECT_NE(schema.find("$schema"), std::string::npos);
-  EXPECT_NE(schema.find("device_characteristic"), std::string::npos);
+  EXPECT_NE(schema.find("characteristic"), std::string::npos);
 }
 
 TEST_F(SnapshotManagerTest, ExportAndImport) {
@@ -74,10 +74,10 @@ TEST_F(SnapshotManagerTest, ValidateSnapshot) {
   for (int i = 0; i < 3; ++i) {
     snapshot.push_back(json{{"name", "test_" + std::to_string(i)},
                             {"hash", "hash_" + std::to_string(i)},
-                            {"recordtime", 1000 + i},
+                            {"time", 1000 + i},
                             {"scope", "test"},
                             {"uncertainty", 0.0},
-                            {"device_characteristic", i * 5.0}});
+                            {"characteristic", i * 5.0}});
   }
 
   std::ofstream file(test_file_);
@@ -90,9 +90,7 @@ TEST_F(SnapshotManagerTest, ValidateSnapshot) {
 TEST_F(SnapshotManagerTest, ValidateInvalidSnapshot) {
   // Create an invalid snapshot (missing required fields)
   json snapshot = json::array();
-  snapshot.push_back(json{
-      {"name", "incomplete"} // Missing hash and recordtime
-  });
+  snapshot.push_back(json{{"name", "incomplete"}});
 
   std::ofstream file(test_file_);
   file << snapshot.dump(2);

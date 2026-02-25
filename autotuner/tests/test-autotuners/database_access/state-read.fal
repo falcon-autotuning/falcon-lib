@@ -1,5 +1,5 @@
 autotuner StateRead -> (bool completed) {
-  bool completed = false;
+  completed = false;
 
   start -> init;
   
