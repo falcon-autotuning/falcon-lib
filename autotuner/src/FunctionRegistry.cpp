@@ -237,21 +237,21 @@ void register_all_builtins(FunctionRegistry &registry) {
 
   registry.register_builtin(
       "logInfo", [](const ParameterMap &params) -> FunctionResult {
-        std::string format = std::get<std::string>(params.at("format"));
+        std::string format = std::get<std::string>(params.at("arg1"));
         log::info(format);
         return FunctionResult{nullptr};
       });
 
   registry.register_builtin(
       "logWarn", [](const ParameterMap &params) -> FunctionResult {
-        std::string format = std::get<std::string>(params.at("format"));
+        std::string format = std::get<std::string>(params.at("arg1"));
         log::warn(format);
         return FunctionResult{nullptr};
       });
 
   registry.register_builtin(
       "logError", [](const ParameterMap &params) -> FunctionResult {
-        std::string format = std::get<std::string>(params.at("format"));
+        std::string format = std::get<std::string>(params.at("arg1"));
         log::error(format);
         return FunctionResult{nullptr};
       });
