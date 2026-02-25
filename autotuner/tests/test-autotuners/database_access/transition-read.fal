@@ -1,7 +1,7 @@
 autotuner TransitionRead -> (bool completed) {
-  bool completed = false;
+  completed = false;
   Error err = nil;
-  completed, err = read(scope="device", name="completed", extra="default");
+  completed, err = readLatest(scope="device", name="completed", extra="default");
 
   start -> init;
   

@@ -1,12 +1,12 @@
 
 autotuner StateWrite() -> (bool completed) {
-  bool completed = false;
+  completed = false;
 
   start -> init;
   
   state init {
     // state reads should happen only to predefined variables
-    write(scope="globals", name="completed", extra="default", value=completed);
+    write(scope="globals", name="completed", extra="default", characteristic=completed);
     -> done;
   }
   

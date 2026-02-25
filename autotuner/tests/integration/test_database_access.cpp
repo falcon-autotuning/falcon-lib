@@ -50,7 +50,7 @@ TEST_F(DatabaseAccessTest, StateWrite) {
   EXPECT_EQ(json[0]["scope"], "globals");
   EXPECT_EQ(json[0]["name"], "completed");
   EXPECT_EQ(json[0]["extra"], "default");
-  EXPECT_EQ(json[0]["value"], false);
+  EXPECT_EQ(json[0]["characteristic"], false);
 }
 
 TEST_F(DatabaseAccessTest, TransitionRead) {
@@ -85,8 +85,8 @@ TEST_F(DatabaseAccessTest, TransitionWrite) {
   in.close();
   auto json = nlohmann::json::parse(contents);
   ASSERT_EQ(json.size(), 1);
-  EXPECT_EQ(json[0]["scope"], "globals");
+  EXPECT_EQ(json[0]["scope"], "device");
   EXPECT_EQ(json[0]["name"], "completed");
   EXPECT_EQ(json[0]["extra"], "default");
-  EXPECT_EQ(json[0]["value"], false);
+  EXPECT_EQ(json[0]["characteristic"], true);
 }

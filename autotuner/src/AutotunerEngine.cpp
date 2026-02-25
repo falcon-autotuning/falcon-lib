@@ -233,8 +233,7 @@ bool AutotunerEngine::load_routine_library(const RoutineConfig &info) {
   for (const auto &p : decl.output_params) {
     returns.emplace_back(p->name, p->type, true);
   }
-  atc::BuiltinSignature sig(decl.name, std::move(params), std::move(returns),
-                            false);
+  atc::BuiltinSignature sig(decl.name, std::move(params), std::move(returns));
 
   RoutineInfo routine_info{info.name, info.library_path, ext_func, &sig};
   function_registry_->register_routine(routine_info);
@@ -328,7 +327,7 @@ void AutotunerEngine::register_autotuner_as_function(
     returns.emplace_back(param->name, param->type, true);
   }
   const atc::BuiltinSignature sig(autotuner.name, std::move(params),
-                                  std::move(returns), false);
+                                  std::move(returns));
 
   function_registry_->register_autotuner(&sig, func);
 

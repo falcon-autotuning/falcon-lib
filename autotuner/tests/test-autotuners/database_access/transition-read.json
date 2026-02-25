@@ -3,6 +3,6 @@
     "scope": "device",
     "name": "completed",
     "extra": "default",
-    "characteristic": false
+    "characteristic": true
   }
 ]
