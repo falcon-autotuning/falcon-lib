@@ -32,6 +32,7 @@ add_library(falcon-atc-core
   ${FLEX_AutotunerLexer_OUTPUTS}
   src/Compiler.cpp
   src/ParseError.cpp
+  src/BuiltinRegistry.cpp
 )
 
 set_target_properties(falcon-atc-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
