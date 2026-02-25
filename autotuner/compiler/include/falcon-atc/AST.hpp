@@ -1219,12 +1219,13 @@ public:
     // builtins_.emplace(sig.qualified_name, sig);
   }
 
-  const BuiltinSignature *lookup(const std::string &qualified_name) const {
+  [[nodiscard]] const BuiltinSignature *
+  lookup(const std::string &qualified_name) const {
     auto it = builtins_.find(qualified_name);
     return it != builtins_.end() ? &it->second : nullptr;
   }
 
-  bool exists(const std::string &qualified_name) const {
+  [[nodiscard]] bool exists(const std::string &qualified_name) const {
     return builtins_.find(qualified_name) != builtins_.end();
   }
 
