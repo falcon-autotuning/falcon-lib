@@ -57,6 +57,11 @@ public:
    * @brief Register a routine loaded from .so file.
    */
   void register_routine(const RoutineInfo &routine);
+  /**
+   * @brief Register an autotuner loaded from parser.
+   */
+  void register_autotuner(const atc::BuiltinSignature *sig,
+                          ExternalFunction func);
 
   /**
    * @brief Look up function by name (supports both qualified and simple names).

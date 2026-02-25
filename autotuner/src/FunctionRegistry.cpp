@@ -2,7 +2,6 @@
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/log.hpp"
 #include <falcon-database/DatabaseConnection.hpp>
-#include <iostream>
 #include <stdexcept>
 
 namespace falcon::autotuner {
@@ -17,7 +16,7 @@ void FunctionRegistry::register_builtin(const std::string &name,
 
   // Look up signature from the unified builtin registry
   const atc::BuiltinSignature *sig = builtin_registry_.lookup(name);
-  if (!sig) {
+  if (sig == nullptr) {
     throw std::runtime_error(
         "Cannot register builtin '" + name +
         "': signature not found in BuiltinFunctionRegistry. "
@@ -26,6 +25,12 @@ void FunctionRegistry::register_builtin(const std::string &name,
 
   functions_[name] = std::move(func);
   signatures_[name] = sig;
+}
+
+void FunctionRegistry::register_autotuner(const atc::BuiltinSignature *sig,
+                                          ExternalFunction func) {
+  functions_[sig->qualified_name] = std::move(func);
+  signatures_[sig->qualified_name] = sig;
 }
 
 void FunctionRegistry::register_routine(const RoutineInfo &routine) {
