@@ -6,36 +6,38 @@ using namespace falcon::autotuner::test;
 class DatabaseAccessTest : public DSLTestBase {};
 
 TEST_F(DatabaseAccessTest, StateRead0) {
-
   ParameterMap params;
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/database_access/state-read.fal"),
       "StateRead", params, true,
       std::filesystem::path(
           "test-autotuners/database_access/state-read-0.json")};
-  ASSERT_TRUE(compile_and_run(cenv));
-  EXPECT_FALSE(std::get<bool>(params.at("completed")));
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_FALSE(std::get<bool>(outputs[0]));
 }
 
 TEST_F(DatabaseAccessTest, StateRead1) {
-
   ParameterMap params;
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/database_access/state-read.fal"),
       "StateRead", params, true,
       std::filesystem::path(
           "test-autotuners/database_access/state-read-1.json")};
-  ASSERT_TRUE(compile_and_run(cenv));
-  EXPECT_TRUE(std::get<bool>(params.at("completed")));
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_TRUE(std::get<bool>(outputs[0]));
 }
 
 TEST_F(DatabaseAccessTest, StateWrite) {
-
   ParameterMap params;
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/database_access/state-write.fal"),
       "StateWrite", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
   auto out_path = std::filesystem::temp_directory_path() / "state-write.json";
   export_snapshot(out_path);
   std::ifstream in(out_path);
@@ -52,7 +54,6 @@ TEST_F(DatabaseAccessTest, StateWrite) {
 }
 
 TEST_F(DatabaseAccessTest, TransitionRead) {
-
   ParameterMap params;
   SingleCompileEnvironment cenv{
       std::filesystem::path(
@@ -60,18 +61,20 @@ TEST_F(DatabaseAccessTest, TransitionRead) {
       "TransitionRead", params, true,
       std::filesystem::path(
           "test-autotuners/database_access/transition-read.json")};
-  ASSERT_TRUE(compile_and_run(cenv));
-  EXPECT_TRUE(std::get<bool>(params.at("completed")));
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_TRUE(std::get<bool>(outputs[0]));
 }
 
 TEST_F(DatabaseAccessTest, TransitionWrite) {
-
   ParameterMap params;
   SingleCompileEnvironment cenv{
       std::filesystem::path(
           "test-autotuners/database_access/transition-write.fal"),
       "TransitionWrite", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
   auto out_path =
       std::filesystem::temp_directory_path() / "transition-write.json";
   export_snapshot(out_path);

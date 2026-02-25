@@ -135,7 +135,8 @@ protected:
     return file_path;
   }
 
-  bool compile_and_run(CompileEnvironment &cenv) {
+  std::tuple<bool, std::vector<RuntimeValue>>
+  compile_and_run(CompileEnvironment &cenv) {
 
     // Fill database
     database::SnapshotManager snapm(db_);
@@ -148,6 +149,9 @@ protected:
     std::atomic<bool> responder_ready{false};
     std::atomic<bool> request_received{false};
     std::atomic<bool> autotuner_result{false};
+    std::atomic<bool> client_done{false};
+    std::mutex result_mutex;
+    std::vector<RuntimeValue> autotuner_output;
 
     // Start the device config responder thread (NATS)
     std::thread responder([&]() {
@@ -163,11 +167,13 @@ protected:
             const falcon_core::physics::config::core::ConfigSP config =
                 loader.config();
             response.response = config->to_json_string();
-            nlohmann::json j = response.to_json();
-            hub.publish("FALCON.DEVICE_CONFIG_RESPONSE", j.dump());
+            nlohmann::json json = response.to_json();
+            hub.publish("FALCON.DEVICE_CONFIG_RESPONSE", json.dump());
           });
       responder_ready = true;
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+      while (!client_done) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
       hub.unsubscribe("INSTRUMENTHUB.DEVICE_CONFIG_REQUEST");
     });
 
@@ -194,18 +200,30 @@ protected:
               << "Failed to load routine: " << lib_path;
         }
 
-        auto _ = engine.run_autotuner(cenv.autotuner_name, cenv.params);
+        auto result = engine.run_autotuner(cenv.autotuner_name, cenv.params);
+        {
+          std::lock_guard<std::mutex> lock(result_mutex);
+          autotuner_output =
+              result; // assuming result is std::vector<RuntimeValue>
+        }
         autotuner_result = true;
       } catch (const std::exception &e) {
         std::cout << "EXCEPTION in client thread: " << e.what() << '\n';
         autotuner_result = false;
       }
+      client_done = true;
     });
 
     client.join();
     responder.join();
 
     bool result = autotuner_result;
+    std::vector<RuntimeValue> output;
+    {
+      std::lock_guard<std::mutex> lock(result_mutex);
+      output = autotuner_output;
+    }
+
     if (cenv.expect_success) {
       EXPECT_TRUE(result) << "Autotuner execution failed: "
                           << cenv.autotuner_name;
@@ -213,7 +231,7 @@ protected:
       EXPECT_FALSE(result) << "Autotuner should have failed: "
                            << cenv.autotuner_name;
     }
-    return result;
+    return std::make_tuple(result, output);
   }
 
   void export_snapshot(const std::filesystem::path &path) {

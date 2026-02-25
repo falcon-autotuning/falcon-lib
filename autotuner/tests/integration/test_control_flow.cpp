@@ -9,9 +9,10 @@ TEST_F(ControlFlowTest, SequentialStates) {
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/control_flow/sequential-test.fal"),
       "SequentialTest", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("step"), params.end());
-  EXPECT_EQ(std::get<int64_t>(params.at("step")), 3);
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), 3);
 }
 
 TEST_F(ControlFlowTest, LoopLikeIteration) {
@@ -20,9 +21,10 @@ TEST_F(ControlFlowTest, LoopLikeIteration) {
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/control_flow/iteration-test.fal"),
       "IterationTest", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("counter"), params.end());
-  EXPECT_EQ(std::get<int64_t>(params.at("counter")), 10);
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), 10);
 }
 
 TEST_F(ControlFlowTest, ConditionalChainNegative) {
@@ -32,9 +34,10 @@ TEST_F(ControlFlowTest, ConditionalChainNegative) {
       std::filesystem::path(
           "test-autotuners/control_flow/conditional-chain.fal"),
       "ConditionalChain", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("category"), params.end());
-  EXPECT_EQ(std::get<std::string>(params.at("category")), "negative");
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_EQ(std::get<std::string>(outputs[0]), "negative");
 }
 
 TEST_F(ControlFlowTest, ConditionalChainingZero) {
@@ -44,9 +47,10 @@ TEST_F(ControlFlowTest, ConditionalChainingZero) {
       std::filesystem::path(
           "test-autotuners/control_flow/conditional-chain.fal"),
       "ConditionalChain", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("category"), params.end());
-  EXPECT_EQ(std::get<std::string>(params.at("category")), "zero");
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_EQ(std::get<std::string>(outputs[0]), "zero");
 }
 
 TEST_F(ControlFlowTest, ConditionalChainingSmall) {
@@ -56,9 +60,10 @@ TEST_F(ControlFlowTest, ConditionalChainingSmall) {
       std::filesystem::path(
           "test-autotuners/control_flow/conditional-chain.fal"),
       "ConditionalChain", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("category"), params.end());
-  EXPECT_EQ(std::get<std::string>(params.at("category")), "small");
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_EQ(std::get<std::string>(outputs[0]), "small");
 }
 
 TEST_F(ControlFlowTest, ConditionalChainingMedium) {
@@ -68,9 +73,10 @@ TEST_F(ControlFlowTest, ConditionalChainingMedium) {
       std::filesystem::path(
           "test-autotuners/control_flow/conditional-chain.fal"),
       "ConditionalChain", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("category"), params.end());
-  EXPECT_EQ(std::get<std::string>(params.at("category")), "medium");
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_EQ(std::get<std::string>(outputs[0]), "medium");
 }
 
 TEST_F(ControlFlowTest, ConditionalChainingLarge) {
@@ -80,9 +86,10 @@ TEST_F(ControlFlowTest, ConditionalChainingLarge) {
       std::filesystem::path(
           "test-autotuners/control_flow/conditional-chain.fal"),
       "ConditionalChain", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("category"), params.end());
-  EXPECT_EQ(std::get<std::string>(params.at("category")), "large");
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_EQ(std::get<std::string>(outputs[0]), "large");
 }
 
 TEST_F(ControlFlowTest, SimpleSweep) {
@@ -93,11 +100,11 @@ TEST_F(ControlFlowTest, SimpleSweep) {
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/control_flow/simple-sweep.fal"),
       "SimpleSweep", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("count"), params.end());
-  ASSERT_NE(params.find("final_value"), params.end());
-  EXPECT_EQ(std::get<int64_t>(params.at("count")), 11);
-  EXPECT_NEAR(std::get<double>(params.at("final_value")), 1.0, 0.01);
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_GE(outputs.size(), 2);
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), 11);
+  EXPECT_NEAR(std::get<double>(outputs[1]), 1.0, 0.01);
 }
 
 TEST_F(ControlFlowTest, MultiStageWorkflow) {
@@ -106,9 +113,9 @@ TEST_F(ControlFlowTest, MultiStageWorkflow) {
       std::filesystem::path(
           "test-autotuners/control_flow/multi-stage-workflow.fal"),
       "MultiStageWorkflow", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("initialized"), params.end());
-  ASSERT_NE(params.find("stage"), params.end());
-  EXPECT_TRUE(std::get<bool>(params.at("initialized")));
-  EXPECT_EQ(std::get<std::string>(params.at("stage")), "completed");
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_GE(outputs.size(), 2);
+  EXPECT_TRUE(std::get<bool>(outputs[1]));
+  EXPECT_EQ(std::get<std::string>(outputs[0]), "completed");
 }
