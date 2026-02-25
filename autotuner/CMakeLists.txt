@@ -70,6 +70,7 @@ add_library(falcon-dsl SHARED
   src/TypeRegistry.cpp
   src/ExprEvaluator.cpp
   src/Interpreter.cpp
+  src/SourceContext.cpp
   src/log.cpp
 )
 

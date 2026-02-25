@@ -71,6 +71,14 @@
              autotuner_output_params.count(name) > 0;
     }
   }
+
+  void set_stmt_location(falcon::atc::Stmt* stmt, const falcon::atc::Parser::location_type& loc) {
+    if (stmt) {
+      stmt->filename = falcon::atc::current_filename;
+      stmt->line = loc.begin.line;
+      stmt->column = loc.begin.column;
+    }
+  }
 }
 
 // Token declarations
@@ -465,6 +473,7 @@ stmt[result]
     : var_decl_stmt[var_decl]
       { 
         $result = std::move($var_decl); 
+        set_stmt_location($result.get(), @var_decl);
       }
     | identifier_list[targets] ASSIGN expr[value] SEMICOLON
       {
@@ -485,10 +494,12 @@ stmt[result]
           std::move($targets), 
           std::move($value)
         );
+        set_stmt_location($result.get(), @targets);
       }
     | expr[side_effect_expr] SEMICOLON
       {
         $result = std::make_unique<ExprStmt>(std::move($side_effect_expr));
+        set_stmt_location($result.get(), @side_effect_expr);
       }
     | IF LPAREN expr[condition] RPAREN LBRACE stmt_list[then_body] RBRACE elif_chain[else_body]
       {
@@ -497,12 +508,14 @@ stmt[result]
           std::move($then_body),
           std::move($else_body)
         );
+        set_stmt_location($result.get(), @IF);
       }
     | ARROW IDENTIFIER[target_state] SEMICOLON
       {
         $result = std::make_unique<TransitionStmt>(
           std::move($target_state)
         );
+        set_stmt_location($result.get(), @ARROW);
       }
     | ARROW IDENTIFIER[target_state] LPAREN expr_list[params] RPAREN SEMICOLON
       {
@@ -510,10 +523,12 @@ stmt[result]
           std::move($target_state), 
           std::move($params)
         );
+        set_stmt_location($result.get(), @ARROW);
       }
     | TERMINAL SEMICOLON
       {
         $result = std::make_unique<TerminalStmt>();
+        set_stmt_location($result.get(), @TERMINAL);
       }
     ;
 

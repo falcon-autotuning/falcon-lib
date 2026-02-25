@@ -1,4 +1,6 @@
 #include "falcon-autotuner/StmtExecutor.hpp"
+#include "falcon-autotuner/RuntimeValue.hpp"
+#include "falcon-autotuner/SourceContext.hpp"
 
 namespace falcon::autotuner {
 
@@ -8,20 +10,50 @@ StmtExecutor::StmtExecutor(ParameterMap &variables,
     : variables_(variables), functions_(functions), types_(types),
       evaluator_(variables_, functions_, types_) {}
 
+// Template helper to wrap execution with error context
+template <typename Func>
+ControlFlow StmtExecutor::execute_with_context(const atc::Stmt &stmt,
+                                               Func func) {
+  try {
+    return func();
+  } catch (const EvaluationError &e) {
+    // Already an EvaluationError, enhance it with source context
+    if (!stmt.filename.empty() && stmt.line > 0) {
+      SourceLocation loc(stmt.filename, stmt.line, stmt.column);
+      std::string enhanced_error =
+          SourceContext::format_error_with_context(loc, e.what());
+      throw EvaluationError(enhanced_error);
+    }
+    throw; // Re-throw as-is if no source location
+  } catch (const std::exception &e) {
+    // Wrap any other exception with source context
+    if (!stmt.filename.empty() && stmt.line > 0) {
+      SourceLocation loc(stmt.filename, stmt.line, stmt.column);
+      std::string enhanced_error =
+          SourceContext::format_error_with_context(loc, e.what());
+      throw EvaluationError(enhanced_error);
+    }
+    // Re-throw wrapped in EvaluationError
+    throw EvaluationError(std::string("Unexpected error: ") + e.what());
+  }
+}
+
 ControlFlow StmtExecutor::execute(const atc::Stmt &stmt) {
-  // Dispatch based on statement type
+  // Dispatch based on statement type, wrapped with error context
   if (auto *var_decl = dynamic_cast<const atc::VarDeclStmt *>(&stmt)) {
-    return exec_var_decl(*var_decl);
+    return execute_with_context(stmt,
+                                [&]() { return exec_var_decl(*var_decl); });
   } else if (auto *assign = dynamic_cast<const atc::AssignStmt *>(&stmt)) {
-    return exec_assign(*assign);
+    return execute_with_context(stmt, [&]() { return exec_assign(*assign); });
   } else if (auto *expr_stmt = dynamic_cast<const atc::ExprStmt *>(&stmt)) {
-    return exec_expr(*expr_stmt);
+    return execute_with_context(stmt, [&]() { return exec_expr(*expr_stmt); });
   } else if (auto *if_stmt = dynamic_cast<const atc::IfStmt *>(&stmt)) {
-    return exec_if(*if_stmt);
+    return execute_with_context(stmt, [&]() { return exec_if(*if_stmt); });
   } else if (auto *trans = dynamic_cast<const atc::TransitionStmt *>(&stmt)) {
-    return exec_transition(*trans);
+    return execute_with_context(stmt,
+                                [&]() { return exec_transition(*trans); });
   } else if (auto *term = dynamic_cast<const atc::TerminalStmt *>(&stmt)) {
-    return exec_terminal(*term);
+    return execute_with_context(stmt, [&]() { return exec_terminal(*term); });
   } else {
     throw EvaluationError("Unknown statement type");
   }
@@ -94,36 +126,21 @@ ControlFlow StmtExecutor::exec_assign(const atc::AssignStmt &stmt) {
 
     const auto &tuple = std::get<TupleValue>(value);
 
-    if (tuple.values.size() != stmt.targets.size()) {
-      throw EvaluationError("Tuple assignment arity mismatch: expected " +
+    if (tuple.size() != stmt.targets.size()) {
+      throw EvaluationError("Tuple assignment size mismatch: expected " +
                             std::to_string(stmt.targets.size()) +
-                            " values, got " +
-                            std::to_string(tuple.values.size()));
+                            " values, got " + std::to_string(tuple.size()));
     }
 
-    // Assign each value to corresponding target
+    // Assign each value
     for (size_t i = 0; i < stmt.targets.size(); ++i) {
-      variables_[stmt.targets[i]] = tuple.values[i];
+      variables_[stmt.targets[i]] = tuple[i];
     }
   } else {
-    // Single assignment: a = value
-    if (stmt.targets.size() != 1) {
-      throw EvaluationError("Single assignment must have exactly one target");
-    }
-
-    // If value is a tuple with single element, unwrap it
-    if (std::holds_alternative<TupleValue>(value)) {
-      const auto &tuple = std::get<TupleValue>(value);
-      if (tuple.values.size() == 1) {
-        variables_[stmt.targets[0]] = tuple.values[0];
-      } else {
-        throw EvaluationError(
-            "Cannot assign tuple to single variable (use tuple destructuring)");
-      }
-    } else {
-      variables_[stmt.targets[0]] = value;
-    }
+    // Single assignment: x = value
+    variables_[stmt.targets[0]] = value;
   }
+
   return ControlFlow::none();
 }
 

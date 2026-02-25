@@ -610,6 +610,7 @@ public:
   virtual std::unique_ptr<Stmt> clone() const = 0;
 
   // Source location for error reporting
+  mutable std::string filename;
   mutable int line = 0;
   mutable int column = 0;
 };
