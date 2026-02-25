@@ -22,7 +22,7 @@ autotuner StateRead -> (bool completed) {
     terminal;
   }
   state fail {
-    log::info("We failed roger");
+    logInfo("We failed roger");
     terminal;
   }
 }

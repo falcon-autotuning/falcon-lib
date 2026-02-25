@@ -157,25 +157,6 @@ void register_all_builtins(FunctionRegistry &registry) {
       });
 
   // ------------------------------------------------------------------------
-  // Config functions (Config::*)
-  // ------------------------------------------------------------------------
-
-  // registry.register_builtin(
-  //     "Config::get_group_plunger_gates",
-  //     [](const ParameterMap &params) -> ParameterMap {
-  //       // TODO: Actual falcon-core integration
-  //       std::cout << "[STUB] Config::get_group_plunger_gates called"
-  //                 << std::endl;
-  //
-  //       // Return a Connections object
-  //       ConnectionsObject conns;
-  //       // conns.wrapped_object =
-  //       // std::make_shared<falcon_core::Connections>(...);
-  //
-  //       return {{"result", conns}};
-  //     });
-  //
-  // ------------------------------------------------------------------------
   // Error constructors (Error::*, FatalError::*)
   // ------------------------------------------------------------------------
 

@@ -34,7 +34,6 @@ private:
   RuntimeValue eval_method_call(const atc::MethodCallExpr &expr);
   RuntimeValue eval_index(const atc::IndexExpr &expr);
   RuntimeValue eval_call(const atc::CallExpr &expr);
-  RuntimeValue eval_qualified_call(const atc::QualifiedCallExpr &expr);
 
   RuntimeValue apply_binary_op(const std::string &op, const RuntimeValue &left,
                                const RuntimeValue &right);

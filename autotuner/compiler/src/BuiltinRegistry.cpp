@@ -7,32 +7,32 @@ BuiltinFunctionRegistry BuiltinFunctionRegistry::create_default() {
 
   // Register log::* functions
   registry.register_builtin(
-      BuiltinSignature("log::info",
+      BuiltinSignature("logInfo",
                        {BuiltinSignature::ParamSpec(
                            "format", TypeDescriptor(ParamType::String), true)},
                        TypeDescriptor(ParamType::Nil), false));
 
   registry.register_builtin(
-      BuiltinSignature("log::warn",
+      BuiltinSignature("logWarn",
                        {BuiltinSignature::ParamSpec(
                            "format", TypeDescriptor(ParamType::String), true)},
                        TypeDescriptor(ParamType::Nil), false));
 
   registry.register_builtin(
-      BuiltinSignature("log::error",
+      BuiltinSignature("logError",
                        {BuiltinSignature::ParamSpec(
                            "format", TypeDescriptor(ParamType::String), true)},
                        TypeDescriptor(ParamType::Nil), false));
 
   // Register Error::* functions
   registry.register_builtin(
-      BuiltinSignature("Error::msg",
+      BuiltinSignature("errorMsg",
                        {BuiltinSignature::ParamSpec(
                            "message", TypeDescriptor(ParamType::String), true)},
                        TypeDescriptor(ParamType::Error), false));
 
   registry.register_builtin(
-      BuiltinSignature("FatalError::msg",
+      BuiltinSignature("fatalErrorMsg",
                        {BuiltinSignature::ParamSpec(
                            "message", TypeDescriptor(ParamType::String), true)},
                        TypeDescriptor(ParamType::Error), false));
