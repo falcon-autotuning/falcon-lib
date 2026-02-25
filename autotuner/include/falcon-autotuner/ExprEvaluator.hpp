@@ -25,8 +25,8 @@ public:
   evaluate_list(const std::vector<std::unique_ptr<atc::Expr>> &exprs);
 
 private:
-  RuntimeValue eval_literal(const atc::LiteralExpr &expr);
-  RuntimeValue eval_nil_literal(const atc::NilLiteralExpr &expr);
+  static RuntimeValue eval_literal(const atc::LiteralExpr &expr);
+  static RuntimeValue eval_nil_literal(const atc::NilLiteralExpr &expr);
   RuntimeValue eval_variable(const atc::VarExpr &expr);
   RuntimeValue eval_binary(const atc::BinaryExpr &expr);
   RuntimeValue eval_unary(const atc::UnaryExpr &expr);

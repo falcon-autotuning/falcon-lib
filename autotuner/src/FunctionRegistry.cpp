@@ -81,14 +81,13 @@ void FunctionRegistry::register_autotuner(const std::string &name,
   autotuner_functions_[name] = std::move(func);
 }
 
-ExternalFunction *
-FunctionRegistry::lookup_qualified(const std::string &qualified_name) {
-  auto it = builtin_functions_.find(qualified_name);
-  return it != builtin_functions_.end() ? &it->second : nullptr;
-}
-
-ExternalFunction *FunctionRegistry::lookup_simple(const std::string &name) {
-  // First check user routines
+ExternalFunction *FunctionRegistry::lookup(const std::string &name) {
+  // First check builtin functions
+  auto it = builtin_functions_.find(name);
+  if (it != builtin_functions_.end()) {
+    return &it->second;
+  }
+  // Then check user routines
   auto routine_it = user_routines_.find(name);
   if (routine_it != user_routines_.end()) {
     return &routine_it->second.function;

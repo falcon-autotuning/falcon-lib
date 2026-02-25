@@ -12,27 +12,34 @@ ExprEvaluator::ExprEvaluator(ParameterMap &variables,
 
 RuntimeValue ExprEvaluator::evaluate(const atc::Expr &expr) {
   // Dispatch based on actual expression type
-  if (auto *lit = dynamic_cast<const atc::LiteralExpr *>(&expr)) {
+  if (const auto *lit = dynamic_cast<const atc::LiteralExpr *>(&expr)) {
     return eval_literal(*lit);
-  } else if (auto *nil = dynamic_cast<const atc::NilLiteralExpr *>(&expr)) {
-    return eval_nil_literal(*nil);
-  } else if (auto *var = dynamic_cast<const atc::VarExpr *>(&expr)) {
-    return eval_variable(*var);
-  } else if (auto *bin = dynamic_cast<const atc::BinaryExpr *>(&expr)) {
-    return eval_binary(*bin);
-  } else if (auto *un = dynamic_cast<const atc::UnaryExpr *>(&expr)) {
-    return eval_unary(*un);
-  } else if (auto *mem = dynamic_cast<const atc::MemberExpr *>(&expr)) {
-    return eval_member(*mem);
-  } else if (auto *method = dynamic_cast<const atc::MethodCallExpr *>(&expr)) {
-    return eval_method_call(*method);
-  } else if (auto *idx = dynamic_cast<const atc::IndexExpr *>(&expr)) {
-    return eval_index(*idx);
-  } else if (auto *call = dynamic_cast<const atc::CallExpr *>(&expr)) {
-    return eval_call(*call);
-  } else {
-    throw EvaluationError("Unknown expression type");
   }
+  if (const auto *nil = dynamic_cast<const atc::NilLiteralExpr *>(&expr)) {
+    return eval_nil_literal(*nil);
+  }
+  if (const auto *var = dynamic_cast<const atc::VarExpr *>(&expr)) {
+    return eval_variable(*var);
+  }
+  if (const auto *bin = dynamic_cast<const atc::BinaryExpr *>(&expr)) {
+    return eval_binary(*bin);
+  }
+  if (const auto *un = dynamic_cast<const atc::UnaryExpr *>(&expr)) {
+    return eval_unary(*un);
+  }
+  if (const auto *mem = dynamic_cast<const atc::MemberExpr *>(&expr)) {
+    return eval_member(*mem);
+  }
+  if (const auto *method = dynamic_cast<const atc::MethodCallExpr *>(&expr)) {
+    return eval_method_call(*method);
+  }
+  if (const auto *idx = dynamic_cast<const atc::IndexExpr *>(&expr)) {
+    return eval_index(*idx);
+  }
+  if (const auto *call = dynamic_cast<const atc::CallExpr *>(&expr)) {
+    return eval_call(*call);
+  }
+  throw EvaluationError("Unknown expression type");
 }
 
 std::vector<RuntimeValue> ExprEvaluator::evaluate_list(
@@ -51,7 +58,8 @@ RuntimeValue ExprEvaluator::eval_literal(const atc::LiteralExpr &expr) {
       [](auto &&val) -> RuntimeValue { return RuntimeValue(val); }, expr.value);
 }
 
-RuntimeValue ExprEvaluator::eval_nil_literal(const atc::NilLiteralExpr &expr) {
+RuntimeValue
+ExprEvaluator::eval_nil_literal(const atc::NilLiteralExpr & /*expr*/) {
   return nullptr; // nil is represented as nullptr_t
 }
 
@@ -134,7 +142,7 @@ RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
 
 RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
   // Simple function call (measurement function, autotuner, or builtin)
-  auto *func = functions_->lookup_simple(expr.name);
+  auto *func = functions_->lookup(expr.name);
   if (func == nullptr) {
     throw EvaluationError("Unknown function: " + expr.name);
   }

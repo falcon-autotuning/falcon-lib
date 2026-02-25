@@ -52,7 +52,7 @@ private:
   ControlFlow exec_expr(const atc::ExprStmt &stmt);
   ControlFlow exec_if(const atc::IfStmt &stmt);
   ControlFlow exec_transition(const atc::TransitionStmt &stmt);
-  ControlFlow exec_terminal(const atc::TerminalStmt &stmt);
+  static ControlFlow exec_terminal(const atc::TerminalStmt &stmt);
 
   ParameterMap &variables_;
   std::shared_ptr<FunctionRegistry> functions_;
