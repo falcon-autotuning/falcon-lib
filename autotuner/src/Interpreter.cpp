@@ -2,6 +2,7 @@
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/log.hpp"
 #include <falcon_core/communications/Time.hpp>
+#include <fmt/format.h>
 #include <iostream>
 namespace {
 const int INSTRUMENT_SERVER_LATENCY = 1000;
@@ -56,18 +57,19 @@ FunctionResult Interpreter::run(const atc::AutotunerDecl &autotuner,
   // State machine execution loop
   while (true) {
     const atc::StateDecl *state = find_state(autotuner, current_state);
-    if (!state) {
+    if (state == nullptr) {
       throw EvaluationError("Unknown state: " + current_state);
     }
 
-    std::cout << "[Interpreter] Entering state: " << current_state << std::endl;
+    log::debug(fmt::format("Entering state: {}", current_state));
 
     auto flow = execute_state(*state, state_params);
 
     if (flow.type == ControlFlow::Type::Terminal) {
-      std::cout << "[Interpreter] Reached terminal state" << std::endl;
+      log::debug("Reached terminal state");
       break;
-    } else if (flow.type == ControlFlow::Type::Transition) {
+    }
+    if (flow.type == ControlFlow::Type::Transition) {
       current_state = flow.target_state;
       state_params = flow.parameters;
     } else {

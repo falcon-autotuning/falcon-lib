@@ -9,9 +9,10 @@ TEST_F(BasicFeaturesTest, TheSimplest) {
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/basic_features/no-transition.fal"),
       "NoTransition", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("completed"), params.end());
-  EXPECT_TRUE(std::get<bool>(params.at("completed")));
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_TRUE(std::get<bool>(outputs[0]));
 }
 
 TEST_F(BasicFeaturesTest, SimpleTransition) {
@@ -20,9 +21,10 @@ TEST_F(BasicFeaturesTest, SimpleTransition) {
       std::filesystem::path(
           "test-autotuners/basic_features/simple-transition.fal"),
       "SimpleTransition", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("completed"), params.end());
-  EXPECT_TRUE(std::get<bool>(params.at("completed")));
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_TRUE(std::get<bool>(outputs[0]));
 }
 
 TEST_F(BasicFeaturesTest, ConditionalBranchingHigh) {
@@ -32,9 +34,10 @@ TEST_F(BasicFeaturesTest, ConditionalBranchingHigh) {
       std::filesystem::path(
           "test-autotuners/basic_features/conditional-branch.fal"),
       "ConditionalBranch", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("result"), params.end());
-  EXPECT_EQ(std::get<std::string>(params.at("result")), "high");
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_EQ(std::get<std::string>(outputs[0]), "high");
 }
 
 TEST_F(BasicFeaturesTest, ConditionalBranchingLow) {
@@ -44,9 +47,10 @@ TEST_F(BasicFeaturesTest, ConditionalBranchingLow) {
       std::filesystem::path(
           "test-autotuners/basic_features/conditional-branch.fal"),
       "ConditionalBranch", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("result"), params.end());
-  EXPECT_EQ(std::get<std::string>(params.at("result")), "low");
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_EQ(std::get<std::string>(outputs[0]), "low");
 }
 
 TEST_F(BasicFeaturesTest, ParameterInputOutput) {
@@ -56,11 +60,11 @@ TEST_F(BasicFeaturesTest, ParameterInputOutput) {
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/basic_features/calculator.fal"),
       "Calculator", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("sum"), params.end());
-  ASSERT_NE(params.find("product"), params.end());
-  EXPECT_EQ(std::get<int64_t>(params.at("sum")), 15);
-  EXPECT_EQ(std::get<int64_t>(params.at("product")), 50);
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(outputs.size(), 2);
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), 15);
+  EXPECT_EQ(std::get<int64_t>(outputs[1]), 50);
 }
 
 TEST_F(BasicFeaturesTest, TempVariables) {
@@ -68,11 +72,11 @@ TEST_F(BasicFeaturesTest, TempVariables) {
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/basic_features/temp-vars.fal"),
       "TempVars", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("final_value"), params.end());
-  EXPECT_EQ(std::get<int64_t>(params.at("final_value")), 42);
-  EXPECT_EQ(params.find("intermediate"),
-            params.end()); // Temp var should not persist
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), 42);
+  // No intermediate variable in outputs vector
 }
 
 TEST_F(BasicFeaturesTest, TerminalState) {
@@ -80,7 +84,8 @@ TEST_F(BasicFeaturesTest, TerminalState) {
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/basic_features/terminal.fal"),
       "Terminal", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("steps"), params.end());
-  EXPECT_EQ(std::get<int64_t>(params.at("steps")), 2);
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_FALSE(outputs.empty());
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), 2);
 }

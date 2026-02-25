@@ -11,15 +11,13 @@ TEST_F(ExpressionsTest, ArithmeticOperations) {
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/expressions/arithmetic-test.fal"),
       "ArithmeticTest", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("add"), params.end());
-  ASSERT_NE(params.find("sub"), params.end());
-  ASSERT_NE(params.find("mul"), params.end());
-  ASSERT_NE(params.find("div"), params.end());
-  EXPECT_DOUBLE_EQ(std::get<double>(params.at("add")), 13.0);
-  EXPECT_DOUBLE_EQ(std::get<double>(params.at("sub")), 7.0);
-  EXPECT_DOUBLE_EQ(std::get<double>(params.at("mul")), 30.0);
-  EXPECT_NEAR(std::get<double>(params.at("div")), 3.333, 0.01);
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(outputs.size(), 4);
+  EXPECT_DOUBLE_EQ(std::get<double>(outputs[0]), 13.0);   // add
+  EXPECT_DOUBLE_EQ(std::get<double>(outputs[1]), 7.0);    // sub
+  EXPECT_DOUBLE_EQ(std::get<double>(outputs[2]), 30.0);   // mul
+  EXPECT_NEAR(std::get<double>(outputs[3]), 3.333, 0.01); // div
 }
 
 TEST_F(ExpressionsTest, ComparisonOperators) {
@@ -29,17 +27,14 @@ TEST_F(ExpressionsTest, ComparisonOperators) {
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/expressions/comparison-test.fal"),
       "ComparisonTest", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("gt"), params.end());
-  ASSERT_NE(params.find("lt"), params.end());
-  ASSERT_NE(params.find("eq"), params.end());
-  ASSERT_NE(params.find("gte"), params.end());
-  ASSERT_NE(params.find("lte"), params.end());
-  EXPECT_FALSE(std::get<bool>(params.at("gt")));
-  EXPECT_TRUE(std::get<bool>(params.at("lt")));
-  EXPECT_FALSE(std::get<bool>(params.at("eq")));
-  EXPECT_FALSE(std::get<bool>(params.at("gte")));
-  EXPECT_TRUE(std::get<bool>(params.at("lte")));
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(outputs.size(), 5);
+  EXPECT_FALSE(std::get<bool>(outputs[0])); // gt
+  EXPECT_TRUE(std::get<bool>(outputs[1]));  // lt
+  EXPECT_FALSE(std::get<bool>(outputs[2])); // eq
+  EXPECT_FALSE(std::get<bool>(outputs[3])); // gte
+  EXPECT_TRUE(std::get<bool>(outputs[4]));  // lte
 }
 
 TEST_F(ExpressionsTest, LogicalOperations) {
@@ -49,9 +44,10 @@ TEST_F(ExpressionsTest, LogicalOperations) {
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/expressions/logical-test.fal"),
       "LogicalTest", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("result"), params.end());
-  EXPECT_EQ(std::get<std::string>(params.at("result")), "expected");
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(outputs.size(), 1);
+  EXPECT_EQ(std::get<std::string>(outputs[0]), "expected");
 }
 
 TEST_F(ExpressionsTest, UnaryOperators) {
@@ -61,11 +57,11 @@ TEST_F(ExpressionsTest, UnaryOperators) {
   SingleCompileEnvironment cenv{
       std::filesystem::path("test-autotuners/expressions/unary-test.fal"),
       "UnaryTest", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("negated"), params.end());
-  ASSERT_NE(params.find("inverted"), params.end());
-  EXPECT_EQ(std::get<int64_t>(params.at("negated")), -42);
-  EXPECT_FALSE(std::get<bool>(params.at("inverted")));
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(outputs.size(), 2);
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), -42); // negated
+  EXPECT_FALSE(std::get<bool>(outputs[1]));      // inverted
 }
 
 TEST_F(ExpressionsTest, ComplexExpressions) {
@@ -77,8 +73,9 @@ TEST_F(ExpressionsTest, ComplexExpressions) {
       std::filesystem::path(
           "test-autotuners/expressions/complex-expr-test.fal"),
       "ComplexExprTest", params, true};
-  ASSERT_TRUE(compile_and_run(cenv));
-  ASSERT_NE(params.find("result"), params.end());
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(outputs.size(), 1);
   // (5 + 3) * 4 - 10 = 8 * 4 - 10 = 32 - 10 = 22
-  EXPECT_EQ(std::get<int64_t>(params.at("result")), 22);
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), 22);
 }
