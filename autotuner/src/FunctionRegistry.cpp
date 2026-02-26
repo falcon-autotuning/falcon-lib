@@ -2,6 +2,7 @@
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/log.hpp"
 #include <falcon-database/DatabaseConnection.hpp>
+#include <falcon_core/physics/device_structures/Connection.hpp>
 #include <stdexcept>
 namespace {
 falcon::autotuner::RuntimeValue json_to_runtime_value(const nlohmann::json &j) {
@@ -110,27 +111,47 @@ std::shared_ptr<FunctionRegistry> FunctionRegistry::create_default() {
 }
 
 // Helper for loading optional string fields from ParameterMap
-void load_optional_string(const ParameterMap &params, const char *key,
-                          std::optional<std::string> &field) {
+std::optional<std::string> get_optional_string(const ParameterMap &params,
+                                               const char *key) {
   auto it = params.find(key);
-  if (it != params.end())
-    field = std::get<std::string>(it->second);
+  if (it != params.end() && std::holds_alternative<std::string>(it->second)) {
+    return std::get<std::string>(it->second);
+  }
+  return std::nullopt;
+}
+
+// Helper for loading optional Connection fields from ParameterMap
+std::optional<std::string>
+get_optional_connection_name(const ParameterMap &params, const char *key) {
+  auto it = params.find(key);
+  if (it != params.end() &&
+      std::holds_alternative<
+          falcon_core::physics::device_structures::ConnectionSP>(it->second)) {
+    auto conn = std::get<falcon_core::physics::device_structures::ConnectionSP>(
+        it->second);
+    return conn->name();
+  }
+  return std::nullopt;
 }
 
 // Helper for loading optional double fields from ParameterMap
-void load_optional_double(const ParameterMap &params, const char *key,
-                          std::optional<double> &field) {
+std::optional<double> get_optional_double(const ParameterMap &params,
+                                          const char *key) {
   auto it = params.find(key);
-  if (it != params.end())
-    field = std::get<double>(it->second);
+  if (it != params.end() && std::holds_alternative<double>(it->second)) {
+    return std::get<double>(it->second);
+  }
+  return std::nullopt;
 }
 
 // Helper for loading optional int64_t fields from ParameterMap
-void load_optional_int64(const ParameterMap &params, const char *key,
-                         std::optional<int64_t> &field) {
+std::optional<int64_t> get_optional_int64(const ParameterMap &params,
+                                          const char *key) {
   auto it = params.find(key);
-  if (it != params.end())
-    field = std::get<int64_t>(it->second);
+  if (it != params.end() && std::holds_alternative<int64_t>(it->second)) {
+    return std::get<int64_t>(it->second);
+  }
+  return std::nullopt;
 }
 void register_all_builtins(FunctionRegistry &registry) {
 
@@ -147,16 +168,20 @@ void register_all_builtins(FunctionRegistry &registry) {
         query.scope = scope;
         query.name = name;
 
-        load_optional_string(params, "barrier_gate", query.barrier_gate);
-        load_optional_string(params, "plunger_gate", query.plunger_gate);
-        load_optional_string(params, "reservoir_gate", query.reservoir_gate);
-        load_optional_string(params, "screening_gate", query.screening_gate);
-        load_optional_string(params, "extra", query.extra);
-        load_optional_double(params, "uncertainty", query.uncertainty);
-        load_optional_string(params, "hash", query.hash);
-        load_optional_int64(params, "time", query.time);
-        load_optional_string(params, "state", query.state);
-        load_optional_string(params, "unit_name", query.unit_name);
+        query.barrier_gate =
+            get_optional_connection_name(params, "barrier_gate");
+        query.plunger_gate =
+            get_optional_connection_name(params, "plunger_gate");
+        query.reservoir_gate =
+            get_optional_connection_name(params, "reservoir_gate");
+        query.screening_gate =
+            get_optional_connection_name(params, "screening_gate");
+        query.extra = get_optional_string(params, "extra");
+        query.uncertainty = get_optional_double(params, "uncertainty");
+        query.hash = get_optional_string(params, "hash");
+        query.time = get_optional_int64(params, "time");
+        query.state = get_optional_string(params, "state");
+        query.unit_name = get_optional_string(params, "unit_name");
 
         try {
           auto dchars = db.get_by_query(query);
@@ -211,16 +236,20 @@ void register_all_builtins(FunctionRegistry &registry) {
         dchar.characteristic = runtime_value_to_json(value);
 
         // Optionally fill out other fields from params if needed
-        load_optional_string(params, "barrier_gate", dchar.barrier_gate);
-        load_optional_string(params, "plunger_gate", dchar.plunger_gate);
-        load_optional_string(params, "reservoir_gate", dchar.reservoir_gate);
-        load_optional_string(params, "screening_gate", dchar.screening_gate);
-        load_optional_string(params, "extra", dchar.extra);
-        load_optional_double(params, "uncertainty", dchar.uncertainty);
-        load_optional_string(params, "hash", dchar.hash);
-        load_optional_int64(params, "time", dchar.time);
-        load_optional_string(params, "state", dchar.state);
-        load_optional_string(params, "unit_name", dchar.unit_name);
+        dchar.barrier_gate =
+            get_optional_connection_name(params, "barrier_gate");
+        dchar.plunger_gate =
+            get_optional_connection_name(params, "plunger_gate");
+        dchar.reservoir_gate =
+            get_optional_connection_name(params, "reservoir_gate");
+        dchar.screening_gate =
+            get_optional_connection_name(params, "screening_gate");
+        dchar.extra = get_optional_string(params, "extra");
+        dchar.uncertainty = get_optional_double(params, "uncertainty");
+        dchar.hash = get_optional_string(params, "hash");
+        dchar.time = get_optional_int64(params, "time");
+        dchar.state = get_optional_string(params, "state");
+        dchar.unit_name = get_optional_string(params, "unit_name");
 
         try {
           db.insert(dchar);
