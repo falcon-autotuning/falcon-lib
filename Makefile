@@ -1,7 +1,7 @@
 # Falcon-lib Root Makefile
 # Manages build configurations for all submodules
 
-.PHONY: all deps help clean install-vcpkg-deps build-all test-all
+.PHONY: all deps help clean install-vcpkg-deps build-all test-all install-lsp-framework install-deps install-core
 
 VCPKG_ROOT ?= $(CURDIR)/.vcpkg
 VCPKG_TOOLCHAIN ?= $(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake
@@ -30,7 +30,7 @@ ifeq ($(UNAME_S),Linux)
   ARCHIVE_CAPI_SHA = falcon-core-c-api-linux-x64.tar.gz.sha256
   EXTRACT_CPP = tar -xzf $(TMPDIR)/$(ARCHIVE_CPP) -C $(TMPDIR)/cpp
   EXTRACT_CAPI = tar -xzf $(TMPDIR)/$(ARCHIVE_CAPI) -C $(TMPDIR)/c_api
-  LIBSUBDIR = lib
+  EXTRACT_LSP = tar -xvf $(TMPDIR)/$(ARCHIVE_LSP) -C $(TMPDIR)/lsp
 
 
 endif
@@ -62,7 +62,7 @@ deps:
 	@echo "✓ vcpkg ready"
 
 
-install-libs:
+install-core:
 	@echo "Fetching latest release assets from GitHub..."
 	mkdir -p $(TMPDIR)
 	$(SUDO) mkdir -p $(LIBDIR)
@@ -113,10 +113,15 @@ endif
 	$(SUDO) cp -r $(INCLUDEDIR)/falcon-core-c-api/falcon_core/* $(INCLUDEDIR)/falcon_core
 	$(SUDO) rm -rf $(INCLUDEDIR)/falcon-core-cpp
 	$(SUDO) rm -rf $(INCLUDEDIR)/falcon-core-c-api
+	// Installing cmake files for falcon_core that are not included with teh build
+	$(SUDO) mkdir -p $(LIBDIR)/cmake
+	$(SUDO) mkdir -p $(LIBDIR)/cmake/falcon_core
+	$(SUDO) cp ./falcon_core-config-version.cmake $(LIBDIR)/cmake/falcon_core
+	$(SUDO) cp ./falcon_core-config.cmake $(LIBDIR)/cmake/falcon_core
 	@echo ""
 
 
-install-vcpkg-deps: deps
+install-vcpkg-deps: 
 	@echo "Installing vcpkg dependencies from vcpkg.json..."
 	CC=clang CXX=clang++ MAKELEVEL=0 $(VCPKG_ROOT)/vcpkg install --triplet $(VCPKG_TRIPLET)
 	@echo "Patching cereal install..."
@@ -126,7 +131,25 @@ install-vcpkg-deps: deps
 	$(SUDO) cp $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types/xtensor.hpp $(INCLUDEDIR)/cereal/types/xtensor.hpp
 	@echo "✓ vcpkg dependencies installed"
 
+install-lsp-framework: install-vcpkg-deps
+	@echo "Installing lsp-framework 1.3.0 from source..."
+	mkdir -p $(TMPDIR)
+	curl -L -f -o $(TMPDIR)/lsp-framework-1.3.0.zip https://github.com/leon-bckl/lsp-framework/archive/refs/tags/1.3.0.zip
+	unzip -o $(TMPDIR)/lsp-framework-1.3.0.zip -d $(TMPDIR)
+	@echo "Copying lsp headers..."
+	$(SUDO) mkdir -p $(INCLUDEDIR)/lsp
+	$(SUDO) rsync -a --include='*/' --include='*.h' --include='*.hpp' --exclude='*' $(TMPDIR)/lsp-framework-1.3.0/lsp/ $(INCLUDEDIR)/lsp/
+	@echo "Building lsp-framework with clang..."
+	cd $(TMPDIR)/lsp-framework-1.3.0 && mkdir -p build && cd build && CC=clang CXX=clang++ cmake .. -DCMAKE_INSTALL_PREFIX=$(PREFIX) && make
+	@echo "Installing lsp-framework library..."
+	$(SUDO) install -Dm755 $(TMPDIR)/lsp-framework-1.3.0/build/liblsp.a $(LIBDIR)/
+	@echo "Installing lsp-framework cmake config files..."
+	$(SUDO) mkdir -p $(LIBDIR)/cmake/lsp
+	$(SUDO) cp $(TMPDIR)/lsp-framework-1.3.0/build/lspConfig.cmake $(LIBDIR)/cmake/lsp/
+	$(SUDO) cp $(TMPDIR)/lsp-framework-1.3.0/build/lspConfigVersion.cmake $(LIBDIR)/cmake/lsp/
+	@echo "✓ lsp-framework installed"
 
+install-deps: deps install-core install-vcpkg-deps install-lsp-framework
 
 build-all: install-vcpkg-deps
 	@echo "Building all components..."
@@ -165,6 +188,9 @@ help:
 	@echo "Setup targets:"
 	@echo "  make deps               - Install or update vcpkg"
 	@echo "  make install-vcpkg-deps - Install all dependencies"
+	@echo "  make install-lsp-framework - Install lsp-framework dependency"
+	@echo "  make install-core       - Install falcon_core"
+	@echo "  make install-deps       - Installs all dependencies in order"
 	@echo ""
 	@echo "Build targets:"
 	@echo "  make build-all         - Build all components"
