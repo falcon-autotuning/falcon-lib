@@ -39,24 +39,40 @@ ControlFlow StmtExecutor::execute_with_context(const atc::Stmt &stmt,
 }
 
 ControlFlow StmtExecutor::execute(const atc::Stmt &stmt) {
-  // Dispatch based on statement type, wrapped with error context
-  if (auto *var_decl = dynamic_cast<const atc::VarDeclStmt *>(&stmt)) {
-    return execute_with_context(stmt,
-                                [&]() { return exec_var_decl(*var_decl); });
-  } else if (auto *assign = dynamic_cast<const atc::AssignStmt *>(&stmt)) {
-    return execute_with_context(stmt, [&]() { return exec_assign(*assign); });
-  } else if (auto *expr_stmt = dynamic_cast<const atc::ExprStmt *>(&stmt)) {
-    return execute_with_context(stmt, [&]() { return exec_expr(*expr_stmt); });
-  } else if (auto *if_stmt = dynamic_cast<const atc::IfStmt *>(&stmt)) {
-    return execute_with_context(stmt, [&]() { return exec_if(*if_stmt); });
-  } else if (auto *trans = dynamic_cast<const atc::TransitionStmt *>(&stmt)) {
-    return execute_with_context(stmt,
-                                [&]() { return exec_transition(*trans); });
-  } else if (auto *term = dynamic_cast<const atc::TerminalStmt *>(&stmt)) {
-    return execute_with_context(stmt, [&]() { return exec_terminal(*term); });
-  } else {
-    throw EvaluationError("Unknown statement type");
+  auto try_exec = [&](auto *ptr, auto exec_fn) -> std::optional<ControlFlow> {
+    if (ptr) {
+      return execute_with_context(stmt, [&] { return exec_fn(*ptr); });
+    }
+    return std::nullopt;
+  };
+
+  if (auto result = try_exec(dynamic_cast<const atc::VarDeclStmt *>(&stmt),
+                             [&](const auto &x) { return exec_var_decl(x); })) {
+    return *result;
   }
+  if (auto result = try_exec(dynamic_cast<const atc::AssignStmt *>(&stmt),
+                             [&](const auto &x) { return exec_assign(x); })) {
+    return *result;
+  }
+  if (auto result = try_exec(dynamic_cast<const atc::ExprStmt *>(&stmt),
+                             [&](const auto &x) { return exec_expr(x); })) {
+    return *result;
+  }
+  if (auto result = try_exec(dynamic_cast<const atc::IfStmt *>(&stmt),
+                             [&](const auto &x) { return exec_if(x); })) {
+    return *result;
+  }
+  if (auto result =
+          try_exec(dynamic_cast<const atc::TransitionStmt *>(&stmt),
+                   [&](const auto &x) { return exec_transition(x); })) {
+    return *result;
+  }
+  if (auto result = try_exec(dynamic_cast<const atc::TerminalStmt *>(&stmt),
+                             [&](const auto &x) { return exec_terminal(x); })) {
+    return *result;
+  }
+
+  throw EvaluationError("Unknown statement type");
 }
 
 ControlFlow StmtExecutor::execute_block(

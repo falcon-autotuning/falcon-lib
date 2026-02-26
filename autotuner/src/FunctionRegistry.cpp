@@ -57,21 +57,20 @@ void FunctionRegistry::register_builtin(const std::string &name,
         "': signature not found in BuiltinFunctionRegistry. "
         "Did you forget to add it to BuiltinRegistry.cpp?");
   }
-
   functions_[name] = std::move(func);
-  signatures_[name] = sig;
+  signatures_.emplace(name, *sig);
 }
 
-void FunctionRegistry::register_autotuner(const atc::BuiltinSignature *sig,
+void FunctionRegistry::register_autotuner(const atc::BuiltinSignature &sig,
                                           ExternalFunction func) {
-  functions_[sig->qualified_name] = std::move(func);
-  signatures_[sig->qualified_name] = sig;
+  functions_[sig.qualified_name] = std::move(func);
+  signatures_.emplace(sig.qualified_name, sig);
 }
 
 void FunctionRegistry::register_routine(const RoutineInfo &routine) {
   functions_[routine.name] = routine.function;
-  signatures_[routine.name] = routine.signature;
-  routines_[routine.name] = routine;
+  signatures_.emplace(routine.name, routine.signature);
+  routines_.emplace(routine.name, routine);
 }
 
 ExternalFunction *FunctionRegistry::lookup(const std::string &name) {
@@ -86,7 +85,7 @@ const atc::BuiltinSignature *
 FunctionRegistry::get_signature(const std::string &name) const {
   auto it = signatures_.find(name);
   if (it != signatures_.end()) {
-    return it->second;
+    return &it->second;
   }
   return nullptr;
 }
@@ -237,21 +236,21 @@ void register_all_builtins(FunctionRegistry &registry) {
 
   registry.register_builtin(
       "logInfo", [](const ParameterMap &params) -> FunctionResult {
-        std::string format = std::get<std::string>(params.at("arg0"));
+        std::string format = std::get<std::string>(params.at("format"));
         log::info(format);
         return FunctionResult{nullptr};
       });
 
   registry.register_builtin(
       "logWarn", [](const ParameterMap &params) -> FunctionResult {
-        std::string format = std::get<std::string>(params.at("arg0"));
+        std::string format = std::get<std::string>(params.at("format"));
         log::warn(format);
         return FunctionResult{nullptr};
       });
 
   registry.register_builtin(
       "logError", [](const ParameterMap &params) -> FunctionResult {
-        std::string format = std::get<std::string>(params.at("arg0"));
+        std::string format = std::get<std::string>(params.at("format"));
         log::error(format);
         return FunctionResult{nullptr};
       });
@@ -262,13 +261,13 @@ void register_all_builtins(FunctionRegistry &registry) {
 
   registry.register_builtin(
       "errorMsg", [](const ParameterMap &params) -> FunctionResult {
-        std::string message = std::get<std::string>(params.at("arg0"));
+        std::string message = std::get<std::string>(params.at("message"));
         return FunctionResult{ErrorObject{message, false}};
       });
 
   registry.register_builtin(
       "fatalErrorMsg", [](const ParameterMap &params) -> FunctionResult {
-        std::string message = std::get<std::string>(params.at("arg0"));
+        std::string message = std::get<std::string>(params.at("message"));
         return FunctionResult{ErrorObject{message, true}};
       });
 }
