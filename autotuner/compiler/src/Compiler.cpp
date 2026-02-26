@@ -6,6 +6,7 @@
 
 extern std::unique_ptr<falcon::atc::Program> program_root;
 extern FILE *yyin;
+extern void yyrestart(FILE *input_file);
 
 namespace falcon::atc {
 
@@ -30,6 +31,7 @@ std::unique_ptr<Program> Compiler::parse_file(const std::string &filename) {
   }
 
   reset_lexer_state();
+  yyrestart(yyin);
   current_filename = filename;
   current_errors.clear();
 
