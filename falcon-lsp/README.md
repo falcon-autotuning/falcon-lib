@@ -104,7 +104,7 @@ autotuner Calculator (int a, int b) -> (int sum, int product) {
 
 ### Keywords
 
-`autotuner` `routine` `state` `start` `uses` `terminal` `if` `else` `true` `false` `nil`
+`autotuner` `routine` `state` `start` `uses` `terminal` `if` `elif` `else` `true` `false` `nil` `config`
 
 ### Types
 

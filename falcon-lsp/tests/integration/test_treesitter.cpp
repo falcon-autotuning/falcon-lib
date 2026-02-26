@@ -36,6 +36,7 @@ TEST(TreeSitterIntegration, LinterPassesOnValidFile) {
                     + std::string(TEST_AUTOTUNERS_DIR)
                     + "/basic_features/calculator.fal";
     int ret = std::system(cmd.c_str());
+    ASSERT_TRUE(WIFEXITED(ret));
     EXPECT_EQ(0, WEXITSTATUS(ret));
 }
 
@@ -45,5 +46,6 @@ TEST(TreeSitterIntegration, LinterFailsOnInvalidFile) {
                     + std::string(TEST_AUTOTUNERS_DIR)
                     + "/simple-error.fal 2>/dev/null";
     int ret = std::system(cmd.c_str());
+    ASSERT_TRUE(WIFEXITED(ret));
     EXPECT_NE(0, WEXITSTATUS(ret));
 }

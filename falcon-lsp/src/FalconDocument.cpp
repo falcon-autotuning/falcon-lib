@@ -2,9 +2,9 @@
 #include "TypeChecker.hpp"
 #include "falcon-atc/ParseError.hpp"
 #include <cstdio>
-#include <cstring>
 #include <filesystem>
-#include <fstream>
+#include <unistd.h>
+#include <vector>
 
 namespace falcon::lsp {
 
@@ -14,9 +14,12 @@ FalconDocument FalconDocumentParser::parse(const std::string& uri,
     doc.uri = uri;
     doc.text = text;
 
-    // Write to a temp file so parse_file() can read it
-    char tmp_path[] = "/tmp/falcon-lsp-XXXXXX.fal";
-    int fd = mkstemps(tmp_path, 4); // suffix length = 4 (".fal")
+    // Write to a temp file so parse_file() can read it.
+    auto tmp_dir = std::filesystem::temp_directory_path();
+    std::string tmp_template = (tmp_dir / "falcon-lsp-XXXXXX.fal").string();
+    std::vector<char> tmp_buf(tmp_template.begin(), tmp_template.end());
+    tmp_buf.push_back('\0');
+    int fd = mkstemps(tmp_buf.data(), 4); // suffix ".fal"
     if (fd < 0) {
         falcon::atc::ParseError err;
         err.first_line = 1;
@@ -27,6 +30,7 @@ FalconDocument FalconDocumentParser::parse(const std::string& uri,
         doc.parse_errors.push_back(std::move(err));
         return doc;
     }
+    const std::string tmp_path(tmp_buf.data());
     {
         FILE* f = fdopen(fd, "w");
         if (f) {
@@ -46,7 +50,6 @@ FalconDocument FalconDocumentParser::parse(const std::string& uri,
     } catch (const std::exception&) {
         doc.parse_errors = falcon::atc::current_errors;
         if (doc.parse_errors.empty()) {
-            // If we have no structured errors, generate a generic one
             doc.parse_errors = compiler.get_errors();
         }
         if (doc.parse_errors.empty()) {
@@ -60,7 +63,7 @@ FalconDocument FalconDocumentParser::parse(const std::string& uri,
         }
     }
 
-    std::remove(tmp_path);
+    std::remove(tmp_path.c_str());
 
     // Build symbol table from AST
     if (doc.program) {
