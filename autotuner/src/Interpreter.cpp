@@ -3,7 +3,6 @@
 #include "falcon-autotuner/log.hpp"
 #include <falcon_core/communications/Time.hpp>
 #include <fmt/format.h>
-#include <iostream>
 namespace {
 const int INSTRUMENT_SERVER_LATENCY = 1000;
 }
@@ -23,63 +22,78 @@ Interpreter::Interpreter(std::shared_ptr<FunctionRegistry> functions,
 
 FunctionResult Interpreter::run(const atc::AutotunerDecl &autotuner,
                                 ParameterMap &inputs) {
-  // Clear previous state
+  // Save the current variable environment (for nested calls)
+  ParameterMap saved_variables = std::move(variables_);
+
+  // Clear for this autotuner's execution
   variables_.clear();
 
-  // Step 1: Initialize autotuner-level variables
-  initialize_variables(autotuner);
+  try {
+    // Step 1: Initialize autotuner-level variables
+    initialize_variables(autotuner);
 
-  // Step 2: Set input parameters
-  set_input_parameters(autotuner, inputs);
+    // Step 2: Set input parameters
+    set_input_parameters(autotuner, inputs);
 
-  // Step 3: Initialize output parameters (to defaults or unset)
-  for (const auto &output_param : autotuner.output_params) {
-    if (output_param->default_value.has_value()) {
+    // Step 3: Initialize output parameters (to defaults or unset)
+    for (const auto &output_param : autotuner.output_params) {
+      if (output_param->default_value.has_value()) {
+        ExprEvaluator eval(variables_, functions_, types_);
+        variables_[output_param->name] =
+            eval.evaluate(*output_param->default_value.value());
+      }
+      // Otherwise leave uninitialized (will be set before terminal)
+    }
+
+    // Step 4: Execute state machine starting from entry state
+    std::string current_state = autotuner.entry_state;
+    std::vector<RuntimeValue> state_params;
+
+    // Evaluate entry parameters if provided
+    if (!autotuner.entry_parameters.empty()) {
       ExprEvaluator eval(variables_, functions_, types_);
-      variables_[output_param->name] =
-          eval.evaluate(*output_param->default_value.value());
+      for (const auto &param_expr : autotuner.entry_parameters) {
+        state_params.push_back(eval.evaluate(*param_expr));
+      }
     }
-    // Otherwise leave uninitialized (will be set before terminal)
+
+    // State machine execution loop
+    while (true) {
+      const atc::StateDecl *state = find_state(autotuner, current_state);
+      if (state == nullptr) {
+        throw EvaluationError("Unknown state: " + current_state);
+      }
+
+      log::debug(fmt::format("Entering state: {}", current_state));
+
+      auto flow = execute_state(*state, state_params);
+
+      if (flow.type == ControlFlow::Type::Terminal) {
+        log::debug("Reached terminal state");
+        break;
+      }
+      if (flow.type == ControlFlow::Type::Transition) {
+        current_state = flow.target_state;
+        state_params = flow.parameters;
+      } else {
+        throw EvaluationError("State must end with transition or terminal: " +
+                              state->name);
+      }
+    }
+
+    // Step 5: Extract and return output parameters
+    FunctionResult result = extract_outputs(autotuner);
+
+    // Restore the parent's variable environment
+    variables_ = std::move(saved_variables);
+
+    return result;
+
+  } catch (...) {
+    // Restore the parent's variable environment even on error
+    variables_ = std::move(saved_variables);
+    throw;
   }
-
-  // Step 4: Execute state machine starting from entry state
-  std::string current_state = autotuner.entry_state;
-  std::vector<RuntimeValue> state_params;
-
-  // Evaluate entry parameters if provided
-  if (!autotuner.entry_parameters.empty()) {
-    ExprEvaluator eval(variables_, functions_, types_);
-    for (const auto &param_expr : autotuner.entry_parameters) {
-      state_params.push_back(eval.evaluate(*param_expr));
-    }
-  }
-
-  // State machine execution loop
-  while (true) {
-    const atc::StateDecl *state = find_state(autotuner, current_state);
-    if (state == nullptr) {
-      throw EvaluationError("Unknown state: " + current_state);
-    }
-
-    log::debug(fmt::format("Entering state: {}", current_state));
-
-    auto flow = execute_state(*state, state_params);
-
-    if (flow.type == ControlFlow::Type::Terminal) {
-      log::debug("Reached terminal state");
-      break;
-    }
-    if (flow.type == ControlFlow::Type::Transition) {
-      current_state = flow.target_state;
-      state_params = flow.parameters;
-    } else {
-      throw EvaluationError("State must end with transition or terminal: " +
-                            state->name);
-    }
-  }
-
-  // Step 5: Extract and return output parameters
-  return extract_outputs(autotuner);
 }
 
 void Interpreter::initialize_variables(const atc::AutotunerDecl &autotuner) {
@@ -113,59 +127,57 @@ void Interpreter::set_input_parameters(const atc::AutotunerDecl &autotuner,
 ControlFlow
 Interpreter::execute_state(const atc::StateDecl &state,
                            std::vector<RuntimeValue> &input_params) {
-  // Set up state input parameters if present
-  if (!state.input_parameters.empty()) {
-    // Check parameter count matches
-    if (input_params.size() != state.input_parameters.size()) {
-      // Check if we can use default values for missing parameters
-      if (input_params.size() < state.input_parameters.size()) {
-        // Try to fill in with defaults
-        for (size_t i = 0; i < state.input_parameters.size(); ++i) {
-          const auto &param_decl = state.input_parameters[i];
+  // Validate input parameters
+  size_t param_count = state.input_parameters.size();
+  size_t input_count = input_params.size();
 
-          if (i < input_params.size()) {
-            // Use provided parameter
-            variables_[param_decl->name] = input_params[i];
-          } else if (param_decl->default_value.has_value()) {
-            // Use default value
-            ExprEvaluator eval(variables_, functions_, types_);
-            variables_[param_decl->name] =
-                eval.evaluate(*param_decl->default_value.value());
-          } else {
-            throw EvaluationError("State '" + state.name +
-                                  "' requires parameter at position " +
-                                  std::to_string(i) + ": " + param_decl->name);
-          }
-        }
+  // variables defined before execution
+  std::vector<std::string> globals;
+  for (const auto &pair : variables_) {
+    globals.push_back(pair.first);
+  }
+
+  if (param_count == 0 && input_count > 0) {
+    throw EvaluationError("State '" + state.name +
+                          "' does not accept parameters but " +
+                          std::to_string(input_count) + " were provided");
+  }
+
+  if (param_count > 0) {
+    if (input_count > param_count) {
+      throw EvaluationError(
+          "State '" + state.name + "' expects " + std::to_string(param_count) +
+          " parameters but got " + std::to_string(input_count));
+    }
+
+    for (size_t i = 0; i < param_count; ++i) {
+      const auto &param_decl = state.input_parameters[i];
+      if (i < input_count) {
+        variables_[param_decl->name] = input_params[i];
+      } else if (param_decl->default_value.has_value()) {
+        ExprEvaluator eval(variables_, functions_, types_);
+        variables_[param_decl->name] =
+            eval.evaluate(*param_decl->default_value.value());
       } else {
-        throw EvaluationError("State '" + state.name + "' expects " +
-                              std::to_string(state.input_parameters.size()) +
-                              " parameters but got " +
-                              std::to_string(input_params.size()));
-      }
-    } else {
-      // Parameter count matches exactly
-      for (size_t i = 0; i < state.input_parameters.size(); ++i) {
-        variables_[state.input_parameters[i]->name] = input_params[i];
+        throw EvaluationError("State '" + state.name +
+                              "' requires parameter at position " +
+                              std::to_string(i) + ": " + param_decl->name);
       }
     }
-  } else if (!input_params.empty()) {
-    throw EvaluationError(
-        "State '" + state.name + "' does not accept parameters but " +
-        std::to_string(input_params.size()) + " were provided");
   }
 
   // Execute state body
   StmtExecutor executor(variables_, functions_, types_);
   auto flow = executor.execute_block(state.body);
 
-  // Clean up state input parameters (out of scope)
-  for (const auto &param_decl : state.input_parameters) {
-    variables_.erase(param_decl->name);
+  // Clean up state-local variables
+  for (auto it = variables_.begin(); it != variables_.end();) {
+    if (std::find(globals.begin(), globals.end(), it->first) == globals.end()) {
+      it = variables_.erase(it);
+    } else {
+      ++it;
+    }
   }
-
-  // TODO: Clean up state-local variables
-  // (Need to track which variables were declared in this state)
 
   return flow;
 }
