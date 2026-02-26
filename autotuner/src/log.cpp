@@ -48,7 +48,7 @@ void initialize_logger() {
       g_logger->set_pattern(log_pattern);
     } else {
       // Default pattern: [timestamp] [level] message
-      g_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+      g_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%f] [%^%l%$] %v");
     }
 
     // Set level
