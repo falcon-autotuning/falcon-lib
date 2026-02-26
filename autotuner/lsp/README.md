@@ -11,30 +11,6 @@ A [Language Server Protocol](https://microsoft.github.io/language-server-protoco
 | Completion | Keywords, built-in functions, variables and state names in scope |
 | Go-to Definition | Jump to the declaration of a variable or state |
 
-## Building
-
-```bash
-cd falcon-lsp
-make build-debug    # Debug build with tests
-make build-release  # Optimised release build
-make test           # Build debug + run tests
-make install        # Install to /opt/falcon (needs sudo)
-```
-
-Or manually with CMake:
-
-```bash
-mkdir -p build/debug && cd build/debug
-cmake ../.. \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DBUILD_TESTS=ON \
-    -Dlsp_DIR=/opt/falcon/lib/cmake/lsp \
-    -DGTest_DIR=/usr/local/lib/cmake/GTest \
-    -G Ninja
-ninja
-ctest --output-on-failure
-```
-
 ## Running the server
 
 ```bash

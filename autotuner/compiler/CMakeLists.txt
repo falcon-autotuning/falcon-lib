@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 
-# This is now a sub-component, not a standalone project
-# project() call removed - parent handles it
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
