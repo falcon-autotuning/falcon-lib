@@ -2,6 +2,7 @@
 #include "falcon-autotuner/log.hpp"
 #include <cmath>
 #include <fmt/format.h>
+#include <optional>
 #include <sstream>
 
 namespace falcon::autotuner {
@@ -175,8 +176,12 @@ RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
   ParameterMap params;
   std::vector<bool> assigned(expr.arguments.size(), false);
 
-  for (const atc::BuiltinSignature::ParamSpec &param_spec : sig->parameters) {
-    log::debug(fmt::format("Currently lookign for {}", param_spec.name));
+  // First: handle required parameters
+  for (const auto &param_spec : sig->parameters) {
+    if (!param_spec.required) {
+      continue; // skip non-required for now
+    }
+
     // Try to find a matching named argument
     auto named_it = std::find_if(expr.arguments.begin(), expr.arguments.end(),
                                  [&](const atc::CallArg &arg) {
@@ -202,7 +207,49 @@ RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
       size_t idx = std::distance(expr.arguments.begin(), pos_it);
       params[param_spec.name] = evaluate(*pos_it->value);
       assigned[idx] = true;
+      continue;
     }
+
+    // If no argument found, error
+    throw EvaluationError("Missing required argument: " + param_spec.name);
+  }
+
+  // Second: handle optional parameters
+  for (const auto &param_spec : sig->parameters) {
+    if (param_spec.required) {
+      continue; // already handled
+    }
+
+    // Try to find a matching named argument
+    auto named_it = std::find_if(expr.arguments.begin(), expr.arguments.end(),
+                                 [&](const atc::CallArg &arg) {
+                                   return arg.name.has_value() &&
+                                          arg.name.value() == param_spec.name;
+                                 });
+
+    if (named_it != expr.arguments.end()) {
+      size_t idx = std::distance(expr.arguments.begin(), named_it);
+      params[param_spec.name] = evaluate(*named_it->value);
+      assigned[idx] = true;
+      continue;
+    }
+
+    // Otherwise, use the first unassigned positional argument
+    auto pos_it = std::find_if(expr.arguments.begin(), expr.arguments.end(),
+                               [&](const atc::CallArg &arg) {
+                                 size_t idx = &arg - expr.arguments.data();
+                                 return !arg.name.has_value() && !assigned[idx];
+                               });
+
+    if (pos_it != expr.arguments.end()) {
+      size_t idx = std::distance(expr.arguments.begin(), pos_it);
+      params[param_spec.name] = evaluate(*pos_it->value);
+      assigned[idx] = true;
+      continue;
+    }
+
+    // If no argument found, supply std::nullopt
+    params[param_spec.name] = nullptr;
   }
 
   // Call function

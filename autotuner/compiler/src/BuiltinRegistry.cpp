@@ -54,14 +54,14 @@ BuiltinFunctionRegistry BuiltinFunctionRegistry::create_default() {
                                    true),
        BuiltinSignature::ParamSpec("name", TypeDescriptor(ParamType::String),
                                    true),
-       BuiltinSignature::ParamSpec("barrier_gate",
-                                   TypeDescriptor(ParamType::String), false),
-       BuiltinSignature::ParamSpec("plunger_gate",
-                                   TypeDescriptor(ParamType::String), false),
-       BuiltinSignature::ParamSpec("reservoir_gate",
-                                   TypeDescriptor(ParamType::String), false),
-       BuiltinSignature::ParamSpec("screening_gate",
-                                   TypeDescriptor(ParamType::String), false),
+       BuiltinSignature::ParamSpec(
+           "barrier_gate", TypeDescriptor(ParamType::Connection), false),
+       BuiltinSignature::ParamSpec(
+           "plunger_gate", TypeDescriptor(ParamType::Connection), false),
+       BuiltinSignature::ParamSpec(
+           "reservoir_gate", TypeDescriptor(ParamType::Connection), false),
+       BuiltinSignature::ParamSpec(
+           "screening_gate", TypeDescriptor(ParamType::Connection), false),
        BuiltinSignature::ParamSpec("extra", TypeDescriptor(ParamType::String),
                                    false),
        BuiltinSignature::ParamSpec("uncertainty",
@@ -91,20 +91,20 @@ BuiltinFunctionRegistry BuiltinFunctionRegistry::create_default() {
        BuiltinSignature::ParamSpec("name", TypeDescriptor(ParamType::String),
                                    true),
        BuiltinSignature::ParamSpec(
-           "value",
+           "characteristic",
            TypeDescriptor::make_union({TypeDescriptor(ParamType::Int),
                                        TypeDescriptor(ParamType::Float),
                                        TypeDescriptor(ParamType::Bool),
                                        TypeDescriptor(ParamType::String)}),
            true),
-       BuiltinSignature::ParamSpec("barrier_gate",
-                                   TypeDescriptor(ParamType::String), false),
-       BuiltinSignature::ParamSpec("plunger_gate",
-                                   TypeDescriptor(ParamType::String), false),
-       BuiltinSignature::ParamSpec("reservoir_gate",
-                                   TypeDescriptor(ParamType::String), false),
-       BuiltinSignature::ParamSpec("screening_gate",
-                                   TypeDescriptor(ParamType::String), false),
+       BuiltinSignature::ParamSpec(
+           "barrier_gate", TypeDescriptor(ParamType::Connection), false),
+       BuiltinSignature::ParamSpec(
+           "plunger_gate", TypeDescriptor(ParamType::Connection), false),
+       BuiltinSignature::ParamSpec(
+           "reservoir_gate", TypeDescriptor(ParamType::Connection), false),
+       BuiltinSignature::ParamSpec(
+           "screening_gate", TypeDescriptor(ParamType::Connection), false),
        BuiltinSignature::ParamSpec("extra", TypeDescriptor(ParamType::String),
                                    false),
        BuiltinSignature::ParamSpec("uncertainty",
