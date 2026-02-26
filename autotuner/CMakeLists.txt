@@ -5,7 +5,7 @@ project(
   LANGUAGES CXX
 )
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -61,7 +61,7 @@ find_package(falcon_core CONFIG REQUIRED)
 # FIX: necessary until better cmake-config is created
 include_directories(/opt/falcon/include)
 
-# 3. Build DSL Runtime Library (falcon-dsl)
+# 2. Build DSL Runtime Library (falcon-dsl)
 add_library(falcon-dsl SHARED
   src/AutotunerEngine.cpp
   src/FunctionRegistry.cpp
@@ -114,6 +114,9 @@ if(ENABLE_PCH)
   )
 endif()
 
+
+# 3. Build LSP (falcon-lsp)
+add_subdirectory(lsp)
 
 if(BUILD_TESTS)
   enable_testing()

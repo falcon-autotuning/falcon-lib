@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
 
-find_package(GTest REQUIRED CONFIG PATHS /usr/local/lib/cmake/GTest NO_DEFAULT_PATH)
+find_package(GTest REQUIRED CONFIG)
 
-set(FAL_TEST_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../autotuner/tests/test-autotuners")
+set(FAL_TEST_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../tests/test-autotuners")
 set(FAL_TEST_DEST_DIR   "${CMAKE_CURRENT_BINARY_DIR}/test-autotuners")
 
 # Copy .fal test files to build directory
 file(GLOB_RECURSE TEST_FAL_FILES "${FAL_TEST_SOURCE_DIR}/*.fal")
 foreach(DATA_FILE ${TEST_FAL_FILES})
-    file(RELATIVE_PATH REL_PATH "${FAL_TEST_SOURCE_DIR}" "${DATA_FILE}")
-    configure_file(
+  file(RELATIVE_PATH REL_PATH "${FAL_TEST_SOURCE_DIR}" "${DATA_FILE}")
+  configure_file(
         "${DATA_FILE}"
         "${FAL_TEST_DEST_DIR}/${REL_PATH}"
         COPYONLY

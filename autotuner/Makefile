@@ -89,6 +89,7 @@ configure-debug: check-vcpkg
 		-Dfalcon_core_DIR=/opt/falcon/lib/cmake/falcon_core \
 		-Dfalcon-database_DIR=/opt/falcon/lib/cmake/falcon-database \
 		-Dfalcon-comms_DIR=/opt/falcon/lib/cmake/falcon-comms \
+		-Dlsp_DIR=/opt/falcon/lib/cmake/lsp \
 		-DBUILD_TESTS=ON \
 		-DBUILD_TOOLS=ON \
 		-DUSE_CCACHE=ON \
@@ -109,6 +110,7 @@ configure-release: check-vcpkg
     -Dfalcon_core_DIR=/opt/falcon/lib/cmake/falcon_core \
     -Dfalcon-database_DIR=/opt/falcon/lib/cmake/falcon-database \
     -Dfalcon-comms_DIR=/opt/falcon/lib/cmake/falcon-comms \
+		-Dlsp_DIR=/opt/falcon/lib/cmake/lsp \
 		-DBUILD_TESTS=ON \
 		-DBUILD_TOOLS=ON \
 		-DUSE_CCACHE=ON \
@@ -131,14 +133,6 @@ build-release: configure-release
 	ninja -C $(BUILD_DIR_RELEASE) -j$(NPROC)
 	@echo "✓ Release build complete"
 
-
-run-voltage-sweep: examples
-	@echo "Running voltage sweep example..."
-	cd $(BUILD_DIR_RELEASE)/examples/voltage_sweep && \
-		../../falcon-runtime ./libvoltage_sweep_autotuner.so \
-		--entry VoltageSweep \
-		--snapshot ../../../examples/voltage_sweep/snapshot.json \
-		--analyze
 
 install: build-release
 	@echo "Installing falcon-database to $(INSTALL_PREFIX)..."
@@ -255,6 +249,10 @@ test-local-debug: build-debug
 		TEST_DATABASE_URL="$(TEST_DATABASE_URL)" \
 		TEST_NATS_URL="$(TEST_NATS_URL)" \
 		./falcon_dsl_integration_tests $(if $(GTEST_FILTER),--gtest_filter="$(GTEST_FILTER)",)
+	@echo "Running lsp tests..."
+	@cd $(BUILD_DIR_DEBUG)/lsp/tests && \
+		./falcon_lsp_unit_tests $(if $(GTEST_FILTER),--gtest_filter="$(GTEST_FILTER)",) && \
+		./falcon_lsp_integration_tests $(if $(GTEST_FILTER),--gtest_filter="$(GTEST_FILTER)",)
 	@echo "✓ All tests passed"
 
 # Keep services running for interactive testing

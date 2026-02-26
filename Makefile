@@ -136,18 +136,27 @@ install-lsp-framework: install-vcpkg-deps
 	mkdir -p $(TMPDIR)
 	curl -L -f -o $(TMPDIR)/lsp-framework-1.3.0.zip https://github.com/leon-bckl/lsp-framework/archive/refs/tags/1.3.0.zip
 	unzip -o $(TMPDIR)/lsp-framework-1.3.0.zip -d $(TMPDIR)
+	@echo "Building lsp-framework (Release) with clang..."
+	cd $(TMPDIR)/lsp-framework-1.3.0 && mkdir -p build && cd build && CC=clang CXX=clang++ cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX)
+	cd $(TMPDIR)/lsp-framework-1.3.0/build && make
+	@echo "Installing lsp-framework (Release)..."
+	cd $(TMPDIR)/lsp-framework-1.3.0/build && cmake --install . --prefix $(TMPDIR)/lsp-framework-1.3.0/build
+	$(SUDO) install -Dm755 $(TMPDIR)/lsp-framework-1.3.0/build/liblsp.a $(LIBDIR)/
+	@echo "Building lsp-framework (Debug) with clang..."
+	cd $(TMPDIR)/lsp-framework-1.3.0 && mkdir -p build-debug && cd build-debug && CC=clang CXX=clang++ cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=$(PREFIX)
+	cd $(TMPDIR)/lsp-framework-1.3.0/build-debug && make
+	@echo "Installing lsp-framework (Debug)..."
+	cd $(TMPDIR)/lsp-framework-1.3.0/build-debug && cmake --install . --prefix $(TMPDIR)/lsp-framework-1.3.0/build-debug
+	$(SUDO) install -Dm755 $(TMPDIR)/lsp-framework-1.3.0/build-debug/liblspd.a $(LIBDIR)/liblspd.a
 	@echo "Copying lsp headers..."
 	$(SUDO) mkdir -p $(INCLUDEDIR)/lsp
-	$(SUDO) rsync -a --include='*/' --include='*.h' --include='*.hpp' --exclude='*' $(TMPDIR)/lsp-framework-1.3.0/lsp/ $(INCLUDEDIR)/lsp/
-	@echo "Building lsp-framework with clang..."
-	cd $(TMPDIR)/lsp-framework-1.3.0 && mkdir -p build && cd build && CC=clang CXX=clang++ cmake .. -DCMAKE_INSTALL_PREFIX=$(PREFIX) && make
-	@echo "Installing lsp-framework library..."
-	$(SUDO) install -Dm755 $(TMPDIR)/lsp-framework-1.3.0/build/liblsp.a $(LIBDIR)/
+	$(SUDO) cp -r $(TMPDIR)/lsp-framework-1.3.0/build/include/lsp/ $(INCLUDEDIR)/
 	@echo "Installing lsp-framework cmake config files..."
 	$(SUDO) mkdir -p $(LIBDIR)/cmake/lsp
-	$(SUDO) cp $(TMPDIR)/lsp-framework-1.3.0/build/lspConfig.cmake $(LIBDIR)/cmake/lsp/
-	$(SUDO) cp $(TMPDIR)/lsp-framework-1.3.0/build/lspConfigVersion.cmake $(LIBDIR)/cmake/lsp/
-	@echo "✓ lsp-framework installed"
+	$(SUDO) cp $(TMPDIR)/lsp-framework-1.3.0/build/lib/cmake/lsp/lspConfig.cmake $(LIBDIR)/cmake/lsp/
+	$(SUDO) cp $(TMPDIR)/lsp-framework-1.3.0/build/lib/cmake/lsp/lspConfigVersion.cmake $(LIBDIR)/cmake/lsp/
+	$(SUDO) cp $(TMPDIR)/lsp-framework-1.3.0/build/lib/cmake/lsp/lspConfigTargets.cmake $(LIBDIR)/cmake/lsp/
+	@echo "✓ lsp-framework (Release & Debug) installed"
 
 install-deps: deps install-core install-vcpkg-deps install-lsp-framework
 
