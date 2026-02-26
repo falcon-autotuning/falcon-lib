@@ -16,8 +16,7 @@ autotuner ConditionalNest (int a, int b) -> (int out, Error err) {
         -> multiplication(add);
       }
   }
-  state multiplication {
-      int c =0;
+  state multiplication (int c) {
       int multiplication = 0;
       multiplication, err = Multiplier(c, b);
       if (err != nil) {

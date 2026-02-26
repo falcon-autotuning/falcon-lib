@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -129,6 +130,8 @@ struct TypeDescriptor {
       throw std::logic_error("Only Error type can have variants");
     }
   }
+  TypeDescriptor(const TypeDescriptor &) = default;
+  TypeDescriptor &operator=(const TypeDescriptor &) = default;
   static TypeDescriptor make_union(std::vector<TypeDescriptor> types) {
     TypeDescriptor desc(ParamType::Union);
     desc.union_types = std::move(types);
@@ -148,8 +151,9 @@ struct TypeDescriptor {
     if (is_union()) {
       std::string result = "(";
       for (size_t i = 0; i < union_types.size(); ++i) {
-        if (i > 0)
+        if (i > 0) {
           result += " | ";
+        }
         result += union_types[i].to_string();
       }
       result += ")";
@@ -1170,6 +1174,12 @@ struct BuiltinSignature {
 
     ParamSpec(std::string n, TypeDescriptor t, bool req = true)
         : name(std::move(n)), type(std::move(t)), required(req) {}
+    [[nodiscard]] nlohmann::json to_json() const {
+      return {
+          {"name", name}, {"type", type.to_string()}, {"required", required}};
+    }
+    ParamSpec(const ParamSpec &) = default;
+    ParamSpec &operator=(const ParamSpec &) = default;
   };
 
   std::vector<ParamSpec> parameters;
@@ -1184,6 +1194,21 @@ struct BuiltinSignature {
       : qualified_name(std::move(name)), parameters(std::move(params)),
         return_params(std::move(returns)),
         supports_named_args(named_args == NamedArgs::Uses) {}
+
+  BuiltinSignature(const BuiltinSignature &) = default;
+  BuiltinSignature &operator=(const BuiltinSignature &) = default;
+  [[nodiscard]] nlohmann::json to_json() const {
+    nlohmann::json j;
+    j["qualified_name"] = qualified_name;
+    j["supports_named_args"] = supports_named_args;
+    j["parameters"] = nlohmann::json::array();
+    for (const auto &p : parameters)
+      j["parameters"].push_back(p.to_json());
+    j["return_params"] = nlohmann::json::array();
+    for (const auto &p : return_params)
+      j["return_params"].push_back(p.to_json());
+    return j;
+  }
 
   [[nodiscard]] std::vector<std::string> get_return_names() const {
     std::vector<std::string> names;

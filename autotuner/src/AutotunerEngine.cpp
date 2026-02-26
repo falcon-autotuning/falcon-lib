@@ -235,7 +235,7 @@ bool AutotunerEngine::load_routine_library(const RoutineConfig &info) {
   }
   atc::BuiltinSignature sig(decl.name, std::move(params), std::move(returns));
 
-  RoutineInfo routine_info{info.name, info.library_path, ext_func, &sig};
+  RoutineInfo routine_info{info.name, info.library_path, ext_func, sig};
   function_registry_->register_routine(routine_info);
 
   log::debug(fmt::format("Loaded routine: {} from {} (symbol: {})", info.name,
@@ -329,7 +329,7 @@ void AutotunerEngine::register_autotuner_as_function(
   const atc::BuiltinSignature sig(autotuner.name, std::move(params),
                                   std::move(returns));
 
-  function_registry_->register_autotuner(&sig, func);
+  function_registry_->register_autotuner(sig, func);
 
   log::debug(fmt::format("Loaded autotuner: {}", autotuner.name));
 }

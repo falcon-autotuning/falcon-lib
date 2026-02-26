@@ -1,5 +1,7 @@
 #include "falcon-autotuner/ExprEvaluator.hpp"
+#include "falcon-autotuner/log.hpp"
 #include <cmath>
+#include <fmt/format.h>
 #include <sstream>
 
 namespace falcon::autotuner {
@@ -99,7 +101,7 @@ RuntimeValue ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
 
   // Look up method for this type
   auto *method = types_->lookup_method(type_name, expr.method_name);
-  if (!method) {
+  if (method == nullptr) {
     throw EvaluationError("Unknown method '" + expr.method_name +
                           "' for type '" + type_name + "'");
   }
@@ -124,8 +126,7 @@ RuntimeValue ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
   }
 
   // Get first result (for single return value)
-  auto size = result.size();
-  if (size != 0u) {
+  if (result.empty()) {
     throw EvaluationError("Method returned empty result");
   }
 
@@ -141,6 +142,7 @@ RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
 }
 
 RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
+  log::debug(fmt::format("Calling the func {}", expr.name));
   // Look up function
   auto *func = functions_->lookup(expr.name);
   if (func == nullptr) {
@@ -149,17 +151,57 @@ RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
 
   // Get signature to understand return type
   const atc::BuiltinSignature *sig = functions_->get_signature(expr.name);
-  if (!sig) {
+  if (sig == nullptr) {
     throw EvaluationError("No signature found for function: " + expr.name);
   }
+  log::debug("Found signature");
+  log::debug(fmt::format("Searching for the arguments in the signature {}",
+                         sig->qualified_name));
+  log::debug(fmt::format("Searching for the arguments in the signature {}",
+                         sig->supports_named_args));
+  log::debug(fmt::format("Searching for the arguments in the signature {}",
+                         sig->to_json().dump()));
 
+  // ParameterMap params;
+  // for (size_t i = 0; i < expr.arguments.size(); ++i) {
+  //   const auto &arg = expr.arguments[i];
+  //   if (arg.name.has_value()) {
+  //     params[arg.name.value()] = evaluate(*arg.value);
+  //   } else {
+  //     params["arg" + std::to_string(i)] = evaluate(*arg.value);
+  //   }
+  // }
+  // // Find matching input params, names always take precidence
   ParameterMap params;
-  for (size_t i = 0; i < expr.arguments.size(); ++i) {
-    const auto &arg = expr.arguments[i];
-    if (arg.name.has_value()) {
-      params[arg.name.value()] = evaluate(*arg.value);
-    } else {
-      params["arg" + std::to_string(i)] = evaluate(*arg.value);
+  std::vector<bool> assigned(expr.arguments.size(), false);
+
+  for (const atc::BuiltinSignature::ParamSpec &param_spec : sig->parameters) {
+    log::debug(fmt::format("Currently lookign for {}", param_spec.name));
+    // Try to find a matching named argument
+    auto named_it = std::find_if(expr.arguments.begin(), expr.arguments.end(),
+                                 [&](const atc::CallArg &arg) {
+                                   return arg.name.has_value() &&
+                                          arg.name.value() == param_spec.name;
+                                 });
+
+    if (named_it != expr.arguments.end()) {
+      size_t idx = std::distance(expr.arguments.begin(), named_it);
+      params[param_spec.name] = evaluate(*named_it->value);
+      assigned[idx] = true;
+      continue;
+    }
+
+    // Otherwise, use the first unassigned positional argument
+    auto pos_it = std::find_if(expr.arguments.begin(), expr.arguments.end(),
+                               [&](const atc::CallArg &arg) {
+                                 size_t idx = &arg - expr.arguments.data();
+                                 return !arg.name.has_value() && !assigned[idx];
+                               });
+
+    if (pos_it != expr.arguments.end()) {
+      size_t idx = std::distance(expr.arguments.begin(), pos_it);
+      params[param_spec.name] = evaluate(*pos_it->value);
+      assigned[idx] = true;
     }
   }
 

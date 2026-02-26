@@ -23,7 +23,7 @@ struct RoutineInfo {
   std::string name;
   std::string library_path;
   ExternalFunction function;
-  const atc::BuiltinSignature *signature; // Reference to unified signature
+  atc::BuiltinSignature signature; // Reference to unified signature
 };
 
 /**
@@ -60,7 +60,7 @@ public:
   /**
    * @brief Register an autotuner loaded from parser.
    */
-  void register_autotuner(const atc::BuiltinSignature *sig,
+  void register_autotuner(const atc::BuiltinSignature &sig,
                           ExternalFunction func);
 
   /**
@@ -91,7 +91,7 @@ public:
 
 private:
   std::map<std::string, ExternalFunction> functions_;
-  std::map<std::string, const atc::BuiltinSignature *>
+  std::map<std::string, atc::BuiltinSignature>
       signatures_; // References to unified registry
   std::map<std::string, RoutineInfo> routines_;
 
