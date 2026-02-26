@@ -28,10 +28,8 @@ TEST_F(NestTest, ConditionalNestGood) {
   auto [success, outputs] = compile_and_run(cenv);
   ASSERT_TRUE(success);
   ASSERT_GE(outputs.size(), 2);
-  EXPECT_TRUE(std::get<bool>(outputs[0])); // outer_completed
-  EXPECT_TRUE(std::get<bool>(outputs[1])); // inner_completed
-  EXPECT_EQ(std::get<int64_t>(outputs[2]),
-            static_cast<int64_t>(25)); // inner_completed value
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), static_cast<int64_t>(0));
+  EXPECT_TRUE(std::holds_alternative<std::nullptr_t>(outputs[1]));
 }
 
 TEST_F(NestTest, ConditionalNestBadAdd) {
@@ -44,11 +42,10 @@ TEST_F(NestTest, ConditionalNestBadAdd) {
   auto [success, outputs] = compile_and_run(cenv);
   ASSERT_TRUE(success);
   ASSERT_GE(outputs.size(), 2);
-  EXPECT_FALSE(std::get<bool>(outputs[0])); // outer_completed
-  EXPECT_FALSE(std::get<bool>(outputs[1])); // inner_completed
-  EXPECT_EQ(std::get<int64_t>(outputs[2]),
-            static_cast<int64_t>(0)); // inner_completed value
-  // TODO: capture error message
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), static_cast<int64_t>(0));
+  EXPECT_EQ(std::get<ErrorObject>(outputs[1]).message,
+            "Cannot add a less than b");
+  EXPECT_FALSE(std::get<ErrorObject>(outputs[1]).is_fatal);
 }
 
 TEST_F(NestTest, ConditionalNestBadMult) {
@@ -61,9 +58,8 @@ TEST_F(NestTest, ConditionalNestBadMult) {
   auto [success, outputs] = compile_and_run(cenv);
   ASSERT_TRUE(success);
   ASSERT_GE(outputs.size(), 2);
-  EXPECT_TRUE(std::get<bool>(outputs[0]));  // outer_completed
-  EXPECT_FALSE(std::get<bool>(outputs[1])); // inner_completed
-  EXPECT_EQ(std::get<int64_t>(outputs[2]),
-            static_cast<int64_t>(0)); // inner_completed value
-  // TODO: capture error message
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), static_cast<int64_t>(0));
+  EXPECT_EQ(std::get<ErrorObject>(outputs[1]).message,
+            "Cannot add a less than b");
+  EXPECT_FALSE(std::get<ErrorObject>(outputs[1]).is_fatal);
 }
