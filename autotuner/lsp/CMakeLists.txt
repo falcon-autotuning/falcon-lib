@@ -16,6 +16,7 @@ add_library(falcon-lsp-lib
     src/DefinitionProvider.cpp
     src/FalconServer.cpp
 )
+set_target_properties(falcon-lsp-lib PROPERTIES OUTPUT_NAME "falcon-lsp")
 target_include_directories(falcon-lsp-lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
@@ -42,7 +43,6 @@ install(TARGETS falcon-lsp
   RUNTIME DESTINATION bin
   INCLUDES DESTINATION include
 )
-add_subdirectory(tools/falcon-lint)
 if(BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)

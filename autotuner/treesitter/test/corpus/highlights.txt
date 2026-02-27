@@ -1,0 +1,175 @@
+================================================================================
+Autotuner declaration with body-level assignment
+================================================================================
+
+autotuner Calculator (int a, int b) -> (int sum) {
+  sum = 0;
+  start -> calculate;
+
+  state calculate {
+    sum = a + b;
+    -> done;
+  }
+
+  state done {
+    terminal;
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (autotuner_decl
+    name: (identifier)
+    inputs: (param_list
+      (param_decl type: (type) name: (identifier))
+      (param_decl type: (type) name: (identifier)))
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    (stmt
+      (assign_stmt
+        (identifier)
+        (expr
+          (primary_expr
+            (int_literal)))))
+    entry: (entry_stmt
+      target: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt
+        (assign_stmt
+          (identifier)
+          (expr
+            (binary_expr
+              (expr (primary_expr (identifier)))
+              (expr (primary_expr (identifier)))))))
+      (stmt
+        (transition_stmt
+          target: (identifier))))
+    (state_decl
+      name: (identifier)
+      (stmt
+        (terminal_stmt)))))
+
+================================================================================
+Routine declaration
+================================================================================
+
+routine MyRoutine (int x) -> (float y)
+
+--------------------------------------------------------------------------------
+
+(program
+  (routine_decl
+    name: (identifier)
+    inputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier)))))
+
+================================================================================
+Comments
+================================================================================
+
+// single line comment
+/* block comment */
+autotuner Foo (int x) -> (int y) {
+  start -> done;
+  state done { terminal; }
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (comment)
+  (comment)
+  (autotuner_decl
+    name: (identifier)
+    inputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    entry: (entry_stmt
+      target: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt
+        (terminal_stmt)))))
+
+================================================================================
+If statement with elif and else
+================================================================================
+
+autotuner Branchy (int x) -> (int y) {
+  start -> check;
+  state check {
+    if (x > 0) {
+      -> positive;
+    } elif (x == 0) {
+      -> zero;
+    } else {
+      -> negative;
+    }
+  }
+  state positive { terminal; }
+  state zero     { terminal; }
+  state negative { terminal; }
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (autotuner_decl
+    name: (identifier)
+    inputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    entry: (entry_stmt
+      target: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt
+        (if_stmt
+          condition: (expr
+            (binary_expr
+              (expr (primary_expr (identifier)))
+              (expr (primary_expr (int_literal)))))
+          (stmt (transition_stmt target: (identifier)))
+          (elif_clause
+            condition: (expr
+              (binary_expr
+                (expr (primary_expr (identifier)))
+                (expr (primary_expr (int_literal)))))
+            (stmt (transition_stmt target: (identifier))))
+          (else_clause
+            (stmt (transition_stmt target: (identifier)))))))
+    (state_decl name: (identifier) (stmt (terminal_stmt)))
+    (state_decl name: (identifier) (stmt (terminal_stmt)))
+    (state_decl name: (identifier) (stmt (terminal_stmt)))))
+
+================================================================================
+Uses clause
+================================================================================
+
+autotuner WithDeps () -> (int result) {
+  uses dep1, dep2;
+  start -> run;
+  state run { terminal; }
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (autotuner_decl
+    name: (identifier)
+    inputs: (param_list)
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    uses: (requires_clause
+      (identifier)
+      (identifier))
+    entry: (entry_stmt target: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt (terminal_stmt)))))

@@ -47,7 +47,6 @@ add_executable(falcon_lsp_integration_tests
 target_compile_definitions(falcon_lsp_integration_tests PRIVATE
     TEST_AUTOTUNERS_DIR="${FAL_TEST_DEST_DIR}"
     FALCON_LSP_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/.."
-    FALCON_LINT_BIN="$<TARGET_FILE:falcon-lint>"
 )
 
 target_link_libraries(falcon_lsp_integration_tests
@@ -59,7 +58,3 @@ target_link_libraries(falcon_lsp_integration_tests
 
 add_test(NAME falcon_lsp_integration_tests COMMAND falcon_lsp_integration_tests)
 
-set_tests_properties(falcon_lsp_integration_tests PROPERTIES
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS falcon-lint
-)

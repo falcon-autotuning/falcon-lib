@@ -1,0 +1,22 @@
+{
+  "name": "tree-sitter-fal",
+  "version": "1.0.0",
+  "description": "Tree-sitter grammar for the Falcon Autotuner DSL (.fal files)",
+  "main": "grammar.js",
+  "scripts": {
+    "build": "tree-sitter generate",
+    "test": "tree-sitter test"
+  },
+  "keywords": [
+    "tree-sitter",
+    "falcon",
+    "fal"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "nan": "*"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "^0.22.0"
+  }
+}

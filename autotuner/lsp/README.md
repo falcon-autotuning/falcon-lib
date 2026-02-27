@@ -33,29 +33,6 @@ See `neovim/init.lua` for a complete lazy.nvim example. Requires `nvim-lspconfig
 A TreeSitter grammar for syntax highlighting is in `treesitter/grammar.js`.
 See `treesitter/README.md` for installation instructions.
 
-## Project structure
-
-```
-falcon-lsp/
-├── CMakeLists.txt
-├── Makefile
-├── src/
-│   ├── FalconDocument.{hpp,cpp}      # Document cache + parsing via falcon-atc-core
-│   ├── TypeChecker.{hpp,cpp}         # AST walk → symbol table
-│   ├── HoverProvider.{hpp,cpp}       # Hover logic
-│   ├── CompletionProvider.{hpp,cpp}  # Completion logic
-│   ├── DiagnosticsProvider.{hpp,cpp} # Parse errors → LSP diagnostics
-│   ├── DefinitionProvider.{hpp,cpp}  # Go-to definition logic
-│   ├── FalconServer.{hpp,cpp}        # Main LSP server class
-│   └── main.cpp                      # Entry point
-├── tools/falcon-lint/                # Standalone CLI linter
-├── tests/
-│   ├── unit/                         # Unit tests for each provider
-│   └── integration/                  # Tests against real .fal files
-├── neovim/                           # Neovim/lazy.nvim config
-└── treesitter/                       # TreeSitter grammar
-```
-
 ## Language overview
 
 The Falcon DSL describes quantum-device autotuners as state machines:

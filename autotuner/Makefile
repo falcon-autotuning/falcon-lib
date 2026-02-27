@@ -271,3 +271,21 @@ test-interactive: docker-up build-debug
 # Override default test targets to use Docker
 test: test-with-docker
 test-debug: test-debug-docker
+
+install-lsp: build-release
+	@echo "Installing lsp library to $(INSTALL_PREFIX)..."
+	$(SUDO) mkdir -p $(INSTALL_LIBDIR)
+	$(SUDO) mkdir -p $(INSTALL_INCLUDEDIR)/falcon-lsp
+	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/lsp/libfalcon-lsp.a $(INSTALL_LIBDIR)/
+	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/lsp/falcon-lsp $(INSTALL_LIBDIR)/
+	@if [ -d $(BUILD_DIR_RELEASE)/lsp/include ]; then \
+		$(SUDO) cp -r $(BUILD_DIR_RELEASE)/lsp/include/* $(INSTALL_INCLUDEDIR)/lsp/; \
+	fi
+	@echo "✓ lsp library installed"
+
+uninstall-lsp:
+	@echo "Uninstalling lsp library from $(INSTALL_PREFIX)..."
+	$(SUDO) rm -f $(INSTALL_LIBDIR)/libfalcon-lsp.a
+	$(SUDO) rm -f $(INSTALL_LIBDIR)/falcon-lsp
+	$(SUDO) rm -r $(INSTALL_INCLUDEDIR)/falcon-lsp
+	@echo "✓ lsp library uninstalled"
