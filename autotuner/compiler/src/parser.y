@@ -98,10 +98,10 @@
 %type <std::vector<std::unique_ptr<ParamDecl>>> param_decl_list input_params output_params state_input_params
 %type <std::unique_ptr<ParamDecl>> param_decl
 %type <std::unique_ptr<TypeDescriptor>> type_spec
-%type <std::vector<std::string>> requires_clause identifier_list import_list
+%type <std::vector<std::string>> requires_clause identifier_list import_list import_stmt import_string_list
 %type <std::vector<std::unique_ptr<Stmt>>> autotuner_var_decls
 %type <std::unique_ptr<VarDeclStmt>> var_decl_stmt
-%type <std::string> entry_state
+%type <std::string> entry_state 
 %type <std::vector<std::unique_ptr<Expr>>> entry_params
 %type <std::vector<StateDecl>> state_list
 %type <std::unique_ptr<StateDecl>> state_decl
@@ -143,15 +143,12 @@ program[result]
     ;
 
 import_list[result]
-    : import_stmt[first] 
-      { 
-        $result = std::vector<std::string>(); 
-        $result.push_back(std::move($first)); 
-      }
+    : /* empty */ 
+       %empty { $result = std::vector<std::string>(); }
     | import_list[existing] import_stmt[next] 
       { 
-        $result = std::move($existing); 
-        $result.push_back(std::move($next)); 
+        $result = std::move($existing);
+        $result.insert($result.end(), std::make_move_iterator($next.begin()), std::make_move_iterator($next.end()));
       }
     ;
 
@@ -191,16 +188,19 @@ routine_list[result]
 
 import_stmt[result]
     : IMPORT STRING[path] SEMICOLON 
-      { $result = std::move($path); }
+      { $result = std::vector<std::string>{std::move($path)}; }
     | IMPORT LPAREN import_string_list[paths] RPAREN 
       { $result = std::move($paths); }
     ;
 
 import_string_list[result]
     : STRING[first] 
-      { $result = std::vector<std::string>(); $result.push_back(std::move($first)); }
+      { $result = std::vector<std::string>{std::move($first)}; }
     | import_string_list[existing] STRING[next] 
-      { $result = std::move($existing); $result.push_back(std::move($next)); }
+      { 
+        $result = std::move($existing); 
+        $result.push_back(std::move($next)); 
+      }
     ;
 
 // ============================================================================
@@ -580,7 +580,7 @@ elif_chain[result]
     | ELSE LBRACE stmt_list[else_body] RBRACE
       { $result = std::move($else_body); }
     | /* empty */
-      { $result = std::vector<std::unique_ptr<Stmt>>(); }
+       %empty { $result = std::vector<std::unique_ptr<Stmt>>(); }
     ;
 
 var_decl_stmt[result]

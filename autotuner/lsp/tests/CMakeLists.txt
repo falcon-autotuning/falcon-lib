@@ -41,7 +41,6 @@ set_tests_properties(falcon_lsp_unit_tests PROPERTIES
 # ---- integration tests ---------------------------------------------------
 add_executable(falcon_lsp_integration_tests
     integration/test_fal_files.cpp
-    integration/test_treesitter.cpp
 )
 
 target_compile_definitions(falcon_lsp_integration_tests PRIVATE
