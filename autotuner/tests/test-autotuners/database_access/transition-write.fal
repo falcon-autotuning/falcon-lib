@@ -1,7 +1,8 @@
+import io;
 autotuner TransitionWrite -> (bool completed) {
   completed = true;
   Error err = nil;
-  err = write(scope="device", name="completed", extra="default", characteristic=completed);
+  err = io::write(scope="device", name="completed", extra="default", characteristic=completed);
   start -> init;
   
   state init {

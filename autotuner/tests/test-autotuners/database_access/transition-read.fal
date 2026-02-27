@@ -1,7 +1,8 @@
+import io;
 autotuner TransitionRead -> (bool completed) {
   completed = false;
   Error err = nil;
-  completed, err = readLatest(scope="device", name="completed", extra="default");
+  completed, err = io::readLatest(scope="device", name="completed", extra="default");
 
   start -> init;
   

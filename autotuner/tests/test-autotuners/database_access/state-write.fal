@@ -1,4 +1,4 @@
-
+import io;
 autotuner StateWrite() -> (bool completed) {
   completed = false;
 
@@ -6,7 +6,7 @@ autotuner StateWrite() -> (bool completed) {
   
   state init {
     // state reads should happen only to predefined variables
-    write(scope="globals", name="completed", extra="default", characteristic=completed);
+    io::write(scope="globals", name="completed", extra="default", characteristic=completed);
     -> done;
   }
   

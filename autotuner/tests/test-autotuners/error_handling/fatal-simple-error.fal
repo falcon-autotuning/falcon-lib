@@ -4,7 +4,7 @@ autotuner FatalSimpleError() -> (bool completed) {
   start -> init;
   
   state init {
-      terminal FatalError::msg("We are really broken :(");
+      terminal fatalErrorMsg("We are really broken :(");
   }
   
 }

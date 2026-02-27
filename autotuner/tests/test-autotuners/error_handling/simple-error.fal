@@ -1,6 +1,6 @@
 autotuner SimpleError() -> (Error err) {
   bool completed = false;
-  Error err = Error::msg("We are broken :<")
+  Error err = errorMsg("We are broken :<")
   
   start -> init;
   
