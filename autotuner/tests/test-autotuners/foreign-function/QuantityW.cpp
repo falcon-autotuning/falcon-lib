@@ -15,6 +15,6 @@ STRUCTQuantityNew(falcon::autotuner::ParameterMap params) {
 falcon::autotuner::FunctionResult
 STRUCTQuantityValue(falcon::autotuner::ParameterMap params) {
   using QuantitySP = std::shared_ptr<Quantity>;
-  QuantitySP q = std::get<QuantitySP>(params.at("quantity"));
+  QuantitySP q = std::get<QuantitySP>(params.at("this"));
   return falcon::autotuner::FunctionResult{q->a};
 }
