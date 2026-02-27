@@ -1142,10 +1142,12 @@ struct RoutineDecl {
  * A .fal file can contain:
  * - Multiple autotuner definitions
  * - Multiple routine declarations
+ * - All of the imports for the project
  */
 struct Program {
   std::vector<AutotunerDecl> autotuners;
   std::vector<RoutineDecl> routines;
+  std::vector<std::string> imports;
 
   // Filled in during semantic analysis for fast lookup
   mutable std::map<std::string, const AutotunerDecl *> autotuner_index;
