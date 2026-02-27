@@ -51,19 +51,6 @@ make parse FILE=../../examples/calculator.fal
 make highlight FILE=../../examples/calculator.fal
 ```
 
-## Should I commit `src/parser.c`?
-
-**Yes.** This is the standard practice for all official tree-sitter grammars
-(e.g. tree-sitter-javascript, tree-sitter-python). Committing the generated C
-file means:
-
-- Editors and plugin managers (nvim-treesitter) can compile the parser **without
-  needing Node.js or the tree-sitter CLI**
-- CI environments don't need the full Node toolchain to build
-- Other contributors can use the parser immediately after `git clone`
-
-Only re-generate it when `grammar.js` changes, then commit the updated `parser.c`.
-
 ## Adding/modifying the grammar
 
 1. Edit `grammar.js`
