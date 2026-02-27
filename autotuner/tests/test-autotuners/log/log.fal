@@ -1,0 +1,12 @@
+import log;
+
+autotuner LogTest -> () {
+  start -> doinglog;
+  
+  state doingLog {
+    log::Info("This is an info message");
+    log::Warning("This is a warning message");
+    log::Error("This is an error message");
+    terminal;
+  }
+}
