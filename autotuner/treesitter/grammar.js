@@ -16,37 +16,18 @@ module.exports = grammar({
       $.routine_decl,
     )),
 
-    // -----------------------------------------------------------------------
-    // Comments
-    // -----------------------------------------------------------------------
     comment: $ => token(choice(
       seq('//', /.*/),
       seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/'),
     )),
 
-    // -----------------------------------------------------------------------
-    // Types
-    // -----------------------------------------------------------------------
     type: $ => choice(
-      'int',
-      'float',
-      'bool',
-      'string',
-      'Quantity',
-      'Config',
-      'Connection',
-      'Connections',
-      'Gname',
-      'DeviceCharacteristic',
-      'DeviceCharacteristicQuery',
-      'Error',
-      'FatalError',
-      'void',
+      'int', 'float', 'bool', 'string',
+      'Quantity', 'Config', 'Connection', 'Connections',
+      'Gname', 'DeviceCharacteristic', 'DeviceCharacteristicQuery',
+      'Error', 'FatalError', 'void',
     ),
 
-    // -----------------------------------------------------------------------
-    // Parameter declarations
-    // -----------------------------------------------------------------------
     param_decl: $ => seq(
       field('type', $.type),
       field('name', $.identifier),
@@ -57,7 +38,6 @@ module.exports = grammar({
 
     // -----------------------------------------------------------------------
     // Autotuner declaration
-    // parser.y order: requires_clause → autotuner_var_decls → entry → state_list
     // -----------------------------------------------------------------------
     autotuner_decl: $ => seq(
       'autotuner',
@@ -66,16 +46,34 @@ module.exports = grammar({
       '->',
       field('outputs', $.param_list),
       '{',
-      // uses clause comes BEFORE body stmts — parser.y: requires_clause first
       optional(field('uses', $.requires_clause)),
-      // body-level stmts (var decls, assignments) — parser.y: autotuner_var_decls → stmt*
-      repeat($.stmt),
+      // Uses autotuner_var_decl (distinct node type) so highlights.scm can
+      // target autotuner-scope declarations separately from state-scope ones.
+      repeat($.autotuner_var_decl),
       field('entry', $.entry_stmt),
       repeat($.state_decl),
       '}',
     ),
 
-    // parser.y: USES identifier_list SEMICOLON — no parens, semicolon-terminated
+    // Autotuner-scope variable declaration — distinct node type from var_decl_stmt
+    // Accepts any stmt so assign_stmt works here too (mirrors parser.y)
+    autotuner_var_decl: $ => choice(
+      seq(
+        field('type', $.type),
+        field('name', $.identifier),
+        optional(seq('=', field('init', $.expr))),
+        ';',
+      ),
+      // body-level assignment (e.g. sum = 0; before start ->)
+      seq(
+        field('targets', $.identifier),
+        repeat(seq(',', field('targets', $.identifier))),
+        '=',
+        field('value', $.expr),
+        ';',
+      ),
+    ),
+
     requires_clause: $ => seq(
       'uses',
       commaSep1($.identifier),
@@ -103,7 +101,6 @@ module.exports = grammar({
 
     // -----------------------------------------------------------------------
     // State declaration
-    // parser.y: STATE IDENTIFIER state_input_params LBRACE stmt_list RBRACE
     // -----------------------------------------------------------------------
     state_decl: $ => seq(
       'state',
@@ -115,7 +112,7 @@ module.exports = grammar({
     ),
 
     // -----------------------------------------------------------------------
-    // Statements
+    // Statements (inside states)
     // -----------------------------------------------------------------------
     stmt: $ => choice(
       $.var_decl_stmt,
@@ -133,8 +130,6 @@ module.exports = grammar({
       ';',
     ),
 
-    // FIX: field('targets', ...) and field('value', ...) labels required by corpus.
-    // parser.y: identifier_list ASSIGN expr SEMICOLON
     assign_stmt: $ => seq(
       field('targets', $.identifier),
       repeat(seq(',', field('targets', $.identifier))),
@@ -143,41 +138,30 @@ module.exports = grammar({
       ';',
     ),
 
-    // parser.y: IF LPAREN expr RPAREN LBRACE stmt_list RBRACE elif_chain
-    // elif and else are separate named nodes matching elif_clause / else_clause
     if_stmt: $ => seq(
-      'if',
-      '(',
+      'if', '(',
       field('condition', $.expr),
-      ')',
-      '{',
+      ')', '{',
       repeat($.stmt),
       '}',
       repeat($.elif_clause),
       optional($.else_clause),
     ),
 
-    // parser.y elif_chain: ELIF LPAREN expr RPAREN LBRACE stmt_list RBRACE elif_chain
     elif_clause: $ => seq(
-      'elif',
-      '(',
+      'elif', '(',
       field('condition', $.expr),
-      ')',
-      '{',
+      ')', '{',
       repeat($.stmt),
       '}',
     ),
 
-    // parser.y elif_chain: ELSE LBRACE stmt_list RBRACE
     else_clause: $ => seq(
-      'else',
-      '{',
+      'else', '{',
       repeat($.stmt),
       '}',
     ),
 
-    // parser.y: ARROW IDENTIFIER SEMICOLON
-    //         | ARROW IDENTIFIER LPAREN expr_list RPAREN SEMICOLON
     transition_stmt: $ => seq(
       '->',
       field('target', $.identifier),
@@ -186,13 +170,10 @@ module.exports = grammar({
     ),
 
     terminal_stmt: $ => seq('terminal', ';'),
-
     expr_stmt: $ => seq($.expr, ';'),
 
     // -----------------------------------------------------------------------
     // Expressions
-    // parser.y: expr → primary_expr | postfix_expr | binary | unary
-    // expr is always a wrapper node; atoms live inside primary_expr
     // -----------------------------------------------------------------------
     expr: $ => choice(
       $.binary_expr,
@@ -203,7 +184,6 @@ module.exports = grammar({
       $.primary_expr,
     ),
 
-    // parser.y precedence (lowest→highest): OR(1) AND(2) cmp(3) +/-(4) *//( 5)
     binary_expr: $ => choice(
       prec.left(1, seq($.expr, '||', $.expr)),
       prec.left(2, seq($.expr, '&&', $.expr)),
@@ -212,13 +192,11 @@ module.exports = grammar({
       prec.left(5, seq($.expr, choice('*', '/'), $.expr)),
     ),
 
-    // parser.y: NOT expr | MINUS expr %prec UMINUS
     unary_expr: $ => prec.right(6, choice(
       seq('-', $.expr),
       seq('!', $.expr),
     )),
 
-    // parser.y postfix_expr: IDENTIFIER LPAREN call_arg_list RPAREN
     call_expr: $ => seq(
       field('func', $.identifier),
       '(',
@@ -232,15 +210,12 @@ module.exports = grammar({
       field('value', $.expr),
     ),
 
-    // parser.y postfix_expr: expr DOT IDENTIFIER [LPAREN expr_list RPAREN]
-    // Uses '.' not '::'
     member_expr: $ => prec.left(7, seq(
       field('object', $.expr),
       '.',
       field('member', $.identifier),
     )),
 
-    // parser.y postfix_expr: expr LBRACKET expr RBRACKET
     index_expr: $ => prec.left(7, seq(
       field('object', $.expr),
       '[',
@@ -248,8 +223,6 @@ module.exports = grammar({
       ']',
     )),
 
-    // Atom wrapper — parser.y primary_expr: INTEGER | DOUBLE | STRING | TRUE
-    //               | FALSE | NIL | IDENTIFIER | CONFIG_VAR | LPAREN expr RPAREN
     primary_expr: $ => choice(
       $.int_literal,
       $.float_literal,
@@ -260,29 +233,14 @@ module.exports = grammar({
       seq('(', $.expr, ')'),
     ),
 
-    // -----------------------------------------------------------------------
-    // Literals
-    // -----------------------------------------------------------------------
     int_literal: $ => /[0-9]+/,
     float_literal: $ => /[0-9]+\.[0-9]*/,
     bool_literal: $ => choice('true', 'false'),
     nil_literal: $ => 'nil',
-
-    string_literal: $ => seq(
-      '"',
-      /[^"\\]*/,
-      '"',
-    ),
-
+    string_literal: $ => seq('"', /[^"\\]*/, '"'),
     identifier: $ => /[a-zA-Z_][a-zA-Z0-9_]*/,
   },
 });
 
-// Helpers
-function commaSep(rule) {
-  return optional(commaSep1(rule));
-}
-
-function commaSep1(rule) {
-  return seq(rule, repeat(seq(',', rule)));
-}
+function commaSep(rule) { return optional(commaSep1(rule)); }
+function commaSep1(rule) { return seq(rule, repeat(seq(',', rule))); }

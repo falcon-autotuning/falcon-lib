@@ -26,12 +26,11 @@ autotuner Calculator (int a, int b) -> (int sum) {
       (param_decl type: (type) name: (identifier)))
     outputs: (param_list
       (param_decl type: (type) name: (identifier)))
-    (stmt
-      (assign_stmt
-        targets: (identifier)
-        value: (expr
-          (primary_expr
-            (int_literal)))))
+    (autotuner_var_decl
+      targets: (identifier)
+      value: (expr
+        (primary_expr
+          (int_literal))))
     entry: (entry_stmt
       target: (identifier))
     (state_decl
@@ -172,4 +171,99 @@ autotuner WithDeps () -> (int result) {
     entry: (entry_stmt target: (identifier))
     (state_decl
       name: (identifier)
+      (stmt (terminal_stmt)))))
+
+================================================================================
+Autotuner-scope variable declaration
+================================================================================
+
+autotuner Scoped (int x) -> (int out) {
+  int counter;
+  int total = 0;
+  start -> run;
+  state run { terminal; }
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (autotuner_decl
+    name: (identifier)
+    inputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    (autotuner_var_decl
+      type: (type)
+      name: (identifier))
+    (autotuner_var_decl
+      type: (type)
+      name: (identifier)
+      init: (expr (primary_expr (int_literal))))
+    entry: (entry_stmt target: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt (terminal_stmt)))))
+
+================================================================================
+State-scope variable declaration
+================================================================================
+
+autotuner StateScopedVars (int x) -> (int out) {
+  start -> run;
+  state run {
+    int local_var;
+    int another = 5;
+    terminal;
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (autotuner_decl
+    name: (identifier)
+    inputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    entry: (entry_stmt target: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt
+        (var_decl_stmt
+          type: (type)
+          name: (identifier)))
+      (stmt
+        (var_decl_stmt
+          type: (type)
+          name: (identifier)
+          init: (expr (primary_expr (int_literal)))))
+      (stmt (terminal_stmt)))))
+
+================================================================================
+State input parameters
+================================================================================
+
+autotuner WithStateParams (int x) -> (int out) {
+  start -> run;
+  state run (int val) {
+    terminal;
+  }
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (autotuner_decl
+    name: (identifier)
+    inputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    entry: (entry_stmt target: (identifier))
+    (state_decl
+      name: (identifier)
+      params: (param_list
+        (param_decl type: (type) name: (identifier)))
       (stmt (terminal_stmt)))))
