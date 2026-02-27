@@ -11,6 +11,9 @@ add_executable(falcon_dsl_integration_tests
   integration/test_config.cpp
   integration/test_database_access.cpp
   integration/test_nest.cpp
+  integration/test_error_handling.cpp
+  integration/test_routines.cpp
+  integration/test_structs.cpp
 )
 
 target_link_libraries(falcon_dsl_integration_tests
