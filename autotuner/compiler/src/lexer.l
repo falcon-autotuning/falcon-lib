@@ -26,11 +26,12 @@ using namespace falcon::atc;
 "autotuner"     { return Parser::make_AUTOTUNER(*loc); }
 "routine"       { return Parser::make_ROUTINE(*loc); }
 "state"         { return Parser::make_STATE(*loc); }
+"import"        { return Parser::make_TOK_IMPORT(*loc); }
 "start"         { return Parser::make_START(*loc); }
 "uses"          { return Parser::make_USES(*loc); }
 "terminal"      { return Parser::make_TERMINAL(*loc); }
 "if"            { return Parser::make_IF(*loc); }
-"elif"            { return Parser::make_ELIF(*loc); }
+"elif"          { return Parser::make_ELIF(*loc); }
 "else"          { return Parser::make_ELSE(*loc); }
 "true"          { return Parser::make_TRUE(*loc); }
 "false"         { return Parser::make_FALSE(*loc); }

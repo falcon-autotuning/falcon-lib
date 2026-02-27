@@ -86,7 +86,7 @@
 // Token declarations
 %token <std::string> IDENTIFIER DOUBLE INTEGER STRING
 
-%token AUTOTUNER ROUTINE STATE START USES TERMINAL IF ELIF ELSE TRUE FALSE NIL CONFIG_VAR
+%token AUTOTUNER ROUTINE STATE IMPORT START USES TERMINAL IF ELIF ELSE TRUE FALSE NIL CONFIG_VAR
 %token FLOAT_KW INT_KW BOOL_KW STRING_KW QUANTITY_KW CONFIG_KW CONNECTION_KW CONNECTIONS_KW GNAME_KW ERROR_KW
 %token ARROW LBRACKET RBRACKET LBRACE RBRACE LPAREN RPAREN ASSIGN COMMA SEMICOLON DOT
 %token PLUS MINUS MUL DIV EQ NE LL GG LE GE AND OR NOT
@@ -98,7 +98,7 @@
 %type <std::vector<std::unique_ptr<ParamDecl>>> param_decl_list input_params output_params state_input_params
 %type <std::unique_ptr<ParamDecl>> param_decl
 %type <std::unique_ptr<TypeDescriptor>> type_spec
-%type <std::vector<std::string>> requires_clause identifier_list
+%type <std::vector<std::string>> requires_clause identifier_list import_list
 %type <std::vector<std::unique_ptr<Stmt>>> autotuner_var_decls
 %type <std::unique_ptr<VarDeclStmt>> var_decl_stmt
 %type <std::string> entry_state
@@ -132,15 +132,28 @@
 // ============================================================================
 
 program[result]
-    : autotuner_list[autotuners] routine_list[routines]
+    : import_list[imps] autotuner_list[autotuners] routine_list[routines]
       {
         $result = std::make_unique<Program>();
+        $result->imports = std::move($imps);
         $result->autotuners = std::move($autotuners);
         $result->routines = std::move($routines);
         program_root = std::move($result);
       }
     ;
 
+import_list[result]
+    : import_stmt[first] 
+      { 
+        $result = std::vector<std::string>(); 
+        $result.push_back(std::move($first)); 
+      }
+    | import_list[existing] import_stmt[next] 
+      { 
+        $result = std::move($existing); 
+        $result.push_back(std::move($next)); 
+      }
+    ;
 
 autotuner_list[result]
     : autotuner_decl[first_autotuner]
@@ -170,6 +183,24 @@ routine_list[result]
       {
         $result = std::vector<RoutineDecl>();
       }
+    ;
+
+// ============================================================================
+// IMPORT DECLARATION
+// ============================================================================
+
+import_stmt[result]
+    : IMPORT STRING[path] SEMICOLON 
+      { $result = std::move($path); }
+    | IMPORT LPAREN import_string_list[paths] RPAREN 
+      { $result = std::move($paths); }
+    ;
+
+import_string_list[result]
+    : STRING[first] 
+      { $result = std::vector<std::string>(); $result.push_back(std::move($first)); }
+    | import_string_list[existing] STRING[next] 
+      { $result = std::move($existing); $result.push_back(std::move($next)); }
     ;
 
 // ============================================================================
