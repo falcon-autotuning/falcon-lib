@@ -1,3 +1,7 @@
+import (
+    io
+    log 
+)
 autotuner StateRead -> (bool completed) {
   completed = false;
 
@@ -7,7 +11,7 @@ autotuner StateRead -> (bool completed) {
     // state reads should happen only to predefined variables
     int number = 0;
     Error nerr = nil;
-    number, nerr = readLatest(scope="globals", name="number", extra="default");
+    number, nerr = io::readLatest(scope="globals", name="number", extra="default");
     if (number==0) {
         -> fail;
     }
@@ -22,7 +26,7 @@ autotuner StateRead -> (bool completed) {
     terminal;
   }
   state fail {
-    logInfo("We failed roger");
+    log::Info("We failed roger");
     terminal;
   }
 }
