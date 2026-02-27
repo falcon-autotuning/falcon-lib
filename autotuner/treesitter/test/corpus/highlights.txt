@@ -20,7 +20,7 @@ autotuner Calculator (int a, int b) -> (int sum) {
 
 (program
   (autotuner_decl
-    name: (identifier)
+    name: (identifier)``
     inputs: (param_list
       (param_decl type: (type) name: (identifier))
       (param_decl type: (type) name: (identifier)))
