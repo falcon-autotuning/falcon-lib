@@ -91,7 +91,7 @@ nvim-install: build-so
 ## nvim-install-queries  – Deploy queries/highlights.scm → Neovim query dir
 nvim-install-queries:
 	@mkdir -p $(NVIM_QUERY_DIR)
-	cp queries/highlights.scm $(NVIM_QUERY_DIR)/highlights.scm
+	cp queries/falcon/highlights.scm $(NVIM_QUERY_DIR)/highlights.scm
 	@echo "✔ highlights.scm → $(NVIM_QUERY_DIR)/highlights.scm"
 
 ## nvim-install-lua      – Write falcon-treesitter.lua and falcon-highlights.lua
