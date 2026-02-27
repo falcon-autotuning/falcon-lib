@@ -20,7 +20,7 @@ autotuner Calculator (int a, int b) -> (int sum) {
 
 (program
   (autotuner_decl
-    name: (identifier)``
+    name: (identifier)
     inputs: (param_list
       (param_decl type: (type) name: (identifier))
       (param_decl type: (type) name: (identifier)))
@@ -28,8 +28,8 @@ autotuner Calculator (int a, int b) -> (int sum) {
       (param_decl type: (type) name: (identifier)))
     (stmt
       (assign_stmt
-        (identifier)
-        (expr
+        targets: (identifier)
+        value: (expr
           (primary_expr
             (int_literal)))))
     entry: (entry_stmt
@@ -38,8 +38,8 @@ autotuner Calculator (int a, int b) -> (int sum) {
       name: (identifier)
       (stmt
         (assign_stmt
-          (identifier)
-          (expr
+          targets: (identifier)
+          value: (expr
             (binary_expr
               (expr (primary_expr (identifier)))
               (expr (primary_expr (identifier)))))))
