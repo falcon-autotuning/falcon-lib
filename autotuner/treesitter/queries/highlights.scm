@@ -10,8 +10,8 @@
 
 ; Conditionals
 (if_stmt "if" @keyword.conditional)
-(if_stmt "else" @keyword.conditional)
-"elif" @keyword.conditional
+(else_clause "else" @keyword.conditional)
+(elif_clause "elif" @keyword.conditional)
 
 ; Operators / punctuation
 (transition_stmt "->" @operator)

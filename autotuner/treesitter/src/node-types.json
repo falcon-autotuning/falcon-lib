@@ -8,10 +8,6 @@
         "required": true,
         "types": [
           {
-            "type": ",",
-            "named": false
-          },
-          {
             "type": "identifier",
             "named": true
           }
@@ -120,36 +116,30 @@
     "fields": {}
   },
   {
-    "type": "call_arg",
+    "type": "call_expr",
     "named": true,
     "fields": {
-      "name": {
+      "func": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "identifier",
             "named": true
           }
         ]
-      },
-      "value": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "expr",
-            "named": true
-          }
-        ]
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
         {
           "type": "expr",
+          "named": true
+        },
+        {
+          "type": "named_arg",
           "named": true
         }
       ]
@@ -235,7 +225,15 @@
           "named": true
         },
         {
-          "type": "postfix_expr",
+          "type": "call_expr",
+          "named": true
+        },
+        {
+          "type": "index_expr",
+          "named": true
+        },
+        {
+          "type": "member_expr",
           "named": true
         },
         {
@@ -299,6 +297,84 @@
     }
   },
   {
+    "type": "index_expr",
+    "named": true,
+    "fields": {
+      "index": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expr",
+            "named": true
+          }
+        ]
+      },
+      "object": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expr",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "member_expr",
+    "named": true,
+    "fields": {
+      "member": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "object": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expr",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "named_arg",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expr",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "param_decl",
     "named": true,
     "fields": {
@@ -350,72 +426,6 @@
     }
   },
   {
-    "type": "postfix_expr",
-    "named": true,
-    "fields": {
-      "func": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "index": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "expr",
-            "named": true
-          }
-        ]
-      },
-      "member": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "method": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "object": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "expr",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "call_arg",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "primary_expr",
     "named": true,
     "fields": {},
@@ -425,10 +435,6 @@
       "types": [
         {
           "type": "bool_literal",
-          "named": true
-        },
-        {
-          "type": "config_var",
           "named": true
         },
         {
@@ -465,7 +471,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "autotuner_decl",
@@ -785,7 +791,19 @@
     "named": false
   },
   {
+    "type": "DeviceCharacteristic",
+    "named": false
+  },
+  {
+    "type": "DeviceCharacteristicQuery",
+    "named": false
+  },
+  {
     "type": "Error",
+    "named": false
+  },
+  {
+    "type": "FatalError",
     "named": false
   },
   {
@@ -816,10 +834,6 @@
     "type": "comment",
     "named": true,
     "extra": true
-  },
-  {
-    "type": "config_var",
-    "named": true
   },
   {
     "type": "elif",
@@ -887,6 +901,10 @@
   },
   {
     "type": "uses",
+    "named": false
+  },
+  {
+    "type": "void",
     "named": false
   },
   {

@@ -1,14 +1,9 @@
 /**
  * TreeSitter grammar for the Falcon Autotuner DSL (.fal files)
- *
- * Kept strictly equivalent to autotuner/compiler/src/parser.y (Bison source).
+ * Mirrors the Bison grammar in autotuner/compiler/src/parser.y
  */
 module.exports = grammar({
   name: 'fal',
-
-  // Tells tree-sitter which rule is the "word" — used for keyword
-  // disambiguation so that 'start', 'state', etc. can't match as identifiers.
-  word: $ => $.identifier,
 
   extras: $ => [
     /\s/,
@@ -16,23 +11,22 @@ module.exports = grammar({
   ],
 
   rules: {
-    // =========================================================================
-    // PROGRAM
-    // program : autotuner_list routine_list
-    // =========================================================================
-    program: $ => repeat1(choice($.autotuner_decl, $.routine_decl)),
+    program: $ => repeat(choice(
+      $.autotuner_decl,
+      $.routine_decl,
+    )),
 
-    // =========================================================================
-    // COMMENTS  (not in Bison — handled by Flex)
-    // =========================================================================
+    // -----------------------------------------------------------------------
+    // Comments
+    // -----------------------------------------------------------------------
     comment: $ => token(choice(
       seq('//', /.*/),
       seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/'),
     )),
 
-    // =========================================================================
-    // TYPES  — type_spec in Bison
-    // =========================================================================
+    // -----------------------------------------------------------------------
+    // Types
+    // -----------------------------------------------------------------------
     type: $ => choice(
       'int',
       'float',
@@ -43,28 +37,28 @@ module.exports = grammar({
       'Connection',
       'Connections',
       'Gname',
+      'DeviceCharacteristic',
+      'DeviceCharacteristicQuery',
       'Error',
+      'FatalError',
+      'void',
     ),
 
-    // =========================================================================
-    // ROUTINE DECLARATION
-    // routine_decl : ROUTINE IDENTIFIER input_params ARROW output_params
-    // =========================================================================
-    routine_decl: $ => seq(
-      'routine',
+    // -----------------------------------------------------------------------
+    // Parameter declarations
+    // -----------------------------------------------------------------------
+    param_decl: $ => seq(
+      field('type', $.type),
       field('name', $.identifier),
-      field('inputs', $.param_list),
-      '->',
-      field('outputs', $.param_list),
+      optional(seq('=', field('default', $.expr))),
     ),
 
-    // =========================================================================
-    // AUTOTUNER DECLARATION
-    // autotuner_decl : AUTOTUNER IDENTIFIER input_params ARROW output_params
-    //                  LBRACE requires_clause autotuner_var_decls
-    //                         entry_state entry_params SEMICOLON
-    //                         state_list RBRACE
-    // =========================================================================
+    param_list: $ => seq('(', commaSep($.param_decl), ')'),
+
+    // -----------------------------------------------------------------------
+    // Autotuner declaration
+    // parser.y order: requires_clause → autotuner_var_decls → entry → state_list
+    // -----------------------------------------------------------------------
     autotuner_decl: $ => seq(
       'autotuner',
       field('name', $.identifier),
@@ -72,25 +66,22 @@ module.exports = grammar({
       '->',
       field('outputs', $.param_list),
       '{',
+      // uses clause comes BEFORE body stmts — parser.y: requires_clause first
       optional(field('uses', $.requires_clause)),
-      // autotuner_var_decls: zero or more stmts before the entry
-      // (Bison uses the generic stmt rule here — same as state body)
+      // body-level stmts (var decls, assignments) — parser.y: autotuner_var_decls → stmt*
       repeat($.stmt),
       field('entry', $.entry_stmt),
       repeat($.state_decl),
       '}',
     ),
 
-    // requires_clause : USES identifier_list SEMICOLON
-    // NOTE: no parens — Bison syntax is:  uses foo, bar ;
+    // parser.y: USES identifier_list SEMICOLON — no parens, semicolon-terminated
     requires_clause: $ => seq(
       'uses',
       commaSep1($.identifier),
       ';',
     ),
 
-    // entry_state + entry_params merged:
-    // START ARROW IDENTIFIER (expr_list)? SEMICOLON
     entry_stmt: $ => seq(
       'start',
       '->',
@@ -99,23 +90,21 @@ module.exports = grammar({
       ';',
     ),
 
-    // =========================================================================
-    // PARAMETERS
-    // param_list : LPAREN param_decl_list RPAREN | LPAREN RPAREN | %empty
-    // =========================================================================
-    param_list: $ => seq('(', commaSep($.param_decl), ')'),
-
-    param_decl: $ => seq(
-      field('type', $.type),
+    // -----------------------------------------------------------------------
+    // Routine declaration
+    // -----------------------------------------------------------------------
+    routine_decl: $ => seq(
+      'routine',
       field('name', $.identifier),
-      optional(seq('=', field('default', $.expr))),
+      field('inputs', $.param_list),
+      '->',
+      field('outputs', $.param_list),
     ),
 
-    // =========================================================================
-    // STATE DECLARATION
-    // state_decl : STATE IDENTIFIER state_input_params LBRACE stmt_list RBRACE
-    // state_input_params : LPAREN param_decl_list RPAREN | LPAREN RPAREN | %empty
-    // =========================================================================
+    // -----------------------------------------------------------------------
+    // State declaration
+    // parser.y: STATE IDENTIFIER state_input_params LBRACE stmt_list RBRACE
+    // -----------------------------------------------------------------------
     state_decl: $ => seq(
       'state',
       field('name', $.identifier),
@@ -125,17 +114,9 @@ module.exports = grammar({
       '}',
     ),
 
-    // =========================================================================
-    // STATEMENTS  — stmt rule in Bison
-    //
-    //   stmt : var_decl_stmt
-    //        | identifier_list ASSIGN expr SEMICOLON
-    //        | expr SEMICOLON
-    //        | IF LPAREN expr RPAREN LBRACE stmt_list RBRACE elif_chain
-    //        | ARROW IDENTIFIER SEMICOLON
-    //        | ARROW IDENTIFIER LPAREN expr_list RPAREN SEMICOLON
-    //        | TERMINAL SEMICOLON
-    // =========================================================================
+    // -----------------------------------------------------------------------
+    // Statements
+    // -----------------------------------------------------------------------
     stmt: $ => choice(
       $.var_decl_stmt,
       $.assign_stmt,
@@ -145,8 +126,6 @@ module.exports = grammar({
       $.expr_stmt,
     ),
 
-    // var_decl_stmt : type_spec IDENTIFIER SEMICOLON
-    //               | type_spec IDENTIFIER ASSIGN expr SEMICOLON
     var_decl_stmt: $ => seq(
       field('type', $.type),
       field('name', $.identifier),
@@ -154,19 +133,18 @@ module.exports = grammar({
       ';',
     ),
 
-    // identifier_list ASSIGN expr SEMICOLON
-    // (Bison allows multi-assign:  a, b = expr ;)
+    // FIX: field('targets', ...) and field('value', ...) labels required by corpus.
+    // parser.y: identifier_list ASSIGN expr SEMICOLON
     assign_stmt: $ => seq(
-      field('targets', commaSep1($.identifier)),
+      field('targets', $.identifier),
+      repeat(seq(',', field('targets', $.identifier))),
       '=',
       field('value', $.expr),
       ';',
     ),
 
-    // IF LPAREN expr RPAREN LBRACE stmt_list RBRACE elif_chain
-    // elif_chain : ELIF ( expr ) { stmts } elif_chain
-    //            | ELSE { stmts }
-    //            | %empty
+    // parser.y: IF LPAREN expr RPAREN LBRACE stmt_list RBRACE elif_chain
+    // elif and else are separate named nodes matching elif_clause / else_clause
     if_stmt: $ => seq(
       'if',
       '(',
@@ -175,10 +153,11 @@ module.exports = grammar({
       '{',
       repeat($.stmt),
       '}',
-      repeat($.elif_clause),   // zero or more elif branches
-      optional($.else_clause), // optional final else
+      repeat($.elif_clause),
+      optional($.else_clause),
     ),
 
+    // parser.y elif_chain: ELIF LPAREN expr RPAREN LBRACE stmt_list RBRACE elif_chain
     elif_clause: $ => seq(
       'elif',
       '(',
@@ -189,6 +168,7 @@ module.exports = grammar({
       '}',
     ),
 
+    // parser.y elif_chain: ELSE LBRACE stmt_list RBRACE
     else_clause: $ => seq(
       'else',
       '{',
@@ -196,8 +176,8 @@ module.exports = grammar({
       '}',
     ),
 
-    // ARROW IDENTIFIER SEMICOLON
-    // ARROW IDENTIFIER LPAREN expr_list RPAREN SEMICOLON
+    // parser.y: ARROW IDENTIFIER SEMICOLON
+    //         | ARROW IDENTIFIER LPAREN expr_list RPAREN SEMICOLON
     transition_stmt: $ => seq(
       '->',
       field('target', $.identifier),
@@ -205,115 +185,100 @@ module.exports = grammar({
       ';',
     ),
 
-    // TERMINAL SEMICOLON
     terminal_stmt: $ => seq('terminal', ';'),
 
-    // expr SEMICOLON
     expr_stmt: $ => seq($.expr, ';'),
 
-    // =========================================================================
-    // EXPRESSIONS  — mirrors Bison precedence table exactly:
-    //   %left OR
-    //   %left AND
-    //   %left EQ NE
-    //   %left LL GG LE GE
-    //   %left PLUS MINUS
-    //   %left MUL DIV
-    //   %right NOT UMINUS
-    //   %left DOT LBRACKET LPAREN   (postfix)
-    // =========================================================================
+    // -----------------------------------------------------------------------
+    // Expressions
+    // parser.y: expr → primary_expr | postfix_expr | binary | unary
+    // expr is always a wrapper node; atoms live inside primary_expr
+    // -----------------------------------------------------------------------
     expr: $ => choice(
       $.binary_expr,
       $.unary_expr,
-      $.postfix_expr,
+      $.call_expr,
+      $.member_expr,
+      $.index_expr,
       $.primary_expr,
     ),
 
+    // parser.y precedence (lowest→highest): OR(1) AND(2) cmp(3) +/-(4) *//( 5)
     binary_expr: $ => choice(
       prec.left(1, seq($.expr, '||', $.expr)),
       prec.left(2, seq($.expr, '&&', $.expr)),
-      prec.left(3, seq($.expr, '==', $.expr)),
-      prec.left(3, seq($.expr, '!=', $.expr)),
-      prec.left(4, seq($.expr, '<', $.expr)),
-      prec.left(4, seq($.expr, '>', $.expr)),
-      prec.left(4, seq($.expr, '<=', $.expr)),
-      prec.left(4, seq($.expr, '>=', $.expr)),
-      prec.left(5, seq($.expr, '+', $.expr)),
-      prec.left(5, seq($.expr, '-', $.expr)),
-      prec.left(6, seq($.expr, '*', $.expr)),
-      prec.left(6, seq($.expr, '/', $.expr)),
+      prec.left(3, seq($.expr, choice('==', '!=', '<', '>', '<=', '>='), $.expr)),
+      prec.left(4, seq($.expr, choice('+', '-'), $.expr)),
+      prec.left(5, seq($.expr, choice('*', '/'), $.expr)),
     ),
 
-    unary_expr: $ => choice(
-      prec.right(7, seq('!', $.expr)),
-      prec.right(7, seq('-', $.expr)),
+    // parser.y: NOT expr | MINUS expr %prec UMINUS
+    unary_expr: $ => prec.right(6, choice(
+      seq('-', $.expr),
+      seq('!', $.expr),
+    )),
+
+    // parser.y postfix_expr: IDENTIFIER LPAREN call_arg_list RPAREN
+    call_expr: $ => seq(
+      field('func', $.identifier),
+      '(',
+      commaSep(choice($.named_arg, $.expr)),
+      ')',
     ),
 
-    postfix_expr: $ => choice(
-      prec.left(8, seq(
-        field('object', $.expr),
-        '.',
-        field('member', $.identifier),
-      )),
-      prec.left(8, seq(
-        field('object', $.expr),
-        '.',
-        field('method', $.identifier),
-        '(',
-        commaSep($.call_arg),
-        ')',
-      )),
-      prec.left(8, seq(
-        field('object', $.expr),
-        '[',
-        field('index', $.expr),
-        ']',
-      )),
-      prec.left(8, seq(
-        field('func', $.identifier),
-        '(',
-        commaSep($.call_arg),
-        ')',
-      )),
+    named_arg: $ => seq(
+      field('name', $.identifier),
+      '=',
+      field('value', $.expr),
     ),
 
+    // parser.y postfix_expr: expr DOT IDENTIFIER [LPAREN expr_list RPAREN]
+    // Uses '.' not '::'
+    member_expr: $ => prec.left(7, seq(
+      field('object', $.expr),
+      '.',
+      field('member', $.identifier),
+    )),
+
+    // parser.y postfix_expr: expr LBRACKET expr RBRACKET
+    index_expr: $ => prec.left(7, seq(
+      field('object', $.expr),
+      '[',
+      field('index', $.expr),
+      ']',
+    )),
+
+    // Atom wrapper — parser.y primary_expr: INTEGER | DOUBLE | STRING | TRUE
+    //               | FALSE | NIL | IDENTIFIER | CONFIG_VAR | LPAREN expr RPAREN
     primary_expr: $ => choice(
       $.int_literal,
       $.float_literal,
-      $.string_literal,
       $.bool_literal,
+      $.string_literal,
       $.nil_literal,
-      $.config_var,
       $.identifier,
       seq('(', $.expr, ')'),
     ),
 
-    // call_arg : expr | IDENTIFIER ASSIGN expr
-    call_arg: $ => choice(
-      $.expr,
-      seq(field('name', $.identifier), '=', field('value', $.expr)),
-    ),
-
-    // =========================================================================
-    // LITERALS
-    // =========================================================================
+    // -----------------------------------------------------------------------
+    // Literals
+    // -----------------------------------------------------------------------
     int_literal: $ => /[0-9]+/,
     float_literal: $ => /[0-9]+\.[0-9]*/,
     bool_literal: $ => choice('true', 'false'),
     nil_literal: $ => 'nil',
-    string_literal: $ => seq('"', /[^"\\]*/, '"'),
 
-    // CONFIG_VAR — the 'config' keyword used as an expression value
-    config_var: $ => 'config',
+    string_literal: $ => seq(
+      '"',
+      /[^"\\]*/,
+      '"',
+    ),
 
-    // identifier MUST be last and MUST match the word: property above.
     identifier: $ => /[a-zA-Z_][a-zA-Z0-9_]*/,
   },
 });
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 function commaSep(rule) {
   return optional(commaSep1(rule));
 }
