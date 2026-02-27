@@ -31,3 +31,17 @@ TEST_F(ForeignFunctionTest, ConditionalNestGood) {
   EXPECT_EQ(std::get<int64_t>(outputs[0]), static_cast<int64_t>(5));
   EXPECT_EQ(std::get<int64_t>(outputs[1]), static_cast<int64_t>(0));
 }
+
+TEST_F(ForeignFunctionTest, ConnectionBinding) {
+  ParameterMap params;
+  SingleCompileEnvironment cenv{
+      std::filesystem::path(
+          "test-autotuners/foreign_function/connection-binding.fal"),
+      "ConnectionBinding", params, true};
+  params.emplace("name", static_cast<std::string>("P1"));
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_GE(outputs.size(), 2);
+  EXPECT_EQ(std::get<std::string>(outputs[0]), "PlungerGate");
+  EXPECT_TRUE(std::get<bool>(outputs[1]));
+}
