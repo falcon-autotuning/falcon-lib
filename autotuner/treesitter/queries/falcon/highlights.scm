@@ -20,65 +20,70 @@
 (type) @type
 
 ; ============================================================================
-; Declaration names
-;
-; autotuner_decl name  → @type.definition  (class-like, e.g. "Calculator")
-; routine_decl   name  → @function         (function-like)
-; state_decl     name  → @label            (label-like, e.g. "calculate", "done")
+; Declaration names — priority 200 so they beat the (identifier) @variable
+; fallback at priority 100 below.
 ; ============================================================================
-(autotuner_decl name: (identifier) @type.definition)
-(routine_decl   name: (identifier) @function)
-(state_decl     name: (identifier) @label)
+(autotuner_decl name: (identifier) @type.definition
+  (#set! priority 200))
+
+(routine_decl name: (identifier) @function
+  (#set! priority 200))
+
+(state_decl name: (identifier) @function.method
+  (#set! priority 200))
 
 ; ============================================================================
-; Parameters
-;
-; Input params  → @variable.parameter  (typically blue)
-; Output params → @variable.member     (typically teal/cyan)
-; State params  → custom scope color
+; Parameters — priority 150
 ; ============================================================================
-(autotuner_decl inputs:  (param_list (param_decl name: (identifier) @variable.parameter)))
-(autotuner_decl outputs: (param_list (param_decl name: (identifier) @variable.member)))
-(state_decl     params:  (param_list (param_decl name: (identifier) @variable.parameter.state)))
+(param_decl name: (identifier) @variable.parameter
+  (#set! priority 150))
 
 ; ============================================================================
-; Variable declarations — colored by scope
-;
-; autotuner_var_decl  = declared at autotuner body level  → warm orange
-; var_decl_stmt       = declared inside a state           → cool blue
+; Autotuner-scope declarations — priority 150
 ; ============================================================================
-
-; Autotuner-scope: type + name form   (int counter;  /  int total = 0;)
-(autotuner_var_decl name: (identifier) @variable.autotuner)
-
-; Autotuner-scope: assignment form    (sum = 0;  before start ->)
-(autotuner_var_decl targets: (identifier) @variable.autotuner)
-
-; State-scope variable declarations
-(var_decl_stmt name: (identifier) @variable.state)
+(autotuner_var_decl name:    (identifier) @variable.builtin
+  (#set! priority 150))
+(autotuner_var_decl targets: (identifier) @variable.builtin
+  (#set! priority 150))
 
 ; ============================================================================
-; Assignment targets inside states  → plain @variable
+; State-scope declarations — priority 150
 ; ============================================================================
-(assign_stmt targets: (identifier) @variable)
+(var_decl_stmt name: (identifier) @variable
+  (#set! priority 150))
 
 ; ============================================================================
-; Entry and transition targets  → @label (same color as state names)
+; Assignments and transitions — priority 150
 ; ============================================================================
-(entry_stmt      target: (identifier) @label)
-(transition_stmt target: (identifier) @label)
+(assign_stmt     targets: (identifier) @variable
+  (#set! priority 150))
+(entry_stmt      target:  (identifier) @label
+  (#set! priority 150))
+(transition_stmt target:  (identifier) @label
+  (#set! priority 150))
 
 ; ============================================================================
-; Calls and member access
+; Calls and members — priority 150
 ; ============================================================================
-(call_expr   func:   (identifier) @function.call)
-(member_expr member: (identifier) @variable.member)
-(named_arg   name:   (identifier) @variable.parameter)
+(call_expr   func:   (identifier) @function.call
+  (#set! priority 150))
+(member_expr member: (identifier) @property
+  (#set! priority 150))
 
 ; ============================================================================
 ; Operators
 ; ============================================================================
 ["=" "+" "-" "*" "/" "==" "!=" "<" ">" "<=" ">=" "&&" "||" "!"] @operator
+
+; ============================================================================
+; Punctuation
+; ============================================================================
+["{" "}"] @punctuation.bracket
+["(" ")"] @punctuation.bracket
+["[" "]"] @punctuation.bracket
+";"       @punctuation.delimiter
+","       @punctuation.delimiter
+"."       @punctuation.delimiter
 
 ; ============================================================================
 ; Literals
@@ -95,17 +100,8 @@
 (comment) @comment @spell
 
 ; ============================================================================
-; Punctuation
-; ============================================================================
-["{" "}"] @punctuation.bracket
-["(" ")"] @punctuation.bracket
-["[" "]"] @punctuation.bracket
-";"       @punctuation.delimiter
-","       @punctuation.delimiter
-"."       @punctuation.delimiter
-
-; ============================================================================
-; Fallback — any identifier not caught by a more specific rule above
-; This covers variable references in expressions (a, b, sum, product, etc.)
+; Fallback — priority 100 (default). Catches all remaining identifier nodes:
+; variable references in expressions (a, b, sum, product etc.)
+; Specific patterns above at priority 150-200 will override this.
 ; ============================================================================
 (identifier) @variable
