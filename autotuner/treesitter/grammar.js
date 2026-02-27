@@ -3,7 +3,7 @@
  * Mirrors the Bison grammar in autotuner/compiler/src/parser.y
  */
 module.exports = grammar({
-  name: 'fal',
+  name: 'falcon',
 
   extras: $ => [
     /\s/,
