@@ -3,7 +3,7 @@
  * Mirrors the Bison grammar in autotuner/compiler/src/parser.y
  */
 module.exports = grammar({
-  name: 'falcon',
+  name: 'falcon',  // Must match the compiled .so symbol: tree_sitter_falcon
 
   extras: $ => [
     /\s/,
@@ -16,11 +16,17 @@ module.exports = grammar({
       $.routine_decl,
     )),
 
+    // -----------------------------------------------------------------------
+    // Comments
+    // -----------------------------------------------------------------------
     comment: $ => token(choice(
       seq('//', /.*/),
       seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/'),
     )),
 
+    // -----------------------------------------------------------------------
+    // Types
+    // -----------------------------------------------------------------------
     type: $ => choice(
       'int', 'float', 'bool', 'string',
       'Quantity', 'Config', 'Connection', 'Connections',
@@ -28,6 +34,9 @@ module.exports = grammar({
       'Error', 'FatalError', 'void',
     ),
 
+    // -----------------------------------------------------------------------
+    // Parameter declarations
+    // -----------------------------------------------------------------------
     param_decl: $ => seq(
       field('type', $.type),
       field('name', $.identifier),
@@ -38,6 +47,7 @@ module.exports = grammar({
 
     // -----------------------------------------------------------------------
     // Autotuner declaration
+    // parser.y order: requires_clause → autotuner_var_decls → entry → state_list
     // -----------------------------------------------------------------------
     autotuner_decl: $ => seq(
       'autotuner',
@@ -47,24 +57,25 @@ module.exports = grammar({
       field('outputs', $.param_list),
       '{',
       optional(field('uses', $.requires_clause)),
-      // Uses autotuner_var_decl (distinct node type) so highlights.scm can
-      // target autotuner-scope declarations separately from state-scope ones.
+      // autotuner_var_decl is a DISTINCT node from var_decl_stmt so highlights.scm
+      // can color autotuner-scope declarations differently from state-scope ones.
       repeat($.autotuner_var_decl),
       field('entry', $.entry_stmt),
       repeat($.state_decl),
       '}',
     ),
 
-    // Autotuner-scope variable declaration — distinct node type from var_decl_stmt
-    // Accepts any stmt so assign_stmt works here too (mirrors parser.y)
+    // Body-level declarations/assignments inside the autotuner (before start ->)
+    // Distinct node type from var_decl_stmt (which lives inside states).
     autotuner_var_decl: $ => choice(
+      // Type-annotated declaration:  int counter;  or  int total = 0;
       seq(
         field('type', $.type),
         field('name', $.identifier),
         optional(seq('=', field('init', $.expr))),
         ';',
       ),
-      // body-level assignment (e.g. sum = 0; before start ->)
+      // Assignment without type:  sum = 0;
       seq(
         field('targets', $.identifier),
         repeat(seq(',', field('targets', $.identifier))),
@@ -74,6 +85,7 @@ module.exports = grammar({
       ),
     ),
 
+    // parser.y: USES identifier_list SEMICOLON — no parens, semicolon-terminated
     requires_clause: $ => seq(
       'uses',
       commaSep1($.identifier),
@@ -101,6 +113,7 @@ module.exports = grammar({
 
     // -----------------------------------------------------------------------
     // State declaration
+    // parser.y: STATE IDENTIFIER state_input_params LBRACE stmt_list RBRACE
     // -----------------------------------------------------------------------
     state_decl: $ => seq(
       'state',
@@ -233,6 +246,9 @@ module.exports = grammar({
       seq('(', $.expr, ')'),
     ),
 
+    // -----------------------------------------------------------------------
+    // Literals
+    // -----------------------------------------------------------------------
     int_literal: $ => /[0-9]+/,
     float_literal: $ => /[0-9]+\.[0-9]*/,
     bool_literal: $ => choice('true', 'false'),
