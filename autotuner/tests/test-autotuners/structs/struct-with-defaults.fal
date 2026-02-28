@@ -2,11 +2,9 @@ struct Quantity {
     int a_;
     int b_ = 0; // default value for b
     routine New (int a) -> (Quantity q) {
-        Quantity q;
         q.a_ = a;
     }
     routine NewWithB (int a, int b) -> (Quantity q) {
-        Quantity q;
         q.a_ = a;
         q.b_ = b;
     }
@@ -25,9 +23,9 @@ autotuner QuantityStruct (int a, int b) -> (int sum, int other_sum) {
   start -> calculate;
   
   state calculate {
-    Quantity q = New(a);
+    Quantity q = Quantity.New(a);
     sum = q.Value() + b;
-    Quantity q_with_b = NewWithB(a, b);
+    Quantity q_with_b = Quantity.NewWithB(a, b);
     other_sum = q_with_b.ValueWithB();
     -> done;
   }
