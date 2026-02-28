@@ -2,7 +2,6 @@
 struct Quantity {
     int a;
     routine New (int a) -> (Quantity q) {
-        Quantity q;
         q.a = a;
     }
     routine Value  -> (int value) {
@@ -12,7 +11,6 @@ struct Quantity {
 struct Connection {
     string name;
     routine New (string name) -> (Connection c) {
-        Connection c;
         c.name = name;
     }
     routine Name -> (string name) {
@@ -27,8 +25,8 @@ autotuner MultipleStruct (int a, int b) -> (int sum, string name) {
   start -> calculate;
   
   state calculate {
-    Quantity q = New(a);
-    Connection c = New("test");
+    Quantity q = Quantity.New(a);
+    Connection c = Connection.New("test");
     sum = q.Value() + b;
     name = c.Name();
     -> done;

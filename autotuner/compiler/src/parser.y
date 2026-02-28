@@ -66,7 +66,7 @@
 
   // True while we are inside a struct routine body.
   // When true, bare IDENTIFIER = expr is checked against struct_field_scope
-  // first (becomes a StructFieldAssignStmt targeting "self").
+  // first (becomes a StructFieldAssignStmt targeting "this").
   bool in_struct_routine = false;
 
   void enter_struct_routine() {
@@ -124,7 +124,7 @@
 // Token declarations
 %token <std::string> IDENTIFIER DOUBLE INTEGER STRING
 
-%token AUTOTUNER ROUTINE STATE STRUCT IMPORT START USES TERMINAL IF ELIF ELSE TRUE FALSE NIL 
+%token AUTOTUNER ROUTINE STATE STRUCT IMPORT START USES TERMINAL IF ELIF ELSE TRUE FALSE NIL THIS
 %token FLOAT_KW INT_KW BOOL_KW STRING_KW ERROR_KW
 %token ARROW LBRACKET RBRACKET LBRACE RBRACE LPAREN RPAREN ASSIGN COMMA SEMICOLON DOT
 %token PLUS MINUS MUL DIV EQ NE LL GG LE GE AND OR NOT
@@ -276,18 +276,17 @@ struct_decl_list[result]
 struct_decl[result]
     : STRUCT IDENTIFIER[name] LBRACE
       {
-        // Clear field scope for this new struct
         struct_field_scope.clear();
+        struct_known_types.insert($name); // <-- Add here
       }
       struct_field_list[fields] struct_routine_list[routines] RBRACE
       {
-        // Register the struct name so type_spec can use it from this point on
-        struct_known_types.insert($name);
         struct_field_scope.clear();
         $result = std::make_unique<StructDecl>(
             std::move($name),
             std::move($fields),
             std::move($routines));
+        struct_known_types.erase($name);
       }
     ;
 
@@ -389,15 +388,14 @@ struct_routine_stmt[result]
         $result = std::move($vd);
         set_stmt_location($result.get(), @vd);
       }
-    // Bare field assignment: a_ = expr;
-    // If the name is a known struct field, emit StructFieldAssignStmt(self, field, val).
-    // If it's an output/local param, emit a plain single-target AssignStmt.
+    // Bare field assignment: field = expr;
+    // Checked against struct_field_scope first → StructFieldAssignStmt("this", field, val)
+    // Otherwise treated as a plain variable assignment.
     | IDENTIFIER[name] ASSIGN expr[val] SEMICOLON
       {
         if (struct_field_scope.count($name) > 0) {
-          // Implicit self.field = val
           $result = std::make_unique<StructFieldAssignStmt>(
-              std::make_unique<VarExpr>("self"),
+              std::make_unique<VarExpr>("this"),
               std::move($name),
               std::move($val));
         } else if (is_variable_declared($name)) {
@@ -416,16 +414,26 @@ struct_routine_stmt[result]
         }
         set_stmt_location($result.get(), @name);
       }
-    // Dot-field assignment: q.field = expr;
-    | expr[object] DOT IDENTIFIER[field] ASSIGN expr[val] SEMICOLON
+    // Explicit object dot-field assignment: q.field = expr;
+    // Uses raw IDENTIFIER (not expr) to avoid shift/reduce conflict with postfix_expr.
+    | IDENTIFIER[object] DOT IDENTIFIER[field] ASSIGN expr[val] SEMICOLON
       {
         $result = std::make_unique<StructFieldAssignStmt>(
-            std::move($object),
+            std::make_unique<VarExpr>(std::move($object)),
             std::move($field),
             std::move($val));
         set_stmt_location($result.get(), @object);
       }
-    // if statement (reuse same form as normal stmt)
+    // Explicit this.field = expr; assignment
+    | THIS DOT IDENTIFIER[field] ASSIGN expr[val] SEMICOLON
+      {
+        $result = std::make_unique<StructFieldAssignStmt>(
+            std::make_unique<VarExpr>("this"),
+            std::move($field),
+            std::move($val));
+        set_stmt_location($result.get(), @THIS);
+      }
+    // if statement
     | IF LPAREN expr[cond] RPAREN LBRACE routine_body[then_b] RBRACE elif_chain[else_b]
       {
         $result = std::make_unique<IfStmt>(
@@ -440,7 +448,7 @@ struct_routine_stmt[result]
         $result = std::make_unique<ExprStmt>(std::move($e));
         set_stmt_location($result.get(), @e);
       }
-    ;;
+    ;
 
 // ============================================================================
 // IMPORT DECLARATION
@@ -997,78 +1005,60 @@ postfix_expr[result]
           std::move($args)
         ); 
       }
-    | expr[array] LBRACKET expr[index] RBRACKET
-      { 
-        $result = std::make_unique<IndexExpr>(
-          std::move($array), 
-          std::move($index)
-        ); 
-      }
-    | IDENTIFIER[function_name] LPAREN RPAREN
+    | IDENTIFIER[type_name] DOT IDENTIFIER[method_name] LPAREN RPAREN
       {
-        $result = std::make_unique<CallExpr>(
-          std::move($function_name),
-          std::vector<CallArg>() // empty argument list
+        $result = std::make_unique<MethodCallExpr>(
+          std::make_unique<VarExpr>(std::move($type_name)),
+          std::move($method_name),
+          std::vector<std::unique_ptr<Expr>>()
         );
       }
-    | IDENTIFIER[function_name] LPAREN call_arg_list[call_args] RPAREN
+    | IDENTIFIER[type_name] DOT IDENTIFIER[method_name] LPAREN expr_list[args] RPAREN
       {
-        $result = std::make_unique<CallExpr>(
-          std::move($function_name),
-          std::move($call_args)
+        $result = std::make_unique<MethodCallExpr>(
+          std::make_unique<VarExpr>(std::move($type_name)),
+          std::move($method_name),
+          std::move($args)
         );
       }
     ;
 
 primary_expr[result]
     : INTEGER[int_value]
-      { 
-        $result = std::make_unique<LiteralExpr>(std::stoll($int_value)); 
-      }
+      { $result = std::make_unique<LiteralExpr>(std::stoll($int_value)); }
     | DOUBLE[float_value]
-      { 
-        $result = std::make_unique<LiteralExpr>(std::stod($float_value)); 
-      }
+      { $result = std::make_unique<LiteralExpr>(std::stod($float_value)); }
     | STRING[string_value]
-      { 
-        $result = std::make_unique<LiteralExpr>(std::move($string_value)); 
-      }
+      { $result = std::make_unique<LiteralExpr>(std::move($string_value)); }
     | TRUE
-      { 
-        $result = std::make_unique<LiteralExpr>(true); 
-      }
+      { $result = std::make_unique<LiteralExpr>(true); }
     | FALSE
-      { 
-        $result = std::make_unique<LiteralExpr>(false); 
-      }
+      { $result = std::make_unique<LiteralExpr>(false); }
     | NIL
-      { 
-        $result = std::make_unique<NilLiteralExpr>(); 
+      { $result = std::make_unique<NilLiteralExpr>(); }
+    | THIS
+      {
+        // 'this' refers to the current struct instance inside a struct routine
+        $result = std::make_unique<VarExpr>("this");
       }
     | IDENTIFIER[var_name]
-      {
-        // Validate that variable is declared (only check for variables, not function calls)
-        // Note: We can't easily distinguish here, so we only warn, not error
-        // The semantic analyzer will do a full check later
-        
-        $result = std::make_unique<VarExpr>(std::move($var_name)); 
-      }
+      { $result = std::make_unique<VarExpr>(std::move($var_name)); }
     | LPAREN expr[inner] RPAREN
-      { 
-        $result = std::move($inner); 
-      }
+      { $result = std::move($inner); }
     ;
 
 expr_list[result]
-    : expr[first_expr]
-      {
-        $result = std::vector<std::unique_ptr<Expr>>();
-        $result.push_back(std::move($first_expr));
-      }
+    : %empty
+      { $result = std::vector<std::unique_ptr<Expr>>(); }
     | expr_list[existing_exprs] COMMA expr[next_expr]
       {
         $result = std::move($existing_exprs);
         $result.push_back(std::move($next_expr));
+      }
+    | expr[first_expr]
+      {
+        $result = std::vector<std::unique_ptr<Expr>>();
+        $result.push_back(std::move($first_expr));
       }
     ;
 

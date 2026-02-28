@@ -37,6 +37,7 @@ using namespace falcon::atc;
 "false"         { return Parser::make_FALSE(*loc); }
 "nil"           { return Parser::make_NIL(*loc); }
 "struct"        { return Parser::make_STRUCT(*loc); }
+"this"          { return Parser::make_THIS(*loc); }
 
 "float"         { return Parser::make_FLOAT_KW(*loc); }
 "int"           { return Parser::make_INT_KW(*loc); }
