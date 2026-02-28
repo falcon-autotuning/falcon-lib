@@ -991,35 +991,23 @@ expr[result]
 
 postfix_expr[result]
     : expr[object] DOT IDENTIFIER[member_name]
-      { 
+      {
         $result = std::make_unique<MemberExpr>(
-          std::move($object), 
-          std::move($member_name)
-        ); 
+            std::move($object),
+            std::move($member_name));
       }
     | expr[object] DOT IDENTIFIER[method_name] LPAREN expr_list[args] RPAREN
-      { 
-        $result = std::make_unique<MethodCallExpr>(
-          std::move($object), 
-          std::move($method_name), 
-          std::move($args)
-        ); 
-      }
-    | IDENTIFIER[type_name] DOT IDENTIFIER[method_name] LPAREN RPAREN
       {
         $result = std::make_unique<MethodCallExpr>(
-          std::make_unique<VarExpr>(std::move($type_name)),
-          std::move($method_name),
-          std::vector<std::unique_ptr<Expr>>()
-        );
+            std::move($object),
+            std::move($method_name),
+            std::move($args));
       }
-    | IDENTIFIER[type_name] DOT IDENTIFIER[method_name] LPAREN expr_list[args] RPAREN
+    | expr[array] LBRACKET expr[index] RBRACKET
       {
-        $result = std::make_unique<MethodCallExpr>(
-          std::make_unique<VarExpr>(std::move($type_name)),
-          std::move($method_name),
-          std::move($args)
-        );
+        $result = std::make_unique<IndexExpr>(
+            std::move($array),
+            std::move($index));
       }
     ;
 
@@ -1037,10 +1025,22 @@ primary_expr[result]
     | NIL
       { $result = std::make_unique<NilLiteralExpr>(); }
     | THIS
+      { $result = std::make_unique<VarExpr>("this"); }
+    // Free function call: Name()  or  Name(args)
+    // MUST come before bare IDENTIFIER so LPAREN lookahead keeps IDENTIFIER on stack.
+    | IDENTIFIER[function_name] LPAREN RPAREN
       {
-        // 'this' refers to the current struct instance inside a struct routine
-        $result = std::make_unique<VarExpr>("this");
+        $result = std::make_unique<CallExpr>(
+            std::move($function_name),
+            std::vector<CallArg>());
       }
+    | IDENTIFIER[function_name] LPAREN call_arg_list[call_args] RPAREN
+      {
+        $result = std::make_unique<CallExpr>(
+            std::move($function_name),
+            std::move($call_args));
+      }
+    // Plain variable reference — only after call rules so LPAREN doesn't steal it
     | IDENTIFIER[var_name]
       { $result = std::make_unique<VarExpr>(std::move($var_name)); }
     | LPAREN expr[inner] RPAREN
