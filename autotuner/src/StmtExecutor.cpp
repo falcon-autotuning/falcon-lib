@@ -1,14 +1,16 @@
-#include "falcon-autotuner/StmtExecutor.hpp"
+#include <utility>
+
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/SourceContext.hpp"
+#include "falcon-autotuner/StmtExecutor.hpp"
 
 namespace falcon::autotuner {
 
 StmtExecutor::StmtExecutor(ParameterMap &variables,
                            std::shared_ptr<FunctionRegistry> functions,
                            std::shared_ptr<TypeRegistry> types)
-    : variables_(variables), functions_(functions), types_(types),
-      evaluator_(variables_, functions_, types_) {}
+    : variables_(variables), functions_(std::move(functions)),
+      types_(std::move(types)), evaluator_(variables_, functions_, types_) {}
 
 // Template helper to wrap execution with error context
 template <typename Func>
@@ -52,6 +54,11 @@ ControlFlow StmtExecutor::execute(const atc::Stmt &stmt) {
   }
   if (auto result = try_exec(dynamic_cast<const atc::AssignStmt *>(&stmt),
                              [&](const auto &x) { return exec_assign(x); })) {
+    return *result;
+  }
+  if (auto result = try_exec(
+          dynamic_cast<const atc::StructFieldAssignStmt *>(&stmt),
+          [&](const auto &x) { return exec_struct_field_assign(x); })) {
     return *result;
   }
   if (auto result = try_exec(dynamic_cast<const atc::ExprStmt *>(&stmt),
@@ -128,35 +135,109 @@ ControlFlow StmtExecutor::exec_var_decl(const atc::VarDeclStmt &stmt) {
 }
 
 ControlFlow StmtExecutor::exec_assign(const atc::AssignStmt &stmt) {
-  // Evaluate RHS
   auto value = evaluator_.evaluate(*stmt.value);
 
   if (stmt.is_tuple_assignment()) {
-    // Multi-target assignment: a, b = func()
-    // Value must be a TupleValue
-    if (!std::holds_alternative<TupleValue>(value)) {
+    if (!std::holds_alternative<std::shared_ptr<TupleValue>>(value)) {
       throw EvaluationError(
           "Tuple assignment requires function to return tuple, got " +
           get_runtime_type_name(value));
     }
-
-    const auto &tuple = std::get<TupleValue>(value);
-
-    if (tuple.size() != stmt.targets.size()) {
+    const auto &tuplePtr = std::get<std::shared_ptr<TupleValue>>(value);
+    if (!tuplePtr) {
+      throw EvaluationError("Tuple assignment returned nullptr");
+    }
+    if (tuplePtr->size() != stmt.targets.size()) {
       throw EvaluationError("Tuple assignment size mismatch: expected " +
                             std::to_string(stmt.targets.size()) +
-                            " values, got " + std::to_string(tuple.size()));
+                            " values, got " + std::to_string(tuplePtr->size()));
     }
-
-    // Assign each value
     for (size_t i = 0; i < stmt.targets.size(); ++i) {
-      variables_[stmt.targets[i]] = tuple[i];
+      const auto &target = stmt.targets[i];
+      if (target.is_field_target()) {
+        // Assign into struct field: q.a_ = tuple[i]
+        auto obj = evaluator_.evaluate(*target.object);
+        if (!std::holds_alternative<std::shared_ptr<StructInstance>>(obj)) {
+          throw EvaluationError("Field assignment target is not a struct");
+        }
+        // Mutate in place via the variable map
+        const auto *var_expr =
+            dynamic_cast<const atc::VarExpr *>(target.object.get());
+        if (var_expr != nullptr) {
+          auto structIter = variables_.find(var_expr->name);
+          if (structIter == variables_.end()) {
+            throw EvaluationError("Undefined struct variable: " +
+                                  var_expr->name);
+          }
+          auto &structPtr =
+              std::get<std::shared_ptr<StructInstance>>(structIter->second);
+          if (!structPtr) {
+            throw EvaluationError("Struct variable '" + var_expr->name +
+                                  "' is nullptr");
+          }
+          structPtr->set_field(target.field_name, tuplePtr->values[i]);
+        } else {
+          throw EvaluationError("Complex struct field assignment targets not "
+                                "yet supported in tuple context");
+        }
+      } else {
+        variables_[target.variable] = tuplePtr->values[i];
+      }
     }
   } else {
-    // Single assignment: x = value
-    variables_[stmt.targets[0]] = value;
+    // Single assignment
+    const auto &target = stmt.targets[0];
+    if (target.is_field_target()) {
+      // Should not normally reach here — parser emits StructFieldAssignStmt
+      // for standalone dot-assigns — but handle it defensively.
+      const auto *var_expr =
+          dynamic_cast<const atc::VarExpr *>(target.object.get());
+      if (var_expr == nullptr) {
+        throw EvaluationError("Complex struct field assignment not supported");
+      }
+      auto structIter = variables_.find(var_expr->name);
+      if (structIter == variables_.end()) {
+        throw EvaluationError("Undefined struct variable: " + var_expr->name);
+      }
+      auto &structPtr =
+          std::get<std::shared_ptr<StructInstance>>(structIter->second);
+      if (!structPtr) {
+        throw EvaluationError("Struct variable '" + var_expr->name +
+                              "' is nullptr");
+      }
+      structPtr->set_field(target.field_name, value);
+    } else {
+      variables_[target.variable] = value;
+    }
   }
-
+  return ControlFlow::none();
+}
+ControlFlow
+StmtExecutor::exec_struct_field_assign(const atc::StructFieldAssignStmt &stmt) {
+  auto val = evaluator_.evaluate(*stmt.value);
+  // The object must be a VarExpr referring to a StructInstance in variables_.
+  const auto *var_expr = dynamic_cast<const atc::VarExpr *>(stmt.object.get());
+  if (var_expr == nullptr) {
+    throw EvaluationError(
+        "Struct field assignment requires a variable as the object");
+  }
+  auto structIter = variables_.find(var_expr->name);
+  if (structIter == variables_.end()) {
+    throw EvaluationError("Undefined variable in struct field assignment: " +
+                          var_expr->name);
+  }
+  if (!std::holds_alternative<std::shared_ptr<StructInstance>>(
+          structIter->second)) {
+    throw EvaluationError("Variable '" + var_expr->name +
+                          "' is not a struct instance");
+  }
+  auto &structPtr =
+      std::get<std::shared_ptr<StructInstance>>(structIter->second);
+  if (!structPtr) {
+    throw EvaluationError("Struct variable '" + var_expr->name +
+                          "' is nullptr");
+  }
+  structPtr->set_field(stmt.field, std::move(val));
   return ControlFlow::none();
 }
 

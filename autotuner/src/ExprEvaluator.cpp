@@ -1,4 +1,5 @@
 #include "falcon-autotuner/ExprEvaluator.hpp"
+#include "falcon-autotuner/StmtExecutor.hpp"
 #include "falcon-autotuner/log.hpp"
 #include <cmath>
 #include <fmt/format.h>
@@ -88,50 +89,152 @@ RuntimeValue ExprEvaluator::eval_unary(const atc::UnaryExpr &expr) {
 RuntimeValue ExprEvaluator::eval_member(const atc::MemberExpr &expr) {
   auto object = evaluate(*expr.object);
 
-  // TODO: Implement member access for structured types
-  // For now, this is a placeholder
-  throw EvaluationError("Member access not yet implemented: " + expr.member);
+  // User-defined struct field access: q.a_
+  // User-defined struct field access: q.a_
+  if (std::holds_alternative<std::shared_ptr<StructInstance>>(object)) {
+    const auto &instancePtr = std::get<std::shared_ptr<StructInstance>>(object);
+    if (!instancePtr) {
+      throw EvaluationError("StructInstance is nullptr");
+    }
+    return instancePtr->get_field(expr.member);
+  }
+  // TODO: falcon-core type field access (config.plunger_gates, etc.)
+  throw EvaluationError("Member access not yet implemented for type '" +
+                        get_runtime_type_name(object) + "': " + expr.member);
 }
 
 RuntimeValue ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
-  // Evaluate object
   auto object = evaluate(*expr.object);
 
-  // Determine object's type
-  std::string type_name = get_runtime_type_name(object);
+  // User-defined struct routine call: q.Value()  or  q.NewWithB(a, b)
+  if (std::holds_alternative<std::shared_ptr<StructInstance>>(object)) {
+    const auto &instancePtr = std::get<std::shared_ptr<StructInstance>>(object);
+    if (!instancePtr) {
+      throw EvaluationError("StructInstance is nullptr");
+    }
+    // Look up the StructDecl in the type registry
+    const atc::StructDecl *struct_decl =
+        types_->lookup_struct(instancePtr->type_name);
+    if (!struct_decl) {
+      throw EvaluationError("No struct declaration found for type: " +
+                            instancePtr->type_name);
+    }
+    const atc::RoutineDecl *routine =
+        struct_decl->find_routine(expr.method_name);
+    if (!routine) {
+      throw EvaluationError("Unknown struct routine '" + expr.method_name +
+                            "' on type '" + instancePtr->type_name + "'");
+    }
 
-  // Look up method for this type
+    // Build a sub-environment for the routine.
+    ParameterMap routine_env;
+    routine_env["self"] = object; // copy
+
+    // Bind input params
+    for (size_t i = 0; i < routine->input_params.size(); ++i) {
+      if (i < expr.args.size()) {
+        routine_env[routine->input_params[i]->name] = evaluate(*expr.args[i]);
+      } else if (routine->input_params[i]->default_value.has_value()) {
+        ExprEvaluator sub_eval(routine_env, functions_, types_);
+        routine_env[routine->input_params[i]->name] =
+            sub_eval.evaluate(*routine->input_params[i]->default_value.value());
+      } else {
+        throw EvaluationError("Missing argument for struct routine '" +
+                              expr.method_name +
+                              "' parameter: " + routine->input_params[i]->name);
+      }
+    }
+
+    // Initialize output params (struct-typed outputs get a fresh instance)
+    for (const auto &out : routine->output_params) {
+      if (out->type.is_struct()) {
+        routine_env[out->name] =
+            std::make_shared<StructInstance>(out->type.struct_name);
+        // Populate with default field values
+        const atc::StructDecl *out_decl =
+            types_->lookup_struct(out->type.struct_name);
+        if (out_decl) {
+          ExprEvaluator sub_eval(routine_env, functions_, types_);
+          for (const auto &field : out_decl->fields) {
+            if (field.initializer.has_value()) {
+              std::get<std::shared_ptr<StructInstance>>(routine_env[out->name])
+                  ->set_field(field.name,
+                              sub_eval.evaluate(*field.initializer.value()));
+            } else {
+              // Default-initialize primitive fields
+              RuntimeValue def;
+              switch (field.type.base_type) {
+              case atc::ParamType::Int:
+                def = int64_t(0);
+                break;
+              case atc::ParamType::Float:
+                def = 0.0;
+                break;
+              case atc::ParamType::Bool:
+                def = false;
+                break;
+              case atc::ParamType::String:
+                def = std::string("");
+                break;
+              default:
+                def = nullptr;
+                break;
+              }
+              std::get<std::shared_ptr<StructInstance>>(routine_env[out->name])
+                  ->set_field(field.name, def);
+            }
+          }
+        }
+      } else if (out->default_value.has_value()) {
+        ExprEvaluator sub_eval(routine_env, functions_, types_);
+        routine_env[out->name] = sub_eval.evaluate(*out->default_value.value());
+      }
+    }
+
+    // Execute routine body
+    StmtExecutor sub_exec(routine_env, functions_, types_);
+    sub_exec.execute_block(routine->body);
+
+    // Collect output values
+    FunctionResult outputs;
+    for (const auto &out : routine->output_params) {
+      auto it = routine_env.find(out->name);
+      if (it == routine_env.end()) {
+        throw EvaluationError("Struct routine '" + expr.method_name +
+                              "' did not set output: " + out->name);
+      }
+      outputs.push_back(it->second);
+    }
+
+    if (outputs.empty()) {
+      return nullptr;
+    }
+    if (outputs.size() == 1) {
+      return outputs[0];
+    }
+    return std::make_shared<TupleValue>(outputs);
+  }
+  // Existing falcon-core type method dispatch (unchanged)
+  std::string type_name = get_runtime_type_name(object);
   auto *method = types_->lookup_method(type_name, expr.method_name);
   if (method == nullptr) {
     throw EvaluationError("Unknown method '" + expr.method_name +
                           "' for type '" + type_name + "'");
   }
-
-  // Evaluate arguments and build parameter map
   ParameterMap params;
-  // TODO: finsih evaluating method calls
-  // for (size_t i = 0; i < expr.args.size(); ++i) {
-  //   std::ostringstream key;
-  //   key << "arg" << i;
-  //   params.at(key.str(), evaluate(*expr.args[i]),
-  //             atc::ParamType::Int); // Type will be deduced
-  // }
-  //
-  // Call method with object as 'this'
   auto result = (*method)(object, params);
-
-  // Handle return value
-  if (result.size() == 0) {
-    // void return - return nil or some sentinel
+  if (result.empty()) {
     throw EvaluationError("Method returned no value");
   }
-
-  // Get first result (for single return value)
-  if (result.empty()) {
-    throw EvaluationError("Method returned empty result");
+  if (result.size() == 1) {
+    return result[0];
   }
-
-  return 0;
+  std::vector<RuntimeValue> values;
+  values.reserve(result.size());
+  for (const auto &kv : result) {
+    values.push_back(kv.second);
+  }
+  return std::make_shared<TupleValue>(values);
 }
 
 RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
@@ -266,7 +369,7 @@ RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
   }
 
   // Tuple return - wrap for later destructuring
-  return TupleValue(result);
+  return std::make_shared<TupleValue>(result);
 }
 
 // ============================================================================

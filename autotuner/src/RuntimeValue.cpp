@@ -23,7 +23,7 @@ std::string get_runtime_type_name(const RuntimeValue &value) {
   if (std::holds_alternative<ErrorObject>(value)) {
     return "Error";
   }
-  if (std::holds_alternative<TupleValue>(value)) {
+  if (std::holds_alternative<std::shared_ptr<TupleValue>>(value)) {
     return "tuple";
   }
   if (std::holds_alternative<
@@ -40,6 +40,9 @@ std::string get_runtime_type_name(const RuntimeValue &value) {
   if (std::holds_alternative<falcon_core::autotuner_interfaces::names::GnameSP>(
           value)) {
     return "Gname";
+  }
+  if (std::holds_alternative<std::shared_ptr<StructInstance>>(value)) {
+    return "StructInstance";
   }
   return "<unknown>";
 }
@@ -64,18 +67,26 @@ std::string runtime_value_to_string(const RuntimeValue &value) {
     const auto &err = std::get<ErrorObject>(value);
     return "Error(" + err.message + ")";
   }
-  if (std::holds_alternative<TupleValue>(value)) {
-    const auto &tuple = std::get<TupleValue>(value);
+  if (std::holds_alternative<std::shared_ptr<TupleValue>>(value)) {
+    const auto &tuplePtr = std::get<std::shared_ptr<TupleValue>>(value);
+    if (!tuplePtr)
+      return "(nil)";
     std::string result = "(";
-    for (size_t i = 0; i < tuple.values.size(); ++i) {
-      if (i > 0)
+    for (size_t i = 0; i < tuplePtr->values.size(); ++i) {
+      if (i > 0) {
         result += ", ";
-      result += runtime_value_to_string(tuple.values[i]);
+      }
+      result += runtime_value_to_string(tuplePtr->values[i]);
     }
     result += ")";
     return result;
   }
-
+  if (std::holds_alternative<std::shared_ptr<StructInstance>>(value)) {
+    const auto &structPtr = std::get<std::shared_ptr<StructInstance>>(value);
+    if (!structPtr)
+      return "<StructInstance:nil>";
+    return "<StructInstance:" + structPtr->type_name + ">";
+  }
   return "<object:" + get_runtime_type_name(value) + ">";
 }
 

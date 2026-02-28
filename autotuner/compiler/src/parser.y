@@ -48,9 +48,45 @@
   void clear_state_scope() {
     state_local_scope.clear();
     state_input_params.clear();
+  }  
+
+  // -----------------------------------------------------------------------
+  // Struct context tracking
+  // -----------------------------------------------------------------------
+
+  // Names of all struct types declared so far in this file.
+  // Used by type_spec to allow struct names as types.
+  std::set<std::string> struct_known_types;
+
+  // The set of field names belonging to the struct currently being parsed.
+  // Populated while parsing struct_field_list, cleared after each struct_decl.
+  std::set<std::string> struct_field_scope;
+
+  // True while we are inside a struct routine body.
+  // When true, bare IDENTIFIER = expr is checked against struct_field_scope
+  // first (becomes a StructFieldAssignStmt targeting "self").
+  bool in_struct_routine = false;
+
+  void enter_struct_routine() {
+    in_struct_routine = true;
+    // struct routine has its own mini-scope for input/output params
+    autotuner_input_params.clear();
+    autotuner_output_params.clear();
+    state_local_scope.clear();
+    state_input_params.clear();
+  }
+
+  void leave_struct_routine() {
+    in_struct_routine = false;
+    autotuner_input_params.clear();
+    autotuner_output_params.clear();
+    state_local_scope.clear();
+    state_input_params.clear();
   }
   
   bool is_variable_declared(const std::string& name) {
+    // When inside a struct routine, bare field names are implicitly in scope
+    if (in_struct_routine && struct_field_scope.count(name) > 0) return true;
     return autotuner_scope.count(name) > 0 ||
            autotuner_input_params.count(name) > 0 ||
            autotuner_output_params.count(name) > 0 ||
@@ -86,8 +122,8 @@
 // Token declarations
 %token <std::string> IDENTIFIER DOUBLE INTEGER STRING
 
-%token AUTOTUNER ROUTINE STATE IMPORT START USES TERMINAL IF ELIF ELSE TRUE FALSE NIL CONFIG_VAR
-%token FLOAT_KW INT_KW BOOL_KW STRING_KW QUANTITY_KW CONFIG_KW CONNECTION_KW CONNECTIONS_KW GNAME_KW ERROR_KW
+%token AUTOTUNER ROUTINE STATE STRUCT IMPORT START USES TERMINAL IF ELIF ELSE TRUE FALSE NIL 
+%token FLOAT_KW INT_KW BOOL_KW STRING_KW ERROR_KW
 %token ARROW LBRACKET RBRACKET LBRACE RBRACE LPAREN RPAREN ASSIGN COMMA SEMICOLON DOT
 %token PLUS MINUS MUL DIV EQ NE LL GG LE GE AND OR NOT
 
@@ -99,20 +135,26 @@
 %type <std::unique_ptr<ParamDecl>> param_decl
 %type <std::unique_ptr<TypeDescriptor>> type_spec
 %type <std::vector<std::string>> requires_clause identifier_list import_list import_stmt import_string_list
-%type <std::vector<std::unique_ptr<Stmt>>> autotuner_var_decls
-%type <std::unique_ptr<VarDeclStmt>> var_decl_stmt
+%type <std::vector<std::unique_ptr<Stmt>>> autotuner_var_decls routine_body
+%type <std::unique_ptr<VarDeclStmt>> var_decl_stmt struct_field_decl
 %type <std::string> entry_state 
 %type <std::vector<std::unique_ptr<Expr>>> entry_params
 %type <std::vector<StateDecl>> state_list
 %type <std::unique_ptr<StateDecl>> state_decl
 %type <std::vector<std::unique_ptr<Stmt>>> stmt_list elif_chain
-%type <std::unique_ptr<Stmt>> stmt
+%type <std::unique_ptr<Stmt>> stmt struct_routine_stmt
 %type <std::unique_ptr<Expr>> expr primary_expr postfix_expr
 %type <std::vector<std::unique_ptr<Expr>>> expr_list 
 %type <std::vector<CallArg>> call_arg_list 
 %type <std::unique_ptr<CallArg>> call_arg
 %type <std::vector<RoutineDecl>> routine_list
 %type <std::unique_ptr<RoutineDecl>> routine_decl
+%type <std::vector<StructDecl>>        struct_decl_list
+%type <std::unique_ptr<StructDecl>>    struct_decl
+%type <std::vector<VarDeclStmt>>       struct_field_list
+%type <std::vector<RoutineDecl>> struct_routine_list
+%type <std::vector<AssignTarget>>      assign_target_list
+%type <std::unique_ptr<AssignTarget>> assign_target
 
 %left OR
 %left AND
@@ -132,12 +174,16 @@
 // ============================================================================
 
 program[result]
-    : import_list[imps] autotuner_list[autotuners] routine_list[routines]
+    : import_list[imps] struct_decl_list[structs] autotuner_list[autotuners] routine_list[routines]
       {
         $result = std::make_unique<Program>();
         $result->imports = std::move($imps);
+        for (auto &s : $structs) {
+          $result->structs.push_back(std::move(s));
+        }
         $result->autotuners = std::move($autotuners);
         $result->routines = std::move($routines);
+        $result->build_indexes();
         program_root = std::move($result);
       }
     ;
@@ -153,10 +199,9 @@ import_list[result]
     ;
 
 autotuner_list[result]
-    : autotuner_decl[first_autotuner]
+    : %empty
       {
         $result = std::vector<AutotunerDecl>();
-        $result.push_back(std::move(*$first_autotuner));
       }
     | autotuner_list[existing_list] autotuner_decl[next_autotuner]
       {
@@ -166,21 +211,198 @@ autotuner_list[result]
     ;
 
 routine_list[result]
-    : routine_decl[first_routine]
+    : %empty
       {
         $result = std::vector<RoutineDecl>();
-        $result.push_back(std::move(*$first_routine));
       }
     | routine_list[existing_routines] routine_decl[next_routine]
       {
         $result = std::move($existing_routines);
         $result.push_back(std::move(*$next_routine));
       }
-    | %empty
+    ;
+
+// ============================================================================
+// STRUCT DECLARATIONS
+// ============================================================================
+
+struct_decl_list[result]
+    : %empty
+      { $result = std::vector<StructDecl>(); }
+    | struct_decl_list[prev] struct_decl[next]
       {
-        $result = std::vector<RoutineDecl>();
+        $result = std::move($prev);
+        $result.push_back(std::move(*$next));
       }
     ;
+
+struct_decl[result]
+    : STRUCT IDENTIFIER[name] LBRACE
+      {
+        // Clear field scope for this new struct
+        struct_field_scope.clear();
+      }
+      struct_field_list[fields] struct_routine_list[routines] RBRACE
+      {
+        // Register the struct name so type_spec can use it from this point on
+        struct_known_types.insert($name);
+        struct_field_scope.clear();
+        $result = std::make_unique<StructDecl>(
+            std::move($name),
+            std::move($fields),
+            std::move($routines));
+      }
+    ;
+
+// ---------------------------------------------------------------------------
+// Struct field declarations  (reuses VarDeclStmt with DeclScope::StructField)
+// ---------------------------------------------------------------------------
+
+struct_field_list[result]
+    : %empty
+      { $result = std::vector<VarDeclStmt>(); }
+    | struct_field_list[prev] struct_field_decl[next]
+      {
+        $result = std::move($prev);
+        $result.push_back(std::move(*$next));
+      }
+    ;
+
+struct_field_decl[result]
+    : type_spec[type] IDENTIFIER[name] SEMICOLON
+      {
+        struct_field_scope.insert($name);
+        auto decl = std::make_unique<VarDeclStmt>(
+            std::move(*$type), std::move($name), std::nullopt);
+        decl->decl_scope = VarDeclStmt::DeclScope::StructField;
+        $result = std::move(decl);
+      }
+    | type_spec[type] IDENTIFIER[name] ASSIGN expr[default_val] SEMICOLON
+      {
+        struct_field_scope.insert($name);
+        auto decl = std::make_unique<VarDeclStmt>(
+            std::move(*$type), std::move($name),
+            std::make_optional(std::move($default_val)));
+        decl->decl_scope = VarDeclStmt::DeclScope::StructField;
+        $result = std::move(decl);
+      }
+    ;
+
+// ---------------------------------------------------------------------------
+// Struct routine declarations
+// ---------------------------------------------------------------------------
+
+struct_routine_list[result]
+    : %empty
+      { $result = std::vector<RoutineDecl>(); }
+    | struct_routine_list[prev] 
+      {
+        enter_struct_routine();
+      }
+      routine_decl[next]
+      {
+        leave_struct_routine();
+        $result = std::move($prev);
+        $result.push_back(std::move(*$next));
+      }
+    ;
+
+// routine Name (inputs) -> (outputs) { body }
+routine_decl[result]
+    : ROUTINE IDENTIFIER[name]
+      input_params[inputs] ARROW output_params[outputs]
+      LBRACE routine_body[body] RBRACE
+      {
+        $result = std::make_unique<RoutineDecl>(
+            std::move($name),
+            std::move($inputs),
+            std::move($outputs),
+            std::move($body));
+      }
+    // routine Name -> (outputs) { body }   (no input params)
+    | ROUTINE IDENTIFIER[name]
+      input_params[inputs] ARROW output_params[outputs]
+      {
+        $result = std::make_unique<RoutineDecl>(
+            std::move($name),
+            std::move($inputs),
+            std::move($outputs));
+      }
+    ;
+
+// ---------------------------------------------------------------------------
+// Body of a struct routine (statements that can access struct fields)
+// ---------------------------------------------------------------------------
+
+routine_body[result]
+    : %empty
+      { $result = std::vector<std::unique_ptr<Stmt>>(); }
+    | routine_body[prev] struct_routine_stmt[next]
+      {
+        $result = std::move($prev);
+        $result.push_back(std::move($next));
+      }
+    ;
+
+struct_routine_stmt[result]
+    // Variable declaration (e.g. Quantity q; or int x = 0;)
+    : var_decl_stmt[vd]
+      {
+        $result = std::move($vd);
+        set_stmt_location($result.get(), @vd);
+      }
+    // Bare field assignment: a_ = expr;
+    // If the name is a known struct field, emit StructFieldAssignStmt(self, field, val).
+    // If it's an output/local param, emit a plain single-target AssignStmt.
+    | IDENTIFIER[name] ASSIGN expr[val] SEMICOLON
+      {
+        if (struct_field_scope.count($name) > 0) {
+          // Implicit self.field = val
+          $result = std::make_unique<StructFieldAssignStmt>(
+              std::make_unique<VarExpr>("self"),
+              std::move($name),
+              std::move($val));
+        } else if (is_variable_declared($name)) {
+          if (autotuner_input_params.count($name) > 0 ||
+              state_input_params.count($name) > 0) {
+            error(@name, "Cannot assign to read-only parameter: " + $name);
+            YYABORT;
+          }
+          std::vector<AssignTarget> targets;
+          targets.emplace_back($name);
+          $result = std::make_unique<AssignStmt>(
+              std::move(targets), std::move($val));
+        } else {
+          error(@name, "Undeclared variable in struct routine: " + $name);
+          YYABORT;
+        }
+        set_stmt_location($result.get(), @name);
+      }
+    // Dot-field assignment: q.field = expr;
+    | expr[object] DOT IDENTIFIER[field] ASSIGN expr[val] SEMICOLON
+      {
+        $result = std::make_unique<StructFieldAssignStmt>(
+            std::move($object),
+            std::move($field),
+            std::move($val));
+        set_stmt_location($result.get(), @object);
+      }
+    // if statement (reuse same form as normal stmt)
+    | IF LPAREN expr[cond] RPAREN LBRACE routine_body[then_b] RBRACE elif_chain[else_b]
+      {
+        $result = std::make_unique<IfStmt>(
+            std::move($cond),
+            std::move($then_b),
+            std::move($else_b));
+        set_stmt_location($result.get(), @IF);
+      }
+    // Expression statement (side effects, e.g. logInfo(...))
+    | expr[e] SEMICOLON
+      {
+        $result = std::make_unique<ExprStmt>(std::move($e));
+        set_stmt_location($result.get(), @e);
+      }
+    ;;
 
 // ============================================================================
 // IMPORT DECLARATION
@@ -203,20 +425,6 @@ import_string_list[result]
       }
     ;
 
-// ============================================================================
-// ROUTINE DECLARATION
-// ============================================================================
-
-routine_decl[result]
-    : ROUTINE IDENTIFIER[name] input_params[inputs] ARROW output_params[outputs]
-      {
-        $result = std::make_unique<RoutineDecl>(
-          std::move($name),
-          std::move($inputs),
-          std::move($outputs)
-        );
-      }
-    ;
 
 // ============================================================================
 // AUTOTUNER DECLARATION
@@ -365,19 +573,19 @@ type_spec[result]
       { $result = std::make_unique<TypeDescriptor>(ParamType::Bool); }
     | STRING_KW        
       { $result = std::make_unique<TypeDescriptor>(ParamType::String); }
-    | QUANTITY_KW      
-      { $result = std::make_unique<TypeDescriptor>(ParamType::Quantity); }
-    | CONFIG_KW        
-      { $result = std::make_unique<TypeDescriptor>(ParamType::Config); }
-    | CONNECTION_KW    
-      { $result = std::make_unique<TypeDescriptor>(ParamType::Connection); }
-    | CONNECTIONS_KW   
-      { $result = std::make_unique<TypeDescriptor>(ParamType::Connections); }
-    | GNAME_KW         
-      { $result = std::make_unique<TypeDescriptor>(ParamType::Gname); }
     | ERROR_KW         
       { $result = std::make_unique<TypeDescriptor>(ParamType::Error, "Error"); }
-    ;
+    | IDENTIFIER[name]
+      {
+        // Allow user-defined struct type names declared earlier in this file.
+        if (struct_known_types.count($name) == 0) {
+          error(@name, "Unknown type '" + $name + "' — "
+                "did you forget to declare a struct with this name before use?");
+          YYABORT;
+        }
+        $result = std::make_unique<TypeDescriptor>(
+            TypeDescriptor::make_struct($name));
+      }
 
 // ============================================================================
 // AUTOTUNER COMPONENTS
@@ -412,19 +620,14 @@ identifier_list[result]
     ;
 
 autotuner_var_decls[result]
-    : stmt[first_var]
+    : %empty
       {
         $result = std::vector<std::unique_ptr<Stmt>>();
-        $result.push_back(std::move($first_var));
       }
     | autotuner_var_decls[existing_vars] stmt[next_var]
       {
         $result = std::move($existing_vars);
         $result.push_back(std::move($next_var));
-      }
-    | %empty
-      {
-        $result = std::vector<std::unique_ptr<Stmt>>();
       }
     ;
 
@@ -487,19 +690,12 @@ state_decl[result]
 // ============================================================================
 
 stmt_list[result]
-    : stmt[first_stmt]
-      {
-        $result = std::vector<std::unique_ptr<Stmt>>();
-        $result.push_back(std::move($first_stmt));
-      }
+    : %empty
+      { $result = std::vector<std::unique_ptr<Stmt>>(); }
     | stmt_list[existing_stmts] stmt[next_stmt]
       {
         $result = std::move($existing_stmts);
         $result.push_back(std::move($next_stmt));
-      }
-    | %empty
-      {
-        $result = std::vector<std::unique_ptr<Stmt>>();
       }
     ;
 
@@ -509,26 +705,34 @@ stmt[result]
         $result = std::move($var_decl); 
         set_stmt_location($result.get(), @var_decl);
       }
-    | identifier_list[targets] ASSIGN expr[value] SEMICOLON
+    | IDENTIFIER[name] ASSIGN expr[val] SEMICOLON
       {
-        // Validate that all targets are declared
-        for (const auto& target : $targets) {
-          if (!is_variable_declared(target)) {
-            error(@targets, "Undeclared variable in assignment: " + target);
-            YYABORT;
-          }
-          // Check if trying to assign to input parameter (read-only)
-          if (autotuner_input_params.count(target) > 0 || state_input_params.count(target) > 0) {
-            error(@targets, "Cannot assign to read-only input parameter: " + target);
-            YYABORT;
-          }
+        if (!is_variable_declared($name)) {
+          error(@name, "Assignment to undeclared variable: " + $name);
+          YYABORT;
         }
-        
-        $result = std::make_unique<AssignStmt>(
-          std::move($targets), 
-          std::move($value)
-        );
-        set_stmt_location($result.get(), @targets);
+        if (autotuner_input_params.count($name) > 0 ||
+            state_input_params.count($name) > 0) {
+          error(@name, "Cannot assign to read-only input parameter: " + $name);
+          YYABORT;
+        }
+        std::vector<AssignTarget> targets;
+        targets.emplace_back($name);
+        $result = std::make_unique<AssignStmt>(std::move(targets), std::move($val));
+        set_stmt_location($result.get(), @name);
+      }
+    // Tuple / mixed assignment: a, q.field = func();  or  a, b = func();
+    | assign_target_list[tgts] ASSIGN expr[val] SEMICOLON
+      {
+        $result = std::make_unique<AssignStmt>(std::move($tgts), std::move($val));
+        set_stmt_location($result.get(), @tgts);
+      }
+    // Standalone dot-field assignment: q.field = expr;
+    | expr[object] DOT IDENTIFIER[field] ASSIGN expr[val] SEMICOLON
+      {
+        $result = std::make_unique<StructFieldAssignStmt>(
+            std::move($object), std::move($field), std::move($val));
+        set_stmt_location($result.get(), @object);
       }
     | expr[side_effect_expr] SEMICOLON
       {
@@ -563,6 +767,38 @@ stmt[result]
       {
         $result = std::make_unique<TerminalStmt>();
         set_stmt_location($result.get(), @TERMINAL);
+      }
+    ;
+
+// A comma-separated list of assignment targets (>=2 items, for tuple assigns).
+// Allows mixing plain variables and struct-field targets.
+// Example: a, q.field, b
+assign_target_list[result]
+    : assign_target[first] COMMA assign_target[second]
+      {
+        $result = std::vector<AssignTarget>();
+        $result.push_back(std::move(*$first));
+        $result.push_back(std::move(*$second));
+      }
+    | assign_target_list[prev] COMMA assign_target[next]
+      {
+        $result = std::move($prev);
+        $result.push_back(std::move(*$next));
+      }
+    ;
+
+assign_target[result]
+    : IDENTIFIER[name]
+      {
+        if (!is_variable_declared($name)) {
+          error(@name, "Assignment to undeclared variable: " + $name);
+          YYABORT;
+        }
+        $result = std::make_unique<AssignTarget>($name);
+      }
+    | expr[object] DOT IDENTIFIER[field]
+      {
+        $result = std::make_unique<AssignTarget>(std::move($object), std::move($field));
       }
     ;
 
@@ -777,10 +1013,6 @@ primary_expr[result]
         // The semantic analyzer will do a full check later
         
         $result = std::make_unique<VarExpr>(std::move($var_name)); 
-      }
-    | CONFIG_VAR
-      { 
-        $result = std::make_unique<VarExpr>("config"); 
       }
     | LPAREN expr[inner] RPAREN
       { 

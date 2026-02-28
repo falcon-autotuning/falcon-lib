@@ -48,6 +48,7 @@ public:
 private:
   ControlFlow exec_var_decl(const atc::VarDeclStmt &stmt);
   ControlFlow exec_assign(const atc::AssignStmt &stmt);
+  ControlFlow exec_struct_field_assign(const atc::StructFieldAssignStmt &stmt);
   ControlFlow exec_expr(const atc::ExprStmt &stmt);
   ControlFlow exec_if(const atc::IfStmt &stmt);
   ControlFlow exec_transition(const atc::TransitionStmt &stmt);
