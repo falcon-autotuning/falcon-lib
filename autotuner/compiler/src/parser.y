@@ -137,7 +137,7 @@
 %type <std::unique_ptr<ParamDecl>> param_decl
 %type <std::unique_ptr<TypeDescriptor>> type_spec
 %type <std::vector<std::string>> requires_clause identifier_list import_list import_stmt import_string_list
-%type <std::vector<std::unique_ptr<Stmt>>> autotuner_var_decls routine_body
+%type <std::vector<std::unique_ptr<Stmt>>> autotuner_var_decls routine_body routine_body_stmts 
 %type <std::unique_ptr<VarDeclStmt>> var_decl_stmt struct_field_decl
 %type <std::string> entry_state 
 %type <std::vector<std::unique_ptr<Expr>>> entry_params
@@ -157,6 +157,17 @@
 %type <std::vector<RoutineDecl>> struct_routine_list
 %type <std::vector<AssignTarget>>      assign_target_list
 %type <std::unique_ptr<AssignTarget>> assign_target
+%type <std::vector<std::variant<
+    std::unique_ptr<StructDecl>,
+    std::unique_ptr<RoutineDecl>,
+    std::unique_ptr<AutotunerDecl>
+>> > program_items
+
+%type <std::variant<
+    std::unique_ptr<StructDecl>,
+    std::unique_ptr<RoutineDecl>,
+    std::unique_ptr<AutotunerDecl>
+>> program_item
 
 %left OR
 %left AND
@@ -176,18 +187,42 @@
 // ============================================================================
 
 program[result]
-    : import_list[imps] struct_decl_list[structs] autotuner_list[autotuners] routine_list[routines]
+    : import_list[imps] program_items[items]
       {
-        $result = std::make_unique<Program>();
-        $result->imports = std::move($imps);
-        for (auto &s : $structs) {
-          $result->structs.push_back(std::move(s));
+        auto prog = std::make_unique<Program>();
+        prog->imports = std::move($imps);
+        for (auto& item : $items) {
+          if (std::holds_alternative<std::unique_ptr<StructDecl>>(item)) {
+            prog->structs.push_back(std::move(*std::get<std::unique_ptr<StructDecl>>(item)));
+          } else if (std::holds_alternative<std::unique_ptr<RoutineDecl>>(item)) {
+            prog->routines.push_back(std::move(*std::get<std::unique_ptr<RoutineDecl>>(item)));
+          } else if (std::holds_alternative<std::unique_ptr<AutotunerDecl>>(item)) {
+            prog->autotuners.push_back(std::move(*std::get<std::unique_ptr<AutotunerDecl>>(item)));
+          }
         }
-        $result->autotuners = std::move($autotuners);
-        $result->routines = std::move($routines);
-        $result->build_indexes();
+        $result = std::move(prog);
         program_root = std::move($result);
       }
+    ;
+
+program_items[result]
+    : %empty
+      { $result = std::vector<std::variant<
+          std::unique_ptr<StructDecl>,
+          std::unique_ptr<RoutineDecl>,
+          std::unique_ptr<AutotunerDecl>
+        >>(); }
+    | program_items[prev] program_item[next]
+      {
+        $result = std::move($prev);
+        $result.push_back(std::move($next));
+      }
+    ;
+
+program_item[result]
+    : struct_decl[item] { $result = std::move($item); }
+    | routine_decl[item] { $result = std::move($item); }
+    | autotuner_decl[item] { $result = std::move($item); }
     ;
 
 import_list[result]
@@ -315,8 +350,7 @@ routine_decl[result]
       {
         parsing_routine_params = true;
       }
-      input_params[inputs] ARROW output_params[outputs]
-      LBRACE routine_body[body] RBRACE
+      input_params[inputs] ARROW output_params[outputs] routine_body[body]
       {
         parsing_routine_params = false;
         $result = std::make_unique<RoutineDecl>(
@@ -325,15 +359,6 @@ routine_decl[result]
             std::move($outputs),
             std::move($body));
       }
-    | ROUTINE IDENTIFIER[name]
-      input_params[inputs] ARROW output_params[outputs]
-      {
-        parsing_routine_params = false;
-        $result = std::make_unique<RoutineDecl>(
-            std::move($name),
-            std::move($inputs),
-            std::move($outputs));
-      }
     ;
 
 // ---------------------------------------------------------------------------
@@ -341,9 +366,16 @@ routine_decl[result]
 // ---------------------------------------------------------------------------
 
 routine_body[result]
+    : LBRACE routine_body_stmts[stmts] RBRACE
+      { $result = std::move($stmts); }
+    | %empty
+      { $result = std::vector<std::unique_ptr<Stmt>>(); }
+    ;
+
+routine_body_stmts[result]
     : %empty
       { $result = std::vector<std::unique_ptr<Stmt>>(); }
-    | routine_body[prev] struct_routine_stmt[next]
+    | routine_body_stmts[prev] struct_routine_stmt[next]
       {
         $result = std::move($prev);
         $result.push_back(std::move($next));
