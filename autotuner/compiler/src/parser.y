@@ -472,23 +472,20 @@ autotuner_decl[result]
 input_params[result]
     : LPAREN param_decl_list[params] RPAREN
       {
-        auto& param_set = parsing_routine_params ? routine_input_params : autotuner_input_params;
+        std::set<std::string>& param_set = parsing_routine_params ? routine_input_params : autotuner_input_params;
         param_set.clear();
-        auto check_and_insert = [&](const auto& param) {
+        for (const auto& param : $params) {
           if (param_set.count(param->name) > 0) {
             error(@params, "Duplicate input parameter: " + param->name);
             YYABORT;
           }
           param_set.insert(param->name);
-        };
-        for (const auto& param : $params) {
-          check_and_insert(param);
         }
         $result = std::move($params);
       }
     | %empty
       {
-        auto& param_set = parsing_routine_params ? routine_input_params : autotuner_input_params;
+        std::set<std::string>& param_set = parsing_routine_params ? routine_input_params : autotuner_input_params;
         param_set.clear();
         $result = std::vector<std::unique_ptr<ParamDecl>>();
       }
