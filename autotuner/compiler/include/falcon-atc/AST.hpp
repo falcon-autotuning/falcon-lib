@@ -26,31 +26,18 @@ namespace falcon::atc {
  * functionality for autotuning workflows.
  */
 enum class ParamType : std::uint8_t {
-  // Primitives (value types)
   Int,    // 64-bit signed integer
   Float,  // 64-bit floating point (double precision)
   Bool,   // Boolean (true/false)
   String, // UTF-8 string
-
-  // Domain-specific types (from falcon-core)
-  Quantity,    // Physical quantity with units (voltage, current, etc.)
-  Config,      // Device configuration (singleton in runtime)
-  Connection,  // Single device connection (gate, sensor, etc.)
-  Connections, // Collection of connections (array-like, iterable)
-  Gname,       // Group name type for device groups
-
-  // Database types (for persistence)
-  DeviceCharacteristic,      // Stored measurement/characteristic
-  DeviceCharacteristicQuery, // Query specification for database
-
   // Error handling
   Error, // Error value (can be nil or contain error info)
 
-  // Special types
   Nil,   // Represents null/absence (only for Error type checking)
   Tuple, // Multiple return values (e.g., (int, Error))
   Void,  // No return value (for procedures with side effects only)
-  Union
+  Union,
+  Struct // User-defined struct type; name stored in TypeDescriptor::struct_name
 };
 
 inline std::string to_string(ParamType type) {
@@ -63,20 +50,6 @@ inline std::string to_string(ParamType type) {
     return "bool";
   case ParamType::String:
     return "string";
-  case ParamType::Quantity:
-    return "Quantity";
-  case ParamType::Config:
-    return "Config";
-  case ParamType::Connection:
-    return "Connection";
-  case ParamType::Connections:
-    return "Connections";
-  case ParamType::Gname:
-    return "Gname";
-  case ParamType::DeviceCharacteristic:
-    return "DeviceCharacteristic";
-  case ParamType::DeviceCharacteristicQuery:
-    return "DeviceCharacteristicQuery";
   case ParamType::Error:
     return "Error";
   case ParamType::Nil:
@@ -85,6 +58,8 @@ inline std::string to_string(ParamType type) {
     return "tuple";
   case ParamType::Void:
     return "void";
+  case ParamType::Struct:
+    return "struct";
   default:
     return "<unknown>";
   }
@@ -114,6 +89,8 @@ struct TypeDescriptor {
   // All variants have base_type = ParamType::Error
   std::string error_variant;
   std::vector<TypeDescriptor> union_types; // For union types
+  // For struct types: the name of the user-defined struct
+  std::string struct_name;
 
   // Simple type constructor
   explicit TypeDescriptor(ParamType t) : base_type(t) {}
@@ -129,6 +106,16 @@ struct TypeDescriptor {
     if (!variant.empty() && t != ParamType::Error) {
       throw std::logic_error("Only Error type can have variants");
     }
+  }
+  // Struct type constructor — use for user-defined struct types
+  static TypeDescriptor make_struct(std::string name) {
+    TypeDescriptor desc(ParamType::Struct);
+    desc.struct_name = std::move(name);
+    return desc;
+  }
+
+  [[nodiscard]] bool is_struct() const {
+    return base_type == ParamType::Struct;
   }
   TypeDescriptor(const TypeDescriptor &) = default;
   TypeDescriptor &operator=(const TypeDescriptor &) = default;
@@ -173,6 +160,9 @@ struct TypeDescriptor {
     if (is_error() && !error_variant.empty()) {
       return error_variant;
     }
+    if (is_struct()) {
+      return struct_name;
+    }
     return falcon::atc::to_string(base_type);
   }
 
@@ -180,6 +170,9 @@ struct TypeDescriptor {
   bool operator==(const TypeDescriptor &other) const {
     if (base_type != other.base_type)
       return false;
+    if (is_struct()) {
+      return struct_name == other.struct_name;
+    }
     if (is_union()) {
       if (union_types.size() != other.union_types.size())
         return false;
@@ -437,13 +430,18 @@ public:
 class MemberExpr : public Expr {
 public:
   std::unique_ptr<Expr> object; // Must evaluate to a structured type
-  std::string member;           // Field or method name
+  std::string member;           // Field name
+
+  // Set to true during semantic analysis when object is a user-defined struct.
+  mutable bool is_struct_access = false;
 
   MemberExpr(std::unique_ptr<Expr> obj, std::string mem)
       : object(std::move(obj)), member(std::move(mem)) {}
 
   std::unique_ptr<Expr> clone() const override {
-    return std::make_unique<MemberExpr>(object->clone(), member);
+    auto cloned = std::make_unique<MemberExpr>(object->clone(), member);
+    cloned->is_struct_access = is_struct_access;
+    return cloned;
   }
 };
 
@@ -472,9 +470,11 @@ public:
 class MethodCallExpr : public Expr {
 public:
   std::unique_ptr<Expr> object; // Object to call method on
-  std::string method_name;      // Method name
-  std::vector<std::unique_ptr<Expr>>
-      args; // Arguments (object is implicit first arg)
+  std::string method_name;      // Method name (or struct routine name)
+  std::vector<std::unique_ptr<Expr>> args; // Arguments
+
+  // Set to true during semantic analysis when object is a user-defined struct.
+  mutable bool is_struct_method = false;
 
   MethodCallExpr(std::unique_ptr<Expr> obj, std::string method,
                  std::vector<std::unique_ptr<Expr>> a = {})
@@ -483,10 +483,13 @@ public:
 
   std::unique_ptr<Expr> clone() const override {
     std::vector<std::unique_ptr<Expr>> cloned_args;
-    for (const auto &arg : args)
+    for (const auto &arg : args) {
       cloned_args.push_back(arg->clone());
-    return std::make_unique<MethodCallExpr>(object->clone(), method_name,
-                                            std::move(cloned_args));
+    }
+    auto cloned = std::make_unique<MethodCallExpr>(object->clone(), method_name,
+                                                   std::move(cloned_args));
+    cloned->is_struct_method = is_struct_method;
+    return cloned;
   }
 };
 
@@ -656,9 +659,10 @@ public:
 
   // Determined during semantic analysis based on where this appears in AST
   mutable enum class DeclScope {
-    Unknown,   // Not yet analyzed
-    Autotuner, // Declared at autotuner level (persistent)
-    StateLocal // Declared in state body (temporary)
+    Unknown,    // Not yet analyzed
+    Autotuner,  // Declared at autotuner level (persistent)
+    StateLocal, // Declared in state body (temporary)
+    StructField // Declared as a field inside a struct definition
   } decl_scope;
 
   VarDeclStmt(TypeDescriptor t, std::string n,
@@ -677,48 +681,109 @@ public:
 };
 
 /**
- * @brief Assignment statement (single or multiple targets).
+ * @brief A single assignment target — either a plain variable or a struct
+ * field.
  *
  * Examples:
+ *   b          -> AssignTarget("b")
+ *   q.a_       -> AssignTarget(VarExpr("q"), "a_")
  *
- * Single assignment:
+ * Mixed tuple targets:
+ *   q.a_, b = method();   ->  [AssignTarget(q,"a_"), AssignTarget("b")]
+ */
+struct AssignTarget {
+  // Plain variable name (used when field_name is empty)
+  std::string variable;
+
+  // For struct field targets: the object expression and field name.
+  // Both must be set together; if field_name is empty this is a plain var.
+  std::unique_ptr<Expr> object; // e.g. VarExpr("q")
+  std::string field_name;       // e.g. "a_"
+
+  // Plain variable constructor
+  explicit AssignTarget(std::string var) : variable(std::move(var)) {}
+
+  // Struct field constructor
+  AssignTarget(std::unique_ptr<Expr> obj, std::string field)
+      : object(std::move(obj)), field_name(std::move(field)) {}
+
+  [[nodiscard]] bool is_field_target() const { return !field_name.empty(); }
+
+  AssignTarget(AssignTarget &&) noexcept = default;
+  AssignTarget &operator=(AssignTarget &&) noexcept = default;
+  AssignTarget(const AssignTarget &) = delete;
+  AssignTarget &operator=(const AssignTarget &) = delete;
+
+  [[nodiscard]] AssignTarget clone() const {
+    if (is_field_target()) {
+      return AssignTarget(object->clone(), field_name);
+    }
+    return AssignTarget(variable);
+  }
+};
+
+/**
+ * @brief Assignment statement (single or multiple targets).
+ *
+ * Targets may be plain variables or struct-field accesses, mixed freely:
  *   counter = counter + 1;
- *   threshold = measured_value;  // Output parameter (can refine multiple
- * times)
- *
- * Multiple assignment (tuple destructuring):
- *   result, err = read(scope="global", name="voltage");
- *
- * Why: Assignment updates state. Multiple assignment is essential for
- * error handling pattern.
- *
- * Semantic rules:
- *   - All target variables must exist (declared earlier)
- *   - For multiple assignment, RHS must return tuple with matching arity
- *   - Can assign to: autotuner vars, state-local vars, output params
- *   - Cannot assign to: input params (read-only), state input params
- * (read-only)
- *
- * Output parameters can be refined:
- *   state calibrate {
- *     threshold = initial_guess;  // First assignment
- *     // ... do work ...
- *     threshold = refined_value;  // Refined assignment (allowed)
- *   }
+ *   result, err = read(...);
+ *   q.a_, other = method();   // mixed: struct field + plain var
  */
 class AssignStmt : public Stmt {
 public:
-  std::vector<std::string> targets; // Variable names to assign to
-  std::unique_ptr<Expr> value;      // Expression to evaluate
+  std::vector<AssignTarget>
+      targets;                 // Assignment targets (variable or obj.field)
+  std::unique_ptr<Expr> value; // Expression to evaluate
 
-  AssignStmt(std::vector<std::string> tgts, std::unique_ptr<Expr> val)
+  AssignStmt(std::vector<AssignTarget> tgts, std::unique_ptr<Expr> val)
       : targets(std::move(tgts)), value(std::move(val)) {}
 
   std::unique_ptr<Stmt> clone() const override {
-    return std::make_unique<AssignStmt>(targets, value->clone());
+    std::vector<AssignTarget> cloned_targets;
+    cloned_targets.reserve(targets.size());
+    for (const auto &t : targets) {
+      cloned_targets.push_back(t.clone());
+    }
+    return std::make_unique<AssignStmt>(std::move(cloned_targets),
+                                        value->clone());
   }
 
-  bool is_tuple_assignment() const { return targets.size() > 1; }
+  [[nodiscard]] bool is_tuple_assignment() const { return targets.size() > 1; }
+
+  // Convenience: return target name for single plain-variable assignments
+  [[nodiscard]] const std::string &single_target_name() const {
+    return targets[0].variable;
+  }
+};
+
+/**
+ * @brief Standalone struct field assignment: q.field = expr;
+ *
+ * This is the dedicated single-target form. When only one struct field is
+ * being assigned (not as part of a tuple), the parser emits this instead of
+ * AssignStmt for clarity.
+ *
+ * Used:
+ *   - Inside struct routines with implicit self:  a_ = expr;   -> object =
+ * VarExpr("self")
+ *   - Outside with explicit object:               q.a_ = expr;
+ */
+class StructFieldAssignStmt : public Stmt {
+public:
+  std::unique_ptr<Expr>
+      object; // The struct variable (or VarExpr("self") inside a routine)
+  std::string field;           // Field name
+  std::unique_ptr<Expr> value; // RHS expression
+
+  StructFieldAssignStmt(std::unique_ptr<Expr> obj, std::string f,
+                        std::unique_ptr<Expr> val)
+      : object(std::move(obj)), field(std::move(f)), value(std::move(val)) {}
+
+  std::unique_ptr<Stmt> clone() const override {
+    return std::make_unique<StructFieldAssignStmt>(object->clone(), field,
+                                                   value->clone());
+  }
 };
 
 /**
@@ -1105,37 +1170,137 @@ struct AutotunerDecl {
   AutotunerDecl &operator=(const AutotunerDecl &) = delete;
 };
 
+// ============================================================================
+// STRUCT DECLARATIONS
+// ============================================================================
+
 /**
- * @brief Routine declaration (external C++ function signature).
+ * @brief A routine declared inside a struct body.
  *
- * Routines are measurement/helper functions implemented in C++ and
- * compiled into .so files. They are declared in .fal files but not
- * defined - their implementation is loaded at runtime.
+ * Struct routines are like RoutineDecl but are defined (have a body), and
+ * inside the body bare field names (a_, b_) implicitly refer to the struct's
+ * own fields via a synthetic "self" variable.
  *
- * Example:
- *   routine Adder (int a, int b) -> (int sum, Error err)
- *
- * This would be implemented as:
- *   extern "C" ParameterMap ConditionalNest_Adder(const ParameterMap& params);
+ * Operator overloads use reserved names:
+ *   "Equal"       -> ==
+ *   "NotEqual"    -> !=
+ *   "Add"         -> +
+ *   "Subtract"    -> -
+ *   "LessThan"    -> <
+ *   "GreaterThan" -> >
+ *   "Multiply"    -> *
+ *   "Divide"      -> /
  */
 struct RoutineDecl {
   std::string name;
-
-  // Input/output parameters (same as autotuner)
   std::vector<std::unique_ptr<ParamDecl>> input_params;
   std::vector<std::unique_ptr<ParamDecl>> output_params;
+  std::vector<std::unique_ptr<Stmt>> body;
 
   RoutineDecl(std::string n, std::vector<std::unique_ptr<ParamDecl>> inputs,
-              std::vector<std::unique_ptr<ParamDecl>> outputs)
+              std::vector<std::unique_ptr<ParamDecl>> outputs,
+              std::vector<std::unique_ptr<Stmt>> b = {})
       : name(std::move(n)), input_params(std::move(inputs)),
-        output_params(std::move(outputs)) {}
+        output_params(std::move(outputs)), body(std::move(b)) {}
 
   RoutineDecl(RoutineDecl &&) noexcept = default;
   RoutineDecl &operator=(RoutineDecl &&) noexcept = default;
   RoutineDecl(const RoutineDecl &) = delete;
   RoutineDecl &operator=(const RoutineDecl &) = delete;
+
+  // Returns the operator symbol this routine overloads, or "" if none.
+  [[nodiscard]] std::string operator_symbol() const {
+    if (name == "Equal") {
+      return "==";
+    }
+    if (name == "NotEqual") {
+      return "!=";
+    }
+    if (name == "Add") {
+      return "+";
+    }
+    if (name == "Subtract") {
+      return "-";
+    }
+    if (name == "LessThan") {
+      return "<";
+    }
+    if (name == "GreaterThan") {
+      return ">";
+    }
+    if (name == "Multiply") {
+      return "*";
+    }
+    if (name == "Divide") {
+      return "/";
+    }
+    return "";
+  }
 };
 
+/**
+ * @brief Complete struct declaration.
+ *
+ * Fields are stored as VarDeclStmt with decl_scope == DeclScope::StructField.
+ * This lets the interpreter reuse all existing default-value and type
+ * handling already written for VarDeclStmt.
+ *
+ * Example:
+ *   struct Quantity {
+ *       int a_;
+ *       int b_ = 0;
+ *       routine New (int a) -> (Quantity q) { ... }
+ *       routine Value -> (int value) { value = a_; }
+ *   }
+ */
+struct StructDecl {
+  std::string name; // The type name, e.g. "Quantity"
+
+  // Fields stored as VarDeclStmt (decl_scope = StructField).
+  // Reuses VarDeclStmt's type, name, and optional initializer directly.
+  std::vector<VarDeclStmt> fields;
+
+  std::vector<RoutineDecl> routines;
+
+  StructDecl(std::string n, std::vector<VarDeclStmt> fs,
+             std::vector<RoutineDecl> rs)
+      : name(std::move(n)), fields(std::move(fs)), routines(std::move(rs)) {}
+
+  StructDecl(StructDecl &&) noexcept = default;
+  StructDecl &operator=(StructDecl &&) noexcept = default;
+  StructDecl(const StructDecl &) = delete;
+  StructDecl &operator=(const StructDecl &) = delete;
+
+  // Look up a field by name; returns nullptr if not found.
+  [[nodiscard]] const VarDeclStmt *find_field(const std::string &n) const {
+    for (const auto &f : fields) {
+      if (f.name == n) {
+        return &f;
+      }
+    }
+    return nullptr;
+  }
+
+  // Look up a routine by name; returns nullptr if not found.
+  [[nodiscard]] const RoutineDecl *find_routine(const std::string &n) const {
+    for (const auto &r : routines) {
+      if (r.name == n) {
+        return &r;
+      }
+    }
+    return nullptr;
+  }
+
+  // Find the routine (if any) that overloads a given operator symbol.
+  [[nodiscard]] const RoutineDecl *find_operator(const std::string &op) const {
+    for (const auto &r : routines) {
+      if (r.operator_symbol() == op) {
+        return &r;
+      }
+    }
+    return nullptr;
+  }
+};
 /**
  * @brief Complete program (collection of autotuners and routines).
  *
@@ -1145,13 +1310,35 @@ struct RoutineDecl {
  * - All of the imports for the project
  */
 struct Program {
+  std::vector<StructDecl>
+      structs; // User-defined struct types (parsed before autotuners)
   std::vector<AutotunerDecl> autotuners;
   std::vector<RoutineDecl> routines;
   std::vector<std::string> imports;
 
-  // Filled in during semantic analysis for fast lookup
+  // Fast lookup indexes (call build_indexes() after parsing)
   mutable std::map<std::string, const AutotunerDecl *> autotuner_index;
   mutable std::map<std::string, const RoutineDecl *> routine_index;
+  mutable std::map<std::string, const StructDecl *> struct_index;
+
+  void build_indexes() const {
+    struct_index.clear();
+    autotuner_index.clear();
+    routine_index.clear();
+    for (const auto &s : structs) {
+      struct_index[s.name] = &s;
+    }
+    for (const auto &a : autotuners) {
+      autotuner_index[a.name] = &a;
+    }
+    for (const auto &r : routines) {
+      routine_index[r.name] = &r;
+    }
+  }
+
+  [[nodiscard]] bool is_struct_type(const std::string &name) const {
+    return struct_index.count(name) > 0;
+  }
 };
 
 // ============================================================================

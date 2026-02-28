@@ -13,12 +13,16 @@
 
 namespace falcon::autotuner {
 
+// Forward declarations
+struct TupleValue;
+struct StructInstance;
+
 struct ErrorObject {
   std::string message;
   bool is_fatal = false;
 
   ErrorObject() = default;
-  ErrorObject(std::string msg, bool fatal = false)
+  explicit ErrorObject(std::string msg, bool fatal = false)
       : message(std::move(msg)), is_fatal(fatal) {}
 
   bool operator==(const ErrorObject &other) const {
@@ -27,15 +31,10 @@ struct ErrorObject {
   bool operator!=(const ErrorObject &other) const { return !(*this == other); }
 };
 
-// Forward declaration
-struct TupleValue;
 /**
  * @brief Runtime value that can hold any parameter value.
- *
- * This includes:
- * - Primitive types (int, float, bool, string)
- * - Falcon-core object wrappers (Connection, Quantity, etc.)
- * - Special values (nil, Error)
+ * Note: Uses shared_ptr for TupleValue and StructInstance to break circular
+ * dependency.
  */
 using RuntimeValue =
     std::variant<int64_t, double, bool, std::string,
@@ -44,7 +43,9 @@ using RuntimeValue =
                  falcon_core::physics::device_structures::ConnectionsSP,
                  falcon_core::math::QuantitySP,
                  falcon_core::autotuner_interfaces::names::GnameSP, ErrorObject,
-                 TupleValue>;
+                 std::shared_ptr<TupleValue>,
+                 std::shared_ptr<StructInstance>>; // User-defined struct
+                                                   // instances
 
 /**
  * @brief Wrapper for tuple values (multiple return values).
@@ -57,6 +58,7 @@ using RuntimeValue =
 struct TupleValue {
   std::vector<RuntimeValue> values;
 
+  TupleValue() = default;
   explicit TupleValue(std::vector<RuntimeValue> vals)
       : values(std::move(vals)) {}
 
@@ -67,6 +69,49 @@ struct TupleValue {
   [[nodiscard]] size_t size() const { return values.size(); }
   RuntimeValue &operator[](size_t idx) { return values[idx]; }
   const RuntimeValue &operator[](size_t idx) const { return values[idx]; }
+};
+
+/**
+ * @brief A live instance of a user-defined struct type.
+ *
+ * Created when a struct constructor routine (e.g. New, NewWithB) is called.
+ * Fields are stored in a map keyed by field name.
+ * The type_name identifies which StructDecl this instance belongs to,
+ * allowing the interpreter to dispatch method calls and operator overloads.
+ */
+struct StructInstance {
+  std::string type_name; // e.g. "Quantity"
+
+  // Field storage — initialized from StructDecl defaults, then set by routines
+  // Uses shared_ptr so StructInstance can be cheaply copied into RuntimeValue
+  std::shared_ptr<std::map<std::string, RuntimeValue>> fields =
+      std::make_shared<std::map<std::string, RuntimeValue>>();
+
+  StructInstance() = default;
+  explicit StructInstance(std::string typeName)
+      : type_name(std::move(typeName)) {}
+
+  [[nodiscard]] RuntimeValue &get_field(const std::string &fieldName) {
+    return (*fields)[fieldName];
+  }
+  [[nodiscard]] const RuntimeValue &
+  get_field(const std::string &fieldName) const {
+    auto fieldIter = fields->find(fieldName);
+    if (fieldIter == fields->end()) {
+      throw std::runtime_error("Struct '" + type_name +
+                               "' has no field: " + fieldName);
+    }
+    return fieldIter->second;
+  }
+  void set_field(const std::string &fieldName, RuntimeValue val) {
+    (*fields)[fieldName] = val;
+  }
+  bool operator==(const StructInstance &other) const {
+    return type_name == other.type_name && *fields == *other.fields;
+  }
+  bool operator!=(const StructInstance &other) const {
+    return !(*this == other);
+  }
 };
 
 /**

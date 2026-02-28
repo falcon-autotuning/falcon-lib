@@ -54,11 +54,15 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
           << program->routines.size() << " routine(s)";
       log::info(oss.str());
     }
+    // Register user-defined structs in the type registry
+    for (const auto &struct_decl : program->structs) {
+      type_registry_->register_struct(&struct_decl);
+    }
 
     // Process ALL autotuners in the file
     for (auto &autotuner : program->autotuners) {
       // Check for duplicate names
-      if (loaded_autotuners_.find(autotuner.name) != loaded_autotuners_.end()) {
+      if (loaded_autotuners_.contains(autotuner.name)) {
         std::ostringstream oss;
         oss << "Autotuner '" << autotuner.name
             << "' already loaded, overwriting";
@@ -80,8 +84,8 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
         }
 
         // Check if required autotuner/routine exists or will be loaded
-        if (!has_autotuner(required) && routine_declarations_.find(required) ==
-                                            routine_declarations_.end()) {
+        if (!has_autotuner(required) &&
+            !routine_declarations_.contains(required)) {
           std::ostringstream oss;
           oss << "    Required '" << required
               << "' not yet loaded (must be loaded before running)";
@@ -104,8 +108,7 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
     // Process ALL routine declarations in the file
     for (auto &routine : program->routines) {
       // Check for duplicate names
-      if (routine_declarations_.find(routine.name) !=
-          routine_declarations_.end()) {
+      if (routine_declarations_.contains(routine.name)) {
         std::ostringstream oss;
         oss << "Routine '" << routine.name << "' already declared, overwriting";
         log::warn(oss.str());

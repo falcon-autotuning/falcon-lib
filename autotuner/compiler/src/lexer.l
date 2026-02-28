@@ -36,17 +36,12 @@ using namespace falcon::atc;
 "true"          { return Parser::make_TRUE(*loc); }
 "false"         { return Parser::make_FALSE(*loc); }
 "nil"           { return Parser::make_NIL(*loc); }
-"config"        { return Parser::make_CONFIG_VAR(*loc); }
+"struct"        { return Parser::make_STRUCT(*loc); }
 
 "float"         { return Parser::make_FLOAT_KW(*loc); }
 "int"           { return Parser::make_INT_KW(*loc); }
 "bool"          { return Parser::make_BOOL_KW(*loc); }
 "string"        { return Parser::make_STRING_KW(*loc); }
-"Quantity"      { return Parser::make_QUANTITY_KW(*loc); }
-"Config"        { return Parser::make_CONFIG_KW(*loc); }
-"Connection"    { return Parser::make_CONNECTION_KW(*loc); }
-"Connections"   { return Parser::make_CONNECTIONS_KW(*loc); }
-"Gname"         { return Parser::make_GNAME_KW(*loc); }
 "Error"         { return Parser::make_ERROR_KW(*loc); }
 
 "->"            { return Parser::make_ARROW(*loc); }

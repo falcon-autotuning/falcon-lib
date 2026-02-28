@@ -39,19 +39,17 @@
 
 
 // "%code requires" blocks.
-#line 12 "./compiler/src/parser.y"
+#line 13 "./compiler/src/parser.y"
 
   #include <string>
   #include <vector>
   #include <memory>
+  #include <optional>
+  #include <set>
   #include "falcon-atc/AST.hpp"
-  
-  namespace falcon::atc {
-    class Expr;
-    struct Program;
-  }
+  #include "falcon-atc/ParseError.hpp"
 
-#line 55 "parser.tab.cc"
+#line 53 "parser.tab.cc"
 
 
 # include <cstdlib> // std::abort
@@ -182,14 +180,255 @@
 
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 0
+# define YYDEBUG 1
 #endif
 
 #line 4 "./compiler/src/parser.y"
 namespace falcon { namespace atc {
-#line 191 "parser.tab.cc"
+#line 189 "parser.tab.cc"
 
 
+  /// A point in a source file.
+  class position
+  {
+  public:
+    /// Type for file name.
+    typedef const std::string filename_type;
+    /// Type for line and column numbers.
+    typedef int counter_type;
+
+    /// Construct a position.
+    explicit position (filename_type* f = YY_NULLPTR,
+                       counter_type l = 1,
+                       counter_type c = 1)
+      : filename (f)
+      , line (l)
+      , column (c)
+    {}
+
+
+    /// Initialization.
+    void initialize (filename_type* fn = YY_NULLPTR,
+                     counter_type l = 1,
+                     counter_type c = 1)
+    {
+      filename = fn;
+      line = l;
+      column = c;
+    }
+
+    /** \name Line and Column related manipulators
+     ** \{ */
+    /// (line related) Advance to the COUNT next lines.
+    void lines (counter_type count = 1)
+    {
+      if (count)
+        {
+          column = 1;
+          line = add_ (line, count, 1);
+        }
+    }
+
+    /// (column related) Advance to the COUNT next columns.
+    void columns (counter_type count = 1)
+    {
+      column = add_ (column, count, 1);
+    }
+    /** \} */
+
+    /// File name to which this position refers.
+    filename_type* filename;
+    /// Current line number.
+    counter_type line;
+    /// Current column number.
+    counter_type column;
+
+  private:
+    /// Compute max (min, lhs+rhs).
+    static counter_type add_ (counter_type lhs, counter_type rhs, counter_type min)
+    {
+      return lhs + rhs < min ? min : lhs + rhs;
+    }
+  };
+
+  /// Add \a width columns, in place.
+  inline position&
+  operator+= (position& res, position::counter_type width)
+  {
+    res.columns (width);
+    return res;
+  }
+
+  /// Add \a width columns.
+  inline position
+  operator+ (position res, position::counter_type width)
+  {
+    return res += width;
+  }
+
+  /// Subtract \a width columns, in place.
+  inline position&
+  operator-= (position& res, position::counter_type width)
+  {
+    return res += -width;
+  }
+
+  /// Subtract \a width columns.
+  inline position
+  operator- (position res, position::counter_type width)
+  {
+    return res -= width;
+  }
+
+  /** \brief Intercept output stream redirection.
+   ** \param ostr the destination output stream
+   ** \param pos a reference to the position to redirect
+   */
+  template <typename YYChar>
+  std::basic_ostream<YYChar>&
+  operator<< (std::basic_ostream<YYChar>& ostr, const position& pos)
+  {
+    if (pos.filename)
+      ostr << *pos.filename << ':';
+    return ostr << pos.line << '.' << pos.column;
+  }
+
+  /// Two points in a source file.
+  class location
+  {
+  public:
+    /// Type for file name.
+    typedef position::filename_type filename_type;
+    /// Type for line and column numbers.
+    typedef position::counter_type counter_type;
+
+    /// Construct a location from \a b to \a e.
+    location (const position& b, const position& e)
+      : begin (b)
+      , end (e)
+    {}
+
+    /// Construct a 0-width location in \a p.
+    explicit location (const position& p = position ())
+      : begin (p)
+      , end (p)
+    {}
+
+    /// Construct a 0-width location in \a f, \a l, \a c.
+    explicit location (filename_type* f,
+                       counter_type l = 1,
+                       counter_type c = 1)
+      : begin (f, l, c)
+      , end (f, l, c)
+    {}
+
+
+    /// Initialization.
+    void initialize (filename_type* f = YY_NULLPTR,
+                     counter_type l = 1,
+                     counter_type c = 1)
+    {
+      begin.initialize (f, l, c);
+      end = begin;
+    }
+
+    /** \name Line and Column related manipulators
+     ** \{ */
+  public:
+    /// Reset initial location to final location.
+    void step ()
+    {
+      begin = end;
+    }
+
+    /// Extend the current location to the COUNT next columns.
+    void columns (counter_type count = 1)
+    {
+      end += count;
+    }
+
+    /// Extend the current location to the COUNT next lines.
+    void lines (counter_type count = 1)
+    {
+      end.lines (count);
+    }
+    /** \} */
+
+
+  public:
+    /// Beginning of the located region.
+    position begin;
+    /// End of the located region.
+    position end;
+  };
+
+  /// Join two locations, in place.
+  inline location&
+  operator+= (location& res, const location& end)
+  {
+    res.end = end.end;
+    return res;
+  }
+
+  /// Join two locations.
+  inline location
+  operator+ (location res, const location& end)
+  {
+    return res += end;
+  }
+
+  /// Add \a width columns to the end position, in place.
+  inline location&
+  operator+= (location& res, location::counter_type width)
+  {
+    res.columns (width);
+    return res;
+  }
+
+  /// Add \a width columns to the end position.
+  inline location
+  operator+ (location res, location::counter_type width)
+  {
+    return res += width;
+  }
+
+  /// Subtract \a width columns to the end position, in place.
+  inline location&
+  operator-= (location& res, location::counter_type width)
+  {
+    return res += -width;
+  }
+
+  /// Subtract \a width columns to the end position.
+  inline location
+  operator- (location res, location::counter_type width)
+  {
+    return res -= width;
+  }
+
+  /** \brief Intercept output stream redirection.
+   ** \param ostr the destination output stream
+   ** \param loc a reference to the location to redirect
+   **
+   ** Avoid duplicate information.
+   */
+  template <typename YYChar>
+  std::basic_ostream<YYChar>&
+  operator<< (std::basic_ostream<YYChar>& ostr, const location& loc)
+  {
+    location::counter_type end_col
+      = 0 < loc.end.column ? loc.end.column - 1 : 0;
+    ostr << loc.begin;
+    if (loc.end.filename
+        && (!loc.begin.filename
+            || *loc.begin.filename != *loc.end.filename))
+      ostr << '-' << loc.end.filename << ':' << loc.end.line << '.' << end_col;
+    else if (loc.begin.line < loc.end.line)
+      ostr << '-' << loc.end.line << '.' << end_col;
+    else if (loc.begin.column < end_col)
+      ostr << '-' << end_col;
+    return ostr;
+  }
 
 
   /// A Bison parser.
@@ -383,92 +622,97 @@ namespace falcon { namespace atc {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
-      // type_spec
-      char dummy1[sizeof (ParamType)];
-
       // IDENTIFIER
       // DOUBLE
       // INTEGER
       // STRING
-      // entry_clause
-      char dummy2[sizeof (std::string)];
+      // entry_state
+      char dummy1[sizeof (std::string)];
+
+      // assign_target
+      char dummy2[sizeof (std::unique_ptr<AssignTarget>)];
 
       // autotuner_decl
       char dummy3[sizeof (std::unique_ptr<AutotunerDecl>)];
 
-      // measurement_opt
+      // call_arg
+      char dummy4[sizeof (std::unique_ptr<CallArg>)];
+
       // expr
+      // postfix_expr
       // primary_expr
-      char dummy4[sizeof (std::unique_ptr<Expr>)];
+      char dummy5[sizeof (std::unique_ptr<Expr>)];
 
-      // loop_decl
-      char dummy5[sizeof (std::unique_ptr<ForLoop>)];
-
-      // mapping_decl
-      char dummy6[sizeof (std::unique_ptr<Mapping>)];
-
-      // sig_param_decl
       // param_decl
-      char dummy7[sizeof (std::unique_ptr<ParamDecl>)];
+      char dummy6[sizeof (std::unique_ptr<ParamDecl>)];
 
       // program
-      char dummy8[sizeof (std::unique_ptr<Program>)];
+      char dummy7[sizeof (std::unique_ptr<Program>)];
 
-      // spec_decl
-      char dummy9[sizeof (std::unique_ptr<SpecDecl>)];
+      // routine_decl
+      char dummy8[sizeof (std::unique_ptr<RoutineDecl>)];
 
       // state_decl
-      char dummy10[sizeof (std::unique_ptr<StateDecl>)];
+      char dummy9[sizeof (std::unique_ptr<StateDecl>)];
 
-      // trans_target
-      char dummy11[sizeof (std::unique_ptr<TransitionTarget>)];
+      // struct_routine_stmt
+      // stmt
+      char dummy10[sizeof (std::unique_ptr<Stmt>)];
 
-      // assignment_list
-      char dummy12[sizeof (std::vector<Assignment>)];
+      // struct_decl
+      char dummy11[sizeof (std::unique_ptr<StructDecl>)];
 
-      // autotuners
-      char dummy13[sizeof (std::vector<AutotunerDecl>)];
+      // type_spec
+      char dummy12[sizeof (std::unique_ptr<TypeDescriptor>)];
 
-      // loop_list
-      char dummy14[sizeof (std::vector<ForLoop>)];
+      // struct_field_decl
+      // var_decl_stmt
+      char dummy13[sizeof (std::unique_ptr<VarDeclStmt>)];
 
-      // mappings
-      // mapping_list
-      char dummy15[sizeof (std::vector<Mapping>)];
+      // assign_target_list
+      char dummy14[sizeof (std::vector<AssignTarget>)];
 
-      // input_params
-      // output_params
-      // sig_param_list
-      // params_block
-      // param_list
-      // state_params
-      // state_temps
-      char dummy16[sizeof (std::vector<ParamDecl>)];
+      // autotuner_list
+      char dummy15[sizeof (std::vector<AutotunerDecl>)];
 
-      // spec_inputs
-      // spec_outputs
-      // spec_list
-      char dummy17[sizeof (std::vector<SpecDecl>)];
+      // call_arg_list
+      char dummy16[sizeof (std::vector<CallArg>)];
 
-      // loop_states
-      // states
+      // routine_list
+      // struct_routine_list
+      char dummy17[sizeof (std::vector<RoutineDecl>)];
+
       // state_list
       char dummy18[sizeof (std::vector<StateDecl>)];
 
-      // transition_list
-      // transition_decl
-      // simple_transition
-      char dummy19[sizeof (std::vector<Transition>)];
+      // struct_decl_list
+      char dummy19[sizeof (std::vector<StructDecl>)];
 
-      // generic_params
+      // struct_field_list
+      char dummy20[sizeof (std::vector<VarDeclStmt>)];
+
+      // import_list
+      // import_stmt
+      // import_string_list
       // requires_clause
-      // separated_idents
-      // separated_strings
-      char dummy20[sizeof (std::vector<std::string>)];
+      // identifier_list
+      char dummy21[sizeof (std::vector<std::string>)];
 
-      // arg_list
-      // nonempty_arg_list
-      char dummy21[sizeof (std::vector<std::unique_ptr<Expr>>)];
+      // entry_params
+      // expr_list
+      char dummy22[sizeof (std::vector<std::unique_ptr<Expr>>)];
+
+      // input_params
+      // output_params
+      // param_decl_list
+      // state_input_params
+      char dummy23[sizeof (std::vector<std::unique_ptr<ParamDecl>>)];
+
+      // routine_body
+      // autotuner_var_decls
+      // stmt_list
+      // elif_chain
+      char dummy24[sizeof (std::vector<std::unique_ptr<Stmt>>)];
     };
 
     /// The size of the largest semantic type.
@@ -488,19 +732,25 @@ namespace falcon { namespace atc {
     /// Backward compatibility (Bison 3.8).
     typedef value_type semantic_type;
 
+    /// Symbol locations.
+    typedef location location_type;
 
     /// Syntax errors thrown from user actions.
     struct syntax_error : std::runtime_error
     {
-      syntax_error (const std::string& m)
+      syntax_error (const location_type& l, const std::string& m)
         : std::runtime_error (m)
+        , location (l)
       {}
 
       syntax_error (const syntax_error& s)
         : std::runtime_error (s.what ())
+        , location (s.location)
       {}
 
       ~syntax_error () YY_NOEXCEPT YY_NOTHROW;
+
+      location_type location;
     };
 
     /// Token kinds.
@@ -517,61 +767,49 @@ namespace falcon { namespace atc {
     TOK_INTEGER = 260,             // INTEGER
     TOK_STRING = 261,              // STRING
     TOK_AUTOTUNER = 262,           // AUTOTUNER
-    TOK_STATE = 263,               // STATE
-    TOK_PARAMS = 264,              // PARAMS
-    TOK_TEMP = 265,                // TEMP
-    TOK_MEASUREMENT = 266,         // MEASUREMENT
-    TOK_RUN = 267,                 // RUN
-    TOK_START = 268,               // START
-    TOK_REQUIRES = 269,            // REQUIRES
-    TOK_TERMINAL = 270,            // TERMINAL
-    TOK_IF = 271,                  // IF
+    TOK_ROUTINE = 263,             // ROUTINE
+    TOK_STATE = 264,               // STATE
+    TOK_STRUCT = 265,              // STRUCT
+    TOK_IMPORT = 266,              // IMPORT
+    TOK_START = 267,               // START
+    TOK_USES = 268,                // USES
+    TOK_TERMINAL = 269,            // TERMINAL
+    TOK_IF = 270,                  // IF
+    TOK_ELIF = 271,                // ELIF
     TOK_ELSE = 272,                // ELSE
     TOK_TRUE = 273,                // TRUE
     TOK_FALSE = 274,               // FALSE
-    TOK_SUCCESS = 275,             // SUCCESS
-    TOK_FAIL = 276,                // FAIL
-    TOK_SPEC_INPUTS = 277,         // SPEC_INPUTS
-    TOK_SPEC_OUTPUTS = 278,        // SPEC_OUTPUTS
-    TOK_CONFIG_VAR = 279,          // CONFIG_VAR
-    TOK_NEXT = 280,                // NEXT
-    TOK_FOR = 281,                 // FOR
-    TOK_IN = 282,                  // IN
-    TOK_FLOAT_KW = 283,            // FLOAT_KW
-    TOK_INT_KW = 284,              // INT_KW
-    TOK_BOOL_KW = 285,             // BOOL_KW
-    TOK_STRING_KW = 286,           // STRING_KW
-    TOK_QUANTITY_KW = 287,         // QUANTITY_KW
-    TOK_CONFIG_KW = 288,           // CONFIG_KW
-    TOK_GROUP_KW = 289,            // GROUP_KW
-    TOK_CONNECTION_KW = 290,       // CONNECTION_KW
-    TOK_ARROW = 291,               // ARROW
-    TOK_DOUBLECOLON = 292,         // DOUBLECOLON
-    TOK_LBRACKET = 293,            // LBRACKET
-    TOK_RBRACKET = 294,            // RBRACKET
-    TOK_LBRACE = 295,              // LBRACE
-    TOK_RBRACE = 296,              // RBRACE
-    TOK_LPAREN = 297,              // LPAREN
-    TOK_RPAREN = 298,              // RPAREN
-    TOK_ASSIGN = 299,              // ASSIGN
-    TOK_COMMA = 300,               // COMMA
-    TOK_COLON = 301,               // COLON
-    TOK_SEMICOLON = 302,           // SEMICOLON
-    TOK_DOT = 303,                 // DOT
-    TOK_PLUS = 304,                // PLUS
-    TOK_MINUS = 305,               // MINUS
-    TOK_MUL = 306,                 // MUL
-    TOK_DIV = 307,                 // DIV
-    TOK_EQ = 308,                  // EQ
-    TOK_NE = 309,                  // NE
-    TOK_LL = 310,                  // LL
-    TOK_GG = 311,                  // GG
-    TOK_LE = 312,                  // LE
-    TOK_GE = 313,                  // GE
-    TOK_AND = 314,                 // AND
-    TOK_OR = 315,                  // OR
-    TOK_NOT = 316,                 // NOT
-    TOK_UMINUS = 317               // UMINUS
+    TOK_NIL = 275,                 // NIL
+    TOK_FLOAT_KW = 276,            // FLOAT_KW
+    TOK_INT_KW = 277,              // INT_KW
+    TOK_BOOL_KW = 278,             // BOOL_KW
+    TOK_STRING_KW = 279,           // STRING_KW
+    TOK_ERROR_KW = 280,            // ERROR_KW
+    TOK_ARROW = 281,               // ARROW
+    TOK_LBRACKET = 282,            // LBRACKET
+    TOK_RBRACKET = 283,            // RBRACKET
+    TOK_LBRACE = 284,              // LBRACE
+    TOK_RBRACE = 285,              // RBRACE
+    TOK_LPAREN = 286,              // LPAREN
+    TOK_RPAREN = 287,              // RPAREN
+    TOK_ASSIGN = 288,              // ASSIGN
+    TOK_COMMA = 289,               // COMMA
+    TOK_SEMICOLON = 290,           // SEMICOLON
+    TOK_DOT = 291,                 // DOT
+    TOK_PLUS = 292,                // PLUS
+    TOK_MINUS = 293,               // MINUS
+    TOK_MUL = 294,                 // MUL
+    TOK_DIV = 295,                 // DIV
+    TOK_EQ = 296,                  // EQ
+    TOK_NE = 297,                  // NE
+    TOK_LL = 298,                  // LL
+    TOK_GG = 299,                  // GG
+    TOK_LE = 300,                  // LE
+    TOK_GE = 301,                  // GE
+    TOK_AND = 302,                 // AND
+    TOK_OR = 303,                  // OR
+    TOK_NOT = 304,                 // NOT
+    TOK_UMINUS = 305               // UMINUS
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -588,7 +826,7 @@ namespace falcon { namespace atc {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 63, ///< Number of tokens.
+        YYNTOKENS = 51, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -598,103 +836,94 @@ namespace falcon { namespace atc {
         S_INTEGER = 5,                           // INTEGER
         S_STRING = 6,                            // STRING
         S_AUTOTUNER = 7,                         // AUTOTUNER
-        S_STATE = 8,                             // STATE
-        S_PARAMS = 9,                            // PARAMS
-        S_TEMP = 10,                             // TEMP
-        S_MEASUREMENT = 11,                      // MEASUREMENT
-        S_RUN = 12,                              // RUN
-        S_START = 13,                            // START
-        S_REQUIRES = 14,                         // REQUIRES
-        S_TERMINAL = 15,                         // TERMINAL
-        S_IF = 16,                               // IF
+        S_ROUTINE = 8,                           // ROUTINE
+        S_STATE = 9,                             // STATE
+        S_STRUCT = 10,                           // STRUCT
+        S_IMPORT = 11,                           // IMPORT
+        S_START = 12,                            // START
+        S_USES = 13,                             // USES
+        S_TERMINAL = 14,                         // TERMINAL
+        S_IF = 15,                               // IF
+        S_ELIF = 16,                             // ELIF
         S_ELSE = 17,                             // ELSE
         S_TRUE = 18,                             // TRUE
         S_FALSE = 19,                            // FALSE
-        S_SUCCESS = 20,                          // SUCCESS
-        S_FAIL = 21,                             // FAIL
-        S_SPEC_INPUTS = 22,                      // SPEC_INPUTS
-        S_SPEC_OUTPUTS = 23,                     // SPEC_OUTPUTS
-        S_CONFIG_VAR = 24,                       // CONFIG_VAR
-        S_NEXT = 25,                             // NEXT
-        S_FOR = 26,                              // FOR
-        S_IN = 27,                               // IN
-        S_FLOAT_KW = 28,                         // FLOAT_KW
-        S_INT_KW = 29,                           // INT_KW
-        S_BOOL_KW = 30,                          // BOOL_KW
-        S_STRING_KW = 31,                        // STRING_KW
-        S_QUANTITY_KW = 32,                      // QUANTITY_KW
-        S_CONFIG_KW = 33,                        // CONFIG_KW
-        S_GROUP_KW = 34,                         // GROUP_KW
-        S_CONNECTION_KW = 35,                    // CONNECTION_KW
-        S_ARROW = 36,                            // ARROW
-        S_DOUBLECOLON = 37,                      // DOUBLECOLON
-        S_LBRACKET = 38,                         // LBRACKET
-        S_RBRACKET = 39,                         // RBRACKET
-        S_LBRACE = 40,                           // LBRACE
-        S_RBRACE = 41,                           // RBRACE
-        S_LPAREN = 42,                           // LPAREN
-        S_RPAREN = 43,                           // RPAREN
-        S_ASSIGN = 44,                           // ASSIGN
-        S_COMMA = 45,                            // COMMA
-        S_COLON = 46,                            // COLON
-        S_SEMICOLON = 47,                        // SEMICOLON
-        S_DOT = 48,                              // DOT
-        S_PLUS = 49,                             // PLUS
-        S_MINUS = 50,                            // MINUS
-        S_MUL = 51,                              // MUL
-        S_DIV = 52,                              // DIV
-        S_EQ = 53,                               // EQ
-        S_NE = 54,                               // NE
-        S_LL = 55,                               // LL
-        S_GG = 56,                               // GG
-        S_LE = 57,                               // LE
-        S_GE = 58,                               // GE
-        S_AND = 59,                              // AND
-        S_OR = 60,                               // OR
-        S_NOT = 61,                              // NOT
-        S_UMINUS = 62,                           // UMINUS
-        S_YYACCEPT = 63,                         // $accept
-        S_program = 64,                          // program
-        S_autotuners = 65,                       // autotuners
-        S_autotuner_decl = 66,                   // autotuner_decl
-        S_input_params = 67,                     // input_params
-        S_output_params = 68,                    // output_params
-        S_sig_param_list = 69,                   // sig_param_list
-        S_sig_param_decl = 70,                   // sig_param_decl
-        S_generic_params = 71,                   // generic_params
-        S_spec_inputs = 72,                      // spec_inputs
-        S_spec_outputs = 73,                     // spec_outputs
-        S_spec_list = 74,                        // spec_list
-        S_spec_decl = 75,                        // spec_decl
+        S_NIL = 20,                              // NIL
+        S_FLOAT_KW = 21,                         // FLOAT_KW
+        S_INT_KW = 22,                           // INT_KW
+        S_BOOL_KW = 23,                          // BOOL_KW
+        S_STRING_KW = 24,                        // STRING_KW
+        S_ERROR_KW = 25,                         // ERROR_KW
+        S_ARROW = 26,                            // ARROW
+        S_LBRACKET = 27,                         // LBRACKET
+        S_RBRACKET = 28,                         // RBRACKET
+        S_LBRACE = 29,                           // LBRACE
+        S_RBRACE = 30,                           // RBRACE
+        S_LPAREN = 31,                           // LPAREN
+        S_RPAREN = 32,                           // RPAREN
+        S_ASSIGN = 33,                           // ASSIGN
+        S_COMMA = 34,                            // COMMA
+        S_SEMICOLON = 35,                        // SEMICOLON
+        S_DOT = 36,                              // DOT
+        S_PLUS = 37,                             // PLUS
+        S_MINUS = 38,                            // MINUS
+        S_MUL = 39,                              // MUL
+        S_DIV = 40,                              // DIV
+        S_EQ = 41,                               // EQ
+        S_NE = 42,                               // NE
+        S_LL = 43,                               // LL
+        S_GG = 44,                               // GG
+        S_LE = 45,                               // LE
+        S_GE = 46,                               // GE
+        S_AND = 47,                              // AND
+        S_OR = 48,                               // OR
+        S_NOT = 49,                              // NOT
+        S_UMINUS = 50,                           // UMINUS
+        S_YYACCEPT = 51,                         // $accept
+        S_program = 52,                          // program
+        S_import_list = 53,                      // import_list
+        S_autotuner_list = 54,                   // autotuner_list
+        S_routine_list = 55,                     // routine_list
+        S_struct_decl_list = 56,                 // struct_decl_list
+        S_struct_decl = 57,                      // struct_decl
+        S_58_1 = 58,                             // $@1
+        S_struct_field_list = 59,                // struct_field_list
+        S_struct_field_decl = 60,                // struct_field_decl
+        S_struct_routine_list = 61,              // struct_routine_list
+        S_62_2 = 62,                             // $@2
+        S_routine_decl = 63,                     // routine_decl
+        S_routine_body = 64,                     // routine_body
+        S_struct_routine_stmt = 65,              // struct_routine_stmt
+        S_import_stmt = 66,                      // import_stmt
+        S_import_string_list = 67,               // import_string_list
+        S_autotuner_decl = 68,                   // autotuner_decl
+        S_69_3 = 69,                             // $@3
+        S_input_params = 70,                     // input_params
+        S_output_params = 71,                    // output_params
+        S_param_decl_list = 72,                  // param_decl_list
+        S_param_decl = 73,                       // param_decl
+        S_state_input_params = 74,               // state_input_params
+        S_type_spec = 75,                        // type_spec
         S_requires_clause = 76,                  // requires_clause
-        S_separated_idents = 77,                 // separated_idents
-        S_separated_strings = 78,                // separated_strings
-        S_params_block = 79,                     // params_block
-        S_param_list = 80,                       // param_list
-        S_param_decl = 81,                       // param_decl
-        S_type_spec = 82,                        // type_spec
-        S_entry_clause = 83,                     // entry_clause
-        S_loop_list = 84,                        // loop_list
-        S_loop_decl = 85,                        // loop_decl
-        S_loop_states = 86,                      // loop_states
-        S_states = 87,                           // states
-        S_state_list = 88,                       // state_list
-        S_state_decl = 89,                       // state_decl
-        S_state_params = 90,                     // state_params
-        S_state_temps = 91,                      // state_temps
-        S_measurement_opt = 92,                  // measurement_opt
-        S_arg_list = 93,                         // arg_list
-        S_nonempty_arg_list = 94,                // nonempty_arg_list
-        S_transition_list = 95,                  // transition_list
-        S_transition_decl = 96,                  // transition_decl
-        S_simple_transition = 97,                // simple_transition
-        S_assignment_list = 98,                  // assignment_list
-        S_trans_target = 99,                     // trans_target
-        S_mappings = 100,                        // mappings
-        S_mapping_list = 101,                    // mapping_list
-        S_mapping_decl = 102,                    // mapping_decl
-        S_expr = 103,                            // expr
-        S_primary_expr = 104                     // primary_expr
+        S_identifier_list = 77,                  // identifier_list
+        S_autotuner_var_decls = 78,              // autotuner_var_decls
+        S_entry_state = 79,                      // entry_state
+        S_entry_params = 80,                     // entry_params
+        S_state_list = 81,                       // state_list
+        S_state_decl = 82,                       // state_decl
+        S_83_4 = 83,                             // $@4
+        S_stmt_list = 84,                        // stmt_list
+        S_stmt = 85,                             // stmt
+        S_assign_target_list = 86,               // assign_target_list
+        S_assign_target = 87,                    // assign_target
+        S_elif_chain = 88,                       // elif_chain
+        S_var_decl_stmt = 89,                    // var_decl_stmt
+        S_expr = 90,                             // expr
+        S_postfix_expr = 91,                     // postfix_expr
+        S_primary_expr = 92,                     // primary_expr
+        S_expr_list = 93,                        // expr_list
+        S_call_arg_list = 94,                    // call_arg_list
+        S_call_arg = 95                          // call_arg
       };
     };
 
@@ -709,7 +938,7 @@ namespace falcon { namespace atc {
     /// Expects its Base type to provide access to the symbol kind
     /// via kind ().
     ///
-    /// Provide access to semantic value.
+    /// Provide access to semantic value and location.
     template <typename Base>
     struct basic_symbol : Base
     {
@@ -719,6 +948,7 @@ namespace falcon { namespace atc {
       /// Default constructor.
       basic_symbol () YY_NOEXCEPT
         : value ()
+        , location ()
       {}
 
 #if 201103L <= YY_CPLUSPLUS
@@ -726,40 +956,36 @@ namespace falcon { namespace atc {
       basic_symbol (basic_symbol&& that)
         : Base (std::move (that))
         , value ()
+        , location (std::move (that.location))
       {
         switch (this->kind ())
     {
-      case symbol_kind::S_type_spec: // type_spec
-        value.move< ParamType > (std::move (that.value));
-        break;
-
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_DOUBLE: // DOUBLE
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_STRING: // STRING
-      case symbol_kind::S_entry_clause: // entry_clause
+      case symbol_kind::S_entry_state: // entry_state
         value.move< std::string > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_assign_target: // assign_target
+        value.move< std::unique_ptr<AssignTarget> > (std::move (that.value));
         break;
 
       case symbol_kind::S_autotuner_decl: // autotuner_decl
         value.move< std::unique_ptr<AutotunerDecl> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_measurement_opt: // measurement_opt
+      case symbol_kind::S_call_arg: // call_arg
+        value.move< std::unique_ptr<CallArg> > (std::move (that.value));
+        break;
+
       case symbol_kind::S_expr: // expr
+      case symbol_kind::S_postfix_expr: // postfix_expr
       case symbol_kind::S_primary_expr: // primary_expr
         value.move< std::unique_ptr<Expr> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_loop_decl: // loop_decl
-        value.move< std::unique_ptr<ForLoop> > (std::move (that.value));
-        break;
-
-      case symbol_kind::S_mapping_decl: // mapping_decl
-        value.move< std::unique_ptr<Mapping> > (std::move (that.value));
-        break;
-
-      case symbol_kind::S_sig_param_decl: // sig_param_decl
       case symbol_kind::S_param_decl: // param_decl
         value.move< std::unique_ptr<ParamDecl> > (std::move (that.value));
         break;
@@ -768,73 +994,86 @@ namespace falcon { namespace atc {
         value.move< std::unique_ptr<Program> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_spec_decl: // spec_decl
-        value.move< std::unique_ptr<SpecDecl> > (std::move (that.value));
+      case symbol_kind::S_routine_decl: // routine_decl
+        value.move< std::unique_ptr<RoutineDecl> > (std::move (that.value));
         break;
 
       case symbol_kind::S_state_decl: // state_decl
         value.move< std::unique_ptr<StateDecl> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_trans_target: // trans_target
-        value.move< std::unique_ptr<TransitionTarget> > (std::move (that.value));
+      case symbol_kind::S_struct_routine_stmt: // struct_routine_stmt
+      case symbol_kind::S_stmt: // stmt
+        value.move< std::unique_ptr<Stmt> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_assignment_list: // assignment_list
-        value.move< std::vector<Assignment> > (std::move (that.value));
+      case symbol_kind::S_struct_decl: // struct_decl
+        value.move< std::unique_ptr<StructDecl> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_autotuners: // autotuners
+      case symbol_kind::S_type_spec: // type_spec
+        value.move< std::unique_ptr<TypeDescriptor> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_struct_field_decl: // struct_field_decl
+      case symbol_kind::S_var_decl_stmt: // var_decl_stmt
+        value.move< std::unique_ptr<VarDeclStmt> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_assign_target_list: // assign_target_list
+        value.move< std::vector<AssignTarget> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_autotuner_list: // autotuner_list
         value.move< std::vector<AutotunerDecl> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_loop_list: // loop_list
-        value.move< std::vector<ForLoop> > (std::move (that.value));
+      case symbol_kind::S_call_arg_list: // call_arg_list
+        value.move< std::vector<CallArg> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_mappings: // mappings
-      case symbol_kind::S_mapping_list: // mapping_list
-        value.move< std::vector<Mapping> > (std::move (that.value));
+      case symbol_kind::S_routine_list: // routine_list
+      case symbol_kind::S_struct_routine_list: // struct_routine_list
+        value.move< std::vector<RoutineDecl> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_input_params: // input_params
-      case symbol_kind::S_output_params: // output_params
-      case symbol_kind::S_sig_param_list: // sig_param_list
-      case symbol_kind::S_params_block: // params_block
-      case symbol_kind::S_param_list: // param_list
-      case symbol_kind::S_state_params: // state_params
-      case symbol_kind::S_state_temps: // state_temps
-        value.move< std::vector<ParamDecl> > (std::move (that.value));
-        break;
-
-      case symbol_kind::S_spec_inputs: // spec_inputs
-      case symbol_kind::S_spec_outputs: // spec_outputs
-      case symbol_kind::S_spec_list: // spec_list
-        value.move< std::vector<SpecDecl> > (std::move (that.value));
-        break;
-
-      case symbol_kind::S_loop_states: // loop_states
-      case symbol_kind::S_states: // states
       case symbol_kind::S_state_list: // state_list
         value.move< std::vector<StateDecl> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_transition_list: // transition_list
-      case symbol_kind::S_transition_decl: // transition_decl
-      case symbol_kind::S_simple_transition: // simple_transition
-        value.move< std::vector<Transition> > (std::move (that.value));
+      case symbol_kind::S_struct_decl_list: // struct_decl_list
+        value.move< std::vector<StructDecl> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_generic_params: // generic_params
+      case symbol_kind::S_struct_field_list: // struct_field_list
+        value.move< std::vector<VarDeclStmt> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_import_list: // import_list
+      case symbol_kind::S_import_stmt: // import_stmt
+      case symbol_kind::S_import_string_list: // import_string_list
       case symbol_kind::S_requires_clause: // requires_clause
-      case symbol_kind::S_separated_idents: // separated_idents
-      case symbol_kind::S_separated_strings: // separated_strings
+      case symbol_kind::S_identifier_list: // identifier_list
         value.move< std::vector<std::string> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_arg_list: // arg_list
-      case symbol_kind::S_nonempty_arg_list: // nonempty_arg_list
+      case symbol_kind::S_entry_params: // entry_params
+      case symbol_kind::S_expr_list: // expr_list
         value.move< std::vector<std::unique_ptr<Expr>> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_input_params: // input_params
+      case symbol_kind::S_output_params: // output_params
+      case symbol_kind::S_param_decl_list: // param_decl_list
+      case symbol_kind::S_state_input_params: // state_input_params
+        value.move< std::vector<std::unique_ptr<ParamDecl>> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_routine_body: // routine_body
+      case symbol_kind::S_autotuner_var_decls: // autotuner_var_decls
+      case symbol_kind::S_stmt_list: // stmt_list
+      case symbol_kind::S_elif_chain: // elif_chain
+        value.move< std::vector<std::unique_ptr<Stmt>> > (std::move (that.value));
         break;
 
       default:
@@ -849,264 +1088,350 @@ namespace falcon { namespace atc {
 
       /// Constructors for typed symbols.
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t)
+      basic_symbol (typename Base::kind_type t, location_type&& l)
         : Base (t)
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t)
+      basic_symbol (typename Base::kind_type t, const location_type& l)
         : Base (t)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, ParamType&& v)
+      basic_symbol (typename Base::kind_type t, std::string&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const ParamType& v)
+      basic_symbol (typename Base::kind_type t, const std::string& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::string&& v)
+      basic_symbol (typename Base::kind_type t, std::unique_ptr<AssignTarget>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::string& v)
+      basic_symbol (typename Base::kind_type t, const std::unique_ptr<AssignTarget>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::unique_ptr<AutotunerDecl>&& v)
+      basic_symbol (typename Base::kind_type t, std::unique_ptr<AutotunerDecl>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::unique_ptr<AutotunerDecl>& v)
+      basic_symbol (typename Base::kind_type t, const std::unique_ptr<AutotunerDecl>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::unique_ptr<Expr>&& v)
+      basic_symbol (typename Base::kind_type t, std::unique_ptr<CallArg>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::unique_ptr<Expr>& v)
+      basic_symbol (typename Base::kind_type t, const std::unique_ptr<CallArg>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::unique_ptr<ForLoop>&& v)
+      basic_symbol (typename Base::kind_type t, std::unique_ptr<Expr>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::unique_ptr<ForLoop>& v)
+      basic_symbol (typename Base::kind_type t, const std::unique_ptr<Expr>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::unique_ptr<Mapping>&& v)
+      basic_symbol (typename Base::kind_type t, std::unique_ptr<ParamDecl>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::unique_ptr<Mapping>& v)
+      basic_symbol (typename Base::kind_type t, const std::unique_ptr<ParamDecl>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::unique_ptr<ParamDecl>&& v)
+      basic_symbol (typename Base::kind_type t, std::unique_ptr<Program>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::unique_ptr<ParamDecl>& v)
+      basic_symbol (typename Base::kind_type t, const std::unique_ptr<Program>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::unique_ptr<Program>&& v)
+      basic_symbol (typename Base::kind_type t, std::unique_ptr<RoutineDecl>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::unique_ptr<Program>& v)
+      basic_symbol (typename Base::kind_type t, const std::unique_ptr<RoutineDecl>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::unique_ptr<SpecDecl>&& v)
+      basic_symbol (typename Base::kind_type t, std::unique_ptr<StateDecl>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::unique_ptr<SpecDecl>& v)
+      basic_symbol (typename Base::kind_type t, const std::unique_ptr<StateDecl>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::unique_ptr<StateDecl>&& v)
+      basic_symbol (typename Base::kind_type t, std::unique_ptr<Stmt>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::unique_ptr<StateDecl>& v)
+      basic_symbol (typename Base::kind_type t, const std::unique_ptr<Stmt>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::unique_ptr<TransitionTarget>&& v)
+      basic_symbol (typename Base::kind_type t, std::unique_ptr<StructDecl>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::unique_ptr<TransitionTarget>& v)
+      basic_symbol (typename Base::kind_type t, const std::unique_ptr<StructDecl>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<Assignment>&& v)
+      basic_symbol (typename Base::kind_type t, std::unique_ptr<TypeDescriptor>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<Assignment>& v)
+      basic_symbol (typename Base::kind_type t, const std::unique_ptr<TypeDescriptor>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<AutotunerDecl>&& v)
+      basic_symbol (typename Base::kind_type t, std::unique_ptr<VarDeclStmt>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<AutotunerDecl>& v)
+      basic_symbol (typename Base::kind_type t, const std::unique_ptr<VarDeclStmt>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<ForLoop>&& v)
+      basic_symbol (typename Base::kind_type t, std::vector<AssignTarget>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<ForLoop>& v)
+      basic_symbol (typename Base::kind_type t, const std::vector<AssignTarget>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<Mapping>&& v)
+      basic_symbol (typename Base::kind_type t, std::vector<AutotunerDecl>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<Mapping>& v)
+      basic_symbol (typename Base::kind_type t, const std::vector<AutotunerDecl>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<ParamDecl>&& v)
+      basic_symbol (typename Base::kind_type t, std::vector<CallArg>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<ParamDecl>& v)
+      basic_symbol (typename Base::kind_type t, const std::vector<CallArg>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<SpecDecl>&& v)
+      basic_symbol (typename Base::kind_type t, std::vector<RoutineDecl>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<SpecDecl>& v)
+      basic_symbol (typename Base::kind_type t, const std::vector<RoutineDecl>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<StateDecl>&& v)
+      basic_symbol (typename Base::kind_type t, std::vector<StateDecl>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<StateDecl>& v)
+      basic_symbol (typename Base::kind_type t, const std::vector<StateDecl>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<Transition>&& v)
+      basic_symbol (typename Base::kind_type t, std::vector<StructDecl>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<Transition>& v)
+      basic_symbol (typename Base::kind_type t, const std::vector<StructDecl>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<std::string>&& v)
+      basic_symbol (typename Base::kind_type t, std::vector<VarDeclStmt>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<std::string>& v)
+      basic_symbol (typename Base::kind_type t, const std::vector<VarDeclStmt>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
       {}
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<std::unique_ptr<Expr>>&& v)
+      basic_symbol (typename Base::kind_type t, std::vector<std::string>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
+        , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<std::unique_ptr<Expr>>& v)
+      basic_symbol (typename Base::kind_type t, const std::vector<std::string>& v, const location_type& l)
         : Base (t)
         , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<std::unique_ptr<Expr>>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<std::unique_ptr<Expr>>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<std::unique_ptr<ParamDecl>>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<std::unique_ptr<ParamDecl>>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<std::unique_ptr<Stmt>>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<std::unique_ptr<Stmt>>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
       {}
 #endif
 
@@ -1134,37 +1459,32 @@ namespace falcon { namespace atc {
         // Value type destructor.
 switch (yykind)
     {
-      case symbol_kind::S_type_spec: // type_spec
-        value.template destroy< ParamType > ();
-        break;
-
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_DOUBLE: // DOUBLE
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_STRING: // STRING
-      case symbol_kind::S_entry_clause: // entry_clause
+      case symbol_kind::S_entry_state: // entry_state
         value.template destroy< std::string > ();
+        break;
+
+      case symbol_kind::S_assign_target: // assign_target
+        value.template destroy< std::unique_ptr<AssignTarget> > ();
         break;
 
       case symbol_kind::S_autotuner_decl: // autotuner_decl
         value.template destroy< std::unique_ptr<AutotunerDecl> > ();
         break;
 
-      case symbol_kind::S_measurement_opt: // measurement_opt
+      case symbol_kind::S_call_arg: // call_arg
+        value.template destroy< std::unique_ptr<CallArg> > ();
+        break;
+
       case symbol_kind::S_expr: // expr
+      case symbol_kind::S_postfix_expr: // postfix_expr
       case symbol_kind::S_primary_expr: // primary_expr
         value.template destroy< std::unique_ptr<Expr> > ();
         break;
 
-      case symbol_kind::S_loop_decl: // loop_decl
-        value.template destroy< std::unique_ptr<ForLoop> > ();
-        break;
-
-      case symbol_kind::S_mapping_decl: // mapping_decl
-        value.template destroy< std::unique_ptr<Mapping> > ();
-        break;
-
-      case symbol_kind::S_sig_param_decl: // sig_param_decl
       case symbol_kind::S_param_decl: // param_decl
         value.template destroy< std::unique_ptr<ParamDecl> > ();
         break;
@@ -1173,73 +1493,86 @@ switch (yykind)
         value.template destroy< std::unique_ptr<Program> > ();
         break;
 
-      case symbol_kind::S_spec_decl: // spec_decl
-        value.template destroy< std::unique_ptr<SpecDecl> > ();
+      case symbol_kind::S_routine_decl: // routine_decl
+        value.template destroy< std::unique_ptr<RoutineDecl> > ();
         break;
 
       case symbol_kind::S_state_decl: // state_decl
         value.template destroy< std::unique_ptr<StateDecl> > ();
         break;
 
-      case symbol_kind::S_trans_target: // trans_target
-        value.template destroy< std::unique_ptr<TransitionTarget> > ();
+      case symbol_kind::S_struct_routine_stmt: // struct_routine_stmt
+      case symbol_kind::S_stmt: // stmt
+        value.template destroy< std::unique_ptr<Stmt> > ();
         break;
 
-      case symbol_kind::S_assignment_list: // assignment_list
-        value.template destroy< std::vector<Assignment> > ();
+      case symbol_kind::S_struct_decl: // struct_decl
+        value.template destroy< std::unique_ptr<StructDecl> > ();
         break;
 
-      case symbol_kind::S_autotuners: // autotuners
+      case symbol_kind::S_type_spec: // type_spec
+        value.template destroy< std::unique_ptr<TypeDescriptor> > ();
+        break;
+
+      case symbol_kind::S_struct_field_decl: // struct_field_decl
+      case symbol_kind::S_var_decl_stmt: // var_decl_stmt
+        value.template destroy< std::unique_ptr<VarDeclStmt> > ();
+        break;
+
+      case symbol_kind::S_assign_target_list: // assign_target_list
+        value.template destroy< std::vector<AssignTarget> > ();
+        break;
+
+      case symbol_kind::S_autotuner_list: // autotuner_list
         value.template destroy< std::vector<AutotunerDecl> > ();
         break;
 
-      case symbol_kind::S_loop_list: // loop_list
-        value.template destroy< std::vector<ForLoop> > ();
+      case symbol_kind::S_call_arg_list: // call_arg_list
+        value.template destroy< std::vector<CallArg> > ();
         break;
 
-      case symbol_kind::S_mappings: // mappings
-      case symbol_kind::S_mapping_list: // mapping_list
-        value.template destroy< std::vector<Mapping> > ();
+      case symbol_kind::S_routine_list: // routine_list
+      case symbol_kind::S_struct_routine_list: // struct_routine_list
+        value.template destroy< std::vector<RoutineDecl> > ();
         break;
 
-      case symbol_kind::S_input_params: // input_params
-      case symbol_kind::S_output_params: // output_params
-      case symbol_kind::S_sig_param_list: // sig_param_list
-      case symbol_kind::S_params_block: // params_block
-      case symbol_kind::S_param_list: // param_list
-      case symbol_kind::S_state_params: // state_params
-      case symbol_kind::S_state_temps: // state_temps
-        value.template destroy< std::vector<ParamDecl> > ();
-        break;
-
-      case symbol_kind::S_spec_inputs: // spec_inputs
-      case symbol_kind::S_spec_outputs: // spec_outputs
-      case symbol_kind::S_spec_list: // spec_list
-        value.template destroy< std::vector<SpecDecl> > ();
-        break;
-
-      case symbol_kind::S_loop_states: // loop_states
-      case symbol_kind::S_states: // states
       case symbol_kind::S_state_list: // state_list
         value.template destroy< std::vector<StateDecl> > ();
         break;
 
-      case symbol_kind::S_transition_list: // transition_list
-      case symbol_kind::S_transition_decl: // transition_decl
-      case symbol_kind::S_simple_transition: // simple_transition
-        value.template destroy< std::vector<Transition> > ();
+      case symbol_kind::S_struct_decl_list: // struct_decl_list
+        value.template destroy< std::vector<StructDecl> > ();
         break;
 
-      case symbol_kind::S_generic_params: // generic_params
+      case symbol_kind::S_struct_field_list: // struct_field_list
+        value.template destroy< std::vector<VarDeclStmt> > ();
+        break;
+
+      case symbol_kind::S_import_list: // import_list
+      case symbol_kind::S_import_stmt: // import_stmt
+      case symbol_kind::S_import_string_list: // import_string_list
       case symbol_kind::S_requires_clause: // requires_clause
-      case symbol_kind::S_separated_idents: // separated_idents
-      case symbol_kind::S_separated_strings: // separated_strings
+      case symbol_kind::S_identifier_list: // identifier_list
         value.template destroy< std::vector<std::string> > ();
         break;
 
-      case symbol_kind::S_arg_list: // arg_list
-      case symbol_kind::S_nonempty_arg_list: // nonempty_arg_list
+      case symbol_kind::S_entry_params: // entry_params
+      case symbol_kind::S_expr_list: // expr_list
         value.template destroy< std::vector<std::unique_ptr<Expr>> > ();
+        break;
+
+      case symbol_kind::S_input_params: // input_params
+      case symbol_kind::S_output_params: // output_params
+      case symbol_kind::S_param_decl_list: // param_decl_list
+      case symbol_kind::S_state_input_params: // state_input_params
+        value.template destroy< std::vector<std::unique_ptr<ParamDecl>> > ();
+        break;
+
+      case symbol_kind::S_routine_body: // routine_body
+      case symbol_kind::S_autotuner_var_decls: // autotuner_var_decls
+      case symbol_kind::S_stmt_list: // stmt_list
+      case symbol_kind::S_elif_chain: // elif_chain
+        value.template destroy< std::vector<std::unique_ptr<Stmt>> > ();
         break;
 
       default:
@@ -1250,7 +1583,7 @@ switch (yykind)
       }
 
       /// The user-facing name of this symbol.
-      const char *name () const YY_NOEXCEPT
+      std::string name () const YY_NOEXCEPT
       {
         return Parser::symbol_name (this->kind ());
       }
@@ -1266,6 +1599,9 @@ switch (yykind)
 
       /// The semantic value.
       value_type value;
+
+      /// The location.
+      location_type location;
 
     private:
 #if YY_CPLUSPLUS < 201103L
@@ -1328,19 +1664,19 @@ switch (yykind)
 
       /// Constructor for valueless symbols, and symbols from each type.
 #if 201103L <= YY_CPLUSPLUS
-      symbol_type (int tok)
-        : super_type (token_kind_type (tok))
+      symbol_type (int tok, location_type l)
+        : super_type (token_kind_type (tok), std::move (l))
 #else
-      symbol_type (int tok)
-        : super_type (token_kind_type (tok))
+      symbol_type (int tok, const location_type& l)
+        : super_type (token_kind_type (tok), l)
 #endif
       {}
 #if 201103L <= YY_CPLUSPLUS
-      symbol_type (int tok, std::string v)
-        : super_type (token_kind_type (tok), std::move (v))
+      symbol_type (int tok, std::string v, location_type l)
+        : super_type (token_kind_type (tok), std::move (v), std::move (l))
 #else
-      symbol_type (int tok, const std::string& v)
-        : super_type (token_kind_type (tok), v)
+      symbol_type (int tok, const std::string& v, const location_type& l)
+        : super_type (token_kind_type (tok), v, l)
 #endif
       {}
     };
@@ -1379,960 +1715,781 @@ switch (yykind)
 #endif
 
     /// Report a syntax error.
+    /// \param loc    where the syntax error is found.
     /// \param msg    a description of the syntax error.
-    virtual void error (const std::string& msg);
+    virtual void error (const location_type& loc, const std::string& msg);
 
     /// Report a syntax error.
     void error (const syntax_error& err);
 
     /// The user-facing name of the symbol whose (internal) number is
     /// YYSYMBOL.  No bounds checking.
-    static const char *symbol_name (symbol_kind_type yysymbol);
+    static std::string symbol_name (symbol_kind_type yysymbol);
 
     // Implementation of make_symbol for each token kind.
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_YYEOF ()
+      make_YYEOF (location_type l)
       {
-        return symbol_type (token::TOK_YYEOF);
+        return symbol_type (token::TOK_YYEOF, std::move (l));
       }
 #else
       static
       symbol_type
-      make_YYEOF ()
+      make_YYEOF (const location_type& l)
       {
-        return symbol_type (token::TOK_YYEOF);
+        return symbol_type (token::TOK_YYEOF, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_YYerror ()
+      make_YYerror (location_type l)
       {
-        return symbol_type (token::TOK_YYerror);
+        return symbol_type (token::TOK_YYerror, std::move (l));
       }
 #else
       static
       symbol_type
-      make_YYerror ()
+      make_YYerror (const location_type& l)
       {
-        return symbol_type (token::TOK_YYerror);
+        return symbol_type (token::TOK_YYerror, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_YYUNDEF ()
+      make_YYUNDEF (location_type l)
       {
-        return symbol_type (token::TOK_YYUNDEF);
+        return symbol_type (token::TOK_YYUNDEF, std::move (l));
       }
 #else
       static
       symbol_type
-      make_YYUNDEF ()
+      make_YYUNDEF (const location_type& l)
       {
-        return symbol_type (token::TOK_YYUNDEF);
+        return symbol_type (token::TOK_YYUNDEF, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_IDENTIFIER (std::string v)
+      make_IDENTIFIER (std::string v, location_type l)
       {
-        return symbol_type (token::TOK_IDENTIFIER, std::move (v));
+        return symbol_type (token::TOK_IDENTIFIER, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_IDENTIFIER (const std::string& v)
+      make_IDENTIFIER (const std::string& v, const location_type& l)
       {
-        return symbol_type (token::TOK_IDENTIFIER, v);
+        return symbol_type (token::TOK_IDENTIFIER, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_DOUBLE (std::string v)
+      make_DOUBLE (std::string v, location_type l)
       {
-        return symbol_type (token::TOK_DOUBLE, std::move (v));
+        return symbol_type (token::TOK_DOUBLE, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_DOUBLE (const std::string& v)
+      make_DOUBLE (const std::string& v, const location_type& l)
       {
-        return symbol_type (token::TOK_DOUBLE, v);
+        return symbol_type (token::TOK_DOUBLE, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_INTEGER (std::string v)
+      make_INTEGER (std::string v, location_type l)
       {
-        return symbol_type (token::TOK_INTEGER, std::move (v));
+        return symbol_type (token::TOK_INTEGER, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_INTEGER (const std::string& v)
+      make_INTEGER (const std::string& v, const location_type& l)
       {
-        return symbol_type (token::TOK_INTEGER, v);
+        return symbol_type (token::TOK_INTEGER, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_STRING (std::string v)
+      make_STRING (std::string v, location_type l)
       {
-        return symbol_type (token::TOK_STRING, std::move (v));
+        return symbol_type (token::TOK_STRING, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_STRING (const std::string& v)
+      make_STRING (const std::string& v, const location_type& l)
       {
-        return symbol_type (token::TOK_STRING, v);
+        return symbol_type (token::TOK_STRING, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_AUTOTUNER ()
+      make_AUTOTUNER (location_type l)
       {
-        return symbol_type (token::TOK_AUTOTUNER);
+        return symbol_type (token::TOK_AUTOTUNER, std::move (l));
       }
 #else
       static
       symbol_type
-      make_AUTOTUNER ()
+      make_AUTOTUNER (const location_type& l)
       {
-        return symbol_type (token::TOK_AUTOTUNER);
+        return symbol_type (token::TOK_AUTOTUNER, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_STATE ()
+      make_ROUTINE (location_type l)
       {
-        return symbol_type (token::TOK_STATE);
+        return symbol_type (token::TOK_ROUTINE, std::move (l));
       }
 #else
       static
       symbol_type
-      make_STATE ()
+      make_ROUTINE (const location_type& l)
       {
-        return symbol_type (token::TOK_STATE);
+        return symbol_type (token::TOK_ROUTINE, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_PARAMS ()
+      make_STATE (location_type l)
       {
-        return symbol_type (token::TOK_PARAMS);
+        return symbol_type (token::TOK_STATE, std::move (l));
       }
 #else
       static
       symbol_type
-      make_PARAMS ()
+      make_STATE (const location_type& l)
       {
-        return symbol_type (token::TOK_PARAMS);
+        return symbol_type (token::TOK_STATE, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_TEMP ()
+      make_STRUCT (location_type l)
       {
-        return symbol_type (token::TOK_TEMP);
+        return symbol_type (token::TOK_STRUCT, std::move (l));
       }
 #else
       static
       symbol_type
-      make_TEMP ()
+      make_STRUCT (const location_type& l)
       {
-        return symbol_type (token::TOK_TEMP);
+        return symbol_type (token::TOK_STRUCT, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_MEASUREMENT ()
+      make_IMPORT (location_type l)
       {
-        return symbol_type (token::TOK_MEASUREMENT);
+        return symbol_type (token::TOK_IMPORT, std::move (l));
       }
 #else
       static
       symbol_type
-      make_MEASUREMENT ()
+      make_IMPORT (const location_type& l)
       {
-        return symbol_type (token::TOK_MEASUREMENT);
+        return symbol_type (token::TOK_IMPORT, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_RUN ()
+      make_START (location_type l)
       {
-        return symbol_type (token::TOK_RUN);
+        return symbol_type (token::TOK_START, std::move (l));
       }
 #else
       static
       symbol_type
-      make_RUN ()
+      make_START (const location_type& l)
       {
-        return symbol_type (token::TOK_RUN);
+        return symbol_type (token::TOK_START, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_START ()
+      make_USES (location_type l)
       {
-        return symbol_type (token::TOK_START);
+        return symbol_type (token::TOK_USES, std::move (l));
       }
 #else
       static
       symbol_type
-      make_START ()
+      make_USES (const location_type& l)
       {
-        return symbol_type (token::TOK_START);
+        return symbol_type (token::TOK_USES, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_REQUIRES ()
+      make_TERMINAL (location_type l)
       {
-        return symbol_type (token::TOK_REQUIRES);
+        return symbol_type (token::TOK_TERMINAL, std::move (l));
       }
 #else
       static
       symbol_type
-      make_REQUIRES ()
+      make_TERMINAL (const location_type& l)
       {
-        return symbol_type (token::TOK_REQUIRES);
+        return symbol_type (token::TOK_TERMINAL, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_TERMINAL ()
+      make_IF (location_type l)
       {
-        return symbol_type (token::TOK_TERMINAL);
+        return symbol_type (token::TOK_IF, std::move (l));
       }
 #else
       static
       symbol_type
-      make_TERMINAL ()
+      make_IF (const location_type& l)
       {
-        return symbol_type (token::TOK_TERMINAL);
+        return symbol_type (token::TOK_IF, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_IF ()
+      make_ELIF (location_type l)
       {
-        return symbol_type (token::TOK_IF);
+        return symbol_type (token::TOK_ELIF, std::move (l));
       }
 #else
       static
       symbol_type
-      make_IF ()
+      make_ELIF (const location_type& l)
       {
-        return symbol_type (token::TOK_IF);
+        return symbol_type (token::TOK_ELIF, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_ELSE ()
+      make_ELSE (location_type l)
       {
-        return symbol_type (token::TOK_ELSE);
+        return symbol_type (token::TOK_ELSE, std::move (l));
       }
 #else
       static
       symbol_type
-      make_ELSE ()
+      make_ELSE (const location_type& l)
       {
-        return symbol_type (token::TOK_ELSE);
+        return symbol_type (token::TOK_ELSE, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_TRUE ()
+      make_TRUE (location_type l)
       {
-        return symbol_type (token::TOK_TRUE);
+        return symbol_type (token::TOK_TRUE, std::move (l));
       }
 #else
       static
       symbol_type
-      make_TRUE ()
+      make_TRUE (const location_type& l)
       {
-        return symbol_type (token::TOK_TRUE);
+        return symbol_type (token::TOK_TRUE, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_FALSE ()
+      make_FALSE (location_type l)
       {
-        return symbol_type (token::TOK_FALSE);
+        return symbol_type (token::TOK_FALSE, std::move (l));
       }
 #else
       static
       symbol_type
-      make_FALSE ()
+      make_FALSE (const location_type& l)
       {
-        return symbol_type (token::TOK_FALSE);
+        return symbol_type (token::TOK_FALSE, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_SUCCESS ()
+      make_NIL (location_type l)
       {
-        return symbol_type (token::TOK_SUCCESS);
+        return symbol_type (token::TOK_NIL, std::move (l));
       }
 #else
       static
       symbol_type
-      make_SUCCESS ()
+      make_NIL (const location_type& l)
       {
-        return symbol_type (token::TOK_SUCCESS);
+        return symbol_type (token::TOK_NIL, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_FAIL ()
+      make_FLOAT_KW (location_type l)
       {
-        return symbol_type (token::TOK_FAIL);
+        return symbol_type (token::TOK_FLOAT_KW, std::move (l));
       }
 #else
       static
       symbol_type
-      make_FAIL ()
+      make_FLOAT_KW (const location_type& l)
       {
-        return symbol_type (token::TOK_FAIL);
+        return symbol_type (token::TOK_FLOAT_KW, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_SPEC_INPUTS ()
+      make_INT_KW (location_type l)
       {
-        return symbol_type (token::TOK_SPEC_INPUTS);
+        return symbol_type (token::TOK_INT_KW, std::move (l));
       }
 #else
       static
       symbol_type
-      make_SPEC_INPUTS ()
+      make_INT_KW (const location_type& l)
       {
-        return symbol_type (token::TOK_SPEC_INPUTS);
+        return symbol_type (token::TOK_INT_KW, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_SPEC_OUTPUTS ()
+      make_BOOL_KW (location_type l)
       {
-        return symbol_type (token::TOK_SPEC_OUTPUTS);
+        return symbol_type (token::TOK_BOOL_KW, std::move (l));
       }
 #else
       static
       symbol_type
-      make_SPEC_OUTPUTS ()
+      make_BOOL_KW (const location_type& l)
       {
-        return symbol_type (token::TOK_SPEC_OUTPUTS);
+        return symbol_type (token::TOK_BOOL_KW, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_CONFIG_VAR ()
+      make_STRING_KW (location_type l)
       {
-        return symbol_type (token::TOK_CONFIG_VAR);
+        return symbol_type (token::TOK_STRING_KW, std::move (l));
       }
 #else
       static
       symbol_type
-      make_CONFIG_VAR ()
+      make_STRING_KW (const location_type& l)
       {
-        return symbol_type (token::TOK_CONFIG_VAR);
+        return symbol_type (token::TOK_STRING_KW, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_NEXT ()
+      make_ERROR_KW (location_type l)
       {
-        return symbol_type (token::TOK_NEXT);
+        return symbol_type (token::TOK_ERROR_KW, std::move (l));
       }
 #else
       static
       symbol_type
-      make_NEXT ()
+      make_ERROR_KW (const location_type& l)
       {
-        return symbol_type (token::TOK_NEXT);
+        return symbol_type (token::TOK_ERROR_KW, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_FOR ()
+      make_ARROW (location_type l)
       {
-        return symbol_type (token::TOK_FOR);
+        return symbol_type (token::TOK_ARROW, std::move (l));
       }
 #else
       static
       symbol_type
-      make_FOR ()
+      make_ARROW (const location_type& l)
       {
-        return symbol_type (token::TOK_FOR);
+        return symbol_type (token::TOK_ARROW, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_IN ()
+      make_LBRACKET (location_type l)
       {
-        return symbol_type (token::TOK_IN);
+        return symbol_type (token::TOK_LBRACKET, std::move (l));
       }
 #else
       static
       symbol_type
-      make_IN ()
+      make_LBRACKET (const location_type& l)
       {
-        return symbol_type (token::TOK_IN);
+        return symbol_type (token::TOK_LBRACKET, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_FLOAT_KW ()
+      make_RBRACKET (location_type l)
       {
-        return symbol_type (token::TOK_FLOAT_KW);
+        return symbol_type (token::TOK_RBRACKET, std::move (l));
       }
 #else
       static
       symbol_type
-      make_FLOAT_KW ()
+      make_RBRACKET (const location_type& l)
       {
-        return symbol_type (token::TOK_FLOAT_KW);
+        return symbol_type (token::TOK_RBRACKET, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_INT_KW ()
+      make_LBRACE (location_type l)
       {
-        return symbol_type (token::TOK_INT_KW);
+        return symbol_type (token::TOK_LBRACE, std::move (l));
       }
 #else
       static
       symbol_type
-      make_INT_KW ()
+      make_LBRACE (const location_type& l)
       {
-        return symbol_type (token::TOK_INT_KW);
+        return symbol_type (token::TOK_LBRACE, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_BOOL_KW ()
+      make_RBRACE (location_type l)
       {
-        return symbol_type (token::TOK_BOOL_KW);
+        return symbol_type (token::TOK_RBRACE, std::move (l));
       }
 #else
       static
       symbol_type
-      make_BOOL_KW ()
+      make_RBRACE (const location_type& l)
       {
-        return symbol_type (token::TOK_BOOL_KW);
+        return symbol_type (token::TOK_RBRACE, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_STRING_KW ()
+      make_LPAREN (location_type l)
       {
-        return symbol_type (token::TOK_STRING_KW);
+        return symbol_type (token::TOK_LPAREN, std::move (l));
       }
 #else
       static
       symbol_type
-      make_STRING_KW ()
+      make_LPAREN (const location_type& l)
       {
-        return symbol_type (token::TOK_STRING_KW);
+        return symbol_type (token::TOK_LPAREN, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_QUANTITY_KW ()
+      make_RPAREN (location_type l)
       {
-        return symbol_type (token::TOK_QUANTITY_KW);
+        return symbol_type (token::TOK_RPAREN, std::move (l));
       }
 #else
       static
       symbol_type
-      make_QUANTITY_KW ()
+      make_RPAREN (const location_type& l)
       {
-        return symbol_type (token::TOK_QUANTITY_KW);
+        return symbol_type (token::TOK_RPAREN, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_CONFIG_KW ()
+      make_ASSIGN (location_type l)
       {
-        return symbol_type (token::TOK_CONFIG_KW);
+        return symbol_type (token::TOK_ASSIGN, std::move (l));
       }
 #else
       static
       symbol_type
-      make_CONFIG_KW ()
+      make_ASSIGN (const location_type& l)
       {
-        return symbol_type (token::TOK_CONFIG_KW);
+        return symbol_type (token::TOK_ASSIGN, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_GROUP_KW ()
+      make_COMMA (location_type l)
       {
-        return symbol_type (token::TOK_GROUP_KW);
+        return symbol_type (token::TOK_COMMA, std::move (l));
       }
 #else
       static
       symbol_type
-      make_GROUP_KW ()
+      make_COMMA (const location_type& l)
       {
-        return symbol_type (token::TOK_GROUP_KW);
+        return symbol_type (token::TOK_COMMA, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_CONNECTION_KW ()
+      make_SEMICOLON (location_type l)
       {
-        return symbol_type (token::TOK_CONNECTION_KW);
+        return symbol_type (token::TOK_SEMICOLON, std::move (l));
       }
 #else
       static
       symbol_type
-      make_CONNECTION_KW ()
+      make_SEMICOLON (const location_type& l)
       {
-        return symbol_type (token::TOK_CONNECTION_KW);
+        return symbol_type (token::TOK_SEMICOLON, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_ARROW ()
+      make_DOT (location_type l)
       {
-        return symbol_type (token::TOK_ARROW);
+        return symbol_type (token::TOK_DOT, std::move (l));
       }
 #else
       static
       symbol_type
-      make_ARROW ()
+      make_DOT (const location_type& l)
       {
-        return symbol_type (token::TOK_ARROW);
+        return symbol_type (token::TOK_DOT, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_DOUBLECOLON ()
+      make_PLUS (location_type l)
       {
-        return symbol_type (token::TOK_DOUBLECOLON);
+        return symbol_type (token::TOK_PLUS, std::move (l));
       }
 #else
       static
       symbol_type
-      make_DOUBLECOLON ()
+      make_PLUS (const location_type& l)
       {
-        return symbol_type (token::TOK_DOUBLECOLON);
+        return symbol_type (token::TOK_PLUS, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_LBRACKET ()
+      make_MINUS (location_type l)
       {
-        return symbol_type (token::TOK_LBRACKET);
+        return symbol_type (token::TOK_MINUS, std::move (l));
       }
 #else
       static
       symbol_type
-      make_LBRACKET ()
+      make_MINUS (const location_type& l)
       {
-        return symbol_type (token::TOK_LBRACKET);
+        return symbol_type (token::TOK_MINUS, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_RBRACKET ()
+      make_MUL (location_type l)
       {
-        return symbol_type (token::TOK_RBRACKET);
+        return symbol_type (token::TOK_MUL, std::move (l));
       }
 #else
       static
       symbol_type
-      make_RBRACKET ()
+      make_MUL (const location_type& l)
       {
-        return symbol_type (token::TOK_RBRACKET);
+        return symbol_type (token::TOK_MUL, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_LBRACE ()
+      make_DIV (location_type l)
       {
-        return symbol_type (token::TOK_LBRACE);
+        return symbol_type (token::TOK_DIV, std::move (l));
       }
 #else
       static
       symbol_type
-      make_LBRACE ()
+      make_DIV (const location_type& l)
       {
-        return symbol_type (token::TOK_LBRACE);
+        return symbol_type (token::TOK_DIV, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_RBRACE ()
+      make_EQ (location_type l)
       {
-        return symbol_type (token::TOK_RBRACE);
+        return symbol_type (token::TOK_EQ, std::move (l));
       }
 #else
       static
       symbol_type
-      make_RBRACE ()
+      make_EQ (const location_type& l)
       {
-        return symbol_type (token::TOK_RBRACE);
+        return symbol_type (token::TOK_EQ, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_LPAREN ()
+      make_NE (location_type l)
       {
-        return symbol_type (token::TOK_LPAREN);
+        return symbol_type (token::TOK_NE, std::move (l));
       }
 #else
       static
       symbol_type
-      make_LPAREN ()
+      make_NE (const location_type& l)
       {
-        return symbol_type (token::TOK_LPAREN);
+        return symbol_type (token::TOK_NE, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_RPAREN ()
+      make_LL (location_type l)
       {
-        return symbol_type (token::TOK_RPAREN);
+        return symbol_type (token::TOK_LL, std::move (l));
       }
 #else
       static
       symbol_type
-      make_RPAREN ()
+      make_LL (const location_type& l)
       {
-        return symbol_type (token::TOK_RPAREN);
+        return symbol_type (token::TOK_LL, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_ASSIGN ()
+      make_GG (location_type l)
       {
-        return symbol_type (token::TOK_ASSIGN);
+        return symbol_type (token::TOK_GG, std::move (l));
       }
 #else
       static
       symbol_type
-      make_ASSIGN ()
+      make_GG (const location_type& l)
       {
-        return symbol_type (token::TOK_ASSIGN);
+        return symbol_type (token::TOK_GG, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_COMMA ()
+      make_LE (location_type l)
       {
-        return symbol_type (token::TOK_COMMA);
+        return symbol_type (token::TOK_LE, std::move (l));
       }
 #else
       static
       symbol_type
-      make_COMMA ()
+      make_LE (const location_type& l)
       {
-        return symbol_type (token::TOK_COMMA);
+        return symbol_type (token::TOK_LE, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_COLON ()
+      make_GE (location_type l)
       {
-        return symbol_type (token::TOK_COLON);
+        return symbol_type (token::TOK_GE, std::move (l));
       }
 #else
       static
       symbol_type
-      make_COLON ()
+      make_GE (const location_type& l)
       {
-        return symbol_type (token::TOK_COLON);
+        return symbol_type (token::TOK_GE, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_SEMICOLON ()
+      make_AND (location_type l)
       {
-        return symbol_type (token::TOK_SEMICOLON);
+        return symbol_type (token::TOK_AND, std::move (l));
       }
 #else
       static
       symbol_type
-      make_SEMICOLON ()
+      make_AND (const location_type& l)
       {
-        return symbol_type (token::TOK_SEMICOLON);
+        return symbol_type (token::TOK_AND, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_DOT ()
+      make_OR (location_type l)
       {
-        return symbol_type (token::TOK_DOT);
+        return symbol_type (token::TOK_OR, std::move (l));
       }
 #else
       static
       symbol_type
-      make_DOT ()
+      make_OR (const location_type& l)
       {
-        return symbol_type (token::TOK_DOT);
+        return symbol_type (token::TOK_OR, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_PLUS ()
+      make_NOT (location_type l)
       {
-        return symbol_type (token::TOK_PLUS);
+        return symbol_type (token::TOK_NOT, std::move (l));
       }
 #else
       static
       symbol_type
-      make_PLUS ()
+      make_NOT (const location_type& l)
       {
-        return symbol_type (token::TOK_PLUS);
+        return symbol_type (token::TOK_NOT, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_MINUS ()
+      make_UMINUS (location_type l)
       {
-        return symbol_type (token::TOK_MINUS);
+        return symbol_type (token::TOK_UMINUS, std::move (l));
       }
 #else
       static
       symbol_type
-      make_MINUS ()
+      make_UMINUS (const location_type& l)
       {
-        return symbol_type (token::TOK_MINUS);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_MUL ()
-      {
-        return symbol_type (token::TOK_MUL);
-      }
-#else
-      static
-      symbol_type
-      make_MUL ()
-      {
-        return symbol_type (token::TOK_MUL);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_DIV ()
-      {
-        return symbol_type (token::TOK_DIV);
-      }
-#else
-      static
-      symbol_type
-      make_DIV ()
-      {
-        return symbol_type (token::TOK_DIV);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_EQ ()
-      {
-        return symbol_type (token::TOK_EQ);
-      }
-#else
-      static
-      symbol_type
-      make_EQ ()
-      {
-        return symbol_type (token::TOK_EQ);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_NE ()
-      {
-        return symbol_type (token::TOK_NE);
-      }
-#else
-      static
-      symbol_type
-      make_NE ()
-      {
-        return symbol_type (token::TOK_NE);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_LL ()
-      {
-        return symbol_type (token::TOK_LL);
-      }
-#else
-      static
-      symbol_type
-      make_LL ()
-      {
-        return symbol_type (token::TOK_LL);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_GG ()
-      {
-        return symbol_type (token::TOK_GG);
-      }
-#else
-      static
-      symbol_type
-      make_GG ()
-      {
-        return symbol_type (token::TOK_GG);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_LE ()
-      {
-        return symbol_type (token::TOK_LE);
-      }
-#else
-      static
-      symbol_type
-      make_LE ()
-      {
-        return symbol_type (token::TOK_LE);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_GE ()
-      {
-        return symbol_type (token::TOK_GE);
-      }
-#else
-      static
-      symbol_type
-      make_GE ()
-      {
-        return symbol_type (token::TOK_GE);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_AND ()
-      {
-        return symbol_type (token::TOK_AND);
-      }
-#else
-      static
-      symbol_type
-      make_AND ()
-      {
-        return symbol_type (token::TOK_AND);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_OR ()
-      {
-        return symbol_type (token::TOK_OR);
-      }
-#else
-      static
-      symbol_type
-      make_OR ()
-      {
-        return symbol_type (token::TOK_OR);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_NOT ()
-      {
-        return symbol_type (token::TOK_NOT);
-      }
-#else
-      static
-      symbol_type
-      make_NOT ()
-      {
-        return symbol_type (token::TOK_NOT);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
-      make_UMINUS ()
-      {
-        return symbol_type (token::TOK_UMINUS);
-      }
-#else
-      static
-      symbol_type
-      make_UMINUS ()
-      {
-        return symbol_type (token::TOK_UMINUS);
+        return symbol_type (token::TOK_UMINUS, l);
       }
 #endif
 
@@ -2343,6 +2500,8 @@ switch (yykind)
       context (const Parser& yyparser, const symbol_type& yyla);
       const symbol_type& lookahead () const YY_NOEXCEPT { return yyla_; }
       symbol_kind_type token () const YY_NOEXCEPT { return yyla_.kind (); }
+      const location_type& location () const YY_NOEXCEPT { return yyla_.location; }
+
       /// Put in YYARG at most YYARGN of the expected tokens, and return the
       /// number of tokens stored in YYARG.  If YYARG is null, return the
       /// number of expected tokens (guaranteed to be less than YYNTOKENS).
@@ -2361,19 +2520,9 @@ switch (yykind)
     Parser& operator= (const Parser&);
 #endif
 
-    /// Check the lookahead yytoken.
-    /// \returns  true iff the token will be eventually shifted.
-    bool yy_lac_check_ (symbol_kind_type yytoken) const;
-    /// Establish the initial context if no initial context currently exists.
-    /// \returns  true iff the token will be eventually shifted.
-    bool yy_lac_establish_ (symbol_kind_type yytoken);
-    /// Discard any previous initial lookahead context because of event.
-    /// \param event  the event which caused the lookahead to be discarded.
-    ///               Only used for debbuging output.
-    void yy_lac_discard_ (const char* event);
 
     /// Stored state numbers (used for stacks).
-    typedef short state_type;
+    typedef unsigned char state_type;
 
     /// The arguments of the error message.
     int yy_syntax_error_arguments_ (const context& yyctx,
@@ -2403,6 +2552,11 @@ switch (yykind)
     /// are valid, yet not members of the token_kind_type enum.
     static symbol_kind_type yytranslate_ (int t) YY_NOEXCEPT;
 
+    /// Convert the symbol name \a n to a form suitable for a diagnostic.
+    static std::string yytnamerr_ (const char *yystr);
+
+    /// For a symbol, its name in clear.
+    static const char* const yytname_[];
 
 
     // Tables.
@@ -2646,15 +2800,6 @@ switch (yykind)
 
     /// The stack.
     stack_type yystack_;
-    /// The stack for LAC.
-    /// Logically, the yy_lac_stack's lifetime is confined to the function
-    /// yy_lac_check_. We just store it as a member of this class to hold
-    /// on to the memory and to avoid frequent reallocations.
-    /// Since yy_lac_check_ is const, this member must be mutable.
-    mutable std::vector<state_type> yylac_stack_;
-    /// Whether an initial LAC context was established.
-    bool yy_lac_established_;
-
 
     /// Push a new state on the stack.
     /// \param m    a debug message to display
@@ -2677,9 +2822,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 458,     ///< Last index in yytable_.
-      yynnts_ = 42,  ///< Number of nonterminal symbols.
-      yyfinal_ = 6 ///< Termination state number.
+      yylast_ = 866,     ///< Last index in yytable_.
+      yynnts_ = 45,  ///< Number of nonterminal symbols.
+      yyfinal_ = 3 ///< Termination state number.
     };
 
 
@@ -2725,11 +2870,10 @@ switch (yykind)
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
       25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
       35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
-      45,    46,    47,    48,    49,    50,    51,    52,    53,    54,
-      55,    56,    57,    58,    59,    60,    61,    62
+      45,    46,    47,    48,    49,    50
     };
     // Last valid token kind.
-    const int code_max = 317;
+    const int code_max = 305;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -2744,40 +2888,36 @@ switch (yykind)
   Parser::basic_symbol<Base>::basic_symbol (const basic_symbol& that)
     : Base (that)
     , value ()
+    , location (that.location)
   {
     switch (this->kind ())
     {
-      case symbol_kind::S_type_spec: // type_spec
-        value.copy< ParamType > (YY_MOVE (that.value));
-        break;
-
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_DOUBLE: // DOUBLE
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_STRING: // STRING
-      case symbol_kind::S_entry_clause: // entry_clause
+      case symbol_kind::S_entry_state: // entry_state
         value.copy< std::string > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_assign_target: // assign_target
+        value.copy< std::unique_ptr<AssignTarget> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_autotuner_decl: // autotuner_decl
         value.copy< std::unique_ptr<AutotunerDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_measurement_opt: // measurement_opt
+      case symbol_kind::S_call_arg: // call_arg
+        value.copy< std::unique_ptr<CallArg> > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_expr: // expr
+      case symbol_kind::S_postfix_expr: // postfix_expr
       case symbol_kind::S_primary_expr: // primary_expr
         value.copy< std::unique_ptr<Expr> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_loop_decl: // loop_decl
-        value.copy< std::unique_ptr<ForLoop> > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_mapping_decl: // mapping_decl
-        value.copy< std::unique_ptr<Mapping> > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_sig_param_decl: // sig_param_decl
       case symbol_kind::S_param_decl: // param_decl
         value.copy< std::unique_ptr<ParamDecl> > (YY_MOVE (that.value));
         break;
@@ -2786,73 +2926,86 @@ switch (yykind)
         value.copy< std::unique_ptr<Program> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_spec_decl: // spec_decl
-        value.copy< std::unique_ptr<SpecDecl> > (YY_MOVE (that.value));
+      case symbol_kind::S_routine_decl: // routine_decl
+        value.copy< std::unique_ptr<RoutineDecl> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_state_decl: // state_decl
         value.copy< std::unique_ptr<StateDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_trans_target: // trans_target
-        value.copy< std::unique_ptr<TransitionTarget> > (YY_MOVE (that.value));
+      case symbol_kind::S_struct_routine_stmt: // struct_routine_stmt
+      case symbol_kind::S_stmt: // stmt
+        value.copy< std::unique_ptr<Stmt> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_assignment_list: // assignment_list
-        value.copy< std::vector<Assignment> > (YY_MOVE (that.value));
+      case symbol_kind::S_struct_decl: // struct_decl
+        value.copy< std::unique_ptr<StructDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_autotuners: // autotuners
+      case symbol_kind::S_type_spec: // type_spec
+        value.copy< std::unique_ptr<TypeDescriptor> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_struct_field_decl: // struct_field_decl
+      case symbol_kind::S_var_decl_stmt: // var_decl_stmt
+        value.copy< std::unique_ptr<VarDeclStmt> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_assign_target_list: // assign_target_list
+        value.copy< std::vector<AssignTarget> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_autotuner_list: // autotuner_list
         value.copy< std::vector<AutotunerDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_loop_list: // loop_list
-        value.copy< std::vector<ForLoop> > (YY_MOVE (that.value));
+      case symbol_kind::S_call_arg_list: // call_arg_list
+        value.copy< std::vector<CallArg> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_mappings: // mappings
-      case symbol_kind::S_mapping_list: // mapping_list
-        value.copy< std::vector<Mapping> > (YY_MOVE (that.value));
+      case symbol_kind::S_routine_list: // routine_list
+      case symbol_kind::S_struct_routine_list: // struct_routine_list
+        value.copy< std::vector<RoutineDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_input_params: // input_params
-      case symbol_kind::S_output_params: // output_params
-      case symbol_kind::S_sig_param_list: // sig_param_list
-      case symbol_kind::S_params_block: // params_block
-      case symbol_kind::S_param_list: // param_list
-      case symbol_kind::S_state_params: // state_params
-      case symbol_kind::S_state_temps: // state_temps
-        value.copy< std::vector<ParamDecl> > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_spec_inputs: // spec_inputs
-      case symbol_kind::S_spec_outputs: // spec_outputs
-      case symbol_kind::S_spec_list: // spec_list
-        value.copy< std::vector<SpecDecl> > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_loop_states: // loop_states
-      case symbol_kind::S_states: // states
       case symbol_kind::S_state_list: // state_list
         value.copy< std::vector<StateDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_transition_list: // transition_list
-      case symbol_kind::S_transition_decl: // transition_decl
-      case symbol_kind::S_simple_transition: // simple_transition
-        value.copy< std::vector<Transition> > (YY_MOVE (that.value));
+      case symbol_kind::S_struct_decl_list: // struct_decl_list
+        value.copy< std::vector<StructDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_generic_params: // generic_params
+      case symbol_kind::S_struct_field_list: // struct_field_list
+        value.copy< std::vector<VarDeclStmt> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_import_list: // import_list
+      case symbol_kind::S_import_stmt: // import_stmt
+      case symbol_kind::S_import_string_list: // import_string_list
       case symbol_kind::S_requires_clause: // requires_clause
-      case symbol_kind::S_separated_idents: // separated_idents
-      case symbol_kind::S_separated_strings: // separated_strings
+      case symbol_kind::S_identifier_list: // identifier_list
         value.copy< std::vector<std::string> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_arg_list: // arg_list
-      case symbol_kind::S_nonempty_arg_list: // nonempty_arg_list
+      case symbol_kind::S_entry_params: // entry_params
+      case symbol_kind::S_expr_list: // expr_list
         value.copy< std::vector<std::unique_ptr<Expr>> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_input_params: // input_params
+      case symbol_kind::S_output_params: // output_params
+      case symbol_kind::S_param_decl_list: // param_decl_list
+      case symbol_kind::S_state_input_params: // state_input_params
+        value.copy< std::vector<std::unique_ptr<ParamDecl>> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_routine_body: // routine_body
+      case symbol_kind::S_autotuner_var_decls: // autotuner_var_decls
+      case symbol_kind::S_stmt_list: // stmt_list
+      case symbol_kind::S_elif_chain: // elif_chain
+        value.copy< std::vector<std::unique_ptr<Stmt>> > (YY_MOVE (that.value));
         break;
 
       default:
@@ -2886,37 +3039,32 @@ switch (yykind)
     super_type::move (s);
     switch (this->kind ())
     {
-      case symbol_kind::S_type_spec: // type_spec
-        value.move< ParamType > (YY_MOVE (s.value));
-        break;
-
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_DOUBLE: // DOUBLE
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_STRING: // STRING
-      case symbol_kind::S_entry_clause: // entry_clause
+      case symbol_kind::S_entry_state: // entry_state
         value.move< std::string > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_assign_target: // assign_target
+        value.move< std::unique_ptr<AssignTarget> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_autotuner_decl: // autotuner_decl
         value.move< std::unique_ptr<AutotunerDecl> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_measurement_opt: // measurement_opt
+      case symbol_kind::S_call_arg: // call_arg
+        value.move< std::unique_ptr<CallArg> > (YY_MOVE (s.value));
+        break;
+
       case symbol_kind::S_expr: // expr
+      case symbol_kind::S_postfix_expr: // postfix_expr
       case symbol_kind::S_primary_expr: // primary_expr
         value.move< std::unique_ptr<Expr> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_loop_decl: // loop_decl
-        value.move< std::unique_ptr<ForLoop> > (YY_MOVE (s.value));
-        break;
-
-      case symbol_kind::S_mapping_decl: // mapping_decl
-        value.move< std::unique_ptr<Mapping> > (YY_MOVE (s.value));
-        break;
-
-      case symbol_kind::S_sig_param_decl: // sig_param_decl
       case symbol_kind::S_param_decl: // param_decl
         value.move< std::unique_ptr<ParamDecl> > (YY_MOVE (s.value));
         break;
@@ -2925,79 +3073,93 @@ switch (yykind)
         value.move< std::unique_ptr<Program> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_spec_decl: // spec_decl
-        value.move< std::unique_ptr<SpecDecl> > (YY_MOVE (s.value));
+      case symbol_kind::S_routine_decl: // routine_decl
+        value.move< std::unique_ptr<RoutineDecl> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_state_decl: // state_decl
         value.move< std::unique_ptr<StateDecl> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_trans_target: // trans_target
-        value.move< std::unique_ptr<TransitionTarget> > (YY_MOVE (s.value));
+      case symbol_kind::S_struct_routine_stmt: // struct_routine_stmt
+      case symbol_kind::S_stmt: // stmt
+        value.move< std::unique_ptr<Stmt> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_assignment_list: // assignment_list
-        value.move< std::vector<Assignment> > (YY_MOVE (s.value));
+      case symbol_kind::S_struct_decl: // struct_decl
+        value.move< std::unique_ptr<StructDecl> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_autotuners: // autotuners
+      case symbol_kind::S_type_spec: // type_spec
+        value.move< std::unique_ptr<TypeDescriptor> > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_struct_field_decl: // struct_field_decl
+      case symbol_kind::S_var_decl_stmt: // var_decl_stmt
+        value.move< std::unique_ptr<VarDeclStmt> > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_assign_target_list: // assign_target_list
+        value.move< std::vector<AssignTarget> > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_autotuner_list: // autotuner_list
         value.move< std::vector<AutotunerDecl> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_loop_list: // loop_list
-        value.move< std::vector<ForLoop> > (YY_MOVE (s.value));
+      case symbol_kind::S_call_arg_list: // call_arg_list
+        value.move< std::vector<CallArg> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_mappings: // mappings
-      case symbol_kind::S_mapping_list: // mapping_list
-        value.move< std::vector<Mapping> > (YY_MOVE (s.value));
+      case symbol_kind::S_routine_list: // routine_list
+      case symbol_kind::S_struct_routine_list: // struct_routine_list
+        value.move< std::vector<RoutineDecl> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_input_params: // input_params
-      case symbol_kind::S_output_params: // output_params
-      case symbol_kind::S_sig_param_list: // sig_param_list
-      case symbol_kind::S_params_block: // params_block
-      case symbol_kind::S_param_list: // param_list
-      case symbol_kind::S_state_params: // state_params
-      case symbol_kind::S_state_temps: // state_temps
-        value.move< std::vector<ParamDecl> > (YY_MOVE (s.value));
-        break;
-
-      case symbol_kind::S_spec_inputs: // spec_inputs
-      case symbol_kind::S_spec_outputs: // spec_outputs
-      case symbol_kind::S_spec_list: // spec_list
-        value.move< std::vector<SpecDecl> > (YY_MOVE (s.value));
-        break;
-
-      case symbol_kind::S_loop_states: // loop_states
-      case symbol_kind::S_states: // states
       case symbol_kind::S_state_list: // state_list
         value.move< std::vector<StateDecl> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_transition_list: // transition_list
-      case symbol_kind::S_transition_decl: // transition_decl
-      case symbol_kind::S_simple_transition: // simple_transition
-        value.move< std::vector<Transition> > (YY_MOVE (s.value));
+      case symbol_kind::S_struct_decl_list: // struct_decl_list
+        value.move< std::vector<StructDecl> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_generic_params: // generic_params
+      case symbol_kind::S_struct_field_list: // struct_field_list
+        value.move< std::vector<VarDeclStmt> > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_import_list: // import_list
+      case symbol_kind::S_import_stmt: // import_stmt
+      case symbol_kind::S_import_string_list: // import_string_list
       case symbol_kind::S_requires_clause: // requires_clause
-      case symbol_kind::S_separated_idents: // separated_idents
-      case symbol_kind::S_separated_strings: // separated_strings
+      case symbol_kind::S_identifier_list: // identifier_list
         value.move< std::vector<std::string> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_arg_list: // arg_list
-      case symbol_kind::S_nonempty_arg_list: // nonempty_arg_list
+      case symbol_kind::S_entry_params: // entry_params
+      case symbol_kind::S_expr_list: // expr_list
         value.move< std::vector<std::unique_ptr<Expr>> > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_input_params: // input_params
+      case symbol_kind::S_output_params: // output_params
+      case symbol_kind::S_param_decl_list: // param_decl_list
+      case symbol_kind::S_state_input_params: // state_input_params
+        value.move< std::vector<std::unique_ptr<ParamDecl>> > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_routine_body: // routine_body
+      case symbol_kind::S_autotuner_var_decls: // autotuner_var_decls
+      case symbol_kind::S_stmt_list: // stmt_list
+      case symbol_kind::S_elif_chain: // elif_chain
+        value.move< std::vector<std::unique_ptr<Stmt>> > (YY_MOVE (s.value));
         break;
 
       default:
         break;
     }
 
+    location = YY_MOVE (s.location);
   }
 
   // by_kind.
@@ -3052,7 +3214,7 @@ switch (yykind)
 
 #line 4 "./compiler/src/parser.y"
 } } // falcon::atc
-#line 3056 "parser.tab.cc"
+#line 3218 "parser.tab.cc"
 
 
 
@@ -3060,18 +3222,106 @@ switch (yykind)
 
 
 // Unqualified %code blocks.
-#line 24 "./compiler/src/parser.y"
+#line 23 "./compiler/src/parser.y"
 
   #include <iostream>
   
   namespace falcon::atc {
-    // Correct signature for api.token.constructor - returns symbol_type directly
     Parser::symbol_type yylex();
   }
   
   std::unique_ptr<falcon::atc::Program> program_root;
+  std::vector<falcon::atc::ParseError> current_errors;
+  
+  // Scope tracking for variable declarations
+  std::set<std::string> autotuner_scope;      // Autotuner-level variables
+  std::set<std::string> autotuner_input_params;   // Input parameters (read-only)
+  std::set<std::string> autotuner_output_params;  // Output parameters (read/write)
+  std::set<std::string> state_local_scope;    // State-local variables
+  std::set<std::string> state_input_params;    // Current state's input parameter
+  
+  void clear_autotuner_scope() {
+    autotuner_scope.clear();
+    autotuner_input_params.clear();
+    autotuner_output_params.clear();
+    state_local_scope.clear();
+    state_input_params.clear();
+  }
+  
+  void clear_state_scope() {
+    state_local_scope.clear();
+    state_input_params.clear();
+  }  
 
-#line 3075 "parser.tab.cc"
+  // -----------------------------------------------------------------------
+  // Struct context tracking
+  // -----------------------------------------------------------------------
+
+  // Names of all struct types declared so far in this file.
+  // Used by type_spec to allow struct names as types.
+  std::set<std::string> struct_known_types;
+
+  // The set of field names belonging to the struct currently being parsed.
+  // Populated while parsing struct_field_list, cleared after each struct_decl.
+  std::set<std::string> struct_field_scope;
+
+  // True while we are inside a struct routine body.
+  // When true, bare IDENTIFIER = expr is checked against struct_field_scope
+  // first (becomes a StructFieldAssignStmt targeting "self").
+  bool in_struct_routine = false;
+
+  void enter_struct_routine() {
+    in_struct_routine = true;
+    // struct routine has its own mini-scope for input/output params
+    autotuner_input_params.clear();
+    autotuner_output_params.clear();
+    state_local_scope.clear();
+    state_input_params.clear();
+  }
+
+  void leave_struct_routine() {
+    in_struct_routine = false;
+    autotuner_input_params.clear();
+    autotuner_output_params.clear();
+    state_local_scope.clear();
+    state_input_params.clear();
+  }
+  
+  bool is_variable_declared(const std::string& name) {
+    // When inside a struct routine, bare field names are implicitly in scope
+    if (in_struct_routine && struct_field_scope.count(name) > 0) return true;
+    return autotuner_scope.count(name) > 0 ||
+           autotuner_input_params.count(name) > 0 ||
+           autotuner_output_params.count(name) > 0 ||
+           state_local_scope.count(name) > 0 ||
+           state_input_params.count(name) > 0;
+  }
+  
+  bool is_redeclaration(const std::string& name, bool in_state) {
+    if (in_state) {
+      // In state: can't redeclare autotuner-level vars, input params, output params, or state input param
+      return autotuner_scope.count(name) > 0 ||
+             autotuner_input_params.count(name) > 0 ||
+             autotuner_output_params.count(name) > 0 ||
+             state_input_params.count(name) > 0 ||
+             state_local_scope.count(name) > 0;
+    } else {
+      // At autotuner level: can't redeclare autotuner vars, input params, or output params
+      return autotuner_scope.count(name) > 0 ||
+             autotuner_input_params.count(name) > 0 ||
+             autotuner_output_params.count(name) > 0;
+    }
+  }
+
+  void set_stmt_location(falcon::atc::Stmt* stmt, const falcon::atc::Parser::location_type& loc) {
+    if (stmt) {
+      stmt->filename = falcon::atc::current_filename;
+      stmt->line = loc.begin.line;
+      stmt->column = loc.begin.column;
+    }
+  }
+
+#line 3325 "parser.tab.cc"
 
 
 #ifndef YY_
@@ -3096,6 +3346,25 @@ switch (yykind)
 # endif
 #endif
 
+#define YYRHSLOC(Rhs, K) ((Rhs)[K].location)
+/* YYLLOC_DEFAULT -- Set CURRENT to span from RHS[1] to RHS[N].
+   If N is 0, then set CURRENT to the empty location which ends
+   the previous symbol: RHS[0] (always defined).  */
+
+# ifndef YYLLOC_DEFAULT
+#  define YYLLOC_DEFAULT(Current, Rhs, N)                               \
+    do                                                                  \
+      if (N)                                                            \
+        {                                                               \
+          (Current).begin  = YYRHSLOC (Rhs, 1).begin;                   \
+          (Current).end    = YYRHSLOC (Rhs, N).end;                     \
+        }                                                               \
+      else                                                              \
+        {                                                               \
+          (Current).begin = (Current).end = YYRHSLOC (Rhs, 0).end;      \
+        }                                                               \
+    while (false)
+# endif
 
 
 // Enable debugging if requested.
@@ -3145,17 +3414,16 @@ switch (yykind)
 
 #line 4 "./compiler/src/parser.y"
 namespace falcon { namespace atc {
-#line 3149 "parser.tab.cc"
+#line 3418 "parser.tab.cc"
 
   /// Build a parser object.
   Parser::Parser ()
 #if YYDEBUG
     : yydebug_ (false),
-      yycdebug_ (&std::cerr),
+      yycdebug_ (&std::cerr)
 #else
-    :
+
 #endif
-      yy_lac_established_ (false)
   {}
 
   Parser::~Parser ()
@@ -3209,41 +3477,36 @@ namespace falcon { namespace atc {
   {}
 
   Parser::stack_symbol_type::stack_symbol_type (YY_RVREF (stack_symbol_type) that)
-    : super_type (YY_MOVE (that.state))
+    : super_type (YY_MOVE (that.state), YY_MOVE (that.location))
   {
     switch (that.kind ())
     {
-      case symbol_kind::S_type_spec: // type_spec
-        value.YY_MOVE_OR_COPY< ParamType > (YY_MOVE (that.value));
-        break;
-
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_DOUBLE: // DOUBLE
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_STRING: // STRING
-      case symbol_kind::S_entry_clause: // entry_clause
+      case symbol_kind::S_entry_state: // entry_state
         value.YY_MOVE_OR_COPY< std::string > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_assign_target: // assign_target
+        value.YY_MOVE_OR_COPY< std::unique_ptr<AssignTarget> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_autotuner_decl: // autotuner_decl
         value.YY_MOVE_OR_COPY< std::unique_ptr<AutotunerDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_measurement_opt: // measurement_opt
+      case symbol_kind::S_call_arg: // call_arg
+        value.YY_MOVE_OR_COPY< std::unique_ptr<CallArg> > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_expr: // expr
+      case symbol_kind::S_postfix_expr: // postfix_expr
       case symbol_kind::S_primary_expr: // primary_expr
         value.YY_MOVE_OR_COPY< std::unique_ptr<Expr> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_loop_decl: // loop_decl
-        value.YY_MOVE_OR_COPY< std::unique_ptr<ForLoop> > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_mapping_decl: // mapping_decl
-        value.YY_MOVE_OR_COPY< std::unique_ptr<Mapping> > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_sig_param_decl: // sig_param_decl
       case symbol_kind::S_param_decl: // param_decl
         value.YY_MOVE_OR_COPY< std::unique_ptr<ParamDecl> > (YY_MOVE (that.value));
         break;
@@ -3252,73 +3515,86 @@ namespace falcon { namespace atc {
         value.YY_MOVE_OR_COPY< std::unique_ptr<Program> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_spec_decl: // spec_decl
-        value.YY_MOVE_OR_COPY< std::unique_ptr<SpecDecl> > (YY_MOVE (that.value));
+      case symbol_kind::S_routine_decl: // routine_decl
+        value.YY_MOVE_OR_COPY< std::unique_ptr<RoutineDecl> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_state_decl: // state_decl
         value.YY_MOVE_OR_COPY< std::unique_ptr<StateDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_trans_target: // trans_target
-        value.YY_MOVE_OR_COPY< std::unique_ptr<TransitionTarget> > (YY_MOVE (that.value));
+      case symbol_kind::S_struct_routine_stmt: // struct_routine_stmt
+      case symbol_kind::S_stmt: // stmt
+        value.YY_MOVE_OR_COPY< std::unique_ptr<Stmt> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_assignment_list: // assignment_list
-        value.YY_MOVE_OR_COPY< std::vector<Assignment> > (YY_MOVE (that.value));
+      case symbol_kind::S_struct_decl: // struct_decl
+        value.YY_MOVE_OR_COPY< std::unique_ptr<StructDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_autotuners: // autotuners
+      case symbol_kind::S_type_spec: // type_spec
+        value.YY_MOVE_OR_COPY< std::unique_ptr<TypeDescriptor> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_struct_field_decl: // struct_field_decl
+      case symbol_kind::S_var_decl_stmt: // var_decl_stmt
+        value.YY_MOVE_OR_COPY< std::unique_ptr<VarDeclStmt> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_assign_target_list: // assign_target_list
+        value.YY_MOVE_OR_COPY< std::vector<AssignTarget> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_autotuner_list: // autotuner_list
         value.YY_MOVE_OR_COPY< std::vector<AutotunerDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_loop_list: // loop_list
-        value.YY_MOVE_OR_COPY< std::vector<ForLoop> > (YY_MOVE (that.value));
+      case symbol_kind::S_call_arg_list: // call_arg_list
+        value.YY_MOVE_OR_COPY< std::vector<CallArg> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_mappings: // mappings
-      case symbol_kind::S_mapping_list: // mapping_list
-        value.YY_MOVE_OR_COPY< std::vector<Mapping> > (YY_MOVE (that.value));
+      case symbol_kind::S_routine_list: // routine_list
+      case symbol_kind::S_struct_routine_list: // struct_routine_list
+        value.YY_MOVE_OR_COPY< std::vector<RoutineDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_input_params: // input_params
-      case symbol_kind::S_output_params: // output_params
-      case symbol_kind::S_sig_param_list: // sig_param_list
-      case symbol_kind::S_params_block: // params_block
-      case symbol_kind::S_param_list: // param_list
-      case symbol_kind::S_state_params: // state_params
-      case symbol_kind::S_state_temps: // state_temps
-        value.YY_MOVE_OR_COPY< std::vector<ParamDecl> > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_spec_inputs: // spec_inputs
-      case symbol_kind::S_spec_outputs: // spec_outputs
-      case symbol_kind::S_spec_list: // spec_list
-        value.YY_MOVE_OR_COPY< std::vector<SpecDecl> > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_loop_states: // loop_states
-      case symbol_kind::S_states: // states
       case symbol_kind::S_state_list: // state_list
         value.YY_MOVE_OR_COPY< std::vector<StateDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_transition_list: // transition_list
-      case symbol_kind::S_transition_decl: // transition_decl
-      case symbol_kind::S_simple_transition: // simple_transition
-        value.YY_MOVE_OR_COPY< std::vector<Transition> > (YY_MOVE (that.value));
+      case symbol_kind::S_struct_decl_list: // struct_decl_list
+        value.YY_MOVE_OR_COPY< std::vector<StructDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_generic_params: // generic_params
+      case symbol_kind::S_struct_field_list: // struct_field_list
+        value.YY_MOVE_OR_COPY< std::vector<VarDeclStmt> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_import_list: // import_list
+      case symbol_kind::S_import_stmt: // import_stmt
+      case symbol_kind::S_import_string_list: // import_string_list
       case symbol_kind::S_requires_clause: // requires_clause
-      case symbol_kind::S_separated_idents: // separated_idents
-      case symbol_kind::S_separated_strings: // separated_strings
+      case symbol_kind::S_identifier_list: // identifier_list
         value.YY_MOVE_OR_COPY< std::vector<std::string> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_arg_list: // arg_list
-      case symbol_kind::S_nonempty_arg_list: // nonempty_arg_list
+      case symbol_kind::S_entry_params: // entry_params
+      case symbol_kind::S_expr_list: // expr_list
         value.YY_MOVE_OR_COPY< std::vector<std::unique_ptr<Expr>> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_input_params: // input_params
+      case symbol_kind::S_output_params: // output_params
+      case symbol_kind::S_param_decl_list: // param_decl_list
+      case symbol_kind::S_state_input_params: // state_input_params
+        value.YY_MOVE_OR_COPY< std::vector<std::unique_ptr<ParamDecl>> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_routine_body: // routine_body
+      case symbol_kind::S_autotuner_var_decls: // autotuner_var_decls
+      case symbol_kind::S_stmt_list: // stmt_list
+      case symbol_kind::S_elif_chain: // elif_chain
+        value.YY_MOVE_OR_COPY< std::vector<std::unique_ptr<Stmt>> > (YY_MOVE (that.value));
         break;
 
       default:
@@ -3332,41 +3608,36 @@ namespace falcon { namespace atc {
   }
 
   Parser::stack_symbol_type::stack_symbol_type (state_type s, YY_MOVE_REF (symbol_type) that)
-    : super_type (s)
+    : super_type (s, YY_MOVE (that.location))
   {
     switch (that.kind ())
     {
-      case symbol_kind::S_type_spec: // type_spec
-        value.move< ParamType > (YY_MOVE (that.value));
-        break;
-
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_DOUBLE: // DOUBLE
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_STRING: // STRING
-      case symbol_kind::S_entry_clause: // entry_clause
+      case symbol_kind::S_entry_state: // entry_state
         value.move< std::string > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_assign_target: // assign_target
+        value.move< std::unique_ptr<AssignTarget> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_autotuner_decl: // autotuner_decl
         value.move< std::unique_ptr<AutotunerDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_measurement_opt: // measurement_opt
+      case symbol_kind::S_call_arg: // call_arg
+        value.move< std::unique_ptr<CallArg> > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_expr: // expr
+      case symbol_kind::S_postfix_expr: // postfix_expr
       case symbol_kind::S_primary_expr: // primary_expr
         value.move< std::unique_ptr<Expr> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_loop_decl: // loop_decl
-        value.move< std::unique_ptr<ForLoop> > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_mapping_decl: // mapping_decl
-        value.move< std::unique_ptr<Mapping> > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_sig_param_decl: // sig_param_decl
       case symbol_kind::S_param_decl: // param_decl
         value.move< std::unique_ptr<ParamDecl> > (YY_MOVE (that.value));
         break;
@@ -3375,73 +3646,86 @@ namespace falcon { namespace atc {
         value.move< std::unique_ptr<Program> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_spec_decl: // spec_decl
-        value.move< std::unique_ptr<SpecDecl> > (YY_MOVE (that.value));
+      case symbol_kind::S_routine_decl: // routine_decl
+        value.move< std::unique_ptr<RoutineDecl> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_state_decl: // state_decl
         value.move< std::unique_ptr<StateDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_trans_target: // trans_target
-        value.move< std::unique_ptr<TransitionTarget> > (YY_MOVE (that.value));
+      case symbol_kind::S_struct_routine_stmt: // struct_routine_stmt
+      case symbol_kind::S_stmt: // stmt
+        value.move< std::unique_ptr<Stmt> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_assignment_list: // assignment_list
-        value.move< std::vector<Assignment> > (YY_MOVE (that.value));
+      case symbol_kind::S_struct_decl: // struct_decl
+        value.move< std::unique_ptr<StructDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_autotuners: // autotuners
+      case symbol_kind::S_type_spec: // type_spec
+        value.move< std::unique_ptr<TypeDescriptor> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_struct_field_decl: // struct_field_decl
+      case symbol_kind::S_var_decl_stmt: // var_decl_stmt
+        value.move< std::unique_ptr<VarDeclStmt> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_assign_target_list: // assign_target_list
+        value.move< std::vector<AssignTarget> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_autotuner_list: // autotuner_list
         value.move< std::vector<AutotunerDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_loop_list: // loop_list
-        value.move< std::vector<ForLoop> > (YY_MOVE (that.value));
+      case symbol_kind::S_call_arg_list: // call_arg_list
+        value.move< std::vector<CallArg> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_mappings: // mappings
-      case symbol_kind::S_mapping_list: // mapping_list
-        value.move< std::vector<Mapping> > (YY_MOVE (that.value));
+      case symbol_kind::S_routine_list: // routine_list
+      case symbol_kind::S_struct_routine_list: // struct_routine_list
+        value.move< std::vector<RoutineDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_input_params: // input_params
-      case symbol_kind::S_output_params: // output_params
-      case symbol_kind::S_sig_param_list: // sig_param_list
-      case symbol_kind::S_params_block: // params_block
-      case symbol_kind::S_param_list: // param_list
-      case symbol_kind::S_state_params: // state_params
-      case symbol_kind::S_state_temps: // state_temps
-        value.move< std::vector<ParamDecl> > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_spec_inputs: // spec_inputs
-      case symbol_kind::S_spec_outputs: // spec_outputs
-      case symbol_kind::S_spec_list: // spec_list
-        value.move< std::vector<SpecDecl> > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_loop_states: // loop_states
-      case symbol_kind::S_states: // states
       case symbol_kind::S_state_list: // state_list
         value.move< std::vector<StateDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_transition_list: // transition_list
-      case symbol_kind::S_transition_decl: // transition_decl
-      case symbol_kind::S_simple_transition: // simple_transition
-        value.move< std::vector<Transition> > (YY_MOVE (that.value));
+      case symbol_kind::S_struct_decl_list: // struct_decl_list
+        value.move< std::vector<StructDecl> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_generic_params: // generic_params
+      case symbol_kind::S_struct_field_list: // struct_field_list
+        value.move< std::vector<VarDeclStmt> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_import_list: // import_list
+      case symbol_kind::S_import_stmt: // import_stmt
+      case symbol_kind::S_import_string_list: // import_string_list
       case symbol_kind::S_requires_clause: // requires_clause
-      case symbol_kind::S_separated_idents: // separated_idents
-      case symbol_kind::S_separated_strings: // separated_strings
+      case symbol_kind::S_identifier_list: // identifier_list
         value.move< std::vector<std::string> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_arg_list: // arg_list
-      case symbol_kind::S_nonempty_arg_list: // nonempty_arg_list
+      case symbol_kind::S_entry_params: // entry_params
+      case symbol_kind::S_expr_list: // expr_list
         value.move< std::vector<std::unique_ptr<Expr>> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_input_params: // input_params
+      case symbol_kind::S_output_params: // output_params
+      case symbol_kind::S_param_decl_list: // param_decl_list
+      case symbol_kind::S_state_input_params: // state_input_params
+        value.move< std::vector<std::unique_ptr<ParamDecl>> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_routine_body: // routine_body
+      case symbol_kind::S_autotuner_var_decls: // autotuner_var_decls
+      case symbol_kind::S_stmt_list: // stmt_list
+      case symbol_kind::S_elif_chain: // elif_chain
+        value.move< std::vector<std::unique_ptr<Stmt>> > (YY_MOVE (that.value));
         break;
 
       default:
@@ -3459,37 +3743,32 @@ namespace falcon { namespace atc {
     state = that.state;
     switch (that.kind ())
     {
-      case symbol_kind::S_type_spec: // type_spec
-        value.copy< ParamType > (that.value);
-        break;
-
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_DOUBLE: // DOUBLE
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_STRING: // STRING
-      case symbol_kind::S_entry_clause: // entry_clause
+      case symbol_kind::S_entry_state: // entry_state
         value.copy< std::string > (that.value);
+        break;
+
+      case symbol_kind::S_assign_target: // assign_target
+        value.copy< std::unique_ptr<AssignTarget> > (that.value);
         break;
 
       case symbol_kind::S_autotuner_decl: // autotuner_decl
         value.copy< std::unique_ptr<AutotunerDecl> > (that.value);
         break;
 
-      case symbol_kind::S_measurement_opt: // measurement_opt
+      case symbol_kind::S_call_arg: // call_arg
+        value.copy< std::unique_ptr<CallArg> > (that.value);
+        break;
+
       case symbol_kind::S_expr: // expr
+      case symbol_kind::S_postfix_expr: // postfix_expr
       case symbol_kind::S_primary_expr: // primary_expr
         value.copy< std::unique_ptr<Expr> > (that.value);
         break;
 
-      case symbol_kind::S_loop_decl: // loop_decl
-        value.copy< std::unique_ptr<ForLoop> > (that.value);
-        break;
-
-      case symbol_kind::S_mapping_decl: // mapping_decl
-        value.copy< std::unique_ptr<Mapping> > (that.value);
-        break;
-
-      case symbol_kind::S_sig_param_decl: // sig_param_decl
       case symbol_kind::S_param_decl: // param_decl
         value.copy< std::unique_ptr<ParamDecl> > (that.value);
         break;
@@ -3498,79 +3777,93 @@ namespace falcon { namespace atc {
         value.copy< std::unique_ptr<Program> > (that.value);
         break;
 
-      case symbol_kind::S_spec_decl: // spec_decl
-        value.copy< std::unique_ptr<SpecDecl> > (that.value);
+      case symbol_kind::S_routine_decl: // routine_decl
+        value.copy< std::unique_ptr<RoutineDecl> > (that.value);
         break;
 
       case symbol_kind::S_state_decl: // state_decl
         value.copy< std::unique_ptr<StateDecl> > (that.value);
         break;
 
-      case symbol_kind::S_trans_target: // trans_target
-        value.copy< std::unique_ptr<TransitionTarget> > (that.value);
+      case symbol_kind::S_struct_routine_stmt: // struct_routine_stmt
+      case symbol_kind::S_stmt: // stmt
+        value.copy< std::unique_ptr<Stmt> > (that.value);
         break;
 
-      case symbol_kind::S_assignment_list: // assignment_list
-        value.copy< std::vector<Assignment> > (that.value);
+      case symbol_kind::S_struct_decl: // struct_decl
+        value.copy< std::unique_ptr<StructDecl> > (that.value);
         break;
 
-      case symbol_kind::S_autotuners: // autotuners
+      case symbol_kind::S_type_spec: // type_spec
+        value.copy< std::unique_ptr<TypeDescriptor> > (that.value);
+        break;
+
+      case symbol_kind::S_struct_field_decl: // struct_field_decl
+      case symbol_kind::S_var_decl_stmt: // var_decl_stmt
+        value.copy< std::unique_ptr<VarDeclStmt> > (that.value);
+        break;
+
+      case symbol_kind::S_assign_target_list: // assign_target_list
+        value.copy< std::vector<AssignTarget> > (that.value);
+        break;
+
+      case symbol_kind::S_autotuner_list: // autotuner_list
         value.copy< std::vector<AutotunerDecl> > (that.value);
         break;
 
-      case symbol_kind::S_loop_list: // loop_list
-        value.copy< std::vector<ForLoop> > (that.value);
+      case symbol_kind::S_call_arg_list: // call_arg_list
+        value.copy< std::vector<CallArg> > (that.value);
         break;
 
-      case symbol_kind::S_mappings: // mappings
-      case symbol_kind::S_mapping_list: // mapping_list
-        value.copy< std::vector<Mapping> > (that.value);
+      case symbol_kind::S_routine_list: // routine_list
+      case symbol_kind::S_struct_routine_list: // struct_routine_list
+        value.copy< std::vector<RoutineDecl> > (that.value);
         break;
 
-      case symbol_kind::S_input_params: // input_params
-      case symbol_kind::S_output_params: // output_params
-      case symbol_kind::S_sig_param_list: // sig_param_list
-      case symbol_kind::S_params_block: // params_block
-      case symbol_kind::S_param_list: // param_list
-      case symbol_kind::S_state_params: // state_params
-      case symbol_kind::S_state_temps: // state_temps
-        value.copy< std::vector<ParamDecl> > (that.value);
-        break;
-
-      case symbol_kind::S_spec_inputs: // spec_inputs
-      case symbol_kind::S_spec_outputs: // spec_outputs
-      case symbol_kind::S_spec_list: // spec_list
-        value.copy< std::vector<SpecDecl> > (that.value);
-        break;
-
-      case symbol_kind::S_loop_states: // loop_states
-      case symbol_kind::S_states: // states
       case symbol_kind::S_state_list: // state_list
         value.copy< std::vector<StateDecl> > (that.value);
         break;
 
-      case symbol_kind::S_transition_list: // transition_list
-      case symbol_kind::S_transition_decl: // transition_decl
-      case symbol_kind::S_simple_transition: // simple_transition
-        value.copy< std::vector<Transition> > (that.value);
+      case symbol_kind::S_struct_decl_list: // struct_decl_list
+        value.copy< std::vector<StructDecl> > (that.value);
         break;
 
-      case symbol_kind::S_generic_params: // generic_params
+      case symbol_kind::S_struct_field_list: // struct_field_list
+        value.copy< std::vector<VarDeclStmt> > (that.value);
+        break;
+
+      case symbol_kind::S_import_list: // import_list
+      case symbol_kind::S_import_stmt: // import_stmt
+      case symbol_kind::S_import_string_list: // import_string_list
       case symbol_kind::S_requires_clause: // requires_clause
-      case symbol_kind::S_separated_idents: // separated_idents
-      case symbol_kind::S_separated_strings: // separated_strings
+      case symbol_kind::S_identifier_list: // identifier_list
         value.copy< std::vector<std::string> > (that.value);
         break;
 
-      case symbol_kind::S_arg_list: // arg_list
-      case symbol_kind::S_nonempty_arg_list: // nonempty_arg_list
+      case symbol_kind::S_entry_params: // entry_params
+      case symbol_kind::S_expr_list: // expr_list
         value.copy< std::vector<std::unique_ptr<Expr>> > (that.value);
+        break;
+
+      case symbol_kind::S_input_params: // input_params
+      case symbol_kind::S_output_params: // output_params
+      case symbol_kind::S_param_decl_list: // param_decl_list
+      case symbol_kind::S_state_input_params: // state_input_params
+        value.copy< std::vector<std::unique_ptr<ParamDecl>> > (that.value);
+        break;
+
+      case symbol_kind::S_routine_body: // routine_body
+      case symbol_kind::S_autotuner_var_decls: // autotuner_var_decls
+      case symbol_kind::S_stmt_list: // stmt_list
+      case symbol_kind::S_elif_chain: // elif_chain
+        value.copy< std::vector<std::unique_ptr<Stmt>> > (that.value);
         break;
 
       default:
         break;
     }
 
+    location = that.location;
     return *this;
   }
 
@@ -3580,37 +3873,32 @@ namespace falcon { namespace atc {
     state = that.state;
     switch (that.kind ())
     {
-      case symbol_kind::S_type_spec: // type_spec
-        value.move< ParamType > (that.value);
-        break;
-
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_DOUBLE: // DOUBLE
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_STRING: // STRING
-      case symbol_kind::S_entry_clause: // entry_clause
+      case symbol_kind::S_entry_state: // entry_state
         value.move< std::string > (that.value);
+        break;
+
+      case symbol_kind::S_assign_target: // assign_target
+        value.move< std::unique_ptr<AssignTarget> > (that.value);
         break;
 
       case symbol_kind::S_autotuner_decl: // autotuner_decl
         value.move< std::unique_ptr<AutotunerDecl> > (that.value);
         break;
 
-      case symbol_kind::S_measurement_opt: // measurement_opt
+      case symbol_kind::S_call_arg: // call_arg
+        value.move< std::unique_ptr<CallArg> > (that.value);
+        break;
+
       case symbol_kind::S_expr: // expr
+      case symbol_kind::S_postfix_expr: // postfix_expr
       case symbol_kind::S_primary_expr: // primary_expr
         value.move< std::unique_ptr<Expr> > (that.value);
         break;
 
-      case symbol_kind::S_loop_decl: // loop_decl
-        value.move< std::unique_ptr<ForLoop> > (that.value);
-        break;
-
-      case symbol_kind::S_mapping_decl: // mapping_decl
-        value.move< std::unique_ptr<Mapping> > (that.value);
-        break;
-
-      case symbol_kind::S_sig_param_decl: // sig_param_decl
       case symbol_kind::S_param_decl: // param_decl
         value.move< std::unique_ptr<ParamDecl> > (that.value);
         break;
@@ -3619,79 +3907,93 @@ namespace falcon { namespace atc {
         value.move< std::unique_ptr<Program> > (that.value);
         break;
 
-      case symbol_kind::S_spec_decl: // spec_decl
-        value.move< std::unique_ptr<SpecDecl> > (that.value);
+      case symbol_kind::S_routine_decl: // routine_decl
+        value.move< std::unique_ptr<RoutineDecl> > (that.value);
         break;
 
       case symbol_kind::S_state_decl: // state_decl
         value.move< std::unique_ptr<StateDecl> > (that.value);
         break;
 
-      case symbol_kind::S_trans_target: // trans_target
-        value.move< std::unique_ptr<TransitionTarget> > (that.value);
+      case symbol_kind::S_struct_routine_stmt: // struct_routine_stmt
+      case symbol_kind::S_stmt: // stmt
+        value.move< std::unique_ptr<Stmt> > (that.value);
         break;
 
-      case symbol_kind::S_assignment_list: // assignment_list
-        value.move< std::vector<Assignment> > (that.value);
+      case symbol_kind::S_struct_decl: // struct_decl
+        value.move< std::unique_ptr<StructDecl> > (that.value);
         break;
 
-      case symbol_kind::S_autotuners: // autotuners
+      case symbol_kind::S_type_spec: // type_spec
+        value.move< std::unique_ptr<TypeDescriptor> > (that.value);
+        break;
+
+      case symbol_kind::S_struct_field_decl: // struct_field_decl
+      case symbol_kind::S_var_decl_stmt: // var_decl_stmt
+        value.move< std::unique_ptr<VarDeclStmt> > (that.value);
+        break;
+
+      case symbol_kind::S_assign_target_list: // assign_target_list
+        value.move< std::vector<AssignTarget> > (that.value);
+        break;
+
+      case symbol_kind::S_autotuner_list: // autotuner_list
         value.move< std::vector<AutotunerDecl> > (that.value);
         break;
 
-      case symbol_kind::S_loop_list: // loop_list
-        value.move< std::vector<ForLoop> > (that.value);
+      case symbol_kind::S_call_arg_list: // call_arg_list
+        value.move< std::vector<CallArg> > (that.value);
         break;
 
-      case symbol_kind::S_mappings: // mappings
-      case symbol_kind::S_mapping_list: // mapping_list
-        value.move< std::vector<Mapping> > (that.value);
+      case symbol_kind::S_routine_list: // routine_list
+      case symbol_kind::S_struct_routine_list: // struct_routine_list
+        value.move< std::vector<RoutineDecl> > (that.value);
         break;
 
-      case symbol_kind::S_input_params: // input_params
-      case symbol_kind::S_output_params: // output_params
-      case symbol_kind::S_sig_param_list: // sig_param_list
-      case symbol_kind::S_params_block: // params_block
-      case symbol_kind::S_param_list: // param_list
-      case symbol_kind::S_state_params: // state_params
-      case symbol_kind::S_state_temps: // state_temps
-        value.move< std::vector<ParamDecl> > (that.value);
-        break;
-
-      case symbol_kind::S_spec_inputs: // spec_inputs
-      case symbol_kind::S_spec_outputs: // spec_outputs
-      case symbol_kind::S_spec_list: // spec_list
-        value.move< std::vector<SpecDecl> > (that.value);
-        break;
-
-      case symbol_kind::S_loop_states: // loop_states
-      case symbol_kind::S_states: // states
       case symbol_kind::S_state_list: // state_list
         value.move< std::vector<StateDecl> > (that.value);
         break;
 
-      case symbol_kind::S_transition_list: // transition_list
-      case symbol_kind::S_transition_decl: // transition_decl
-      case symbol_kind::S_simple_transition: // simple_transition
-        value.move< std::vector<Transition> > (that.value);
+      case symbol_kind::S_struct_decl_list: // struct_decl_list
+        value.move< std::vector<StructDecl> > (that.value);
         break;
 
-      case symbol_kind::S_generic_params: // generic_params
+      case symbol_kind::S_struct_field_list: // struct_field_list
+        value.move< std::vector<VarDeclStmt> > (that.value);
+        break;
+
+      case symbol_kind::S_import_list: // import_list
+      case symbol_kind::S_import_stmt: // import_stmt
+      case symbol_kind::S_import_string_list: // import_string_list
       case symbol_kind::S_requires_clause: // requires_clause
-      case symbol_kind::S_separated_idents: // separated_idents
-      case symbol_kind::S_separated_strings: // separated_strings
+      case symbol_kind::S_identifier_list: // identifier_list
         value.move< std::vector<std::string> > (that.value);
         break;
 
-      case symbol_kind::S_arg_list: // arg_list
-      case symbol_kind::S_nonempty_arg_list: // nonempty_arg_list
+      case symbol_kind::S_entry_params: // entry_params
+      case symbol_kind::S_expr_list: // expr_list
         value.move< std::vector<std::unique_ptr<Expr>> > (that.value);
+        break;
+
+      case symbol_kind::S_input_params: // input_params
+      case symbol_kind::S_output_params: // output_params
+      case symbol_kind::S_param_decl_list: // param_decl_list
+      case symbol_kind::S_state_input_params: // state_input_params
+        value.move< std::vector<std::unique_ptr<ParamDecl>> > (that.value);
+        break;
+
+      case symbol_kind::S_routine_body: // routine_body
+      case symbol_kind::S_autotuner_var_decls: // autotuner_var_decls
+      case symbol_kind::S_stmt_list: // stmt_list
+      case symbol_kind::S_elif_chain: // elif_chain
+        value.move< std::vector<std::unique_ptr<Stmt>> > (that.value);
         break;
 
       default:
         break;
     }
 
+    location = that.location;
     // that is emptied.
     that.state = empty_state;
     return *this;
@@ -3719,7 +4021,8 @@ namespace falcon { namespace atc {
       {
         symbol_kind_type yykind = yysym.kind ();
         yyo << (yykind < YYNTOKENS ? "token" : "nterm")
-            << ' ' << yysym.name () << " (";
+            << ' ' << yysym.name () << " ("
+            << yysym.location << ": ";
         YY_USE (yykind);
         yyo << ')';
       }
@@ -3820,12 +4123,11 @@ namespace falcon { namespace atc {
     /// The lookahead symbol.
     symbol_type yyla;
 
+    /// The locations where the error started and ended.
+    stack_symbol_type yyerror_range[3];
+
     /// The return value of parse ().
     int yyresult;
-
-    // Discard the LAC context in case there still is one left from a
-    // previous invocation.
-    yy_lac_discard_ ("init");
 
 #if YY_EXCEPTIONS
     try
@@ -3901,8 +4203,6 @@ namespace falcon { namespace atc {
     yyn += yyla.kind ();
     if (yyn < 0 || yylast_ < yyn || yycheck_[yyn] != yyla.kind ())
       {
-        if (!yy_lac_establish_ (yyla.kind ()))
-          goto yyerrlab;
         goto yydefault;
       }
 
@@ -3912,9 +4212,6 @@ namespace falcon { namespace atc {
       {
         if (yy_table_value_is_error_ (yyn))
           goto yyerrlab;
-        if (!yy_lac_establish_ (yyla.kind ()))
-          goto yyerrlab;
-
         yyn = -yyn;
         goto yyreduce;
       }
@@ -3925,7 +4222,6 @@ namespace falcon { namespace atc {
 
     // Shift the lookahead token.
     yypush_ ("Shifting", state_type (yyn), YY_MOVE (yyla));
-    yy_lac_discard_ ("shift");
     goto yynewstate;
 
 
@@ -3952,37 +4248,32 @@ namespace falcon { namespace atc {
          when using variants.  */
       switch (yyr1_[yyn])
     {
-      case symbol_kind::S_type_spec: // type_spec
-        yylhs.value.emplace< ParamType > ();
-        break;
-
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
       case symbol_kind::S_DOUBLE: // DOUBLE
       case symbol_kind::S_INTEGER: // INTEGER
       case symbol_kind::S_STRING: // STRING
-      case symbol_kind::S_entry_clause: // entry_clause
+      case symbol_kind::S_entry_state: // entry_state
         yylhs.value.emplace< std::string > ();
+        break;
+
+      case symbol_kind::S_assign_target: // assign_target
+        yylhs.value.emplace< std::unique_ptr<AssignTarget> > ();
         break;
 
       case symbol_kind::S_autotuner_decl: // autotuner_decl
         yylhs.value.emplace< std::unique_ptr<AutotunerDecl> > ();
         break;
 
-      case symbol_kind::S_measurement_opt: // measurement_opt
+      case symbol_kind::S_call_arg: // call_arg
+        yylhs.value.emplace< std::unique_ptr<CallArg> > ();
+        break;
+
       case symbol_kind::S_expr: // expr
+      case symbol_kind::S_postfix_expr: // postfix_expr
       case symbol_kind::S_primary_expr: // primary_expr
         yylhs.value.emplace< std::unique_ptr<Expr> > ();
         break;
 
-      case symbol_kind::S_loop_decl: // loop_decl
-        yylhs.value.emplace< std::unique_ptr<ForLoop> > ();
-        break;
-
-      case symbol_kind::S_mapping_decl: // mapping_decl
-        yylhs.value.emplace< std::unique_ptr<Mapping> > ();
-        break;
-
-      case symbol_kind::S_sig_param_decl: // sig_param_decl
       case symbol_kind::S_param_decl: // param_decl
         yylhs.value.emplace< std::unique_ptr<ParamDecl> > ();
         break;
@@ -3991,73 +4282,86 @@ namespace falcon { namespace atc {
         yylhs.value.emplace< std::unique_ptr<Program> > ();
         break;
 
-      case symbol_kind::S_spec_decl: // spec_decl
-        yylhs.value.emplace< std::unique_ptr<SpecDecl> > ();
+      case symbol_kind::S_routine_decl: // routine_decl
+        yylhs.value.emplace< std::unique_ptr<RoutineDecl> > ();
         break;
 
       case symbol_kind::S_state_decl: // state_decl
         yylhs.value.emplace< std::unique_ptr<StateDecl> > ();
         break;
 
-      case symbol_kind::S_trans_target: // trans_target
-        yylhs.value.emplace< std::unique_ptr<TransitionTarget> > ();
+      case symbol_kind::S_struct_routine_stmt: // struct_routine_stmt
+      case symbol_kind::S_stmt: // stmt
+        yylhs.value.emplace< std::unique_ptr<Stmt> > ();
         break;
 
-      case symbol_kind::S_assignment_list: // assignment_list
-        yylhs.value.emplace< std::vector<Assignment> > ();
+      case symbol_kind::S_struct_decl: // struct_decl
+        yylhs.value.emplace< std::unique_ptr<StructDecl> > ();
         break;
 
-      case symbol_kind::S_autotuners: // autotuners
+      case symbol_kind::S_type_spec: // type_spec
+        yylhs.value.emplace< std::unique_ptr<TypeDescriptor> > ();
+        break;
+
+      case symbol_kind::S_struct_field_decl: // struct_field_decl
+      case symbol_kind::S_var_decl_stmt: // var_decl_stmt
+        yylhs.value.emplace< std::unique_ptr<VarDeclStmt> > ();
+        break;
+
+      case symbol_kind::S_assign_target_list: // assign_target_list
+        yylhs.value.emplace< std::vector<AssignTarget> > ();
+        break;
+
+      case symbol_kind::S_autotuner_list: // autotuner_list
         yylhs.value.emplace< std::vector<AutotunerDecl> > ();
         break;
 
-      case symbol_kind::S_loop_list: // loop_list
-        yylhs.value.emplace< std::vector<ForLoop> > ();
+      case symbol_kind::S_call_arg_list: // call_arg_list
+        yylhs.value.emplace< std::vector<CallArg> > ();
         break;
 
-      case symbol_kind::S_mappings: // mappings
-      case symbol_kind::S_mapping_list: // mapping_list
-        yylhs.value.emplace< std::vector<Mapping> > ();
+      case symbol_kind::S_routine_list: // routine_list
+      case symbol_kind::S_struct_routine_list: // struct_routine_list
+        yylhs.value.emplace< std::vector<RoutineDecl> > ();
         break;
 
-      case symbol_kind::S_input_params: // input_params
-      case symbol_kind::S_output_params: // output_params
-      case symbol_kind::S_sig_param_list: // sig_param_list
-      case symbol_kind::S_params_block: // params_block
-      case symbol_kind::S_param_list: // param_list
-      case symbol_kind::S_state_params: // state_params
-      case symbol_kind::S_state_temps: // state_temps
-        yylhs.value.emplace< std::vector<ParamDecl> > ();
-        break;
-
-      case symbol_kind::S_spec_inputs: // spec_inputs
-      case symbol_kind::S_spec_outputs: // spec_outputs
-      case symbol_kind::S_spec_list: // spec_list
-        yylhs.value.emplace< std::vector<SpecDecl> > ();
-        break;
-
-      case symbol_kind::S_loop_states: // loop_states
-      case symbol_kind::S_states: // states
       case symbol_kind::S_state_list: // state_list
         yylhs.value.emplace< std::vector<StateDecl> > ();
         break;
 
-      case symbol_kind::S_transition_list: // transition_list
-      case symbol_kind::S_transition_decl: // transition_decl
-      case symbol_kind::S_simple_transition: // simple_transition
-        yylhs.value.emplace< std::vector<Transition> > ();
+      case symbol_kind::S_struct_decl_list: // struct_decl_list
+        yylhs.value.emplace< std::vector<StructDecl> > ();
         break;
 
-      case symbol_kind::S_generic_params: // generic_params
+      case symbol_kind::S_struct_field_list: // struct_field_list
+        yylhs.value.emplace< std::vector<VarDeclStmt> > ();
+        break;
+
+      case symbol_kind::S_import_list: // import_list
+      case symbol_kind::S_import_stmt: // import_stmt
+      case symbol_kind::S_import_string_list: // import_string_list
       case symbol_kind::S_requires_clause: // requires_clause
-      case symbol_kind::S_separated_idents: // separated_idents
-      case symbol_kind::S_separated_strings: // separated_strings
+      case symbol_kind::S_identifier_list: // identifier_list
         yylhs.value.emplace< std::vector<std::string> > ();
         break;
 
-      case symbol_kind::S_arg_list: // arg_list
-      case symbol_kind::S_nonempty_arg_list: // nonempty_arg_list
+      case symbol_kind::S_entry_params: // entry_params
+      case symbol_kind::S_expr_list: // expr_list
         yylhs.value.emplace< std::vector<std::unique_ptr<Expr>> > ();
+        break;
+
+      case symbol_kind::S_input_params: // input_params
+      case symbol_kind::S_output_params: // output_params
+      case symbol_kind::S_param_decl_list: // param_decl_list
+      case symbol_kind::S_state_input_params: // state_input_params
+        yylhs.value.emplace< std::vector<std::unique_ptr<ParamDecl>> > ();
+        break;
+
+      case symbol_kind::S_routine_body: // routine_body
+      case symbol_kind::S_autotuner_var_decls: // autotuner_var_decls
+      case symbol_kind::S_stmt_list: // stmt_list
+      case symbol_kind::S_elif_chain: // elif_chain
+        yylhs.value.emplace< std::vector<std::unique_ptr<Stmt>> > ();
         break;
 
       default:
@@ -4065,6 +4369,12 @@ namespace falcon { namespace atc {
     }
 
 
+      // Default location.
+      {
+        stack_type::slice range (yystack_, yylen);
+        YYLLOC_DEFAULT (yylhs.location, range, yylen);
+        yyerror_range[1].location = yylhs.location;
+      }
 
       // Perform the reduction.
       YY_REDUCE_PRINT (yyn);
@@ -4074,1071 +4384,1176 @@ namespace falcon { namespace atc {
         {
           switch (yyn)
             {
-  case 2: // program: autotuners
-#line 83 "./compiler/src/parser.y"
-      { 
+  case 2: // program: import_list struct_decl_list autotuner_list routine_list
+#line 178 "./compiler/src/parser.y"
+      {
         yylhs.value.as < std::unique_ptr<Program> > () = std::make_unique<Program>();
-        yylhs.value.as < std::unique_ptr<Program> > ()->autotuners = std::move(yystack_[0].value.as < std::vector<AutotunerDecl> > ());
+        yylhs.value.as < std::unique_ptr<Program> > ()->imports = std::move(yystack_[3].value.as < std::vector<std::string> > ());
+        for (auto &s : yystack_[2].value.as < std::vector<StructDecl> > ()) {
+          yylhs.value.as < std::unique_ptr<Program> > ()->structs.push_back(std::move(s));
+        }
+        yylhs.value.as < std::unique_ptr<Program> > ()->autotuners = std::move(yystack_[1].value.as < std::vector<AutotunerDecl> > ());
+        yylhs.value.as < std::unique_ptr<Program> > ()->routines = std::move(yystack_[0].value.as < std::vector<RoutineDecl> > ());
+        yylhs.value.as < std::unique_ptr<Program> > ()->build_indexes();
         program_root = std::move(yylhs.value.as < std::unique_ptr<Program> > ());
       }
-#line 4085 "parser.tab.cc"
+#line 4401 "parser.tab.cc"
     break;
 
-  case 3: // autotuners: autotuner_decl
-#line 92 "./compiler/src/parser.y"
+  case 3: // import_list: %empty
+#line 193 "./compiler/src/parser.y"
+              { yylhs.value.as < std::vector<std::string> > () = std::vector<std::string>(); }
+#line 4407 "parser.tab.cc"
+    break;
+
+  case 4: // import_list: import_list import_stmt
+#line 195 "./compiler/src/parser.y"
       { 
-        yylhs.value.as < std::vector<AutotunerDecl> > () = std::vector<AutotunerDecl>();
-        yylhs.value.as < std::vector<AutotunerDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<AutotunerDecl> > ()));
+        yylhs.value.as < std::vector<std::string> > () = std::move(yystack_[1].value.as < std::vector<std::string> > ());
+        yylhs.value.as < std::vector<std::string> > ().insert(yylhs.value.as < std::vector<std::string> > ().end(), std::make_move_iterator(yystack_[0].value.as < std::vector<std::string> > ().begin()), std::make_move_iterator(yystack_[0].value.as < std::vector<std::string> > ().end()));
       }
-#line 4094 "parser.tab.cc"
+#line 4416 "parser.tab.cc"
     break;
 
-  case 4: // autotuners: autotuners autotuner_decl
-#line 97 "./compiler/src/parser.y"
-      { 
+  case 5: // autotuner_list: %empty
+#line 203 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<AutotunerDecl> > () = std::vector<AutotunerDecl>();
+      }
+#line 4424 "parser.tab.cc"
+    break;
+
+  case 6: // autotuner_list: autotuner_list autotuner_decl
+#line 207 "./compiler/src/parser.y"
+      {
         yylhs.value.as < std::vector<AutotunerDecl> > () = std::move(yystack_[1].value.as < std::vector<AutotunerDecl> > ());
         yylhs.value.as < std::vector<AutotunerDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<AutotunerDecl> > ()));
       }
-#line 4103 "parser.tab.cc"
+#line 4433 "parser.tab.cc"
     break;
 
-  case 5: // autotuner_decl: AUTOTUNER IDENTIFIER input_params generic_params ARROW output_params LBRACE requires_clause spec_inputs spec_outputs params_block entry_clause loop_list states RBRACE
-#line 118 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<AutotunerDecl> > () = std::make_unique<AutotunerDecl>(
-          std::move(yystack_[13].value.as < std::string > ()),
-          std::move(yystack_[12].value.as < std::vector<ParamDecl> > ()),
-          std::move(yystack_[9].value.as < std::vector<ParamDecl> > ()),
-          std::move(yystack_[11].value.as < std::vector<std::string> > ()),
-          std::move(yystack_[6].value.as < std::vector<SpecDecl> > ()),
-          std::move(yystack_[5].value.as < std::vector<SpecDecl> > ()),
-          std::move(yystack_[7].value.as < std::vector<std::string> > ()),
-          std::move(yystack_[4].value.as < std::vector<ParamDecl> > ()),
-          std::move(yystack_[3].value.as < std::string > ()),
-          std::move(yystack_[1].value.as < std::vector<StateDecl> > ()),
-          std::move(yystack_[2].value.as < std::vector<ForLoop> > ())
-        );
+  case 7: // routine_list: %empty
+#line 215 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<RoutineDecl> > () = std::vector<RoutineDecl>();
       }
-#line 4123 "parser.tab.cc"
+#line 4441 "parser.tab.cc"
     break;
 
-  case 6: // input_params: LPAREN sig_param_list RPAREN
-#line 137 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<ParamDecl> > () = std::move(yystack_[1].value.as < std::vector<ParamDecl> > ()); }
-#line 4129 "parser.tab.cc"
-    break;
-
-  case 7: // input_params: %empty
-#line 139 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<ParamDecl> > () = std::vector<ParamDecl>(); }
-#line 4135 "parser.tab.cc"
-    break;
-
-  case 8: // output_params: LPAREN sig_param_list RPAREN
-#line 144 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<ParamDecl> > () = std::move(yystack_[1].value.as < std::vector<ParamDecl> > ()); }
-#line 4141 "parser.tab.cc"
-    break;
-
-  case 9: // output_params: %empty
-#line 146 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<ParamDecl> > () = std::vector<ParamDecl>(); }
-#line 4147 "parser.tab.cc"
-    break;
-
-  case 10: // sig_param_list: sig_param_decl
-#line 151 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<ParamDecl> > () = std::vector<ParamDecl>();
-        yylhs.value.as < std::vector<ParamDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<ParamDecl> > ()));
+  case 8: // routine_list: routine_list routine_decl
+#line 219 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<RoutineDecl> > () = std::move(yystack_[1].value.as < std::vector<RoutineDecl> > ());
+        yylhs.value.as < std::vector<RoutineDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<RoutineDecl> > ()));
       }
-#line 4156 "parser.tab.cc"
+#line 4450 "parser.tab.cc"
     break;
 
-  case 11: // sig_param_list: sig_param_list COMMA sig_param_decl
-#line 156 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<ParamDecl> > () = std::move(yystack_[2].value.as < std::vector<ParamDecl> > ());
-        yylhs.value.as < std::vector<ParamDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<ParamDecl> > ()));
-      }
-#line 4165 "parser.tab.cc"
-    break;
-
-  case 12: // sig_param_list: %empty
-#line 161 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<ParamDecl> > () = std::vector<ParamDecl>(); }
-#line 4171 "parser.tab.cc"
-    break;
-
-  case 13: // sig_param_decl: type_spec IDENTIFIER
-#line 166 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<ParamDecl> > () = std::make_unique<ParamDecl>();
-        yylhs.value.as < std::unique_ptr<ParamDecl> > ()->name = std::move(yystack_[0].value.as < std::string > ());
-        yylhs.value.as < std::unique_ptr<ParamDecl> > ()->type = yystack_[1].value.as < ParamType > ();
-        yylhs.value.as < std::unique_ptr<ParamDecl> > ()->default_value = nullptr;
-      }
-#line 4182 "parser.tab.cc"
-    break;
-
-  case 14: // generic_params: LBRACKET separated_idents RBRACKET
-#line 176 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<std::string> > () = std::move(yystack_[1].value.as < std::vector<std::string> > ()); }
-#line 4188 "parser.tab.cc"
-    break;
-
-  case 15: // generic_params: %empty
-#line 178 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<std::string> > () = std::vector<std::string>(); }
-#line 4194 "parser.tab.cc"
-    break;
-
-  case 16: // spec_inputs: SPEC_INPUTS COLON LBRACKET spec_list RBRACKET
-#line 183 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<SpecDecl> > () = std::move(yystack_[1].value.as < std::vector<SpecDecl> > ()); }
-#line 4200 "parser.tab.cc"
-    break;
-
-  case 17: // spec_inputs: %empty
-#line 185 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<SpecDecl> > () = std::vector<SpecDecl>(); }
-#line 4206 "parser.tab.cc"
-    break;
-
-  case 18: // spec_outputs: SPEC_OUTPUTS COLON LBRACKET spec_list RBRACKET
-#line 190 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<SpecDecl> > () = std::move(yystack_[1].value.as < std::vector<SpecDecl> > ()); }
-#line 4212 "parser.tab.cc"
-    break;
-
-  case 19: // spec_outputs: %empty
-#line 192 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<SpecDecl> > () = std::vector<SpecDecl>(); }
-#line 4218 "parser.tab.cc"
-    break;
-
-  case 20: // spec_list: spec_decl
-#line 197 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<SpecDecl> > () = std::vector<SpecDecl>();
-        yylhs.value.as < std::vector<SpecDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<SpecDecl> > ()));
-      }
-#line 4227 "parser.tab.cc"
-    break;
-
-  case 21: // spec_list: spec_list spec_decl
-#line 202 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<SpecDecl> > () = std::move(yystack_[1].value.as < std::vector<SpecDecl> > ());
-        yylhs.value.as < std::vector<SpecDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<SpecDecl> > ()));
-      }
-#line 4236 "parser.tab.cc"
-    break;
-
-  case 22: // spec_list: %empty
-#line 207 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<SpecDecl> > () = std::vector<SpecDecl>(); }
-#line 4242 "parser.tab.cc"
-    break;
-
-  case 23: // spec_decl: type_spec IDENTIFIER LBRACKET IDENTIFIER RBRACKET
-#line 212 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<SpecDecl> > () = std::make_unique<SpecDecl>(
-          yystack_[4].value.as < ParamType > (), 
-          std::move(yystack_[3].value.as < std::string > ()), 
-          std::move(yystack_[1].value.as < std::string > ())
-        );
-      }
-#line 4254 "parser.tab.cc"
-    break;
-
-  case 24: // spec_decl: type_spec IDENTIFIER
-#line 220 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<SpecDecl> > () = std::make_unique<SpecDecl>(
-          yystack_[1].value.as < ParamType > (), 
-          std::move(yystack_[0].value.as < std::string > ()), 
-          ""
-        );
-      }
-#line 4266 "parser.tab.cc"
-    break;
-
-  case 25: // requires_clause: REQUIRES COLON LBRACKET separated_strings RBRACKET SEMICOLON
+  case 9: // struct_decl_list: %empty
 #line 231 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<std::string> > () = std::move(yystack_[2].value.as < std::vector<std::string> > ()); }
-#line 4272 "parser.tab.cc"
-    break;
-
-  case 26: // requires_clause: %empty
-#line 233 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<std::string> > () = std::vector<std::string>(); }
-#line 4278 "parser.tab.cc"
-    break;
-
-  case 27: // separated_idents: IDENTIFIER
-#line 238 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<std::string> > () = std::vector<std::string>();
-        yylhs.value.as < std::vector<std::string> > ().push_back(std::move(yystack_[0].value.as < std::string > ()));
-      }
-#line 4287 "parser.tab.cc"
-    break;
-
-  case 28: // separated_idents: separated_idents COMMA IDENTIFIER
-#line 243 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<std::string> > () = std::move(yystack_[2].value.as < std::vector<std::string> > ());
-        yylhs.value.as < std::vector<std::string> > ().push_back(std::move(yystack_[0].value.as < std::string > ()));
-      }
-#line 4296 "parser.tab.cc"
-    break;
-
-  case 29: // separated_strings: STRING
-#line 251 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<std::string> > () = std::vector<std::string>();
-        yylhs.value.as < std::vector<std::string> > ().push_back(std::move(yystack_[0].value.as < std::string > ()));
-      }
-#line 4305 "parser.tab.cc"
-    break;
-
-  case 30: // separated_strings: IDENTIFIER
-#line 256 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<std::string> > () = std::vector<std::string>();
-        yylhs.value.as < std::vector<std::string> > ().push_back(std::move(yystack_[0].value.as < std::string > ()));
-      }
-#line 4314 "parser.tab.cc"
-    break;
-
-  case 31: // separated_strings: separated_strings COMMA STRING
-#line 261 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<std::string> > () = std::move(yystack_[2].value.as < std::vector<std::string> > ());
-        yylhs.value.as < std::vector<std::string> > ().push_back(std::move(yystack_[0].value.as < std::string > ()));
-      }
-#line 4323 "parser.tab.cc"
-    break;
-
-  case 32: // separated_strings: separated_strings COMMA IDENTIFIER
-#line 266 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<std::string> > () = std::move(yystack_[2].value.as < std::vector<std::string> > ());
-        yylhs.value.as < std::vector<std::string> > ().push_back(std::move(yystack_[0].value.as < std::string > ()));
-      }
-#line 4332 "parser.tab.cc"
-    break;
-
-  case 33: // params_block: PARAMS LBRACE param_list RBRACE
-#line 274 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<ParamDecl> > () = std::move(yystack_[1].value.as < std::vector<ParamDecl> > ()); }
-#line 4338 "parser.tab.cc"
-    break;
-
-  case 34: // params_block: %empty
-#line 276 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<ParamDecl> > () = std::vector<ParamDecl>(); }
-#line 4344 "parser.tab.cc"
-    break;
-
-  case 35: // param_list: param_decl
-#line 281 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<ParamDecl> > () = std::vector<ParamDecl>();
-        yylhs.value.as < std::vector<ParamDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<ParamDecl> > ()));
-      }
-#line 4353 "parser.tab.cc"
-    break;
-
-  case 36: // param_list: param_list param_decl
-#line 286 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<ParamDecl> > () = std::move(yystack_[1].value.as < std::vector<ParamDecl> > ());
-        yylhs.value.as < std::vector<ParamDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<ParamDecl> > ()));
-      }
-#line 4362 "parser.tab.cc"
-    break;
-
-  case 37: // param_decl: type_spec IDENTIFIER SEMICOLON
-#line 294 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<ParamDecl> > () = std::make_unique<ParamDecl>();
-        yylhs.value.as < std::unique_ptr<ParamDecl> > ()->name = std::move(yystack_[1].value.as < std::string > ());
-        yylhs.value.as < std::unique_ptr<ParamDecl> > ()->type = yystack_[2].value.as < ParamType > ();
-        yylhs.value.as < std::unique_ptr<ParamDecl> > ()->default_value = nullptr;
-      }
-#line 4373 "parser.tab.cc"
-    break;
-
-  case 38: // param_decl: type_spec IDENTIFIER ASSIGN expr SEMICOLON
-#line 301 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<ParamDecl> > () = std::make_unique<ParamDecl>();
-        yylhs.value.as < std::unique_ptr<ParamDecl> > ()->name = std::move(yystack_[3].value.as < std::string > ());
-        yylhs.value.as < std::unique_ptr<ParamDecl> > ()->type = yystack_[4].value.as < ParamType > ();
-        yylhs.value.as < std::unique_ptr<ParamDecl> > ()->default_value = nullptr;
-      }
-#line 4384 "parser.tab.cc"
-    break;
-
-  case 39: // type_spec: FLOAT_KW
-#line 310 "./compiler/src/parser.y"
-                  { yylhs.value.as < ParamType > () = ParamType::Float; }
-#line 4390 "parser.tab.cc"
-    break;
-
-  case 40: // type_spec: INT_KW
-#line 311 "./compiler/src/parser.y"
-                  { yylhs.value.as < ParamType > () = ParamType::Int; }
-#line 4396 "parser.tab.cc"
-    break;
-
-  case 41: // type_spec: BOOL_KW
-#line 312 "./compiler/src/parser.y"
-                  { yylhs.value.as < ParamType > () = ParamType::Bool; }
-#line 4402 "parser.tab.cc"
-    break;
-
-  case 42: // type_spec: STRING_KW
-#line 313 "./compiler/src/parser.y"
-                  { yylhs.value.as < ParamType > () = ParamType::String; }
-#line 4408 "parser.tab.cc"
-    break;
-
-  case 43: // type_spec: QUANTITY_KW
-#line 314 "./compiler/src/parser.y"
-                  { yylhs.value.as < ParamType > () = ParamType::Quantity; }
-#line 4414 "parser.tab.cc"
-    break;
-
-  case 44: // type_spec: CONFIG_KW
-#line 315 "./compiler/src/parser.y"
-                  { yylhs.value.as < ParamType > () = ParamType::Config; }
-#line 4420 "parser.tab.cc"
-    break;
-
-  case 45: // type_spec: GROUP_KW
-#line 316 "./compiler/src/parser.y"
-                  { yylhs.value.as < ParamType > () = ParamType::Group; }
-#line 4426 "parser.tab.cc"
-    break;
-
-  case 46: // type_spec: CONNECTION_KW
-#line 317 "./compiler/src/parser.y"
-                    { yylhs.value.as < ParamType > () = ParamType::Connection; }
-#line 4432 "parser.tab.cc"
-    break;
-
-  case 47: // entry_clause: START ARROW IDENTIFIER SEMICOLON
-#line 322 "./compiler/src/parser.y"
-      { yylhs.value.as < std::string > () = std::move(yystack_[1].value.as < std::string > ()); }
-#line 4438 "parser.tab.cc"
-    break;
-
-  case 48: // loop_list: loop_decl
-#line 327 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<ForLoop> > () = std::vector<ForLoop>();
-        yylhs.value.as < std::vector<ForLoop> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<ForLoop> > ()));
-      }
-#line 4447 "parser.tab.cc"
-    break;
-
-  case 49: // loop_list: loop_list loop_decl
-#line 332 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<ForLoop> > () = std::move(yystack_[1].value.as < std::vector<ForLoop> > ());
-        yylhs.value.as < std::vector<ForLoop> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<ForLoop> > ()));
-      }
+      { yylhs.value.as < std::vector<StructDecl> > () = std::vector<StructDecl>(); }
 #line 4456 "parser.tab.cc"
     break;
 
-  case 50: // loop_list: %empty
-#line 337 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<ForLoop> > () = std::vector<ForLoop>(); }
-#line 4462 "parser.tab.cc"
+  case 10: // struct_decl_list: struct_decl_list struct_decl
+#line 233 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<StructDecl> > () = std::move(yystack_[1].value.as < std::vector<StructDecl> > ());
+        yylhs.value.as < std::vector<StructDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<StructDecl> > ()));
+      }
+#line 4465 "parser.tab.cc"
     break;
 
-  case 51: // loop_decl: FOR IDENTIFIER IN expr LBRACE loop_states RBRACE
-#line 342 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<ForLoop> > () = std::make_unique<ForLoop>(
-          std::move(yystack_[5].value.as < std::string > ()),
-          std::move(yystack_[3].value.as < std::unique_ptr<Expr> > ()),
-          std::move(yystack_[1].value.as < std::vector<StateDecl> > ())
-        );
+  case 11: // $@1: %empty
+#line 241 "./compiler/src/parser.y"
+      {
+        // Clear field scope for this new struct
+        struct_field_scope.clear();
       }
 #line 4474 "parser.tab.cc"
     break;
 
-  case 52: // loop_states: state_decl
-#line 353 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<StateDecl> > () = std::vector<StateDecl>();
-        yylhs.value.as < std::vector<StateDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<StateDecl> > ()));
+  case 12: // struct_decl: STRUCT IDENTIFIER LBRACE $@1 struct_field_list struct_routine_list RBRACE
+#line 246 "./compiler/src/parser.y"
+      {
+        // Register the struct name so type_spec can use it from this point on
+        struct_known_types.insert(yystack_[5].value.as < std::string > ());
+        struct_field_scope.clear();
+        yylhs.value.as < std::unique_ptr<StructDecl> > () = std::make_unique<StructDecl>(
+            std::move(yystack_[5].value.as < std::string > ()),
+            std::move(yystack_[2].value.as < std::vector<VarDeclStmt> > ()),
+            std::move(yystack_[1].value.as < std::vector<RoutineDecl> > ()));
       }
-#line 4483 "parser.tab.cc"
+#line 4488 "parser.tab.cc"
     break;
 
-  case 53: // loop_states: loop_states state_decl
+  case 13: // struct_field_list: %empty
+#line 263 "./compiler/src/parser.y"
+      { yylhs.value.as < std::vector<VarDeclStmt> > () = std::vector<VarDeclStmt>(); }
+#line 4494 "parser.tab.cc"
+    break;
+
+  case 14: // struct_field_list: struct_field_list struct_field_decl
+#line 265 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<VarDeclStmt> > () = std::move(yystack_[1].value.as < std::vector<VarDeclStmt> > ());
+        yylhs.value.as < std::vector<VarDeclStmt> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<VarDeclStmt> > ()));
+      }
+#line 4503 "parser.tab.cc"
+    break;
+
+  case 15: // struct_field_decl: type_spec IDENTIFIER SEMICOLON
+#line 273 "./compiler/src/parser.y"
+      {
+        struct_field_scope.insert(yystack_[1].value.as < std::string > ());
+        auto decl = std::make_unique<VarDeclStmt>(
+            std::move(*yystack_[2].value.as < std::unique_ptr<TypeDescriptor> > ()), std::move(yystack_[1].value.as < std::string > ()), std::nullopt);
+        decl->decl_scope = VarDeclStmt::DeclScope::StructField;
+        yylhs.value.as < std::unique_ptr<VarDeclStmt> > () = std::move(decl);
+      }
+#line 4515 "parser.tab.cc"
+    break;
+
+  case 16: // struct_field_decl: type_spec IDENTIFIER ASSIGN expr SEMICOLON
+#line 281 "./compiler/src/parser.y"
+      {
+        struct_field_scope.insert(yystack_[3].value.as < std::string > ());
+        auto decl = std::make_unique<VarDeclStmt>(
+            std::move(*yystack_[4].value.as < std::unique_ptr<TypeDescriptor> > ()), std::move(yystack_[3].value.as < std::string > ()),
+            std::make_optional(std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ())));
+        decl->decl_scope = VarDeclStmt::DeclScope::StructField;
+        yylhs.value.as < std::unique_ptr<VarDeclStmt> > () = std::move(decl);
+      }
+#line 4528 "parser.tab.cc"
+    break;
+
+  case 17: // struct_routine_list: %empty
+#line 297 "./compiler/src/parser.y"
+      { yylhs.value.as < std::vector<RoutineDecl> > () = std::vector<RoutineDecl>(); }
+#line 4534 "parser.tab.cc"
+    break;
+
+  case 18: // $@2: %empty
+#line 299 "./compiler/src/parser.y"
+      {
+        enter_struct_routine();
+      }
+#line 4542 "parser.tab.cc"
+    break;
+
+  case 19: // struct_routine_list: struct_routine_list $@2 routine_decl
+#line 303 "./compiler/src/parser.y"
+      {
+        leave_struct_routine();
+        yylhs.value.as < std::vector<RoutineDecl> > () = std::move(yystack_[2].value.as < std::vector<RoutineDecl> > ());
+        yylhs.value.as < std::vector<RoutineDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<RoutineDecl> > ()));
+      }
+#line 4552 "parser.tab.cc"
+    break;
+
+  case 20: // routine_decl: ROUTINE IDENTIFIER input_params ARROW output_params LBRACE routine_body RBRACE
+#line 315 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<RoutineDecl> > () = std::make_unique<RoutineDecl>(
+            std::move(yystack_[6].value.as < std::string > ()),
+            std::move(yystack_[5].value.as < std::vector<std::unique_ptr<ParamDecl>> > ()),
+            std::move(yystack_[3].value.as < std::vector<std::unique_ptr<ParamDecl>> > ()),
+            std::move(yystack_[1].value.as < std::vector<std::unique_ptr<Stmt>> > ()));
+      }
+#line 4564 "parser.tab.cc"
+    break;
+
+  case 21: // routine_decl: ROUTINE IDENTIFIER input_params ARROW output_params
+#line 325 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<RoutineDecl> > () = std::make_unique<RoutineDecl>(
+            std::move(yystack_[3].value.as < std::string > ()),
+            std::move(yystack_[2].value.as < std::vector<std::unique_ptr<ParamDecl>> > ()),
+            std::move(yystack_[0].value.as < std::vector<std::unique_ptr<ParamDecl>> > ()));
+      }
+#line 4575 "parser.tab.cc"
+    break;
+
+  case 22: // routine_body: %empty
+#line 339 "./compiler/src/parser.y"
+      { yylhs.value.as < std::vector<std::unique_ptr<Stmt>> > () = std::vector<std::unique_ptr<Stmt>>(); }
+#line 4581 "parser.tab.cc"
+    break;
+
+  case 23: // routine_body: routine_body struct_routine_stmt
+#line 341 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<std::unique_ptr<Stmt>> > () = std::move(yystack_[1].value.as < std::vector<std::unique_ptr<Stmt>> > ());
+        yylhs.value.as < std::vector<std::unique_ptr<Stmt>> > ().push_back(std::move(yystack_[0].value.as < std::unique_ptr<Stmt> > ()));
+      }
+#line 4590 "parser.tab.cc"
+    break;
+
+  case 24: // struct_routine_stmt: var_decl_stmt
+#line 350 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::move(yystack_[0].value.as < std::unique_ptr<VarDeclStmt> > ());
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[0].location);
+      }
+#line 4599 "parser.tab.cc"
+    break;
+
+  case 25: // struct_routine_stmt: IDENTIFIER ASSIGN expr SEMICOLON
 #line 358 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<StateDecl> > () = std::move(yystack_[1].value.as < std::vector<StateDecl> > ());
-        yylhs.value.as < std::vector<StateDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<StateDecl> > ()));
-      }
-#line 4492 "parser.tab.cc"
-    break;
-
-  case 54: // states: state_list
-#line 366 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<StateDecl> > () = std::move(yystack_[0].value.as < std::vector<StateDecl> > ()); }
-#line 4498 "parser.tab.cc"
-    break;
-
-  case 55: // state_list: state_decl
-#line 371 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<StateDecl> > () = std::vector<StateDecl>();
-        yylhs.value.as < std::vector<StateDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<StateDecl> > ()));
-      }
-#line 4507 "parser.tab.cc"
-    break;
-
-  case 56: // state_list: state_list state_decl
-#line 376 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<StateDecl> > () = std::move(yystack_[1].value.as < std::vector<StateDecl> > ());
-        yylhs.value.as < std::vector<StateDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<StateDecl> > ()));
-      }
-#line 4516 "parser.tab.cc"
-    break;
-
-  case 57: // state_list: %empty
-#line 381 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<StateDecl> > () = std::vector<StateDecl>(); }
-#line 4522 "parser.tab.cc"
-    break;
-
-  case 58: // state_decl: STATE IDENTIFIER LBRACKET IDENTIFIER RBRACKET LBRACE state_params state_temps measurement_opt transition_list RBRACE
-#line 393 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<StateDecl> > () = std::make_unique<StateDecl>(
-          std::move(yystack_[9].value.as < std::string > ()),
-          std::move(yystack_[7].value.as < std::string > ()),
-          std::move(yystack_[4].value.as < std::vector<ParamDecl> > ()),
-          std::move(yystack_[3].value.as < std::vector<ParamDecl> > ()),
-          std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()),
-          false,
-          std::move(yystack_[1].value.as < std::vector<Transition> > ())
-        );
-      }
-#line 4538 "parser.tab.cc"
-    break;
-
-  case 59: // state_decl: STATE IDENTIFIER LBRACE state_params state_temps measurement_opt transition_list RBRACE
-#line 411 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<StateDecl> > () = std::make_unique<StateDecl>(
-          std::move(yystack_[6].value.as < std::string > ()),
-          "",
-          std::move(yystack_[4].value.as < std::vector<ParamDecl> > ()),
-          std::move(yystack_[3].value.as < std::vector<ParamDecl> > ()),
-          std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()),
-          false,
-          std::move(yystack_[1].value.as < std::vector<Transition> > ())
-        );
-      }
-#line 4554 "parser.tab.cc"
-    break;
-
-  case 60: // state_params: PARAMS LBRACE param_list RBRACE
-#line 426 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<ParamDecl> > () = std::move(yystack_[1].value.as < std::vector<ParamDecl> > ()); }
-#line 4560 "parser.tab.cc"
-    break;
-
-  case 61: // state_params: %empty
-#line 428 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<ParamDecl> > () = std::vector<ParamDecl>(); }
-#line 4566 "parser.tab.cc"
-    break;
-
-  case 62: // state_temps: TEMP LBRACE param_list RBRACE
-#line 433 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<ParamDecl> > () = std::move(yystack_[1].value.as < std::vector<ParamDecl> > ()); }
-#line 4572 "parser.tab.cc"
-    break;
-
-  case 63: // state_temps: %empty
-#line 435 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<ParamDecl> > () = std::vector<ParamDecl>(); }
-#line 4578 "parser.tab.cc"
-    break;
-
-  case 64: // measurement_opt: MEASUREMENT COLON IDENTIFIER LPAREN arg_list RPAREN SEMICOLON
-#line 440 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<CallExpr>(
-          std::move(yystack_[4].value.as < std::string > ()),
-          std::move(yystack_[2].value.as < std::vector<std::unique_ptr<Expr>> > ())
-        );
-      }
-#line 4589 "parser.tab.cc"
-    break;
-
-  case 65: // measurement_opt: RUN COLON IDENTIFIER LPAREN arg_list RPAREN SEMICOLON
-#line 447 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<CallExpr>(
-          std::move(yystack_[4].value.as < std::string > ()),
-          std::move(yystack_[2].value.as < std::vector<std::unique_ptr<Expr>> > ())
-        );
-      }
-#line 4600 "parser.tab.cc"
-    break;
-
-  case 66: // measurement_opt: %empty
-#line 454 "./compiler/src/parser.y"
-      { yylhs.value.as < std::unique_ptr<Expr> > () = nullptr; }
-#line 4606 "parser.tab.cc"
-    break;
-
-  case 67: // arg_list: nonempty_arg_list
-#line 460 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<std::unique_ptr<Expr>> > () = std::move(yystack_[0].value.as < std::vector<std::unique_ptr<Expr>> > ()); }
-#line 4612 "parser.tab.cc"
-    break;
-
-  case 68: // arg_list: %empty
-#line 462 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<std::unique_ptr<Expr>> > () = std::vector<std::unique_ptr<Expr>>(); }
-#line 4618 "parser.tab.cc"
-    break;
-
-  case 69: // nonempty_arg_list: expr
-#line 467 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<std::unique_ptr<Expr>> > () = std::vector<std::unique_ptr<Expr>>();
-        yylhs.value.as < std::vector<std::unique_ptr<Expr>> > ().push_back(std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+      {
+        if (struct_field_scope.count(yystack_[3].value.as < std::string > ()) > 0) {
+          // Implicit self.field = val
+          yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<StructFieldAssignStmt>(
+              std::make_unique<VarExpr>("self"),
+              std::move(yystack_[3].value.as < std::string > ()),
+              std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()));
+        } else if (is_variable_declared(yystack_[3].value.as < std::string > ())) {
+          if (autotuner_input_params.count(yystack_[3].value.as < std::string > ()) > 0 ||
+              state_input_params.count(yystack_[3].value.as < std::string > ()) > 0) {
+            error(yystack_[3].location, "Cannot assign to read-only parameter: " + yystack_[3].value.as < std::string > ());
+            YYABORT;
+          }
+          std::vector<AssignTarget> targets;
+          targets.emplace_back(yystack_[3].value.as < std::string > ());
+          yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<AssignStmt>(
+              std::move(targets), std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()));
+        } else {
+          error(yystack_[3].location, "Undeclared variable in struct routine: " + yystack_[3].value.as < std::string > ());
+          YYABORT;
+        }
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[3].location);
       }
 #line 4627 "parser.tab.cc"
     break;
 
-  case 70: // nonempty_arg_list: nonempty_arg_list COMMA expr
-#line 472 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<std::unique_ptr<Expr>> > () = std::move(yystack_[2].value.as < std::vector<std::unique_ptr<Expr>> > ());
-        yylhs.value.as < std::vector<std::unique_ptr<Expr>> > ().push_back(std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+  case 26: // struct_routine_stmt: expr DOT IDENTIFIER ASSIGN expr SEMICOLON
+#line 383 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<StructFieldAssignStmt>(
+            std::move(yystack_[5].value.as < std::unique_ptr<Expr> > ()),
+            std::move(yystack_[3].value.as < std::string > ()),
+            std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()));
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[5].location);
       }
-#line 4636 "parser.tab.cc"
+#line 4639 "parser.tab.cc"
     break;
 
-  case 71: // transition_list: transition_decl
-#line 480 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<Transition> > () = std::move(yystack_[0].value.as < std::vector<Transition> > ()); }
-#line 4642 "parser.tab.cc"
-    break;
-
-  case 72: // transition_list: transition_list transition_decl
-#line 482 "./compiler/src/parser.y"
-      { 
-        auto tmp = std::move(yystack_[1].value.as < std::vector<Transition> > ());
-        // Manual move to avoid automove issues
-        for (auto& t : yystack_[0].value.as < std::vector<Transition> > ()) {
-          tmp.push_back(std::move(t));
-        }
-        yylhs.value.as < std::vector<Transition> > () = std::move(tmp);
+  case 27: // struct_routine_stmt: IF LPAREN expr RPAREN LBRACE routine_body RBRACE elif_chain
+#line 392 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<IfStmt>(
+            std::move(yystack_[5].value.as < std::unique_ptr<Expr> > ()),
+            std::move(yystack_[2].value.as < std::vector<std::unique_ptr<Stmt>> > ()),
+            std::move(yystack_[0].value.as < std::vector<std::unique_ptr<Stmt>> > ()));
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[7].location);
       }
-#line 4655 "parser.tab.cc"
+#line 4651 "parser.tab.cc"
     break;
 
-  case 73: // transition_list: %empty
-#line 491 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<Transition> > () = std::vector<Transition>(); }
-#line 4661 "parser.tab.cc"
-    break;
-
-  case 74: // transition_decl: simple_transition
-#line 496 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<Transition> > () = std::move(yystack_[0].value.as < std::vector<Transition> > ()); }
-#line 4667 "parser.tab.cc"
-    break;
-
-  case 75: // transition_decl: IF LPAREN expr RPAREN transition_decl
-#line 498 "./compiler/src/parser.y"
-      { 
-        // Store condition, then iterate
-        auto cond_ptr = std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ());
-        auto tmp = std::move(yystack_[0].value.as < std::vector<Transition> > ());
-        for (auto &t : tmp) {
-          if (t.condition) {
-            t.condition = std::make_unique<BinaryExpr>(
-              "&&", 
-              cond_ptr->clone(), 
-              std::move(t.condition)
-            );
-          } else {
-            t.condition = cond_ptr->clone();
-          }
-        }
-        yylhs.value.as < std::vector<Transition> > () = std::move(tmp);
+  case 28: // struct_routine_stmt: expr SEMICOLON
+#line 401 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<ExprStmt>(std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()));
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[1].location);
       }
-#line 4689 "parser.tab.cc"
+#line 4660 "parser.tab.cc"
     break;
 
-  case 76: // transition_decl: IF LPAREN expr RPAREN simple_transition ELSE transition_decl
-#line 516 "./compiler/src/parser.y"
+  case 29: // import_stmt: IMPORT STRING SEMICOLON
+#line 413 "./compiler/src/parser.y"
+      { yylhs.value.as < std::vector<std::string> > () = std::vector<std::string>{std::move(yystack_[1].value.as < std::string > ())}; }
+#line 4666 "parser.tab.cc"
+    break;
+
+  case 30: // import_stmt: IMPORT LPAREN import_string_list RPAREN
+#line 415 "./compiler/src/parser.y"
+      { yylhs.value.as < std::vector<std::string> > () = std::move(yystack_[1].value.as < std::vector<std::string> > ()); }
+#line 4672 "parser.tab.cc"
+    break;
+
+  case 31: // import_string_list: STRING
+#line 420 "./compiler/src/parser.y"
+      { yylhs.value.as < std::vector<std::string> > () = std::vector<std::string>{std::move(yystack_[0].value.as < std::string > ())}; }
+#line 4678 "parser.tab.cc"
+    break;
+
+  case 32: // import_string_list: import_string_list STRING
+#line 422 "./compiler/src/parser.y"
       { 
-        // Store all values first to avoid multiple accesses
-        auto cond_ptr = std::move(yystack_[4].value.as < std::unique_ptr<Expr> > ());
-        auto tmp_then = std::move(yystack_[2].value.as < std::vector<Transition> > ());
-        auto tmp_else = std::move(yystack_[0].value.as < std::vector<Transition> > ());
-        
-        // Process then branch
-        for (auto &t : tmp_then) {
-          if (t.condition) {
-            t.condition = std::make_unique<BinaryExpr>(
-              "&&", 
-              cond_ptr->clone(), 
-              std::move(t.condition)
-            );
-          } else {
-            t.condition = cond_ptr->clone();
-          }
-        }
-        
-        // Process else branch
-        auto inv_cond = std::make_unique<UnaryExpr>("!", cond_ptr->clone());
-        for (auto &t : tmp_else) {
-          if (t.condition) {
-            t.condition = std::make_unique<BinaryExpr>(
-              "&&", 
-              inv_cond->clone(), 
-              std::move(t.condition)
-            );
-          } else {
-            t.condition = inv_cond->clone();
-          }
-        }
-        
-        // Combine
-        for (auto& t : tmp_else) {
-          tmp_then.push_back(std::move(t));
-        }
-        yylhs.value.as < std::vector<Transition> > () = std::move(tmp_then);
+        yylhs.value.as < std::vector<std::string> > () = std::move(yystack_[1].value.as < std::vector<std::string> > ()); 
+        yylhs.value.as < std::vector<std::string> > ().push_back(std::move(yystack_[0].value.as < std::string > ())); 
       }
-#line 4733 "parser.tab.cc"
+#line 4687 "parser.tab.cc"
     break;
 
-  case 77: // simple_transition: SUCCESS SEMICOLON
-#line 559 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<Transition> > () = std::vector<Transition>();
-        Transition t;
-        t.is_success = true;
-        yylhs.value.as < std::vector<Transition> > ().push_back(std::move(t));
+  case 33: // $@3: %empty
+#line 435 "./compiler/src/parser.y"
+      {
+        // Clear scope when starting new autotuner
+        clear_autotuner_scope();
       }
-#line 4744 "parser.tab.cc"
+#line 4696 "parser.tab.cc"
     break;
 
-  case 78: // simple_transition: FAIL STRING SEMICOLON
-#line 566 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<Transition> > () = std::vector<Transition>();
-        Transition t;
-        t.is_fail = true;
-        t.error_message = std::move(yystack_[1].value.as < std::string > ());
-        yylhs.value.as < std::vector<Transition> > ().push_back(std::move(t));
-      }
-#line 4756 "parser.tab.cc"
-    break;
-
-  case 79: // simple_transition: FAIL SEMICOLON
-#line 574 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<Transition> > () = std::vector<Transition>();
-        Transition t;
-        t.is_fail = true;
-        yylhs.value.as < std::vector<Transition> > ().push_back(std::move(t));
-      }
-#line 4767 "parser.tab.cc"
-    break;
-
-  case 80: // simple_transition: TERMINAL SEMICOLON
-#line 581 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<Transition> > () = std::vector<Transition>();
-        Transition t;
-        t.target.state_name = "_TERMINAL_";
-        yylhs.value.as < std::vector<Transition> > ().push_back(std::move(t));
-      }
-#line 4778 "parser.tab.cc"
-    break;
-
-  case 81: // simple_transition: ARROW trans_target SEMICOLON
-#line 588 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<Transition> > () = std::vector<Transition>();
-        yylhs.value.as < std::vector<Transition> > ().emplace_back(
-          nullptr, 
-          std::move(*yystack_[1].value.as < std::unique_ptr<TransitionTarget> > ()), 
-          std::vector<Assignment>()
+  case 34: // autotuner_decl: AUTOTUNER IDENTIFIER $@3 input_params ARROW output_params LBRACE requires_clause autotuner_var_decls entry_state entry_params SEMICOLON state_list RBRACE
+#line 448 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<AutotunerDecl> > () = std::make_unique<AutotunerDecl>(
+          std::move(yystack_[12].value.as < std::string > ()),
+          std::move(yystack_[10].value.as < std::vector<std::unique_ptr<ParamDecl>> > ()),
+          std::move(yystack_[8].value.as < std::vector<std::unique_ptr<ParamDecl>> > ()),
+          std::move(yystack_[6].value.as < std::vector<std::string> > ()),
+          std::move(yystack_[5].value.as < std::vector<std::unique_ptr<Stmt>> > ()),
+          std::move(yystack_[4].value.as < std::string > ()),
+          std::move(yystack_[3].value.as < std::vector<std::unique_ptr<Expr>> > ()),
+          std::move(yystack_[1].value.as < std::vector<StateDecl> > ())
         );
+      }
+#line 4713 "parser.tab.cc"
+    break;
+
+  case 35: // input_params: LPAREN param_decl_list RPAREN
+#line 468 "./compiler/src/parser.y"
+      {
+        // Register input parameters in scope (read-only)
+        for (const auto& param : yystack_[1].value.as < std::vector<std::unique_ptr<ParamDecl>> > ()) {
+          if (autotuner_input_params.count(param->name) > 0) {
+            error(yystack_[1].location, "Duplicate input parameter: " + param->name);
+            YYABORT;
+          }
+          autotuner_input_params.insert(param->name);
+        }
+        yylhs.value.as < std::vector<std::unique_ptr<ParamDecl>> > () = std::move(yystack_[1].value.as < std::vector<std::unique_ptr<ParamDecl>> > ());
+      }
+#line 4729 "parser.tab.cc"
+    break;
+
+  case 36: // input_params: LPAREN RPAREN
+#line 480 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::vector<std::unique_ptr<ParamDecl>> > () = std::vector<std::unique_ptr<ParamDecl>>(); 
+      }
+#line 4737 "parser.tab.cc"
+    break;
+
+  case 37: // input_params: %empty
+#line 484 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::vector<std::unique_ptr<ParamDecl>> > () = std::vector<std::unique_ptr<ParamDecl>>(); 
+      }
+#line 4745 "parser.tab.cc"
+    break;
+
+  case 38: // output_params: LPAREN param_decl_list RPAREN
+#line 491 "./compiler/src/parser.y"
+      {
+        // Register output parameters in scope (read/write)
+        for (const auto& param : yystack_[1].value.as < std::vector<std::unique_ptr<ParamDecl>> > ()) {
+          if (autotuner_output_params.count(param->name) > 0) {
+            error(yystack_[1].location, "Duplicate output parameter: " + param->name);
+            YYABORT;
+          }
+          if (autotuner_input_params.count(param->name) > 0) {
+            error(yystack_[1].location, "Output parameter '" + param->name + "' conflicts with input parameter");
+            YYABORT;
+          }
+          autotuner_output_params.insert(param->name);
+        }
+        yylhs.value.as < std::vector<std::unique_ptr<ParamDecl>> > () = std::move(yystack_[1].value.as < std::vector<std::unique_ptr<ParamDecl>> > ());
+      }
+#line 4765 "parser.tab.cc"
+    break;
+
+  case 39: // output_params: %empty
+#line 507 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::vector<std::unique_ptr<ParamDecl>> > () = std::vector<std::unique_ptr<ParamDecl>>(); 
+      }
+#line 4773 "parser.tab.cc"
+    break;
+
+  case 40: // param_decl_list: param_decl
+#line 514 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<std::unique_ptr<ParamDecl>> > () = std::vector<std::unique_ptr<ParamDecl>>();
+        yylhs.value.as < std::vector<std::unique_ptr<ParamDecl>> > ().push_back(std::move(yystack_[0].value.as < std::unique_ptr<ParamDecl> > ()));
+      }
+#line 4782 "parser.tab.cc"
+    break;
+
+  case 41: // param_decl_list: param_decl_list COMMA param_decl
+#line 519 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<std::unique_ptr<ParamDecl>> > () = std::move(yystack_[2].value.as < std::vector<std::unique_ptr<ParamDecl>> > ());
+        yylhs.value.as < std::vector<std::unique_ptr<ParamDecl>> > ().push_back(std::move(yystack_[0].value.as < std::unique_ptr<ParamDecl> > ()));
       }
 #line 4791 "parser.tab.cc"
     break;
 
-  case 82: // simple_transition: LBRACE assignment_list RBRACE ARROW trans_target SEMICOLON
-#line 597 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<Transition> > () = std::vector<Transition>();
-        yylhs.value.as < std::vector<Transition> > ().emplace_back(
-          nullptr, 
-          std::move(*yystack_[1].value.as < std::unique_ptr<TransitionTarget> > ()), 
-          std::move(yystack_[4].value.as < std::vector<Assignment> > ())
+  case 42: // param_decl: type_spec IDENTIFIER
+#line 527 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<ParamDecl> > () = std::make_unique<ParamDecl>(std::move(*yystack_[1].value.as < std::unique_ptr<TypeDescriptor> > ()), std::move(yystack_[0].value.as < std::string > ()));
+      }
+#line 4799 "parser.tab.cc"
+    break;
+
+  case 43: // param_decl: type_spec IDENTIFIER ASSIGN expr
+#line 531 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<ParamDecl> > () = std::make_unique<ParamDecl>(
+          std::move(*yystack_[3].value.as < std::unique_ptr<TypeDescriptor> > ()), 
+          std::move(yystack_[2].value.as < std::string > ()), 
+          std::make_optional(std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()))
         );
       }
-#line 4804 "parser.tab.cc"
+#line 4811 "parser.tab.cc"
     break;
 
-  case 83: // simple_transition: separated_idents ASSIGN expr SEMICOLON
-#line 606 "./compiler/src/parser.y"
-      { 
-        // Single assignment without semicolon as transition
-        yylhs.value.as < std::vector<Transition> > () = std::vector<Transition>();
-        std::vector<Assignment> asgns;
-        asgns.emplace_back(std::move(yystack_[3].value.as < std::vector<std::string> > ()), std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()));
-        yylhs.value.as < std::vector<Transition> > ().emplace_back(
-          nullptr, 
-          TransitionTarget("", "", nullptr, {}),
-          std::move(asgns)
-        );
+  case 44: // state_input_params: LPAREN param_decl_list RPAREN
+#line 542 "./compiler/src/parser.y"
+      {
+        // Register input parameters in scope (read-only)
+        for (const auto& param : yystack_[1].value.as < std::vector<std::unique_ptr<ParamDecl>> > ()) {
+          if (is_redeclaration(param->name, true)) {
+            error(yystack_[1].location, "State input parameter '" + param->name + "' conflicts with autotuner-level declaration");
+            YYABORT;
+          }
+          state_input_params.insert(param->name);
+        }
+        yylhs.value.as < std::vector<std::unique_ptr<ParamDecl>> > () = std::move(yystack_[1].value.as < std::vector<std::unique_ptr<ParamDecl>> > ());
       }
-#line 4820 "parser.tab.cc"
+#line 4827 "parser.tab.cc"
     break;
 
-  case 84: // simple_transition: LBRACE transition_list RBRACE
-#line 618 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<Transition> > () = std::move(yystack_[1].value.as < std::vector<Transition> > ()); }
-#line 4826 "parser.tab.cc"
-    break;
-
-  case 85: // assignment_list: separated_idents ASSIGN expr SEMICOLON
-#line 623 "./compiler/src/parser.y"
+  case 45: // state_input_params: LPAREN RPAREN
+#line 554 "./compiler/src/parser.y"
       { 
-        yylhs.value.as < std::vector<Assignment> > () = std::vector<Assignment>();
-        yylhs.value.as < std::vector<Assignment> > ().emplace_back(std::move(yystack_[3].value.as < std::vector<std::string> > ()), std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()));
+        yylhs.value.as < std::vector<std::unique_ptr<ParamDecl>> > () = std::vector<std::unique_ptr<ParamDecl>>(); 
       }
 #line 4835 "parser.tab.cc"
     break;
 
-  case 86: // assignment_list: assignment_list separated_idents ASSIGN expr SEMICOLON
-#line 628 "./compiler/src/parser.y"
+  case 46: // state_input_params: %empty
+#line 558 "./compiler/src/parser.y"
       { 
-        yylhs.value.as < std::vector<Assignment> > () = std::move(yystack_[4].value.as < std::vector<Assignment> > ());
-        yylhs.value.as < std::vector<Assignment> > ().emplace_back(std::move(yystack_[3].value.as < std::vector<std::string> > ()), std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()));
+        yylhs.value.as < std::vector<std::unique_ptr<ParamDecl>> > () = std::vector<std::unique_ptr<ParamDecl>>(); 
       }
-#line 4844 "parser.tab.cc"
+#line 4843 "parser.tab.cc"
     break;
 
-  case 87: // trans_target: IDENTIFIER LBRACKET expr RBRACKET mappings
-#line 637 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<TransitionTarget> > () = std::make_unique<TransitionTarget>(
-          "",
-          std::move(yystack_[4].value.as < std::string > ()),
-          std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()),
-          std::move(yystack_[0].value.as < std::vector<Mapping> > ())
-        );
-      }
-#line 4857 "parser.tab.cc"
+  case 47: // type_spec: INT_KW
+#line 569 "./compiler/src/parser.y"
+      { yylhs.value.as < std::unique_ptr<TypeDescriptor> > () = std::make_unique<TypeDescriptor>(ParamType::Int); }
+#line 4849 "parser.tab.cc"
     break;
 
-  case 88: // trans_target: IDENTIFIER mappings
-#line 646 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<TransitionTarget> > () = std::make_unique<TransitionTarget>(
-          "",
-          std::move(yystack_[1].value.as < std::string > ()),
-          nullptr,
-          std::move(yystack_[0].value.as < std::vector<Mapping> > ())
-        );
-      }
-#line 4870 "parser.tab.cc"
+  case 48: // type_spec: FLOAT_KW
+#line 571 "./compiler/src/parser.y"
+      { yylhs.value.as < std::unique_ptr<TypeDescriptor> > () = std::make_unique<TypeDescriptor>(ParamType::Float); }
+#line 4855 "parser.tab.cc"
     break;
 
-  case 89: // trans_target: IDENTIFIER DOUBLECOLON IDENTIFIER LBRACKET expr RBRACKET mappings
-#line 655 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<TransitionTarget> > () = std::make_unique<TransitionTarget>(
-          std::move(yystack_[6].value.as < std::string > ()),
-          std::move(yystack_[4].value.as < std::string > ()),
-          std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()),
-          std::move(yystack_[0].value.as < std::vector<Mapping> > ())
-        );
-      }
-#line 4883 "parser.tab.cc"
+  case 49: // type_spec: BOOL_KW
+#line 573 "./compiler/src/parser.y"
+      { yylhs.value.as < std::unique_ptr<TypeDescriptor> > () = std::make_unique<TypeDescriptor>(ParamType::Bool); }
+#line 4861 "parser.tab.cc"
     break;
 
-  case 90: // trans_target: IDENTIFIER DOUBLECOLON IDENTIFIER mappings
-#line 664 "./compiler/src/parser.y"
+  case 50: // type_spec: STRING_KW
+#line 575 "./compiler/src/parser.y"
+      { yylhs.value.as < std::unique_ptr<TypeDescriptor> > () = std::make_unique<TypeDescriptor>(ParamType::String); }
+#line 4867 "parser.tab.cc"
+    break;
+
+  case 51: // type_spec: ERROR_KW
+#line 577 "./compiler/src/parser.y"
+      { yylhs.value.as < std::unique_ptr<TypeDescriptor> > () = std::make_unique<TypeDescriptor>(ParamType::Error, "Error"); }
+#line 4873 "parser.tab.cc"
+    break;
+
+  case 52: // type_spec: IDENTIFIER
+#line 579 "./compiler/src/parser.y"
+      {
+        // Allow user-defined struct type names declared earlier in this file.
+        if (struct_known_types.count(yystack_[0].value.as < std::string > ()) == 0) {
+          error(yystack_[0].location, "Unknown type '" + yystack_[0].value.as < std::string > () + "' — "
+                "did you forget to declare a struct with this name before use?");
+          YYABORT;
+        }
+        yylhs.value.as < std::unique_ptr<TypeDescriptor> > () = std::make_unique<TypeDescriptor>(
+            TypeDescriptor::make_struct(yystack_[0].value.as < std::string > ()));
+      }
+#line 4888 "parser.tab.cc"
+    break;
+
+  case 53: // requires_clause: USES identifier_list SEMICOLON
+#line 596 "./compiler/src/parser.y"
       { 
-        yylhs.value.as < std::unique_ptr<TransitionTarget> > () = std::make_unique<TransitionTarget>(
-          std::move(yystack_[3].value.as < std::string > ()),
-          std::move(yystack_[1].value.as < std::string > ()),
-          nullptr,
-          std::move(yystack_[0].value.as < std::vector<Mapping> > ())
-        );
+        yylhs.value.as < std::vector<std::string> > () = std::move(yystack_[1].value.as < std::vector<std::string> > ()); 
       }
 #line 4896 "parser.tab.cc"
     break;
 
-  case 91: // mappings: LBRACKET mapping_list RBRACKET
-#line 676 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<Mapping> > () = std::move(yystack_[1].value.as < std::vector<Mapping> > ()); }
-#line 4902 "parser.tab.cc"
-    break;
-
-  case 92: // mappings: %empty
-#line 678 "./compiler/src/parser.y"
-      { yylhs.value.as < std::vector<Mapping> > () = std::vector<Mapping>(); }
-#line 4908 "parser.tab.cc"
-    break;
-
-  case 93: // mapping_list: mapping_decl
-#line 683 "./compiler/src/parser.y"
+  case 54: // requires_clause: %empty
+#line 600 "./compiler/src/parser.y"
       { 
-        yylhs.value.as < std::vector<Mapping> > () = std::vector<Mapping>();
-        yylhs.value.as < std::vector<Mapping> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<Mapping> > ()));
+        yylhs.value.as < std::vector<std::string> > () = std::vector<std::string>(); 
       }
-#line 4917 "parser.tab.cc"
+#line 4904 "parser.tab.cc"
     break;
 
-  case 94: // mapping_list: mapping_list COMMA mapping_decl
-#line 688 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::vector<Mapping> > () = std::move(yystack_[2].value.as < std::vector<Mapping> > ());
-        yylhs.value.as < std::vector<Mapping> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<Mapping> > ()));
+  case 55: // identifier_list: IDENTIFIER
+#line 607 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<std::string> > () = std::vector<std::string>();
+        yylhs.value.as < std::vector<std::string> > ().push_back(std::move(yystack_[0].value.as < std::string > ()));
       }
-#line 4926 "parser.tab.cc"
+#line 4913 "parser.tab.cc"
     break;
 
-  case 95: // mapping_decl: IDENTIFIER COLON IDENTIFIER
-#line 696 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Mapping> > () = std::make_unique<Mapping>(
-          std::move(yystack_[2].value.as < std::string > ()),
-          std::move(yystack_[0].value.as < std::string > ())
-        );
+  case 56: // identifier_list: identifier_list COMMA IDENTIFIER
+#line 612 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<std::string> > () = std::move(yystack_[2].value.as < std::vector<std::string> > ());
+        yylhs.value.as < std::vector<std::string> > ().push_back(std::move(yystack_[0].value.as < std::string > ()));
       }
-#line 4937 "parser.tab.cc"
+#line 4922 "parser.tab.cc"
     break;
 
-  case 96: // mapping_decl: IDENTIFIER
-#line 703 "./compiler/src/parser.y"
+  case 57: // identifier_list: %empty
+#line 617 "./compiler/src/parser.y"
       { 
-        // Need to copy before move since we use it twice
-        std::string name_copy = yystack_[0].value.as < std::string > ();
-        yylhs.value.as < std::unique_ptr<Mapping> > () = std::make_unique<Mapping>(
-          std::move(yystack_[0].value.as < std::string > ()),
-          std::move(name_copy)
-        );
+        yylhs.value.as < std::vector<std::string> > () = std::vector<std::string>(); 
       }
-#line 4950 "parser.tab.cc"
+#line 4930 "parser.tab.cc"
     break;
 
-  case 97: // expr: expr PLUS expr
-#line 716 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("+", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+  case 58: // autotuner_var_decls: %empty
+#line 624 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<std::unique_ptr<Stmt>> > () = std::vector<std::unique_ptr<Stmt>>();
       }
-#line 4958 "parser.tab.cc"
+#line 4938 "parser.tab.cc"
     break;
 
-  case 98: // expr: expr MINUS expr
-#line 720 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("-", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+  case 59: // autotuner_var_decls: autotuner_var_decls stmt
+#line 628 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<std::unique_ptr<Stmt>> > () = std::move(yystack_[1].value.as < std::vector<std::unique_ptr<Stmt>> > ());
+        yylhs.value.as < std::vector<std::unique_ptr<Stmt>> > ().push_back(std::move(yystack_[0].value.as < std::unique_ptr<Stmt> > ()));
       }
-#line 4966 "parser.tab.cc"
+#line 4947 "parser.tab.cc"
     break;
 
-  case 99: // expr: expr MUL expr
-#line 724 "./compiler/src/parser.y"
+  case 60: // entry_state: START ARROW IDENTIFIER
+#line 636 "./compiler/src/parser.y"
       { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("*", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+        yylhs.value.as < std::string > () = std::move(yystack_[0].value.as < std::string > ()); 
       }
-#line 4974 "parser.tab.cc"
+#line 4955 "parser.tab.cc"
     break;
 
-  case 100: // expr: expr DIV expr
-#line 728 "./compiler/src/parser.y"
+  case 61: // entry_params: LPAREN expr_list RPAREN
+#line 643 "./compiler/src/parser.y"
       { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("/", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+        yylhs.value.as < std::vector<std::unique_ptr<Expr>> > () = std::move(yystack_[1].value.as < std::vector<std::unique_ptr<Expr>> > ()); 
       }
-#line 4982 "parser.tab.cc"
+#line 4963 "parser.tab.cc"
     break;
 
-  case 101: // expr: expr EQ expr
-#line 732 "./compiler/src/parser.y"
+  case 62: // entry_params: %empty
+#line 647 "./compiler/src/parser.y"
       { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("==", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+        yylhs.value.as < std::vector<std::unique_ptr<Expr>> > () = std::vector<std::unique_ptr<Expr>>(); 
       }
-#line 4990 "parser.tab.cc"
+#line 4971 "parser.tab.cc"
     break;
 
-  case 102: // expr: expr NE expr
-#line 736 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("!=", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+  case 63: // state_list: state_decl
+#line 658 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<StateDecl> > () = std::vector<StateDecl>();
+        yylhs.value.as < std::vector<StateDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<StateDecl> > ()));
+      }
+#line 4980 "parser.tab.cc"
+    break;
+
+  case 64: // state_list: state_list state_decl
+#line 663 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<StateDecl> > () = std::move(yystack_[1].value.as < std::vector<StateDecl> > ());
+        yylhs.value.as < std::vector<StateDecl> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<StateDecl> > ()));
+      }
+#line 4989 "parser.tab.cc"
+    break;
+
+  case 65: // $@4: %empty
+#line 671 "./compiler/src/parser.y"
+      {
+        // Clear state-local scope when entering new state
+        clear_state_scope();
       }
 #line 4998 "parser.tab.cc"
     break;
 
-  case 103: // expr: expr LL expr
-#line 740 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("<", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+  case 66: // state_decl: STATE IDENTIFIER $@4 state_input_params LBRACE stmt_list RBRACE
+#line 679 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<StateDecl> > () = std::make_unique<StateDecl>(
+          std::move(yystack_[5].value.as < std::string > ()), 
+          std::move(yystack_[3].value.as < std::vector<std::unique_ptr<ParamDecl>> > ()), 
+          std::move(yystack_[1].value.as < std::vector<std::unique_ptr<Stmt>> > ())
+        );
       }
-#line 5006 "parser.tab.cc"
+#line 5010 "parser.tab.cc"
     break;
 
-  case 104: // expr: expr GG expr
-#line 744 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>(">", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
-      }
-#line 5014 "parser.tab.cc"
+  case 67: // stmt_list: %empty
+#line 694 "./compiler/src/parser.y"
+      { yylhs.value.as < std::vector<std::unique_ptr<Stmt>> > () = std::vector<std::unique_ptr<Stmt>>(); }
+#line 5016 "parser.tab.cc"
     break;
 
-  case 105: // expr: expr LE expr
-#line 748 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("<=", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+  case 68: // stmt_list: stmt_list stmt
+#line 696 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<std::unique_ptr<Stmt>> > () = std::move(yystack_[1].value.as < std::vector<std::unique_ptr<Stmt>> > ());
+        yylhs.value.as < std::vector<std::unique_ptr<Stmt>> > ().push_back(std::move(yystack_[0].value.as < std::unique_ptr<Stmt> > ()));
       }
-#line 5022 "parser.tab.cc"
+#line 5025 "parser.tab.cc"
     break;
 
-  case 106: // expr: expr GE expr
-#line 752 "./compiler/src/parser.y"
+  case 69: // stmt: var_decl_stmt
+#line 704 "./compiler/src/parser.y"
       { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>(">=", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::move(yystack_[0].value.as < std::unique_ptr<VarDeclStmt> > ()); 
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[0].location);
       }
-#line 5030 "parser.tab.cc"
+#line 5034 "parser.tab.cc"
     break;
 
-  case 107: // expr: expr AND expr
-#line 756 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("&&", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
-      }
-#line 5038 "parser.tab.cc"
-    break;
-
-  case 108: // expr: expr OR expr
-#line 760 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("||", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
-      }
-#line 5046 "parser.tab.cc"
-    break;
-
-  case 109: // expr: NOT expr
-#line 764 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<UnaryExpr>("!", std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+  case 70: // stmt: IDENTIFIER ASSIGN expr SEMICOLON
+#line 709 "./compiler/src/parser.y"
+      {
+        if (!is_variable_declared(yystack_[3].value.as < std::string > ())) {
+          error(yystack_[3].location, "Assignment to undeclared variable: " + yystack_[3].value.as < std::string > ());
+          YYABORT;
+        }
+        if (autotuner_input_params.count(yystack_[3].value.as < std::string > ()) > 0 ||
+            state_input_params.count(yystack_[3].value.as < std::string > ()) > 0) {
+          error(yystack_[3].location, "Cannot assign to read-only input parameter: " + yystack_[3].value.as < std::string > ());
+          YYABORT;
+        }
+        std::vector<AssignTarget> targets;
+        targets.emplace_back(yystack_[3].value.as < std::string > ());
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<AssignStmt>(std::move(targets), std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()));
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[3].location);
       }
 #line 5054 "parser.tab.cc"
     break;
 
-  case 110: // expr: MINUS expr
-#line 768 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<UnaryExpr>("-", std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+  case 71: // stmt: assign_target_list ASSIGN expr SEMICOLON
+#line 726 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<AssignStmt>(std::move(yystack_[3].value.as < std::vector<AssignTarget> > ()), std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()));
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[3].location);
       }
-#line 5062 "parser.tab.cc"
+#line 5063 "parser.tab.cc"
     break;
 
-  case 111: // expr: expr DOT IDENTIFIER
-#line 772 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<MemberExpr>(std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::string > ()));
+  case 72: // stmt: expr DOT IDENTIFIER ASSIGN expr SEMICOLON
+#line 732 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<StructFieldAssignStmt>(
+            std::move(yystack_[5].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[3].value.as < std::string > ()), std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()));
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[5].location);
       }
-#line 5070 "parser.tab.cc"
+#line 5073 "parser.tab.cc"
     break;
 
-  case 112: // expr: primary_expr
-#line 776 "./compiler/src/parser.y"
-      { yylhs.value.as < std::unique_ptr<Expr> > () = std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()); }
-#line 5076 "parser.tab.cc"
-    break;
-
-  case 113: // primary_expr: INTEGER
-#line 781 "./compiler/src/parser.y"
-      { yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<ConstExpr>(std::stoll(yystack_[0].value.as < std::string > ())); }
+  case 73: // stmt: expr SEMICOLON
+#line 738 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<ExprStmt>(std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()));
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[1].location);
+      }
 #line 5082 "parser.tab.cc"
     break;
 
-  case 114: // primary_expr: DOUBLE
-#line 783 "./compiler/src/parser.y"
-      { yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<ConstExpr>(std::stod(yystack_[0].value.as < std::string > ())); }
-#line 5088 "parser.tab.cc"
+  case 74: // stmt: IF LPAREN expr RPAREN LBRACE stmt_list RBRACE elif_chain
+#line 743 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<IfStmt>(
+          std::move(yystack_[5].value.as < std::unique_ptr<Expr> > ()),
+          std::move(yystack_[2].value.as < std::vector<std::unique_ptr<Stmt>> > ()),
+          std::move(yystack_[0].value.as < std::vector<std::unique_ptr<Stmt>> > ())
+        );
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[7].location);
+      }
+#line 5095 "parser.tab.cc"
     break;
 
-  case 115: // primary_expr: STRING
-#line 785 "./compiler/src/parser.y"
-      { yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<ConstExpr>(std::move(yystack_[0].value.as < std::string > ())); }
-#line 5094 "parser.tab.cc"
-    break;
-
-  case 116: // primary_expr: TRUE
-#line 787 "./compiler/src/parser.y"
-      { yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<ConstExpr>(true); }
-#line 5100 "parser.tab.cc"
-    break;
-
-  case 117: // primary_expr: FALSE
-#line 789 "./compiler/src/parser.y"
-      { yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<ConstExpr>(false); }
+  case 75: // stmt: ARROW IDENTIFIER SEMICOLON
+#line 752 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<TransitionStmt>(
+          std::move(yystack_[1].value.as < std::string > ())
+        );
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[2].location);
+      }
 #line 5106 "parser.tab.cc"
     break;
 
-  case 118: // primary_expr: IDENTIFIER
-#line 791 "./compiler/src/parser.y"
-      { yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<VarExpr>(std::move(yystack_[0].value.as < std::string > ())); }
-#line 5112 "parser.tab.cc"
-    break;
-
-  case 119: // primary_expr: CONFIG_VAR
-#line 793 "./compiler/src/parser.y"
-      { yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<VarExpr>("config"); }
+  case 76: // stmt: ARROW IDENTIFIER LPAREN expr_list RPAREN SEMICOLON
+#line 759 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<TransitionStmt>(
+          std::move(yystack_[4].value.as < std::string > ()), 
+          std::move(yystack_[2].value.as < std::vector<std::unique_ptr<Expr>> > ())
+        );
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[5].location);
+      }
 #line 5118 "parser.tab.cc"
     break;
 
-  case 120: // primary_expr: NEXT IDENTIFIER
-#line 795 "./compiler/src/parser.y"
-      { yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<VarExpr>("next " + yystack_[0].value.as < std::string > ()); }
-#line 5124 "parser.tab.cc"
-    break;
-
-  case 121: // primary_expr: LPAREN expr RPAREN
-#line 797 "./compiler/src/parser.y"
-      { yylhs.value.as < std::unique_ptr<Expr> > () = std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()); }
-#line 5130 "parser.tab.cc"
-    break;
-
-  case 122: // primary_expr: IDENTIFIER LPAREN arg_list RPAREN
-#line 799 "./compiler/src/parser.y"
-      { 
-        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<CallExpr>(std::move(yystack_[3].value.as < std::string > ()), std::move(yystack_[1].value.as < std::vector<std::unique_ptr<Expr>> > ()));
+  case 77: // stmt: TERMINAL SEMICOLON
+#line 767 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Stmt> > () = std::make_unique<TerminalStmt>();
+        set_stmt_location(yylhs.value.as < std::unique_ptr<Stmt> > ().get(), yystack_[1].location);
       }
-#line 5138 "parser.tab.cc"
+#line 5127 "parser.tab.cc"
+    break;
+
+  case 78: // assign_target_list: assign_target COMMA assign_target
+#line 778 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<AssignTarget> > () = std::vector<AssignTarget>();
+        yylhs.value.as < std::vector<AssignTarget> > ().push_back(std::move(*yystack_[2].value.as < std::unique_ptr<AssignTarget> > ()));
+        yylhs.value.as < std::vector<AssignTarget> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<AssignTarget> > ()));
+      }
+#line 5137 "parser.tab.cc"
+    break;
+
+  case 79: // assign_target_list: assign_target_list COMMA assign_target
+#line 784 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<AssignTarget> > () = std::move(yystack_[2].value.as < std::vector<AssignTarget> > ());
+        yylhs.value.as < std::vector<AssignTarget> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<AssignTarget> > ()));
+      }
+#line 5146 "parser.tab.cc"
+    break;
+
+  case 80: // assign_target: IDENTIFIER
+#line 792 "./compiler/src/parser.y"
+      {
+        if (!is_variable_declared(yystack_[0].value.as < std::string > ())) {
+          error(yystack_[0].location, "Assignment to undeclared variable: " + yystack_[0].value.as < std::string > ());
+          YYABORT;
+        }
+        yylhs.value.as < std::unique_ptr<AssignTarget> > () = std::make_unique<AssignTarget>(yystack_[0].value.as < std::string > ());
+      }
+#line 5158 "parser.tab.cc"
+    break;
+
+  case 81: // assign_target: expr DOT IDENTIFIER
+#line 800 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<AssignTarget> > () = std::make_unique<AssignTarget>(std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::string > ()));
+      }
+#line 5166 "parser.tab.cc"
+    break;
+
+  case 82: // elif_chain: ELIF LPAREN expr RPAREN LBRACE stmt_list RBRACE elif_chain
+#line 807 "./compiler/src/parser.y"
+      {
+        std::vector<std::unique_ptr<Stmt>> else_vec;
+        else_vec.push_back(std::make_unique<IfStmt>(
+          std::move(yystack_[5].value.as < std::unique_ptr<Expr> > ()),
+          std::move(yystack_[2].value.as < std::vector<std::unique_ptr<Stmt>> > ()),
+          std::move(yystack_[0].value.as < std::vector<std::unique_ptr<Stmt>> > ())
+        ));
+        yylhs.value.as < std::vector<std::unique_ptr<Stmt>> > () = std::move(else_vec);
+      }
+#line 5180 "parser.tab.cc"
+    break;
+
+  case 83: // elif_chain: ELSE LBRACE stmt_list RBRACE
+#line 817 "./compiler/src/parser.y"
+      { yylhs.value.as < std::vector<std::unique_ptr<Stmt>> > () = std::move(yystack_[1].value.as < std::vector<std::unique_ptr<Stmt>> > ()); }
+#line 5186 "parser.tab.cc"
+    break;
+
+  case 84: // elif_chain: %empty
+#line 819 "./compiler/src/parser.y"
+              { yylhs.value.as < std::vector<std::unique_ptr<Stmt>> > () = std::vector<std::unique_ptr<Stmt>>(); }
+#line 5192 "parser.tab.cc"
+    break;
+
+  case 85: // var_decl_stmt: type_spec IDENTIFIER SEMICOLON
+#line 824 "./compiler/src/parser.y"
+      {
+        // Determine if we're in a state or at autotuner level
+        bool in_state = !state_local_scope.empty() || !state_input_params.empty() || 
+                       (current_errors.empty()); // Heuristic: if no errors, assume we're parsing normally
+        
+        // Check for redeclaration
+        if (is_redeclaration(yystack_[1].value.as < std::string > (), in_state)) {
+          error(yystack_[1].location, "Redeclaration of variable '" + yystack_[1].value.as < std::string > () + "' (conflicts with existing declaration)");
+          YYABORT;
+        }
+        
+        // Add to appropriate scope
+        if (in_state) {
+          state_local_scope.insert(yystack_[1].value.as < std::string > ());
+        } else {
+          autotuner_scope.insert(yystack_[1].value.as < std::string > ());
+        }
+        
+        yylhs.value.as < std::unique_ptr<VarDeclStmt> > () = std::make_unique<VarDeclStmt>(
+          std::move(*yystack_[2].value.as < std::unique_ptr<TypeDescriptor> > ()), 
+          std::move(yystack_[1].value.as < std::string > ()), 
+          std::nullopt
+        );
+      }
+#line 5221 "parser.tab.cc"
+    break;
+
+  case 86: // var_decl_stmt: type_spec IDENTIFIER ASSIGN expr SEMICOLON
+#line 849 "./compiler/src/parser.y"
+      {
+        // Determine if we're in a state or at autotuner level
+        bool in_state = !state_local_scope.empty() || !state_input_params.empty();
+        
+        // Check for redeclaration
+        if (is_redeclaration(yystack_[3].value.as < std::string > (), in_state)) {
+          error(yystack_[3].location, "Redeclaration of variable '" + yystack_[3].value.as < std::string > () + "' (conflicts with existing declaration)");
+          YYABORT;
+        }
+        
+        // Add to appropriate scope
+        if (in_state) {
+          state_local_scope.insert(yystack_[3].value.as < std::string > ());
+        } else {
+          autotuner_scope.insert(yystack_[3].value.as < std::string > ());
+        }
+        
+        yylhs.value.as < std::unique_ptr<VarDeclStmt> > () = std::make_unique<VarDeclStmt>(
+          std::move(*yystack_[4].value.as < std::unique_ptr<TypeDescriptor> > ()), 
+          std::move(yystack_[3].value.as < std::string > ()), 
+          std::make_optional(std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()))
+        );
+      }
+#line 5249 "parser.tab.cc"
+    break;
+
+  case 87: // expr: primary_expr
+#line 880 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()); 
+      }
+#line 5257 "parser.tab.cc"
+    break;
+
+  case 88: // expr: postfix_expr
+#line 884 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()); 
+      }
+#line 5265 "parser.tab.cc"
+    break;
+
+  case 89: // expr: expr PLUS expr
+#line 888 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("+", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5273 "parser.tab.cc"
+    break;
+
+  case 90: // expr: expr MINUS expr
+#line 892 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("-", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5281 "parser.tab.cc"
+    break;
+
+  case 91: // expr: expr MUL expr
+#line 896 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("*", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5289 "parser.tab.cc"
+    break;
+
+  case 92: // expr: expr DIV expr
+#line 900 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("/", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5297 "parser.tab.cc"
+    break;
+
+  case 93: // expr: expr EQ expr
+#line 904 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("==", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5305 "parser.tab.cc"
+    break;
+
+  case 94: // expr: expr NE expr
+#line 908 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("!=", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5313 "parser.tab.cc"
+    break;
+
+  case 95: // expr: expr LL expr
+#line 912 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("<", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5321 "parser.tab.cc"
+    break;
+
+  case 96: // expr: expr GG expr
+#line 916 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>(">", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5329 "parser.tab.cc"
+    break;
+
+  case 97: // expr: expr LE expr
+#line 920 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("<=", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5337 "parser.tab.cc"
+    break;
+
+  case 98: // expr: expr GE expr
+#line 924 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>(">=", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5345 "parser.tab.cc"
+    break;
+
+  case 99: // expr: expr AND expr
+#line 928 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("&&", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5353 "parser.tab.cc"
+    break;
+
+  case 100: // expr: expr OR expr
+#line 932 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<BinaryExpr>("||", std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5361 "parser.tab.cc"
+    break;
+
+  case 101: // expr: NOT expr
+#line 936 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<UnaryExpr>("!", std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5369 "parser.tab.cc"
+    break;
+
+  case 102: // expr: MINUS expr
+#line 940 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<UnaryExpr>("-", std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ())); 
+      }
+#line 5377 "parser.tab.cc"
+    break;
+
+  case 103: // postfix_expr: expr DOT IDENTIFIER
+#line 947 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<MemberExpr>(
+          std::move(yystack_[2].value.as < std::unique_ptr<Expr> > ()), 
+          std::move(yystack_[0].value.as < std::string > ())
+        ); 
+      }
+#line 5388 "parser.tab.cc"
+    break;
+
+  case 104: // postfix_expr: expr DOT IDENTIFIER LPAREN expr_list RPAREN
+#line 954 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<MethodCallExpr>(
+          std::move(yystack_[5].value.as < std::unique_ptr<Expr> > ()), 
+          std::move(yystack_[3].value.as < std::string > ()), 
+          std::move(yystack_[1].value.as < std::vector<std::unique_ptr<Expr>> > ())
+        ); 
+      }
+#line 5400 "parser.tab.cc"
+    break;
+
+  case 105: // postfix_expr: expr LBRACKET expr RBRACKET
+#line 962 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<IndexExpr>(
+          std::move(yystack_[3].value.as < std::unique_ptr<Expr> > ()), 
+          std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ())
+        ); 
+      }
+#line 5411 "parser.tab.cc"
+    break;
+
+  case 106: // postfix_expr: IDENTIFIER LPAREN RPAREN
+#line 969 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<CallExpr>(
+          std::move(yystack_[2].value.as < std::string > ()),
+          std::vector<CallArg>() // empty argument list
+        );
+      }
+#line 5422 "parser.tab.cc"
+    break;
+
+  case 107: // postfix_expr: IDENTIFIER LPAREN call_arg_list RPAREN
+#line 976 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<CallExpr>(
+          std::move(yystack_[3].value.as < std::string > ()),
+          std::move(yystack_[1].value.as < std::vector<CallArg> > ())
+        );
+      }
+#line 5433 "parser.tab.cc"
+    break;
+
+  case 108: // primary_expr: INTEGER
+#line 986 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<LiteralExpr>(std::stoll(yystack_[0].value.as < std::string > ())); 
+      }
+#line 5441 "parser.tab.cc"
+    break;
+
+  case 109: // primary_expr: DOUBLE
+#line 990 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<LiteralExpr>(std::stod(yystack_[0].value.as < std::string > ())); 
+      }
+#line 5449 "parser.tab.cc"
+    break;
+
+  case 110: // primary_expr: STRING
+#line 994 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<LiteralExpr>(std::move(yystack_[0].value.as < std::string > ())); 
+      }
+#line 5457 "parser.tab.cc"
+    break;
+
+  case 111: // primary_expr: TRUE
+#line 998 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<LiteralExpr>(true); 
+      }
+#line 5465 "parser.tab.cc"
+    break;
+
+  case 112: // primary_expr: FALSE
+#line 1002 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<LiteralExpr>(false); 
+      }
+#line 5473 "parser.tab.cc"
+    break;
+
+  case 113: // primary_expr: NIL
+#line 1006 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<NilLiteralExpr>(); 
+      }
+#line 5481 "parser.tab.cc"
+    break;
+
+  case 114: // primary_expr: IDENTIFIER
+#line 1010 "./compiler/src/parser.y"
+      {
+        // Validate that variable is declared (only check for variables, not function calls)
+        // Note: We can't easily distinguish here, so we only warn, not error
+        // The semantic analyzer will do a full check later
+        
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::make_unique<VarExpr>(std::move(yystack_[0].value.as < std::string > ())); 
+      }
+#line 5493 "parser.tab.cc"
+    break;
+
+  case 115: // primary_expr: LPAREN expr RPAREN
+#line 1018 "./compiler/src/parser.y"
+      { 
+        yylhs.value.as < std::unique_ptr<Expr> > () = std::move(yystack_[1].value.as < std::unique_ptr<Expr> > ()); 
+      }
+#line 5501 "parser.tab.cc"
+    break;
+
+  case 116: // expr_list: expr
+#line 1025 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<std::unique_ptr<Expr>> > () = std::vector<std::unique_ptr<Expr>>();
+        yylhs.value.as < std::vector<std::unique_ptr<Expr>> > ().push_back(std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+      }
+#line 5510 "parser.tab.cc"
+    break;
+
+  case 117: // expr_list: expr_list COMMA expr
+#line 1030 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<std::unique_ptr<Expr>> > () = std::move(yystack_[2].value.as < std::vector<std::unique_ptr<Expr>> > ());
+        yylhs.value.as < std::vector<std::unique_ptr<Expr>> > ().push_back(std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+      }
+#line 5519 "parser.tab.cc"
+    break;
+
+  case 118: // call_arg_list: call_arg
+#line 1038 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<CallArg> > () = std::vector<CallArg>();
+        yylhs.value.as < std::vector<CallArg> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<CallArg> > ()));
+      }
+#line 5528 "parser.tab.cc"
+    break;
+
+  case 119: // call_arg_list: call_arg_list COMMA call_arg
+#line 1043 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::vector<CallArg> > () = std::move(yystack_[2].value.as < std::vector<CallArg> > ());
+        yylhs.value.as < std::vector<CallArg> > ().push_back(std::move(*yystack_[0].value.as < std::unique_ptr<CallArg> > ()));
+      }
+#line 5537 "parser.tab.cc"
+    break;
+
+  case 120: // call_arg: expr
+#line 1051 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<CallArg> > () = std::make_unique<CallArg>(std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+      }
+#line 5545 "parser.tab.cc"
+    break;
+
+  case 121: // call_arg: IDENTIFIER ASSIGN expr
+#line 1055 "./compiler/src/parser.y"
+      {
+        yylhs.value.as < std::unique_ptr<CallArg> > () = std::make_unique<CallArg>(std::move(yystack_[2].value.as < std::string > ()), std::move(yystack_[0].value.as < std::unique_ptr<Expr> > ()));
+      }
+#line 5553 "parser.tab.cc"
     break;
 
 
-#line 5142 "parser.tab.cc"
+#line 5557 "parser.tab.cc"
 
             default:
               break;
@@ -5172,10 +5587,11 @@ namespace falcon { namespace atc {
         ++yynerrs_;
         context yyctx (*this, yyla);
         std::string msg = yysyntax_error_ (yyctx);
-        error (YY_MOVE (msg));
+        error (yyla.location, YY_MOVE (msg));
       }
 
 
+    yyerror_range[1].location = yyla.location;
     if (yyerrstatus_ == 3)
       {
         /* If just tried and failed to reuse lookahead token after an
@@ -5237,6 +5653,7 @@ namespace falcon { namespace atc {
         if (yystack_.size () == 1)
           YYABORT;
 
+        yyerror_range[1].location = yystack_[0].location;
         yy_destroy_ ("Error: popping", yystack_[0]);
         yypop_ ();
         YY_STACK_PRINT ();
@@ -5244,9 +5661,10 @@ namespace falcon { namespace atc {
     {
       stack_symbol_type error_token;
 
+      yyerror_range[2].location = yyla.location;
+      YYLLOC_DEFAULT (error_token.location, yyerror_range, 2);
 
       // Shift the error token.
-      yy_lac_discard_ ("error recovery");
       error_token.state = state_type (yyn);
       yypush_ ("Shifting", YY_MOVE (error_token));
     }
@@ -5310,36 +5728,53 @@ namespace falcon { namespace atc {
   void
   Parser::error (const syntax_error& yyexc)
   {
-    error (yyexc.what ());
+    error (yyexc.location, yyexc.what ());
   }
 
-  const char *
+  /* Return YYSTR after stripping away unnecessary quotes and
+     backslashes, so that it's suitable for yyerror.  The heuristic is
+     that double-quoting is unnecessary unless the string contains an
+     apostrophe, a comma, or backslash (other than backslash-backslash).
+     YYSTR is taken from yytname.  */
+  std::string
+  Parser::yytnamerr_ (const char *yystr)
+  {
+    if (*yystr == '"')
+      {
+        std::string yyr;
+        char const *yyp = yystr;
+
+        for (;;)
+          switch (*++yyp)
+            {
+            case '\'':
+            case ',':
+              goto do_not_strip_quotes;
+
+            case '\\':
+              if (*++yyp != '\\')
+                goto do_not_strip_quotes;
+              else
+                goto append;
+
+            append:
+            default:
+              yyr += *yyp;
+              break;
+
+            case '"':
+              return yyr;
+            }
+      do_not_strip_quotes: ;
+      }
+
+    return yystr;
+  }
+
+  std::string
   Parser::symbol_name (symbol_kind_type yysymbol)
   {
-    static const char *const yy_sname[] =
-    {
-    "end of file", "error", "invalid token", "IDENTIFIER", "DOUBLE",
-  "INTEGER", "STRING", "AUTOTUNER", "STATE", "PARAMS", "TEMP",
-  "MEASUREMENT", "RUN", "START", "REQUIRES", "TERMINAL", "IF", "ELSE",
-  "TRUE", "FALSE", "SUCCESS", "FAIL", "SPEC_INPUTS", "SPEC_OUTPUTS",
-  "CONFIG_VAR", "NEXT", "FOR", "IN", "FLOAT_KW", "INT_KW", "BOOL_KW",
-  "STRING_KW", "QUANTITY_KW", "CONFIG_KW", "GROUP_KW", "CONNECTION_KW",
-  "ARROW", "DOUBLECOLON", "LBRACKET", "RBRACKET", "LBRACE", "RBRACE",
-  "LPAREN", "RPAREN", "ASSIGN", "COMMA", "COLON", "SEMICOLON", "DOT",
-  "PLUS", "MINUS", "MUL", "DIV", "EQ", "NE", "LL", "GG", "LE", "GE", "AND",
-  "OR", "NOT", "UMINUS", "$accept", "program", "autotuners",
-  "autotuner_decl", "input_params", "output_params", "sig_param_list",
-  "sig_param_decl", "generic_params", "spec_inputs", "spec_outputs",
-  "spec_list", "spec_decl", "requires_clause", "separated_idents",
-  "separated_strings", "params_block", "param_list", "param_decl",
-  "type_spec", "entry_clause", "loop_list", "loop_decl", "loop_states",
-  "states", "state_list", "state_decl", "state_params", "state_temps",
-  "measurement_opt", "arg_list", "nonempty_arg_list", "transition_list",
-  "transition_decl", "simple_transition", "assignment_list",
-  "trans_target", "mappings", "mapping_list", "mapping_decl", "expr",
-  "primary_expr", YY_NULLPTR
-    };
-    return yy_sname[yysymbol];
+    return yytnamerr_ (yytname_[yysymbol]);
   }
 
 
@@ -5356,28 +5791,29 @@ namespace falcon { namespace atc {
     // Actual number of expected tokens
     int yycount = 0;
 
-#if YYDEBUG
-    // Execute LAC once. We don't care if it is successful, we
-    // only do it for the sake of debugging output.
-    if (!yyparser_.yy_lac_established_)
-      yyparser_.yy_lac_check_ (yyla_.kind ());
-#endif
-
-    for (int yyx = 0; yyx < YYNTOKENS; ++yyx)
+    const int yyn = yypact_[+yyparser_.yystack_[0].state];
+    if (!yy_pact_value_is_default_ (yyn))
       {
-        symbol_kind_type yysym = YY_CAST (symbol_kind_type, yyx);
-        if (yysym != symbol_kind::S_YYerror
-            && yysym != symbol_kind::S_YYUNDEF
-            && yyparser_.yy_lac_check_ (yysym))
-          {
-            if (!yyarg)
-              ++yycount;
-            else if (yycount == yyargn)
-              return 0;
-            else
-              yyarg[yycount++] = yysym;
-          }
+        /* Start YYX at -YYN if negative to avoid negative indexes in
+           YYCHECK.  In other words, skip the first -YYN actions for
+           this state because they are default actions.  */
+        const int yyxbegin = yyn < 0 ? -yyn : 0;
+        // Stay within bounds of both yycheck and yytname.
+        const int yychecklim = yylast_ - yyn + 1;
+        const int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
+        for (int yyx = yyxbegin; yyx < yyxend; ++yyx)
+          if (yycheck_[yyx + yyn] == yyx && yyx != symbol_kind::S_YYerror
+              && !yy_table_value_is_error_ (yytable_[yyx + yyn]))
+            {
+              if (!yyarg)
+                ++yycount;
+              else if (yycount == yyargn)
+                return 0;
+              else
+                yyarg[yycount++] = YY_CAST (symbol_kind_type, yyx);
+            }
       }
+
     if (yyarg && yycount == 0 && 0 < yyargn)
       yyarg[0] = symbol_kind::S_YYEMPTY;
     return yycount;
@@ -5386,145 +5822,6 @@ namespace falcon { namespace atc {
 
 
 
-  bool
-  Parser::yy_lac_check_ (symbol_kind_type yytoken) const
-  {
-    // Logically, the yylac_stack's lifetime is confined to this function.
-    // Clear it, to get rid of potential left-overs from previous call.
-    yylac_stack_.clear ();
-    // Reduce until we encounter a shift and thereby accept the token.
-#if YYDEBUG
-    YYCDEBUG << "LAC: checking lookahead " << symbol_name (yytoken) << ':';
-#endif
-    std::ptrdiff_t lac_top = 0;
-    while (true)
-      {
-        state_type top_state = (yylac_stack_.empty ()
-                                ? yystack_[lac_top].state
-                                : yylac_stack_.back ());
-        int yyrule = yypact_[+top_state];
-        if (yy_pact_value_is_default_ (yyrule)
-            || (yyrule += yytoken) < 0 || yylast_ < yyrule
-            || yycheck_[yyrule] != yytoken)
-          {
-            // Use the default action.
-            yyrule = yydefact_[+top_state];
-            if (yyrule == 0)
-              {
-                YYCDEBUG << " Err\n";
-                return false;
-              }
-          }
-        else
-          {
-            // Use the action from yytable.
-            yyrule = yytable_[yyrule];
-            if (yy_table_value_is_error_ (yyrule))
-              {
-                YYCDEBUG << " Err\n";
-                return false;
-              }
-            if (0 < yyrule)
-              {
-                YYCDEBUG << " S" << yyrule << '\n';
-                return true;
-              }
-            yyrule = -yyrule;
-          }
-        // By now we know we have to simulate a reduce.
-        YYCDEBUG << " R" << yyrule - 1;
-        // Pop the corresponding number of values from the stack.
-        {
-          std::ptrdiff_t yylen = yyr2_[yyrule];
-          // First pop from the LAC stack as many tokens as possible.
-          std::ptrdiff_t lac_size = std::ptrdiff_t (yylac_stack_.size ());
-          if (yylen < lac_size)
-            {
-              yylac_stack_.resize (std::size_t (lac_size - yylen));
-              yylen = 0;
-            }
-          else if (lac_size)
-            {
-              yylac_stack_.clear ();
-              yylen -= lac_size;
-            }
-          // Only afterwards look at the main stack.
-          // We simulate popping elements by incrementing lac_top.
-          lac_top += yylen;
-        }
-        // Keep top_state in sync with the updated stack.
-        top_state = (yylac_stack_.empty ()
-                     ? yystack_[lac_top].state
-                     : yylac_stack_.back ());
-        // Push the resulting state of the reduction.
-        state_type state = yy_lr_goto_state_ (top_state, yyr1_[yyrule]);
-        YYCDEBUG << " G" << int (state);
-        yylac_stack_.push_back (state);
-      }
-  }
-
-  // Establish the initial context if no initial context currently exists.
-  bool
-  Parser::yy_lac_establish_ (symbol_kind_type yytoken)
-  {
-    /* Establish the initial context for the current lookahead if no initial
-       context is currently established.
-
-       We define a context as a snapshot of the parser stacks.  We define
-       the initial context for a lookahead as the context in which the
-       parser initially examines that lookahead in order to select a
-       syntactic action.  Thus, if the lookahead eventually proves
-       syntactically unacceptable (possibly in a later context reached via a
-       series of reductions), the initial context can be used to determine
-       the exact set of tokens that would be syntactically acceptable in the
-       lookahead's place.  Moreover, it is the context after which any
-       further semantic actions would be erroneous because they would be
-       determined by a syntactically unacceptable token.
-
-       yy_lac_establish_ should be invoked when a reduction is about to be
-       performed in an inconsistent state (which, for the purposes of LAC,
-       includes consistent states that don't know they're consistent because
-       their default reductions have been disabled).
-
-       For parse.lac=full, the implementation of yy_lac_establish_ is as
-       follows.  If no initial context is currently established for the
-       current lookahead, then check if that lookahead can eventually be
-       shifted if syntactic actions continue from the current context.  */
-    if (yy_lac_established_)
-      return true;
-    else
-      {
-#if YYDEBUG
-        YYCDEBUG << "LAC: initial context established for "
-                 << symbol_name (yytoken) << '\n';
-#endif
-        yy_lac_established_ = true;
-        return yy_lac_check_ (yytoken);
-      }
-  }
-
-  // Discard any previous initial lookahead context.
-  void
-  Parser::yy_lac_discard_ (const char* event)
-  {
-   /* Discard any previous initial lookahead context because of Event,
-      which may be a lookahead change or an invalidation of the currently
-      established initial context for the current lookahead.
-
-      The most common example of a lookahead change is a shift.  An example
-      of both cases is syntax error recovery.  That is, a syntax error
-      occurs when the lookahead is syntactically erroneous for the
-      currently established initial context, so error recovery manipulates
-      the parser stacks to try to find a new initial context in which the
-      current lookahead is syntactically acceptable.  If it fails to find
-      such a context, it discards the lookahead.  */
-    if (yy_lac_established_)
-      {
-        YYCDEBUG << "LAC: initial context discarded due to "
-                 << event << '\n';
-        yy_lac_established_ = false;
-      }
-  }
 
 
   int
@@ -5546,12 +5843,14 @@ namespace falcon { namespace atc {
          been a previous inconsistent state, consistent state with a
          non-default action, or user semantic action that manipulated
          yyla.  (However, yyla is currently not documented for users.)
-         In the first two cases, it might appear that the current syntax
-         error should have been detected in the previous state when
-         yy_lac_check was invoked.  However, at that time, there might
-         have been a different syntax error that discarded a different
-         initial context during error recovery, leaving behind the
-         current lookahead.
+       - Of course, the expected token list depends on states to have
+         correct lookahead information, and it depends on the parser not
+         to perform extra reductions after fetching a lookahead from the
+         scanner and before detecting a syntax error.  Thus, state merging
+         (from LALR or IELR) and default reductions corrupt the expected
+         token list.  However, the list is correct for canonical LR with
+         one exception: it will still contain any token that will not be
+         accepted due to an error action in a later state.
     */
 
     if (!yyctx.lookahead ().empty ())
@@ -5606,281 +5905,386 @@ namespace falcon { namespace atc {
   }
 
 
-  const short Parser::yypact_ninf_ = -191;
+  const short Parser::yypact_ninf_ = -224;
 
-  const signed char Parser::yytable_ninf_ = -97;
+  const signed char Parser::yytable_ninf_ = -82;
 
   const short
   Parser::yypact_[] =
   {
-       7,    53,    65,     7,  -191,    29,  -191,  -191,   169,    40,
-    -191,  -191,  -191,  -191,  -191,  -191,  -191,  -191,    73,  -191,
-      89,   104,    63,  -191,   169,  -191,  -191,   -30,    68,  -191,
-    -191,   110,   169,    82,  -191,    76,   113,  -191,    85,   116,
-     103,   112,   136,    10,   131,   124,   162,  -191,  -191,   -16,
-     169,   137,   139,   163,   133,    97,   370,  -191,   179,   169,
-     169,   183,   194,  -191,  -191,  -191,  -191,  -191,   184,   382,
-     303,  -191,   218,   220,   221,     0,  -191,   222,  -191,  -191,
-    -191,    57,   193,   215,   238,  -191,   202,   250,  -191,   300,
-      56,  -191,  -191,    56,    88,  -191,  -191,  -191,   217,  -191,
-    -191,  -191,  -191,  -191,  -191,   257,    56,    56,    56,   228,
-    -191,   178,   258,   332,    56,  -191,   196,   292,   292,  -191,
-     339,    56,    56,    56,    56,    56,    56,    56,    56,    56,
-      56,    56,    56,   250,   304,   313,   344,   312,   311,   325,
-    -191,  -191,    39,    39,   292,   292,   115,   115,   115,   115,
-     115,   115,   374,   338,    12,  -191,   327,   169,   328,    16,
-    -191,    56,  -191,  -191,   332,   317,   169,   323,   324,   141,
-     325,   344,  -191,   331,   354,   368,   359,   365,   361,    -1,
-     415,   141,    41,    48,  -191,  -191,    16,  -191,   377,   378,
-    -191,    56,  -191,   386,  -191,    96,   387,    92,   109,     4,
-      56,  -191,  -191,   141,    56,    56,   214,  -191,   432,    90,
-    -191,  -191,    56,  -191,   400,    98,   242,   132,   394,   395,
-     141,   401,    37,    13,  -191,   135,   256,   415,    56,  -191,
-    -191,   393,   396,  -191,   424,    90,  -191,   439,  -191,   441,
-     407,  -191,   399,   270,  -191,  -191,   141,   157,  -191,   402,
-    -191,   441,  -191,  -191,  -191,  -191,   407,  -191
+    -224,    59,    40,  -224,     1,    61,  -224,    41,   100,   112,
+     128,  -224,  -224,  -224,    -2,    82,   117,   135,  -224,  -224,
+    -224,  -224,  -224,   145,  -224,  -224,   119,   119,   329,   131,
+     132,   138,  -224,  -224,  -224,  -224,  -224,  -224,  -224,   127,
+     156,  -224,   -13,  -224,   171,   147,   147,  -224,   135,    58,
+    -224,   329,   157,   329,   160,   165,  -224,   365,  -224,  -224,
+     365,    63,   178,  -224,   164,  -224,  -224,  -224,  -224,  -224,
+    -224,   365,   365,   365,   427,  -224,  -224,   735,  -224,   193,
+    -224,   306,   113,   449,   -12,   -12,   365,  -224,   195,   365,
+     365,   365,   365,   365,   365,   365,   365,   365,   365,   365,
+     365,  -224,   -21,    43,    51,   168,  -224,  -224,   202,  -224,
+     471,    68,  -224,   735,    70,  -224,  -224,   493,   175,    86,
+      86,   -12,   -12,   820,   820,   133,   133,   133,   133,   800,
+     779,   204,  -224,    19,   182,   174,   179,   211,   184,  -224,
+      46,   191,  -224,   515,   365,   365,    77,  -224,   223,   365,
+    -224,   389,  -224,   365,  -224,   365,   224,  -224,   365,    25,
+     365,   196,   365,   412,   412,  -224,   227,   537,   559,   365,
+    -224,    90,   735,  -224,   735,    95,   581,  -224,   603,   365,
+    -224,    96,   225,   625,    39,  -224,   757,  -224,    44,  -224,
+     203,   647,   365,  -224,   365,  -224,   206,   104,  -224,   230,
+      -1,  -224,  -224,   238,   365,  -224,  -224,   669,   735,  -224,
+     207,  -224,  -224,  -224,    52,   691,   342,  -224,   162,  -224,
+     212,  -224,    71,    71,  -224,   317,   215,   214,   217,  -224,
+    -224,  -224,   108,  -224,   365,  -224,  -224,   198,   713,   234,
+    -224,   221,  -224,  -224,   270,    71,  -224
   };
 
   const signed char
   Parser::yydefact_[] =
   {
-       0,     0,     0,     2,     3,     7,     1,     4,    12,    15,
-      39,    40,    41,    42,    43,    44,    45,    46,     0,    10,
-       0,     0,     0,     6,     0,    13,    27,     0,     9,    11,
-      14,     0,    12,     0,    28,     0,    26,     8,     0,    17,
-       0,     0,    19,     0,     0,     0,    34,    30,    29,     0,
-      22,     0,     0,     0,     0,     0,     0,    20,     0,    22,
-       0,     0,    50,    25,    32,    31,    16,    21,    24,     0,
-       0,    35,     0,     0,     0,    57,    48,     0,    18,    33,
-      36,     0,     0,     0,     0,    49,     0,    54,    55,     0,
-       0,    37,    47,     0,     0,     5,    56,    23,   118,   114,
-     113,   115,   116,   117,   119,     0,     0,     0,     0,     0,
-     112,     0,     0,    61,    68,   120,     0,   110,   109,    38,
+       3,     0,     9,     1,     0,     5,     4,     0,     0,     0,
+       7,    10,    29,    31,     0,     0,     0,     2,     6,    32,
+      30,    11,    33,     0,     8,    13,    37,    37,    17,     0,
+       0,     0,    52,    48,    47,    49,    50,    51,    14,    18,
+       0,    36,     0,    40,     0,    39,    39,    12,     0,     0,
+      35,     0,    42,     0,     0,    21,    19,     0,    15,    41,
+       0,     0,    54,    22,   114,   109,   108,   110,   111,   112,
+     113,     0,     0,     0,     0,    88,    87,    43,    38,    57,
+      58,     0,     0,     0,   102,   101,     0,    16,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,    63,     0,    67,    69,
-     121,   111,    97,    98,    99,   100,   101,   102,   103,   104,
-     105,   106,   107,   108,     0,    52,     0,     0,     0,    66,
-     122,     0,    51,    53,    61,     0,     0,     0,     0,    73,
-      70,    63,    60,     0,     0,     0,     0,     0,     0,     0,
-       0,    73,     0,     0,    71,    74,    66,    62,     0,     0,
-      80,     0,    77,     0,    79,    92,     0,     0,     0,     0,
-       0,    59,    72,    73,    68,    68,     0,    78,     0,     0,
-      88,    81,     0,    84,     0,     0,     0,     0,     0,     0,
-       0,    92,   118,     0,    93,     0,     0,     0,     0,    83,
-      58,     0,     0,    75,    74,     0,    90,     0,    91,     0,
-      92,    83,     0,     0,    64,    65,     0,     0,    95,    96,
-      94,     0,    87,    82,    86,    76,    92,    89
+       0,    55,     0,     0,   114,     0,    20,    23,     0,    24,
+       0,   114,   106,   120,     0,   118,   115,     0,   103,    89,
+      90,    91,    92,    93,    94,    95,    96,    97,    98,    99,
+     100,     0,    53,   114,     0,     0,     0,     0,    62,    59,
+       0,     0,    69,     0,     0,     0,     0,    28,     0,     0,
+     107,     0,   105,     0,    56,     0,     0,    77,     0,     0,
+       0,     0,     0,     0,     0,    73,     0,     0,     0,     0,
+      85,   103,   121,   119,   116,     0,     0,    60,     0,     0,
+      75,     0,     0,     0,   114,    79,     0,    78,   103,    25,
+       0,     0,     0,   104,     0,    70,     0,     0,    61,     0,
+       0,    63,    71,     0,     0,    22,    86,     0,   117,    67,
+       0,    65,    34,    64,   103,     0,     0,    26,     0,    76,
+      46,    72,    84,    84,    68,     0,     0,     0,     0,    27,
+      74,    45,     0,    67,     0,    67,    44,     0,     0,     0,
+      66,     0,    83,    67,     0,    84,    82
   };
 
   const short
   Parser::yypgoto_[] =
   {
-    -191,  -191,  -191,   444,  -191,  -191,   417,   426,  -191,  -191,
-    -191,   392,   -45,  -191,   -21,  -191,  -191,  -145,   -68,    -2,
-    -191,  -191,   379,  -191,  -191,  -191,   -84,   288,   282,   269,
-     -50,  -191,  -126,  -173,   236,  -191,   230,  -190,  -191,   219,
-     -89,  -191
+    -224,  -224,  -224,  -224,  -224,  -224,  -224,  -224,  -224,  -224,
+    -224,  -224,   213,    57,  -224,  -224,  -224,  -224,  -224,   236,
+     205,   -50,   216,  -224,   -28,  -224,  -224,  -224,  -224,  -224,
+    -224,    66,  -224,  -223,   166,  -224,   -17,  -212,   -75,   -55,
+    -224,  -224,  -151,  -224,   120
   };
 
   const unsigned char
   Parser::yydefgoto_[] =
   {
-       0,     2,     3,     4,     9,    33,    18,    19,    22,    42,
-      46,    56,    57,    39,   182,    49,    53,    70,    71,    72,
-      62,    75,    76,   154,    86,    87,    88,   136,   159,   169,
-     137,   138,   183,   184,   185,   199,   196,   210,   223,   224,
-     139,   110
+       0,     1,     2,    10,    17,     5,    11,    25,    28,    38,
+      39,    48,    24,    81,   107,     6,    14,    18,    26,    30,
+      54,    42,    43,   226,   108,    80,   102,   103,   138,   161,
+     200,   201,   220,   218,   224,   140,   141,   229,   142,   143,
+      75,    76,   175,   114,   115
   };
 
   const short
   Parser::yytable_[] =
   {
-      27,   109,    80,    96,   111,   193,    20,    26,    84,    30,
-     202,    67,   165,    47,     1,    31,    48,   116,   117,   118,
-      84,   173,    20,    54,    67,   202,    74,   167,   168,    55,
-      20,   236,   142,   143,   144,   145,   146,   147,   148,   149,
-     150,   151,   152,   153,   202,   214,   194,   233,    58,   155,
-     252,    26,   238,   162,    58,   198,     5,    58,   239,    98,
-      99,   100,   101,   176,   177,     6,   257,    58,   178,   179,
-     163,     8,   170,   255,   102,   103,   -96,   217,    21,   114,
-     104,   105,   -96,   237,   180,   200,    31,   120,   181,   201,
-     123,   124,    25,   222,    99,   100,   101,    80,   106,    28,
-      64,    90,   206,    65,    91,    80,   107,    26,   102,   103,
-      32,   216,    26,    34,   104,   105,    23,   108,    24,    37,
-     225,    24,    36,   226,   176,   177,   112,    38,   113,   178,
-     179,    40,   106,   208,   209,    26,   212,    31,    41,   243,
-     107,    43,   228,    31,    26,   180,   247,   176,   177,   181,
-     213,   108,   178,   179,   218,   219,   176,   177,    44,    45,
-     197,   178,   179,   120,   121,   122,   123,   124,   180,    50,
-      51,    52,   181,   230,   240,    59,    61,   180,   215,    60,
-      63,   181,    68,   120,   121,   122,   123,   124,   125,   126,
-     127,   128,   129,   130,   131,   132,   256,    10,    11,    12,
-      13,    14,    15,    16,    17,   120,   121,   122,   123,   124,
-     125,   126,   127,   128,   129,   130,   131,   132,   133,    73,
-      74,    81,    77,    82,    83,    89,   120,   121,   122,   123,
-     124,   125,   126,   127,   128,   129,   130,   131,   132,   140,
-      92,    94,    93,    95,   120,   121,   122,   123,   124,   125,
-     126,   127,   128,   129,   130,   131,   132,   220,    84,   114,
-     115,   134,   120,   121,   122,   123,   124,   125,   126,   127,
-     128,   129,   130,   131,   132,   119,   120,   121,   122,   123,
-     124,   125,   126,   127,   128,   129,   130,   131,   132,   229,
-     120,   121,   122,   123,   124,   125,   126,   127,   128,   129,
-     130,   131,   132,   241,   120,   121,   122,   123,   124,   125,
-     126,   127,   128,   129,   130,   131,   132,   254,   120,   121,
-     122,   123,   124,   125,   126,   127,   128,   129,   130,   131,
-     132,    10,    11,    12,    13,    14,    15,    16,    17,    97,
-     120,   135,   141,   156,    79,    10,    11,    12,    13,    14,
-      15,    16,    17,   157,   158,   160,   161,   188,   172,    10,
-      11,    12,    13,    14,    15,    16,    17,   164,   166,   174,
-     175,   189,   187,   120,   121,   122,   123,   124,   125,   126,
-     127,   128,   129,   130,   131,   132,   120,   121,   122,   123,
-     124,   125,   126,   127,   128,   129,   130,   131,    10,    11,
-      12,    13,    14,    15,    16,    17,   190,   191,   192,    66,
-      10,    11,    12,    13,    14,    15,    16,    17,   195,   204,
-     205,    78,   120,   121,   122,   123,   124,   125,   126,   127,
-     128,   129,   130,   207,   211,   221,   227,   231,   232,   235,
-     244,   246,   248,   245,   249,   251,   253,     7,   237,    35,
-      29,    69,   171,   186,    85,   203,   234,   242,   250
+      40,    44,    74,    61,    19,    77,   109,     7,   199,   181,
+     237,   230,   239,   131,   132,    86,    83,    84,    85,    50,
+     244,    51,   -52,    44,    88,    44,   110,   113,   197,   212,
+      20,   117,     8,   246,   119,   120,   121,   122,   123,   124,
+     125,   126,   127,   128,   129,   130,   133,    65,    66,    67,
+      82,     4,   155,   -80,   -52,   134,   179,   135,   136,     3,
+     180,    68,    69,    70,    33,    34,    35,    36,    37,   137,
+      82,     9,   -80,   -80,    71,   153,    12,   204,   -81,   162,
+     163,    72,    82,   153,   144,   -81,   -81,   227,   228,   167,
+     168,    57,    73,    58,   172,    78,   113,    51,   174,    82,
+     176,   149,   150,   178,   151,   174,    13,   183,   186,   186,
+     169,    21,   170,    86,   191,    15,   111,    65,    66,    67,
+      22,   153,    88,   192,   174,    91,    92,   193,   198,   194,
+     194,    68,    69,    70,    32,    16,   210,   207,   194,   208,
+     236,   109,    51,    23,    71,   112,   185,   187,    27,   215,
+      29,    72,    33,    34,    35,    36,    37,    47,    45,    49,
+      86,   110,    73,    41,    46,   133,    65,    66,    67,    88,
+      89,    90,    91,    92,    52,   232,   135,   136,    53,   238,
+      68,    69,    70,    33,    34,    35,    36,    37,   137,    62,
+      60,    79,   223,    71,    63,    82,   101,    44,   118,   145,
+      72,   133,    65,    66,    67,   146,   153,   154,   156,   157,
+     158,    73,   135,   136,   159,   160,    68,    69,    70,    33,
+      34,    35,    36,    37,   137,   164,   171,   177,   240,    71,
+     188,   182,   205,   211,   199,   209,    72,   133,    65,    66,
+      67,   214,   219,   225,   233,   234,   235,    73,   135,   136,
+     243,    55,    68,    69,    70,    33,    34,    35,    36,    37,
+     137,    56,   216,    31,   242,    71,   213,    59,     0,   139,
+       0,   173,    72,   133,    65,    66,    67,     0,     0,     0,
+       0,     0,     0,    73,   135,   136,     0,     0,    68,    69,
+      70,    33,    34,    35,    36,    37,   137,     0,     0,     0,
+     245,    71,     0,     0,     0,     0,     0,     0,    72,   104,
+      65,    66,    67,     0,     0,     0,     0,     0,     0,    73,
+      32,   105,     0,     0,    68,    69,    70,    33,    34,    35,
+      36,    37,    32,     0,     0,     0,   106,    71,    33,    34,
+      35,    36,    37,     0,    72,   104,    65,    66,    67,   231,
+      33,    34,    35,    36,    37,    73,     0,   105,     0,     0,
+      68,    69,    70,    33,    34,    35,    36,    37,    64,    65,
+      66,    67,   222,    71,     0,     0,     0,     0,     0,     0,
+      72,     0,     0,    68,    69,    70,     0,     0,     0,     0,
+       0,    73,   111,    65,    66,    67,    71,     0,     0,     0,
+       0,     0,     0,    72,     0,     0,     0,    68,    69,    70,
+       0,     0,     0,     0,    73,   184,    65,    66,    67,     0,
+      71,     0,     0,     0,     0,     0,     0,    72,     0,     0,
+      68,    69,    70,     0,     0,     0,     0,     0,    73,     0,
+       0,     0,     0,    71,     0,     0,     0,     0,     0,     0,
+      72,     0,     0,     0,    86,     0,     0,     0,     0,     0,
+       0,    73,    87,    88,    89,    90,    91,    92,    93,    94,
+      95,    96,    97,    98,    99,   100,    86,     0,     0,     0,
+       0,   116,     0,     0,     0,    88,    89,    90,    91,    92,
+      93,    94,    95,    96,    97,    98,    99,   100,    86,     0,
+       0,     0,     0,     0,     0,     0,   147,   148,    89,    90,
+      91,    92,    93,    94,    95,    96,    97,    98,    99,   100,
+      86,   152,     0,     0,     0,     0,     0,     0,     0,    88,
+      89,    90,    91,    92,    93,    94,    95,    96,    97,    98,
+      99,   100,    86,     0,     0,     0,     0,     0,     0,     0,
+     165,   166,    89,    90,    91,    92,    93,    94,    95,    96,
+      97,    98,    99,   100,    86,     0,     0,     0,     0,     0,
+       0,     0,   189,    88,    89,    90,    91,    92,    93,    94,
+      95,    96,    97,    98,    99,   100,    86,     0,     0,     0,
+       0,   190,     0,     0,     0,    88,    89,    90,    91,    92,
+      93,    94,    95,    96,    97,    98,    99,   100,    86,     0,
+       0,     0,     0,     0,     0,     0,   195,    88,    89,    90,
+      91,    92,    93,    94,    95,    96,    97,    98,    99,   100,
+      86,     0,     0,     0,     0,   196,     0,     0,     0,    88,
+      89,    90,    91,    92,    93,    94,    95,    96,    97,    98,
+      99,   100,    86,     0,     0,     0,     0,     0,     0,     0,
+     202,    88,    89,    90,    91,    92,    93,    94,    95,    96,
+      97,    98,    99,   100,    86,     0,     0,     0,     0,     0,
+       0,     0,   206,    88,    89,    90,    91,    92,    93,    94,
+      95,    96,    97,    98,    99,   100,    86,     0,     0,     0,
+       0,     0,     0,     0,   217,    88,    89,    90,    91,    92,
+      93,    94,    95,    96,    97,    98,    99,   100,    86,     0,
+       0,     0,     0,     0,     0,     0,   221,    88,    89,    90,
+      91,    92,    93,    94,    95,    96,    97,    98,    99,   100,
+      86,     0,     0,     0,     0,   241,     0,     0,     0,    88,
+      89,    90,    91,    92,    93,    94,    95,    96,    97,    98,
+      99,   100,    86,     0,     0,     0,     0,     0,     0,     0,
+       0,    88,    89,    90,    91,    92,    93,    94,    95,    96,
+      97,    98,    99,   100,    86,     0,     0,     0,     0,     0,
+       0,     0,     0,   203,    89,    90,    91,    92,    93,    94,
+      95,    96,    97,    98,    99,   100,    86,     0,     0,     0,
+       0,     0,     0,     0,     0,    88,    89,    90,    91,    92,
+      93,    94,    95,    96,    97,    98,    99,    86,     0,     0,
+       0,     0,     0,     0,     0,     0,    88,    89,    90,    91,
+      92,    93,    94,    95,    96,    97,    98,    86,     0,     0,
+       0,     0,     0,     0,     0,     0,    88,    89,    90,    91,
+      92,     0,     0,    95,    96,    97,    98
   };
 
   const short
   Parser::yycheck_[] =
   {
-      21,    90,    70,    87,    93,     6,     8,     3,     8,    39,
-     183,    56,   157,     3,     7,    45,     6,   106,   107,   108,
-       8,   166,    24,    39,    69,   198,    26,    11,    12,    45,
-      32,   221,   121,   122,   123,   124,   125,   126,   127,   128,
-     129,   130,   131,   132,   217,    41,    47,   220,    50,   133,
-     240,     3,    39,    41,    56,   181,     3,    59,    45,     3,
-       4,     5,     6,    15,    16,     0,   256,    69,    20,    21,
-     154,    42,   161,   246,    18,    19,    39,   203,    38,    42,
-      24,    25,    45,    46,    36,    44,    45,    48,    40,    41,
-      51,    52,     3,     3,     4,     5,     6,   165,    42,    36,
-       3,    44,   191,     6,    47,   173,    50,     3,    18,    19,
-      42,   200,     3,     3,    24,    25,    43,    61,    45,    43,
-     209,    45,    40,   212,    15,    16,    38,    14,    40,    20,
-      21,    46,    42,    37,    38,     3,    44,    45,    22,   228,
-      50,    38,    44,    45,     3,    36,   235,    15,    16,    40,
-      41,    61,    20,    21,   204,   205,    15,    16,    46,    23,
-     181,    20,    21,    48,    49,    50,    51,    52,    36,    38,
-      46,     9,    40,    41,    39,    38,    13,    36,   199,    40,
-      47,    40,     3,    48,    49,    50,    51,    52,    53,    54,
-      55,    56,    57,    58,    59,    60,    39,    28,    29,    30,
-      31,    32,    33,    34,    35,    48,    49,    50,    51,    52,
-      53,    54,    55,    56,    57,    58,    59,    60,    40,    36,
-      26,     3,    38,     3,     3,     3,    48,    49,    50,    51,
-      52,    53,    54,    55,    56,    57,    58,    59,    60,    43,
-      47,     3,    27,    41,    48,    49,    50,    51,    52,    53,
-      54,    55,    56,    57,    58,    59,    60,    43,     8,    42,
-       3,     3,    48,    49,    50,    51,    52,    53,    54,    55,
-      56,    57,    58,    59,    60,    47,    48,    49,    50,    51,
-      52,    53,    54,    55,    56,    57,    58,    59,    60,    47,
-      48,    49,    50,    51,    52,    53,    54,    55,    56,    57,
-      58,    59,    60,    47,    48,    49,    50,    51,    52,    53,
-      54,    55,    56,    57,    58,    59,    60,    47,    48,    49,
-      50,    51,    52,    53,    54,    55,    56,    57,    58,    59,
-      60,    28,    29,    30,    31,    32,    33,    34,    35,    39,
-      48,     9,     3,    39,    41,    28,    29,    30,    31,    32,
-      33,    34,    35,    40,    10,    43,    45,     3,    41,    28,
-      29,    30,    31,    32,    33,    34,    35,    40,    40,    46,
-      46,     3,    41,    48,    49,    50,    51,    52,    53,    54,
-      55,    56,    57,    58,    59,    60,    48,    49,    50,    51,
-      52,    53,    54,    55,    56,    57,    58,    59,    28,    29,
-      30,    31,    32,    33,    34,    35,    47,    42,    47,    39,
-      28,    29,    30,    31,    32,    33,    34,    35,     3,    42,
-      42,    39,    48,    49,    50,    51,    52,    53,    54,    55,
-      56,    57,    58,    47,    47,     3,    36,    43,    43,    38,
-      47,    17,     3,    47,     3,    38,    47,     3,    46,    32,
-      24,    59,   164,   171,    75,   186,   220,   227,   239
+      28,    29,    57,    53,     6,    60,    81,     6,     9,   160,
+     233,   223,   235,    34,    35,    27,    71,    72,    73,    32,
+     243,    34,     3,    51,    36,    53,    81,    82,   179,    30,
+      32,    86,    31,   245,    89,    90,    91,    92,    93,    94,
+      95,    96,    97,    98,    99,   100,     3,     4,     5,     6,
+      31,    11,    33,    34,     3,    12,    31,    14,    15,     0,
+      35,    18,    19,    20,    21,    22,    23,    24,    25,    26,
+      31,    10,    33,    34,    31,    31,    35,    33,    34,    33,
+      34,    38,    31,    31,    33,    33,    34,    16,    17,   144,
+     145,    33,    49,    35,   149,    32,   151,    34,   153,    31,
+     155,    33,    32,   158,    34,   160,     6,   162,   163,   164,
+      33,    29,    35,    27,   169,     3,     3,     4,     5,     6,
+       3,    31,    36,    33,   179,    39,    40,    32,    32,    34,
+      34,    18,    19,    20,     3,     7,    32,   192,    34,   194,
+      32,   216,    34,     8,    31,    32,   163,   164,     3,   204,
+      31,    38,    21,    22,    23,    24,    25,    30,    26,     3,
+      27,   216,    49,    32,    26,     3,     4,     5,     6,    36,
+      37,    38,    39,    40,     3,   225,    14,    15,    31,   234,
+      18,    19,    20,    21,    22,    23,    24,    25,    26,    29,
+      33,    13,    30,    31,    29,    31,     3,   225,     3,    31,
+      38,     3,     4,     5,     6,     3,    31,     3,    26,    35,
+      31,    49,    14,    15,     3,    31,    18,    19,    20,    21,
+      22,    23,    24,    25,    26,    34,     3,     3,    30,    31,
+       3,    35,    29,     3,     9,    29,    38,     3,     4,     5,
+       6,     3,    35,    31,    29,    31,    29,    49,    14,    15,
+      29,    46,    18,    19,    20,    21,    22,    23,    24,    25,
+      26,    48,   205,    27,    30,    31,   200,    51,    -1,   103,
+      -1,   151,    38,     3,     4,     5,     6,    -1,    -1,    -1,
+      -1,    -1,    -1,    49,    14,    15,    -1,    -1,    18,    19,
+      20,    21,    22,    23,    24,    25,    26,    -1,    -1,    -1,
+      30,    31,    -1,    -1,    -1,    -1,    -1,    -1,    38,     3,
+       4,     5,     6,    -1,    -1,    -1,    -1,    -1,    -1,    49,
+       3,    15,    -1,    -1,    18,    19,    20,    21,    22,    23,
+      24,    25,     3,    -1,    -1,    -1,    30,    31,    21,    22,
+      23,    24,    25,    -1,    38,     3,     4,     5,     6,    32,
+      21,    22,    23,    24,    25,    49,    -1,    15,    -1,    -1,
+      18,    19,    20,    21,    22,    23,    24,    25,     3,     4,
+       5,     6,    30,    31,    -1,    -1,    -1,    -1,    -1,    -1,
+      38,    -1,    -1,    18,    19,    20,    -1,    -1,    -1,    -1,
+      -1,    49,     3,     4,     5,     6,    31,    -1,    -1,    -1,
+      -1,    -1,    -1,    38,    -1,    -1,    -1,    18,    19,    20,
+      -1,    -1,    -1,    -1,    49,     3,     4,     5,     6,    -1,
+      31,    -1,    -1,    -1,    -1,    -1,    -1,    38,    -1,    -1,
+      18,    19,    20,    -1,    -1,    -1,    -1,    -1,    49,    -1,
+      -1,    -1,    -1,    31,    -1,    -1,    -1,    -1,    -1,    -1,
+      38,    -1,    -1,    -1,    27,    -1,    -1,    -1,    -1,    -1,
+      -1,    49,    35,    36,    37,    38,    39,    40,    41,    42,
+      43,    44,    45,    46,    47,    48,    27,    -1,    -1,    -1,
+      -1,    32,    -1,    -1,    -1,    36,    37,    38,    39,    40,
+      41,    42,    43,    44,    45,    46,    47,    48,    27,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    35,    36,    37,    38,
+      39,    40,    41,    42,    43,    44,    45,    46,    47,    48,
+      27,    28,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    36,
+      37,    38,    39,    40,    41,    42,    43,    44,    45,    46,
+      47,    48,    27,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
+      45,    46,    47,    48,    27,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    35,    36,    37,    38,    39,    40,    41,    42,
+      43,    44,    45,    46,    47,    48,    27,    -1,    -1,    -1,
+      -1,    32,    -1,    -1,    -1,    36,    37,    38,    39,    40,
+      41,    42,    43,    44,    45,    46,    47,    48,    27,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    35,    36,    37,    38,
+      39,    40,    41,    42,    43,    44,    45,    46,    47,    48,
+      27,    -1,    -1,    -1,    -1,    32,    -1,    -1,    -1,    36,
+      37,    38,    39,    40,    41,    42,    43,    44,    45,    46,
+      47,    48,    27,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
+      45,    46,    47,    48,    27,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    35,    36,    37,    38,    39,    40,    41,    42,
+      43,    44,    45,    46,    47,    48,    27,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    35,    36,    37,    38,    39,    40,
+      41,    42,    43,    44,    45,    46,    47,    48,    27,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    35,    36,    37,    38,
+      39,    40,    41,    42,    43,    44,    45,    46,    47,    48,
+      27,    -1,    -1,    -1,    -1,    32,    -1,    -1,    -1,    36,
+      37,    38,    39,    40,    41,    42,    43,    44,    45,    46,
+      47,    48,    27,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    36,    37,    38,    39,    40,    41,    42,    43,    44,
+      45,    46,    47,    48,    27,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    36,    37,    38,    39,    40,    41,    42,
+      43,    44,    45,    46,    47,    48,    27,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    36,    37,    38,    39,    40,
+      41,    42,    43,    44,    45,    46,    47,    27,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    36,    37,    38,    39,
+      40,    41,    42,    43,    44,    45,    46,    27,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    36,    37,    38,    39,
+      40,    -1,    -1,    43,    44,    45,    46
   };
 
   const signed char
   Parser::yystos_[] =
   {
-       0,     7,    64,    65,    66,     3,     0,    66,    42,    67,
-      28,    29,    30,    31,    32,    33,    34,    35,    69,    70,
-      82,    38,    71,    43,    45,     3,     3,    77,    36,    70,
-      39,    45,    42,    68,     3,    69,    40,    43,    14,    76,
-      46,    22,    72,    38,    46,    23,    73,     3,     6,    78,
-      38,    46,     9,    79,    39,    45,    74,    75,    82,    38,
-      40,    13,    83,    47,     3,     6,    39,    75,     3,    74,
-      80,    81,    82,    36,    26,    84,    85,    38,    39,    41,
-      81,     3,     3,     3,     8,    85,    87,    88,    89,     3,
-      44,    47,    47,    27,     3,    41,    89,    39,     3,     4,
-       5,     6,    18,    19,    24,    25,    42,    50,    61,   103,
-     104,   103,    38,    40,    42,     3,   103,   103,   103,    47,
-      48,    49,    50,    51,    52,    53,    54,    55,    56,    57,
-      58,    59,    60,    40,     3,     9,    90,    93,    94,   103,
-      43,     3,   103,   103,   103,   103,   103,   103,   103,   103,
-     103,   103,   103,   103,    86,    89,    39,    40,    10,    91,
-      43,    45,    41,    89,    40,    80,    40,    11,    12,    92,
-     103,    90,    41,    80,    46,    46,    15,    16,    20,    21,
-      36,    40,    77,    95,    96,    97,    91,    41,     3,     3,
-      47,    42,    47,     6,    47,     3,    99,    77,    95,    98,
-      44,    41,    96,    92,    42,    42,   103,    47,    37,    38,
-     100,    47,    44,    41,    41,    77,   103,    95,    93,    93,
-      43,     3,     3,   101,   102,   103,   103,    36,    44,    47,
-      41,    43,    43,    96,    97,    38,   100,    46,    39,    45,
-      39,    47,    99,   103,    47,    47,    17,   103,     3,     3,
-     102,    38,   100,    47,    47,    96,    39,   100
+       0,    52,    53,     0,    11,    56,    66,     6,    31,    10,
+      54,    57,    35,     6,    67,     3,     7,    55,    68,     6,
+      32,    29,     3,     8,    63,    58,    69,     3,    59,    31,
+      70,    70,     3,    21,    22,    23,    24,    25,    60,    61,
+      75,    32,    72,    73,    75,    26,    26,    30,    62,     3,
+      32,    34,     3,    31,    71,    71,    63,    33,    35,    73,
+      33,    72,    29,    29,     3,     4,     5,     6,    18,    19,
+      20,    31,    38,    49,    90,    91,    92,    90,    32,    13,
+      76,    64,    31,    90,    90,    90,    27,    35,    36,    37,
+      38,    39,    40,    41,    42,    43,    44,    45,    46,    47,
+      48,     3,    77,    78,     3,    15,    30,    65,    75,    89,
+      90,     3,    32,    90,    94,    95,    32,    90,     3,    90,
+      90,    90,    90,    90,    90,    90,    90,    90,    90,    90,
+      90,    34,    35,     3,    12,    14,    15,    26,    79,    85,
+      86,    87,    89,    90,    33,    31,     3,    35,    36,    33,
+      32,    34,    28,    31,     3,    33,    26,    35,    31,     3,
+      31,    80,    33,    34,    34,    35,    36,    90,    90,    33,
+      35,     3,    90,    95,    90,    93,    90,     3,    90,    31,
+      35,    93,    35,    90,     3,    87,    90,    87,     3,    35,
+      32,    90,    33,    32,    34,    35,    32,    93,    32,     9,
+      81,    82,    35,    36,    33,    29,    35,    90,    90,    29,
+      32,     3,    30,    82,     3,    90,    64,    35,    84,    35,
+      83,    35,    30,    30,    85,    31,    74,    16,    17,    88,
+      88,    32,    72,    29,    31,    29,    32,    84,    90,    84,
+      30,    32,    30,    29,    84,    30,    88
   };
 
   const signed char
   Parser::yyr1_[] =
   {
-       0,    63,    64,    65,    65,    66,    67,    67,    68,    68,
-      69,    69,    69,    70,    71,    71,    72,    72,    73,    73,
-      74,    74,    74,    75,    75,    76,    76,    77,    77,    78,
-      78,    78,    78,    79,    79,    80,    80,    81,    81,    82,
-      82,    82,    82,    82,    82,    82,    82,    83,    84,    84,
-      84,    85,    86,    86,    87,    88,    88,    88,    89,    89,
-      90,    90,    91,    91,    92,    92,    92,    93,    93,    94,
-      94,    95,    95,    95,    96,    96,    96,    97,    97,    97,
-      97,    97,    97,    97,    97,    98,    98,    99,    99,    99,
-      99,   100,   100,   101,   101,   102,   102,   103,   103,   103,
-     103,   103,   103,   103,   103,   103,   103,   103,   103,   103,
-     103,   103,   103,   104,   104,   104,   104,   104,   104,   104,
-     104,   104,   104
+       0,    51,    52,    53,    53,    54,    54,    55,    55,    56,
+      56,    58,    57,    59,    59,    60,    60,    61,    62,    61,
+      63,    63,    64,    64,    65,    65,    65,    65,    65,    66,
+      66,    67,    67,    69,    68,    70,    70,    70,    71,    71,
+      72,    72,    73,    73,    74,    74,    74,    75,    75,    75,
+      75,    75,    75,    76,    76,    77,    77,    77,    78,    78,
+      79,    80,    80,    81,    81,    83,    82,    84,    84,    85,
+      85,    85,    85,    85,    85,    85,    85,    85,    86,    86,
+      87,    87,    88,    88,    88,    89,    89,    90,    90,    90,
+      90,    90,    90,    90,    90,    90,    90,    90,    90,    90,
+      90,    90,    90,    91,    91,    91,    91,    91,    92,    92,
+      92,    92,    92,    92,    92,    92,    93,    93,    94,    94,
+      95,    95
   };
 
   const signed char
   Parser::yyr2_[] =
   {
-       0,     2,     1,     1,     2,    15,     3,     0,     3,     0,
-       1,     3,     0,     2,     3,     0,     5,     0,     5,     0,
-       1,     2,     0,     5,     2,     6,     0,     1,     3,     1,
-       1,     3,     3,     4,     0,     1,     2,     3,     5,     1,
-       1,     1,     1,     1,     1,     1,     1,     4,     1,     2,
-       0,     7,     1,     2,     1,     1,     2,     0,    11,     8,
-       4,     0,     4,     0,     7,     7,     0,     1,     0,     1,
-       3,     1,     2,     0,     1,     5,     7,     2,     3,     2,
-       2,     3,     6,     4,     3,     4,     5,     5,     2,     7,
-       4,     3,     0,     1,     3,     3,     1,     3,     3,     3,
-       3,     3,     3,     3,     3,     3,     3,     3,     3,     2,
-       2,     3,     1,     1,     1,     1,     1,     1,     1,     1,
-       2,     3,     4
+       0,     2,     4,     0,     2,     0,     2,     0,     2,     0,
+       2,     0,     7,     0,     2,     3,     5,     0,     0,     3,
+       8,     5,     0,     2,     1,     4,     6,     8,     2,     3,
+       4,     1,     2,     0,    14,     3,     2,     0,     3,     0,
+       1,     3,     2,     4,     3,     2,     0,     1,     1,     1,
+       1,     1,     1,     3,     0,     1,     3,     0,     0,     2,
+       3,     3,     0,     1,     2,     0,     7,     0,     2,     1,
+       4,     4,     6,     2,     8,     3,     6,     2,     3,     3,
+       1,     3,     8,     4,     0,     3,     5,     1,     1,     3,
+       3,     3,     3,     3,     3,     3,     3,     3,     3,     3,
+       3,     2,     2,     3,     6,     4,     3,     4,     1,     1,
+       1,     1,     1,     1,     1,     3,     1,     3,     1,     3,
+       1,     3
   };
 
 
+#if YYDEBUG || 1
+  // YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
+  // First, the terminals, then, starting at \a YYNTOKENS, nonterminals.
+  const char*
+  const Parser::yytname_[] =
+  {
+  "\"end of file\"", "error", "\"invalid token\"", "IDENTIFIER", "DOUBLE",
+  "INTEGER", "STRING", "AUTOTUNER", "ROUTINE", "STATE", "STRUCT", "IMPORT",
+  "START", "USES", "TERMINAL", "IF", "ELIF", "ELSE", "TRUE", "FALSE",
+  "NIL", "FLOAT_KW", "INT_KW", "BOOL_KW", "STRING_KW", "ERROR_KW", "ARROW",
+  "LBRACKET", "RBRACKET", "LBRACE", "RBRACE", "LPAREN", "RPAREN", "ASSIGN",
+  "COMMA", "SEMICOLON", "DOT", "PLUS", "MINUS", "MUL", "DIV", "EQ", "NE",
+  "LL", "GG", "LE", "GE", "AND", "OR", "NOT", "UMINUS", "$accept",
+  "program", "import_list", "autotuner_list", "routine_list",
+  "struct_decl_list", "struct_decl", "$@1", "struct_field_list",
+  "struct_field_decl", "struct_routine_list", "$@2", "routine_decl",
+  "routine_body", "struct_routine_stmt", "import_stmt",
+  "import_string_list", "autotuner_decl", "$@3", "input_params",
+  "output_params", "param_decl_list", "param_decl", "state_input_params",
+  "type_spec", "requires_clause", "identifier_list", "autotuner_var_decls",
+  "entry_state", "entry_params", "state_list", "state_decl", "$@4",
+  "stmt_list", "stmt", "assign_target_list", "assign_target", "elif_chain",
+  "var_decl_stmt", "expr", "postfix_expr", "primary_expr", "expr_list",
+  "call_arg_list", "call_arg", YY_NULLPTR
+  };
+#endif
 
 
 #if YYDEBUG
   const short
   Parser::yyrline_[] =
   {
-       0,    82,    82,    91,    96,   104,   136,   138,   143,   145,
-     150,   155,   160,   165,   175,   177,   182,   184,   189,   191,
-     196,   201,   206,   211,   219,   230,   232,   237,   242,   250,
-     255,   260,   265,   273,   275,   280,   285,   293,   300,   310,
-     311,   312,   313,   314,   315,   316,   317,   321,   326,   331,
-     336,   341,   352,   357,   365,   370,   375,   380,   385,   404,
-     425,   427,   432,   434,   439,   446,   453,   459,   461,   466,
-     471,   479,   481,   490,   495,   497,   515,   558,   565,   573,
-     580,   587,   596,   605,   617,   622,   627,   636,   645,   654,
-     663,   675,   677,   682,   687,   695,   702,   715,   719,   723,
-     727,   731,   735,   739,   743,   747,   751,   755,   759,   763,
-     767,   771,   775,   780,   782,   784,   786,   788,   790,   792,
-     794,   796,   798
+       0,   177,   177,   193,   194,   202,   206,   214,   218,   230,
+     232,   241,   240,   262,   264,   272,   280,   296,   299,   298,
+     312,   323,   338,   340,   349,   357,   382,   391,   400,   412,
+     414,   419,   421,   435,   434,   467,   479,   483,   490,   506,
+     513,   518,   526,   530,   541,   553,   557,   568,   570,   572,
+     574,   576,   578,   595,   599,   606,   611,   616,   623,   627,
+     635,   642,   646,   657,   662,   671,   670,   693,   695,   703,
+     708,   725,   731,   737,   742,   751,   758,   766,   777,   783,
+     791,   799,   806,   816,   819,   823,   848,   879,   883,   887,
+     891,   895,   899,   903,   907,   911,   915,   919,   923,   927,
+     931,   935,   939,   946,   953,   961,   968,   975,   985,   989,
+     993,   997,  1001,  1005,  1009,  1017,  1024,  1029,  1037,  1042,
+    1050,  1054
   };
 
   void
@@ -5913,11 +6317,19 @@ namespace falcon { namespace atc {
 
 #line 4 "./compiler/src/parser.y"
 } } // falcon::atc
-#line 5917 "parser.tab.cc"
+#line 6321 "parser.tab.cc"
 
-#line 804 "./compiler/src/parser.y"
+#line 1060 "./compiler/src/parser.y"
 
 
-void falcon::atc::Parser::error(const std::string& msg) {
-  std::cerr << "Parse error: " << msg << std::endl;
+void falcon::atc::Parser::error(const location_type& loc, const std::string& msg) {
+  ParseError err{
+    loc.begin.line,
+    loc.begin.column,
+    loc.end.line,
+    loc.end.column,
+    msg
+  };
+  
+  current_errors.push_back(err);
 }

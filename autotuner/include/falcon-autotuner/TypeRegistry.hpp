@@ -1,5 +1,6 @@
 #pragma once
 
+#include "falcon-atc/AST.hpp"
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include <functional>
 #include <map>
@@ -54,10 +55,24 @@ public:
    * @brief Create default type registry with all builtin types.
    */
   static std::shared_ptr<TypeRegistry> create_default();
+  // Register a struct declaration so the interpreter can look it up by type
+  // name.
+  void register_struct(const atc::StructDecl *decl) {
+    struct_registry_[decl->name] = decl;
+  }
+
+  // Look up a struct declaration by type name (e.g. "Quantity").
+  // Returns nullptr if not registered.
+  [[nodiscard]] const atc::StructDecl *
+  lookup_struct(const std::string &type_name) const {
+    auto it = struct_registry_.find(type_name);
+    return it != struct_registry_.end() ? it->second : nullptr;
+  }
 
 private:
   // Map: type_name -> (method_name -> method_impl)
   std::map<std::string, std::map<std::string, MethodFunction>> type_methods_;
+  std::map<std::string, const atc::StructDecl *> struct_registry_;
 };
 
 /**
