@@ -36,6 +36,8 @@
   std::set<std::string> autotuner_output_params;  // Output parameters (read/write)
   std::set<std::string> state_local_scope;    // State-local variables
   std::set<std::string> state_input_params;    // Current state's input parameter
+  bool parsing_routine_params = false;
+  std::set<std::string> routine_input_params;
   
   void clear_autotuner_scope() {
     autotuner_scope.clear();
@@ -310,19 +312,23 @@ struct_routine_list[result]
 // routine Name (inputs) -> (outputs) { body }
 routine_decl[result]
     : ROUTINE IDENTIFIER[name]
+      {
+        parsing_routine_params = true;
+      }
       input_params[inputs] ARROW output_params[outputs]
       LBRACE routine_body[body] RBRACE
       {
+        parsing_routine_params = false;
         $result = std::make_unique<RoutineDecl>(
             std::move($name),
             std::move($inputs),
             std::move($outputs),
             std::move($body));
       }
-    // routine Name -> (outputs) { body }   (no input params)
     | ROUTINE IDENTIFIER[name]
       input_params[inputs] ARROW output_params[outputs]
       {
+        parsing_routine_params = false;
         $result = std::make_unique<RoutineDecl>(
             std::move($name),
             std::move($inputs),
@@ -466,23 +472,25 @@ autotuner_decl[result]
 input_params[result]
     : LPAREN param_decl_list[params] RPAREN
       {
-        // Register input parameters in scope (read-only)
-        for (const auto& param : $params) {
-          if (autotuner_input_params.count(param->name) > 0) {
+        auto& param_set = parsing_routine_params ? routine_input_params : autotuner_input_params;
+        param_set.clear();
+        auto check_and_insert = [&](const auto& param) {
+          if (param_set.count(param->name) > 0) {
             error(@params, "Duplicate input parameter: " + param->name);
             YYABORT;
           }
-          autotuner_input_params.insert(param->name);
+          param_set.insert(param->name);
+        };
+        for (const auto& param : $params) {
+          check_and_insert(param);
         }
         $result = std::move($params);
       }
-    | LPAREN RPAREN
-      { 
-        $result = std::vector<std::unique_ptr<ParamDecl>>(); 
-      }
     | %empty
-      { 
-        $result = std::vector<std::unique_ptr<ParamDecl>>(); 
+      {
+        auto& param_set = parsing_routine_params ? routine_input_params : autotuner_input_params;
+        param_set.clear();
+        $result = std::vector<std::unique_ptr<ParamDecl>>();
       }
     ;
 
@@ -510,15 +518,17 @@ output_params[result]
     ;
 
 param_decl_list[result]
-    : param_decl[first_param]
-      {
-        $result = std::vector<std::unique_ptr<ParamDecl>>();
-        $result.push_back(std::move($first_param));
-      }
+    : %empty
+      { $result = std::vector<std::unique_ptr<ParamDecl>>(); }
     | param_decl_list[existing_params] COMMA param_decl[next_param]
       {
         $result = std::move($existing_params);
         $result.push_back(std::move($next_param));
+      }
+    | param_decl[first_param]
+      {
+        $result = std::vector<std::unique_ptr<ParamDecl>>();
+        $result.push_back(std::move($first_param));
       }
     ;
 
