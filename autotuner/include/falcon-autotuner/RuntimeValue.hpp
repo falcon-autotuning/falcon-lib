@@ -1,13 +1,11 @@
 #pragma once
 
 #include <cstdint>
-#include <falcon_core/autotuner_interfaces/names/Gname.hpp>
-#include <falcon_core/math/Quantity.hpp>
-#include <falcon_core/physics/device_structures/Connection.hpp>
-#include <falcon_core/physics/device_structures/Connections.hpp>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -35,25 +33,20 @@ struct ErrorObject {
  * @brief Runtime value that can hold any parameter value.
  * Note: Uses shared_ptr for TupleValue and StructInstance to break circular
  * dependency.
+ *
+ * All previously hard-coded falcon_core types (Connection, Quantity, etc.)
+ * have been removed. They are now bound through StructInstance::native_handle.
  */
 using RuntimeValue =
     std::variant<int64_t, double, bool, std::string,
-                 std::nullptr_t, // nil
-                 falcon_core::physics::device_structures::ConnectionSP,
-                 falcon_core::physics::device_structures::ConnectionsSP,
-                 falcon_core::math::QuantitySP,
-                 falcon_core::autotuner_interfaces::names::GnameSP, ErrorObject,
-                 std::shared_ptr<TupleValue>,
-                 std::shared_ptr<StructInstance>>; // User-defined struct
-                                                   // instances
+                 std::nullptr_t,                 // nil
+                 ErrorObject,                    // error
+                 std::shared_ptr<TupleValue>,    // tuple/multi-return
+                 std::shared_ptr<StructInstance> // user-defined or FFI struct
+                 >;
 
 /**
  * @brief Wrapper for tuple values (multiple return values).
- *
- * This is a temporary container used during tuple destructuring:
- *   a, b = read(scope="x", name="y")
- *
- * The TupleValue holds the ordered values until they're assigned.
  */
 struct TupleValue {
   std::vector<RuntimeValue> values;
@@ -72,43 +65,80 @@ struct TupleValue {
 };
 
 /**
- * @brief A live instance of a user-defined struct type.
+ * @brief A live instance of a user-defined struct type, or an FFI-bound
+ * C++ object.
  *
- * Created when a struct constructor routine (e.g. New, NewWithB) is called.
- * Fields are stored in a map keyed by field name.
- * The type_name identifies which StructDecl this instance belongs to,
- * allowing the interpreter to dispatch method calls and operator overloads.
+ * For pure-FAL structs: fields holds all field values, native_handle is empty.
+ *
+ * For FFI-bound structs (e.g. a C++ Quantity wrapping falcon_core):
+ *   - native_handle holds a shared_ptr<void> that owns the real C++ object.
+ *   - fields may be empty — the FFI dispatch functions receive the
+ *     native_handle as params["this"] and cast it back to the concrete type.
+ *   - type_name still identifies which struct type this is, so method
+ *     dispatch still works correctly.
+ *
+ * The native_handle is typed as shared_ptr<void> for type erasure. The
+ * wrapper code (e.g. QuantityW.cpp) casts it back via:
+ *   auto q = std::static_pointer_cast<Quantity>(
+ *       std::get<std::shared_ptr<StructInstance>>(params.at("this"))
+ *           ->native_handle.value());
  */
 struct StructInstance {
   std::string type_name; // e.g. "Quantity"
 
-  // Field storage — initialized from StructDecl defaults, then set by routines
-  // Uses shared_ptr so StructInstance can be cheaply copied into RuntimeValue
+  // Field storage — for pure-FAL structs. FFI structs may leave this empty.
   std::shared_ptr<std::map<std::string, RuntimeValue>> fields =
       std::make_shared<std::map<std::string, RuntimeValue>>();
 
-  // Native handle for FFI structs: holds the underlying C++ object (e.g.
-  // shared_ptr<Connection>).  std::nullopt means this is a pure-FAL struct.
-  // Stored as RuntimeValue so it can hold any of the known shared_ptr types
-  // already in the variant without adding shared_ptr<void>.
-  std::optional<RuntimeValue> native_handle = std::nullopt;
+  // Type-erased handle to the underlying C++ object for FFI structs.
+  // Empty for pure-FAL structs.
+  std::optional<std::shared_ptr<void>> native_handle;
 
   StructInstance() = default;
   explicit StructInstance(std::string typeName)
       : type_name(std::move(typeName)) {}
+
+  /// Convenience: construct from a concrete C++ shared_ptr.
+  /// Usage:  StructInstance::from_native("Quantity", q_ptr)
+  template <typename T>
+  static std::shared_ptr<StructInstance> from_native(std::string type_name,
+                                                     std::shared_ptr<T> ptr) {
+    auto inst = std::make_shared<StructInstance>(std::move(type_name));
+    inst->native_handle = std::static_pointer_cast<void>(ptr);
+    return inst;
+  }
+
+  /// Convenience: retrieve the native pointer cast to a concrete type.
+  /// Throws std::bad_cast (via std::bad_optional_access) if no handle.
+  template <typename T> std::shared_ptr<T> get_native() const {
+    return std::static_pointer_cast<T>(native_handle.value());
+  }
+
+  /// Returns true if this instance is backed by a native C++ object.
+  [[nodiscard]] bool is_native() const { return native_handle.has_value(); }
 
   [[nodiscard]] RuntimeValue &get_field(const std::string &fieldName) {
     return (*fields)[fieldName];
   }
   [[nodiscard]] const RuntimeValue &
   get_field(const std::string &fieldName) const {
-    return fields->at(fieldName);
+    auto fieldIter = fields->find(fieldName);
+    if (fieldIter == fields->end()) {
+      throw std::runtime_error("Struct '" + type_name +
+                               "' has no field: " + fieldName);
+    }
+    return fieldIter->second;
   }
   void set_field(const std::string &fieldName, RuntimeValue val) {
     (*fields)[fieldName] = std::move(val);
   }
-  [[nodiscard]] bool has_field(const std::string &fieldName) const {
-    return fields->contains(fieldName);
+
+  bool operator==(const StructInstance &other) const {
+    return type_name == other.type_name && *fields == *other.fields &&
+           native_handle == other.native_handle;
+  }
+  bool operator!=(const StructInstance &other) const {
+    return !(*this == other);
   }
 };
 
@@ -117,6 +147,15 @@ struct StructInstance {
  */
 using ParameterMap = std::map<std::string, RuntimeValue>;
 using FunctionResult = std::vector<RuntimeValue>;
+
+/**
+ * @brief The type signature for an externally-loaded (FFI) function symbol.
+ *
+ * The "this" parameter for instance methods is passed as params["this"]
+ * containing a shared_ptr<StructInstance> whose native_handle holds the
+ * real C++ object. Constructor functions do NOT receive "this".
+ */
+using FFIFunction = FunctionResult (*)(ParameterMap);
 
 /**
  * @brief Helper to get type name as string.

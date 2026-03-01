@@ -47,6 +47,8 @@ private:
                          const atc::Program &program);
   void register_autotuner_as_function(const atc::AutotunerDecl &autotuner);
   void register_inline_routine(const atc::RoutineDecl &routine);
+  // Helper to compute a SHA-256 (or simpler) hash of a file for cache keys
+  static std::string compute_file_hash(const std::filesystem::path &path);
 
   /// Lightweight: extract raw import path strings without full parsing
   static std::vector<std::string>
@@ -74,6 +76,9 @@ private:
   // as hints so the parser accepts them in type_spec positions.
   std::set<std::string> import_struct_hints_;
   std::vector<void *> ff_handles_; // dlopen handles — kept open for lifetime
+  // Holds dlopen handles for FFI shared libraries so they stay loaded
+  // for the lifetime of the engine.
+  std::vector<void *> ffi_handles_;
 };
 
 } // namespace falcon::autotuner

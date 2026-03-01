@@ -9,9 +9,27 @@
 #include <fmt/format.h>
 #include <fstream>
 #include <iostream>
+#include <openssl/sha.h>
 #include <sstream>
 
 namespace falcon::autotuner {
+std::string
+AutotunerEngine::compute_file_hash(const std::filesystem::path &path) {
+  // Reuse the PackageCache sha256 if accessible, otherwise inline:
+  std::ifstream f(path, std::ios::binary);
+  if (!f)
+    return "00000000000000000000000000000000";
+  std::ostringstream ss;
+  ss << std::hex;
+  // Simple djb2-style hash for cache keying (not cryptographic, just stable)
+  uint64_t h = 5381;
+  char c;
+  while (f.get(c)) {
+    h = ((h << 5) + h) + static_cast<unsigned char>(c);
+  }
+  ss << std::setw(16) << std::setfill('0') << h;
+  return ss.str();
+}
 
 AutotunerEngine::AutotunerEngine() {
   function_registry_ = FunctionRegistry::create_default();
@@ -502,138 +520,146 @@ void AutotunerEngine::register_inline_routine(const atc::RoutineDecl &routine) {
 bool AutotunerEngine::process_ff_import(const atc::FFImportDecl &ffi,
                                         const std::filesystem::path &fal_dir,
                                         const atc::Program &program) {
-  // ── Locate the wrapper source ─────────────────────────────────────────
-  auto wrapper_src = fal_dir.parent_path() / ffi.wrapper_file;
-  if (!std::filesystem::exists(wrapper_src)) {
-    log::error("FFImport wrapper not found: " + wrapper_src.string());
+  namespace fs = std::filesystem;
+
+  // ── 1. Locate the wrapper source file ──────────────────────────────────
+  fs::path wrapper_src = fal_dir.parent_path() / ffi.wrapper_file;
+  if (!fs::exists(wrapper_src)) {
+    log::error("FFI wrapper not found: " + wrapper_src.string());
     return false;
   }
 
-  // ── Build cache path via SHA-256 of source ────────────────────────────
-  falcon::pm::PackageManager pm(fal_dir);
-  // The cache lives at <project_root>/.falcon/cache/
-  auto cache_dir = pm.project_root() / ".falcon" / "cache";
-  std::filesystem::create_directories(cache_dir);
+  // ── 2. Determine the cache directory and output .so path ───────────────
+  fs::path cache_dir = fal_dir.parent_path() / ".falcon" / "cache";
+  fs::create_directories(cache_dir);
 
-  std::string src_hash = falcon::pm::PackageCache::sha256_file(wrapper_src);
-  auto so_path = cache_dir / (wrapper_src.stem().string() + "_" +
-                              src_hash.substr(0, 16) + ".so");
+  // Hash the wrapper source so we only recompile on changes
+  std::string src_hash = compute_file_hash(wrapper_src);
+  fs::path so_path = cache_dir / (wrapper_src.stem().string() + "_" +
+                                  src_hash.substr(0, 16) + ".so");
 
-  // ── Compile if not cached ─────────────────────────────────────────────
-  if (!std::filesystem::exists(so_path)) {
-    log::debug("Compiling FFI wrapper: " + wrapper_src.string());
-
-    // Build include flags
+  // ── 3. Compile the wrapper if the cached .so is stale ──────────────────
+  if (!fs::exists(so_path)) {
+    // Build include flags.
+    // Always add the in-tree falcon-autotuner headers so wrappers can
+    // find RuntimeValue.hpp, StructInstance, etc. during development builds.
     std::string includes;
     for (const auto &inc : ffi.imports) {
       includes += " -I" + inc;
     }
-    // Always include the falcon-autotuner headers
+#ifdef FALCON_AUTOTUNER_INCLUDE_DIR
+    includes += " -I" FALCON_AUTOTUNER_INCLUDE_DIR;
+#endif
     includes += " -I/opt/falcon/include";
 
-    // Build library flags
     std::string libs;
-    for (const auto &lib : ffi.build_libs) {
-      if (lib.rfind(".so") != std::string::npos ||
-          lib.rfind(".a") != std::string::npos) {
-        libs += " " + lib;
-      }
+    for (const auto &lib : ffi.libs) {
+      libs += " " + lib;
     }
 
-    std::string cmd = "clang++ -std=c++17 -fPIC -shared"
-                      " -O2"
+    std::string cmd = "clang++ -std=c++17 -fPIC -shared -O2"
                       " -o " +
                       so_path.string() + includes + " " + wrapper_src.string() +
                       libs;
 
+    log::debug("Compiling FFI wrapper: " + wrapper_src.string());
     log::debug("FFI compile command: " + cmd);
-    int rc = std::system(cmd.c_str());
-    if (rc != 0) {
-      log::error("Failed to compile FFI wrapper (exit " + std::to_string(rc) +
+
+    int ret = std::system(cmd.c_str());
+    if (ret != 0) {
+      log::error("Failed to compile FFI wrapper (exit " + std::to_string(ret) +
                  "): " + wrapper_src.string());
       return false;
     }
-    log::debug("Compiled FFI wrapper → " + so_path.string());
-  } else {
-    log::debug("FFI wrapper cached: " + so_path.string());
   }
 
-  // ── dlopen ────────────────────────────────────────────────────────────
-  void *handle = dlopen(so_path.c_str(), RTLD_LAZY | RTLD_GLOBAL);
-  if (handle == nullptr) {
-    log::error("dlopen failed for " + so_path.string() + ": " +
-               std::string(dlerror()));
+  // ── 4. dlopen the compiled .so ─────────────────────────────────────────
+  void *dl_handle = dlopen(so_path.c_str(), RTLD_NOW | RTLD_LOCAL);
+  if (!dl_handle) {
+    log::error("Failed to dlopen FFI wrapper: " + std::string(dlerror()));
     return false;
   }
-  // Note: intentionally not calling dlclose — the library must stay loaded
-  // for the lifetime of the engine since function pointers into it remain live.
-  ff_handles_.push_back(handle);
+  // Keep the handle alive for the lifetime of the engine
+  ffi_handles_.push_back(dl_handle);
 
-  // ── Register plain routines (empty-body routine decls in program) ─────
+  // ── 5. Register every struct routine whose body is empty ───────────────
+  // Convention: constructor symbol = "STRUCT<TypeName><RoutineName>"
+  //   e.g.  STRUCTQuantityNew, STRUCTQuantityValue
+  // Instance method symbol = same convention.
+  // The wrapper is responsible for:
+  //   - Constructors: allocate a native object, wrap in
+  //   StructInstance::from_native
+  //   - Instance methods: receive params["this"] as shared_ptr<StructInstance>,
+  //     cast native_handle to the concrete type, operate on it.
+
+  for (const auto &s : program.structs) {
+    for (const auto &routine : s.routines) {
+      if (!routine.body.empty()) {
+        // Has a FAL body — not an FFI stub, skip
+        continue;
+      }
+
+      std::string sym_name = "STRUCT" + s.name + routine.name;
+      dlerror();
+      void *sym = dlsym(dl_handle, sym_name.c_str());
+      if (!sym) {
+        // Symbol not in this .so — may be in another ffimport, skip silently
+        continue;
+      }
+
+      // Cast to the FFI function signature:
+      //   FunctionResult fn(ParameterMap)
+      auto fn_ptr = reinterpret_cast<FunctionResult (*)(ParameterMap)>(sym);
+
+      // Build a TypeMethod that calls the FFI function.
+      // For the receiver RuntimeValue we pass the StructInstance directly,
+      // but the FFI fn receives a ParameterMap that already contains "this".
+      // We build that ParameterMap in exec_struct_routine (see ExprEvaluator),
+      // so here we just register a TypeMethod that forwards to fn_ptr.
+      TypeMethod method =
+          [fn_ptr](const RuntimeValue & /*receiver*/,
+                   const ParameterMap &params) -> FunctionResult {
+        // params already contains "this" and all input args
+        return fn_ptr(params);
+      };
+
+      type_registry_->register_ffi_method(s.name, routine.name,
+                                          std::move(method));
+      log::debug("Registered FFI method: " + s.name + "." + routine.name +
+                 " → " + sym_name);
+    }
+  }
+
+  // ── 6. Register top-level routines (non-struct FFI functions) ──────────
   for (const auto &routine : program.routines) {
-    if (!routine.body.empty())
-      continue; // has a body — interpreted, not native
+    if (!routine.body.empty()) {
+      continue; // has FAL body, registered as inline routine
+    }
 
+    std::string sym_name = routine.name;
     dlerror();
-    void *sym = dlsym(handle, routine.name.c_str());
-    if (dlerror() != nullptr || sym == nullptr) {
-      log::warn("FFI symbol not found for routine: " + routine.name);
+    void *sym = dlsym(dl_handle, sym_name.c_str());
+    if (!sym) {
+      log::warn("FFI routine symbol not found: " + sym_name);
       continue;
     }
 
-    // Cast to by-value signature (matches extern "C" wrapper convention).
-    // ExternalFunction passes ParameterMap& so we copy into the call.
-    using NativeFn = FunctionResult (*)(ParameterMap);
-    auto func_ptr = reinterpret_cast<NativeFn>(sym);
-
-    ExternalFunction ext_func =
-        [func_ptr](ParameterMap &params) -> FunctionResult {
-      ParameterMap copy = params; // wrappers take by value
-      return func_ptr(copy);
+    auto fn_ptr = reinterpret_cast<FunctionResult (*)(ParameterMap)>(sym);
+    ExternalFunction ext_func = [fn_ptr](ParameterMap &params) {
+      return fn_ptr(params);
     };
 
     std::vector<atc::BuiltinSignature::ParamSpec> params, returns;
     for (const auto &p : routine.input_params)
       params.emplace_back(p->name, p->type, true);
     for (const auto &p : routine.output_params)
-      returns.emplace_back(p->name, p->type, true);
+      returns.emplace_back(p->name, p->type, false);
+
     atc::BuiltinSignature sig(routine.name, std::move(params),
                               std::move(returns));
-
     RoutineInfo info{routine.name, so_path.string(), ext_func, sig};
     function_registry_->register_routine(info);
     log::debug("Registered FFI routine: " + routine.name);
-  }
-
-  // ── Register struct methods ───────────────────────────────────────────
-  for (const auto &struct_decl : program.structs) {
-    for (const auto &routine : struct_decl.routines) {
-      if (!routine.body.empty())
-        continue; // interpreted body — skip
-
-      // Naming convention: STRUCT<StructName><RoutineName>
-      std::string sym_name = "STRUCT" + struct_decl.name + routine.name;
-
-      dlerror();
-      void *sym = dlsym(handle, sym_name.c_str());
-      if (dlerror() != nullptr || sym == nullptr) {
-        log::warn("FFI symbol not found: " + sym_name);
-        continue;
-      }
-
-      using NativeFn = FunctionResult (*)(ParameterMap);
-      auto func_ptr = reinterpret_cast<NativeFn>(sym);
-
-      type_registry_->register_native_struct_method(
-          struct_decl.name, routine.name,
-          [func_ptr](ParameterMap &params) -> FunctionResult {
-            ParameterMap copy = params;
-            return func_ptr(copy);
-          });
-
-      log::debug("Registered FFI struct method: " + struct_decl.name + "." +
-                 routine.name);
-    }
   }
 
   return true;

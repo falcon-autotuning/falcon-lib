@@ -1,135 +1,42 @@
 #include "falcon-autotuner/TypeRegistry.hpp"
-#include <falcon_core/math/Quantity.hpp>
-#include <falcon_core/physics/device_structures/Connection.hpp>
-#include <iostream>
 
 namespace falcon::autotuner {
 
-void TypeRegistry::register_method(const std::string &type_name,
-                                   const std::string &method_name,
-                                   MethodFunction func) {
-  type_methods_[type_name][method_name] = std::move(func);
-}
-
-TypeRegistry::MethodFunction *
-TypeRegistry::lookup_method(const std::string &type_name,
-                            const std::string &method_name) {
-  auto type_it = type_methods_.find(type_name);
-  if (type_it == type_methods_.end()) {
-    return nullptr;
-  }
-
-  auto method_it = type_it->second.find(method_name);
-  if (method_it == type_it->second.end()) {
-    return nullptr;
-  }
-
-  return &method_it->second;
-}
-void TypeRegistry::register_native_struct_method(const std::string &struct_name,
-                                                 const std::string &method_name,
-                                                 ExternalFunction func) {
-  native_struct_methods_[struct_name][method_name] = std::move(func);
-}
-
-const ExternalFunction *TypeRegistry::lookup_native_struct_method(
-    const std::string &struct_name, const std::string &method_name) const {
-  auto sit = native_struct_methods_.find(struct_name);
-  if (sit == native_struct_methods_.end())
-    return nullptr;
-  auto mit = sit->second.find(method_name);
-  if (mit == sit->second.end())
-    return nullptr;
-  return &mit->second;
-}
-
-bool TypeRegistry::has_method(const std::string &type_name,
-                              const std::string &method_name) const {
-  auto type_it = type_methods_.find(type_name);
-  if (type_it == type_methods_.end()) {
-    return false;
-  }
-  return type_it->second.find(method_name) != type_it->second.end();
-}
-
 std::shared_ptr<TypeRegistry> TypeRegistry::create_default() {
   auto registry = std::make_shared<TypeRegistry>();
-  register_all_type_methods(*registry);
+  // No hard-coded falcon_core types. All types are registered dynamically
+  // via register_struct() (FAL structs) or register_ffi_method() (FFI structs).
   return registry;
 }
 
-// ============================================================================
-// BUILTIN TYPE METHOD IMPLEMENTATIONS
-// ============================================================================
+void TypeRegistry::register_struct(const atc::StructDecl *decl) {
+  if (decl) {
+    struct_registry_[decl->name] = decl;
+  }
+}
 
-void register_all_type_methods(TypeRegistry &registry) {
+const atc::StructDecl *
+TypeRegistry::lookup_struct(const std::string &name) const {
+  auto it = struct_registry_.find(name);
+  return it != struct_registry_.end() ? it->second : nullptr;
+}
 
-  // ------------------------------------------------------------------------
-  // Connection methods
-  // ------------------------------------------------------------------------
+void TypeRegistry::register_ffi_method(const std::string &type_name,
+                                       const std::string &method_name,
+                                       TypeMethod method) {
+  method_registry_[type_name][method_name] = std::move(method);
+}
 
-  registry.register_method(
-      "Connection", "name",
-      [](const RuntimeValue &obj, const ParameterMap &params) -> ParameterMap {
-        auto &conn =
-            std::get<falcon_core::physics::device_structures::ConnectionSP>(
-                obj);
-        // TODO: Call actual falcon-core method
-        std::string name = "connection_stub"; // conn.wrapped_object->name();
-        return {{"result", name}};
-      });
-
-  registry.register_method(
-      "Connection", "set_voltage",
-      [](const RuntimeValue &obj, const ParameterMap &params) -> ParameterMap {
-        auto &conn =
-            std::get<falcon_core::physics::device_structures::ConnectionSP>(
-                obj);
-        double voltage = std::get<double>(params.at("voltage"));
-        // TODO: conn.wrapped_object->set_voltage(voltage);
-        std::cout << "[STUB] Connection::set_voltage(" << voltage << ")"
-                  << '\n';
-        return {}; // void return
-      });
-
-  // ------------------------------------------------------------------------
-  // Connections methods
-  // ------------------------------------------------------------------------
-
-  registry.register_method(
-      "Connections", "size",
-      [](const RuntimeValue &obj, const ParameterMap &params) -> ParameterMap {
-        auto &conns =
-            std::get<falcon_core::physics::device_structures::ConnectionsSP>(
-                obj);
-        // TODO: int64_t size = conns.wrapped_object->size();
-        int64_t size = 5; // Stub
-        return {{"result", size}};
-      });
-
-  // ------------------------------------------------------------------------
-  // Quantity methods
-  // ------------------------------------------------------------------------
-
-  registry.register_method(
-      "Quantity", "value",
-      [](const RuntimeValue &obj, const ParameterMap &params) -> ParameterMap {
-        auto &qty = std::get<falcon_core::math::QuantitySP>(obj);
-        // TODO: double value = qty.wrapped_object->value();
-        double value = 3.14; // Stub
-        return {{"result", value}};
-      });
-
-  registry.register_method(
-      "Quantity", "unit",
-      [](const RuntimeValue &obj, const ParameterMap &params) -> ParameterMap {
-        auto &qty = std::get<falcon_core::math::QuantitySP>(obj);
-        // TODO: std::string unit = qty.wrapped_object->unit();
-        std::string unit = "V"; // Stub
-        return {{"result", unit}};
-      });
-
-  // Add more type methods as needed...
+const TypeMethod *
+TypeRegistry::lookup_method(const std::string &type_name,
+                            const std::string &method_name) const {
+  auto type_it = method_registry_.find(type_name);
+  if (type_it == method_registry_.end())
+    return nullptr;
+  auto method_it = type_it->second.find(method_name);
+  if (method_it == type_it->second.end())
+    return nullptr;
+  return &method_it->second;
 }
 
 } // namespace falcon::autotuner
