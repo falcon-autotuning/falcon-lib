@@ -1,7 +1,6 @@
 #pragma once
 
 #include "falcon-atc/AST.hpp"
-#include "falcon-autotuner/FunctionRegistry.hpp"
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include <functional>
 #include <map>
@@ -10,87 +9,33 @@
 
 namespace falcon::autotuner {
 
-/**
- * @brief Registry for type information and method bindings.
- *
- * Each type (Connection, Connections, Quantity, etc.) has:
- * - Instance methods that can be called on objects
- * - These are registered once at startup
- */
+// Method callable: receives the receiver object and a param map,
+// returns a FunctionResult.
+using TypeMethod =
+    std::function<FunctionResult(const RuntimeValue &, const ParameterMap &)>;
+
 class TypeRegistry {
 public:
-  /**
-   * @brief Method signature for instance methods.
-   * Takes the object ('this') plus named parameters.
-   */
-  using MethodFunction = std::function<ParameterMap(
-      const RuntimeValue &obj, const ParameterMap &params)>;
-
-  /**
-   * @brief Register a method for a type.
-   *
-   * @param type_name Type name (e.g., "Connection")
-   * @param method_name Method name (e.g., "name")
-   * @param func Implementation
-   */
-  void register_method(const std::string &type_name,
-                       const std::string &method_name, MethodFunction func);
-
-  /**
-   * @brief Look up a method for a type.
-   *
-   * @param type_name Type name
-   * @param method_name Method name
-   * @return Method function or nullptr if not found
-   */
-  MethodFunction *lookup_method(const std::string &type_name,
-                                const std::string &method_name);
-
-  /**
-   * @brief Check if a method exists for a type.
-   */
-  [[nodiscard]] bool has_method(const std::string &type_name,
-                                const std::string &method_name) const;
-
-  /**
-   * @brief Create default type registry with all builtin types.
-   */
   static std::shared_ptr<TypeRegistry> create_default();
-  // Register a struct declaration so the interpreter can look it up by type
-  // name.
-  void register_struct(const atc::StructDecl *decl) {
-    struct_registry_[decl->name] = decl;
-  }
 
-  // Look up a struct declaration by type name (e.g. "Quantity").
-  // Returns nullptr if not registered.
+  // FAL struct declarations (parsed from .fal files)
+  void register_struct(const atc::StructDecl *decl);
   [[nodiscard]] const atc::StructDecl *
-  lookup_struct(const std::string &type_name) const {
-    auto it = struct_registry_.find(type_name);
-    return it != struct_registry_.end() ? it->second : nullptr;
-  }
-  // Register a native (FFI) implementation for a struct routine.
-  void register_native_struct_method(const std::string &struct_name,
-                                     const std::string &method_name,
-                                     ExternalFunction func);
+  lookup_struct(const std::string &name) const;
 
-  // Look up a registered native struct method; returns nullptr if not found.
-  [[nodiscard]] const ExternalFunction *
-  lookup_native_struct_method(const std::string &struct_name,
-                              const std::string &method_name) const;
+  // FFI method dispatch (registered by AutotunerEngine when loading ffimports)
+  void register_ffi_method(const std::string &type_name,
+                           const std::string &method_name, TypeMethod method);
+  [[nodiscard]] const TypeMethod *
+  lookup_method(const std::string &type_name,
+                const std::string &method_name) const;
 
 private:
-  // Map: type_name -> (method_name -> method_impl)
-  std::map<std::string, std::map<std::string, MethodFunction>> type_methods_;
+  // Keyed by struct name → StructDecl*
   std::map<std::string, const atc::StructDecl *> struct_registry_;
-  // struct_name → method_name → ExternalFunction
-  std::map<std::string, std::map<std::string, ExternalFunction>>
-      native_struct_methods_;
-};
 
-/**
- * @brief Register all builtin type methods (called internally).
- */
-void register_all_type_methods(TypeRegistry &registry);
+  // Keyed by type_name → method_name → callable
+  std::map<std::string, std::map<std::string, TypeMethod>> method_registry_;
+};
 
 } // namespace falcon::autotuner

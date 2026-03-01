@@ -26,21 +26,6 @@ std::string get_runtime_type_name(const RuntimeValue &value) {
   if (std::holds_alternative<std::shared_ptr<TupleValue>>(value)) {
     return "tuple";
   }
-  if (std::holds_alternative<
-          falcon_core::physics::device_structures::ConnectionSP>(value)) {
-    return "Connection";
-  }
-  if (std::holds_alternative<
-          falcon_core::physics::device_structures::ConnectionsSP>(value)) {
-    return "Connections";
-  }
-  if (std::holds_alternative<falcon_core::math::QuantitySP>(value)) {
-    return "Quantity";
-  }
-  if (std::holds_alternative<falcon_core::autotuner_interfaces::names::GnameSP>(
-          value)) {
-    return "Gname";
-  }
   if (std::holds_alternative<std::shared_ptr<StructInstance>>(value)) {
     return "StructInstance";
   }

@@ -85,6 +85,11 @@ target_link_libraries(falcon-dsl
   PRIVATE
     falcon-pm
 )
+# Pass the in-tree include directory so process_ff_import can compile wrappers
+# even when falcon-autotuner is not yet installed to /opt/falcon.
+target_compile_definitions(falcon-dsl PRIVATE
+    FALCON_AUTOTUNER_INCLUDE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
 
 if(MSVC)
   target_compile_options(falcon-dsl PRIVATE /W4)

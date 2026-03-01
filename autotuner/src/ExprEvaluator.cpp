@@ -137,48 +137,30 @@ FunctionResult ExprEvaluator::exec_struct_routine(
     const atc::StructDecl &struct_decl, const atc::RoutineDecl &routine,
     const std::vector<RuntimeValue> &call_args) {
 
-  // ── Native (FFI) dispatch ────────────────────────────────────────────────
-  // If the routine has no body, look up a registered native function and call
-  // it directly without running the interpreter loop.
-  if (routine.body.empty()) {
-    const ExternalFunction *native_fn =
-        types_->lookup_native_struct_method(struct_decl.name, routine.name);
-    if (native_fn != nullptr) {
-      ParameterMap params;
-
-      // Pass the native C++ object as "this" if the receiver carries one.
-      // native_handle is std::optional<RuntimeValue>; check .has_value().
-      if (receiver_instance && receiver_instance->native_handle.has_value()) {
-        params["this"] = receiver_instance->native_handle.value();
-      }
-
-      // Bind positional input parameters.
+  // ---- FFI fast-path: if the receiver holds a native C++ object AND the
+  // routine body is empty, dispatch via the registered FFI method instead
+  // of running the FAL interpreter.
+  if (receiver_instance && receiver_instance->is_native() &&
+      routine.body.empty()) {
+    // Look up the registered FFI method for this type+method pair.
+    const TypeMethod *ffi_method =
+        types_->lookup_method(struct_decl.name, routine.name);
+    if (ffi_method) {
+      // Build a ParameterMap: "this" = the StructInstance (which carries
+      // native_handle), plus positional call args mapped to param names.
+      ParameterMap ffi_params;
+      ffi_params["this"] = receiver_instance;
       for (size_t i = 0;
            i < routine.input_params.size() && i < call_args.size(); ++i) {
-        params[routine.input_params[i]->name] = call_args[i];
+        ffi_params[routine.input_params[i]->name] = call_args[i];
       }
-
-      FunctionResult result = (*native_fn)(params);
-
-      // Constructor: if output type is the struct's own type, the returned
-      // RuntimeValue is the native object (a typed shared_ptr already in
-      // the variant).  Wrap it in a new StructInstance carrying the handle.
-      if (!routine.output_params.empty() && !result.empty() &&
-          routine.output_params[0]->type.is_struct() &&
-          routine.output_params[0]->type.struct_name == struct_decl.name) {
-        auto new_instance = std::make_shared<StructInstance>(struct_decl.name);
-        // The returned value IS the native handle — store it directly.
-        new_instance->native_handle = result[0];
-        return FunctionResult{
-            std::static_pointer_cast<StructInstance>(new_instance)};
-      }
-
-      return result;
+      return (*ffi_method)(receiver_instance, ffi_params);
     }
-    throw EvaluationError("Struct routine '" + routine.name +
-                          "' has no body and no native implementation");
+    // No registered FFI method and empty body — error.
+    throw EvaluationError("FFI struct routine '" + routine.name +
+                          "' on type '" + struct_decl.name +
+                          "' has no registered implementation");
   }
-  // ── Interpreted body execution continues below ───────────────────────────
 
   // ---- Build the sub-environment ----------------------------------------
   ParameterMap routine_env;
