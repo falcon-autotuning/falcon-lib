@@ -8,6 +8,19 @@
 
 namespace falcon::autotuner {
 
+// ---------------------------------------------------------------------------
+// Helper: strip the "Module::" prefix from a qualified name.
+//   "Adder::adder"       → "adder"
+//   "Quantity::Quantity"  → "Quantity"
+//   "plain"              → "plain"
+// ---------------------------------------------------------------------------
+static std::string strip_module_prefix(const std::string &name) {
+  auto pos = name.find("::");
+  if (pos == std::string::npos)
+    return name;
+  return name.substr(pos + 2);
+}
+
 ExprEvaluator::ExprEvaluator(ParameterMap &variables,
                              std::shared_ptr<FunctionRegistry> functions,
                              std::shared_ptr<TypeRegistry> types)
@@ -68,11 +81,25 @@ ExprEvaluator::eval_nil_literal(const atc::NilLiteralExpr & /*expr*/) {
 }
 
 RuntimeValue ExprEvaluator::eval_variable(const atc::VarExpr &expr) {
+  // Fast path: exact match in variables
   auto it = variables_.find(expr.name);
-  if (it == variables_.end()) {
-    throw EvaluationError("Undefined variable: " + expr.name);
+  if (it != variables_.end()) {
+    return it->second;
   }
-  return it->second;
+
+  // If the name is module-qualified ("Module::symbol"), try the bare symbol.
+  // This handles cases where a qualified name slips through to variable lookup
+  // (e.g. a type name like "Quantity::Quantity" used as a receiver before the
+  // method-call static-receiver check gets a chance to catch it).
+  if (expr.name.find("::") != std::string::npos) {
+    auto bare = strip_module_prefix(expr.name);
+    auto bare_it = variables_.find(bare);
+    if (bare_it != variables_.end()) {
+      return bare_it->second;
+    }
+  }
+
+  throw EvaluationError("Undefined variable: " + expr.name);
 }
 
 RuntimeValue ExprEvaluator::eval_binary(const atc::BinaryExpr &expr) {
@@ -104,17 +131,6 @@ RuntimeValue ExprEvaluator::eval_member(const atc::MemberExpr &expr) {
 
 // ---------------------------------------------------------------------------
 // Helper: execute one struct routine in its own sub-environment.
-//
-// - receiver_instance: the StructInstance the routine is called on (may be a
-//   freshly-created one for constructor routines).
-// - struct_decl:       the StructDecl that owns the routine.
-// - routine:           the RoutineDecl to execute.
-// - call_args:         already-evaluated positional arguments from the call
-// site.
-//
-// Returns the FunctionResult (ordered output param values).
-// After execution the receiver_instance is mutated in-place so that any
-// field assignments done inside the routine body are visible to the caller.
 // ---------------------------------------------------------------------------
 FunctionResult ExprEvaluator::exec_struct_routine(
     std::shared_ptr<StructInstance> receiver_instance,
@@ -124,25 +140,21 @@ FunctionResult ExprEvaluator::exec_struct_routine(
   // ---- Build the sub-environment ----------------------------------------
   ParameterMap routine_env;
 
-  // Bind and "this" to the receiver so that:
+  // Bind "this" to the receiver so that:
   //   this.a   (MemberExpr on VarExpr("this"))
   // both work inside the routine body.
   routine_env["this"] = receiver_instance;
 
   // Flatten all struct fields into the routine environment so that bare
-  // field names (e.g. `a_`, `b_`) resolve directly without qualifying with.
-  // This mirrors the "implicit self" semantics described in the AST
-  // comment for StructDecl routines.
+  // field names resolve directly without qualifying.
   for (const auto &field : struct_decl.fields) {
     auto field_it = receiver_instance->fields->find(field.name);
     if (field_it != receiver_instance->fields->end()) {
       routine_env[field.name] = field_it->second;
     } else if (field.initializer.has_value()) {
-      // Field has a default initializer — evaluate it now.
       ExprEvaluator sub_eval(routine_env, functions_, types_);
       routine_env[field.name] = sub_eval.evaluate(*field.initializer.value());
     } else {
-      // Default-initialise by type.
       RuntimeValue def;
       switch (field.type.base_type) {
       case atc::ParamType::Int:
@@ -183,7 +195,6 @@ FunctionResult ExprEvaluator::exec_struct_routine(
   // ---- Initialise output parameters -------------------------------------
   for (const auto &out : routine.output_params) {
     if (out->type.is_struct()) {
-      // Create a fresh struct instance for struct-typed outputs.
       auto fresh = std::make_shared<StructInstance>(out->type.struct_name);
       const atc::StructDecl *out_decl =
           types_->lookup_struct(out->type.struct_name);
@@ -220,8 +231,6 @@ FunctionResult ExprEvaluator::exec_struct_routine(
       ExprEvaluator sub_eval(routine_env, functions_, types_);
       routine_env[out->name] = sub_eval.evaluate(*out->default_value.value());
     }
-    // Primitive output params without a default are left uninitialised;
-    // the routine body must assign them before they are read.
   }
 
   // ---- Execute the routine body -----------------------------------------
@@ -229,20 +238,12 @@ FunctionResult ExprEvaluator::exec_struct_routine(
   sub_exec.execute_block(routine.body);
 
   // ---- Write flattened field variables back into receiver_instance -------
-  // Any assignment to a bare field name (a_, b_, …) inside the routine
-  // body mutated the flat variable in routine_env.  We need to sync those
-  // changes back to the StructInstance so the caller sees them.
   for (const auto &field : struct_decl.fields) {
     auto it = routine_env.find(field.name);
     if (it != routine_env.end()) {
       receiver_instance->set_field(field.name, it->second);
     }
   }
-
-  // Also sync "self"/"this" back — in case the routine body did
-  // `self.a_ = …` or `this.a_ = …` directly on the StructInstance pointer.
-  // Those mutations already landed on receiver_instance (shared_ptr), so no
-  // extra copy is needed here.
 
   // ---- Collect and return output values ----------------------------------
   FunctionResult outputs;
@@ -259,32 +260,40 @@ FunctionResult ExprEvaluator::exec_struct_routine(
 
 RuntimeValue ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
   // ------------------------------------------------------------------
-  // Check first whether the object expression is a bare type name that
-  // refers to a known struct — i.e. a STATIC / CONSTRUCTOR call like
-  //   Quantity.New(a)
-  // The parser emits this as MethodCallExpr{ object=VarExpr("Quantity"),
-  //   method_name="New", args=[a] }.
+  // Check first whether the object expression is a bare OR module-qualified
+  // type name that refers to a known struct — i.e. a STATIC / CONSTRUCTOR
+  // call like:
+  //   Quantity.New(a)           → VarExpr("Quantity")
+  //   Quantity::Quantity.New(a) → VarExpr("Quantity::Quantity")
+  //
   // We must intercept this BEFORE evaluating the object as a variable,
-  // because "Quantity" is a type name, not a runtime variable.
+  // because the type name is not a runtime variable.
   // ------------------------------------------------------------------
   if (const auto *type_var =
           dynamic_cast<const atc::VarExpr *>(expr.object.get())) {
+
+    // Try the name as-is first, then strip any module prefix.
     const atc::StructDecl *struct_decl = types_->lookup_struct(type_var->name);
+    if (struct_decl == nullptr &&
+        type_var->name.find("::") != std::string::npos) {
+      // e.g. "Quantity::Quantity" → try bare "Quantity"
+      struct_decl = types_->lookup_struct(strip_module_prefix(type_var->name));
+    }
 
     if (struct_decl != nullptr &&
-        variables_.find(type_var->name) == variables_.end()) {
+        variables_.find(type_var->name) == variables_.end() &&
+        variables_.find(strip_module_prefix(type_var->name)) ==
+            variables_.end()) {
       // It IS a struct type name used as a static receiver.
-      // Look up the routine on the struct.
       const atc::RoutineDecl *routine =
           struct_decl->find_routine(expr.method_name);
       if (!routine) {
         throw EvaluationError("Unknown struct routine '" + expr.method_name +
-                              "' on type '" + type_var->name + "'");
+                              "' on type '" + struct_decl->name + "'");
       }
 
       // Build a fresh receiver instance (the constructor will populate it).
       auto receiver = std::make_shared<StructInstance>(struct_decl->name);
-      // Default-initialise all fields on the fresh instance.
       for (const auto &field : struct_decl->fields) {
         RuntimeValue fval;
         if (field.initializer.has_value()) {
@@ -312,7 +321,6 @@ RuntimeValue ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
         receiver->set_field(field.name, fval);
       }
 
-      // Evaluate call arguments in the CALLER'S environment.
       std::vector<RuntimeValue> call_args;
       call_args.reserve(expr.args.size());
       for (const auto &arg : expr.args) {
@@ -334,8 +342,6 @@ RuntimeValue ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
 
   // ------------------------------------------------------------------
   // Normal instance method call: q.Value(), q.ValueWithB(), etc.
-  // The object must evaluate to a live StructInstance (or a falcon-core
-  // built-in type).
   // ------------------------------------------------------------------
   auto object = evaluate(*expr.object);
 
@@ -359,7 +365,6 @@ RuntimeValue ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
                             "' on type '" + instancePtr->type_name + "'");
     }
 
-    // Evaluate call arguments in the CALLER'S environment.
     std::vector<RuntimeValue> call_args;
     call_args.reserve(expr.args.size());
     for (const auto &arg : expr.args) {
@@ -413,14 +418,22 @@ RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
 
 RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {
   log::debug(fmt::format("Calling the func {}", expr.name));
-  // Look up function
+
+  // Look up function — try the fully-qualified name first, then fall back to
+  // the bare name (stripping any "Module::" prefix). This allows calls like
+  // `Adder::adder(a, b)` to resolve when the routine was registered as "adder".
   auto *func = functions_->lookup(expr.name);
+  std::string resolved_name = expr.name;
+  if (func == nullptr && expr.name.find("::") != std::string::npos) {
+    resolved_name = strip_module_prefix(expr.name);
+    func = functions_->lookup(resolved_name);
+  }
   if (func == nullptr) {
     throw EvaluationError("Unknown function: " + expr.name);
   }
 
-  // Get signature to understand return type
-  const atc::BuiltinSignature *sig = functions_->get_signature(expr.name);
+  // Get signature — use the same resolved name
+  const atc::BuiltinSignature *sig = functions_->get_signature(resolved_name);
   if (sig == nullptr) {
     throw EvaluationError("No signature found for function: " + expr.name);
   }

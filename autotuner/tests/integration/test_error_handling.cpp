@@ -7,7 +7,7 @@ class ErrorHandlingTest : public DSLTestBase {};
 TEST_F(ErrorHandlingTest, SimpleError) {
   ParameterMap params;
   SingleCompileEnvironment cenv{
-      std::filesystem::path("test-autotuners/error_handling/simple_error.fal"),
+      std::filesystem::path("test-autotuners/error_handling/simple-error.fal"),
       "SimpleError", params, true};
   auto [success, outputs] = compile_and_run(cenv);
   ASSERT_TRUE(success);
