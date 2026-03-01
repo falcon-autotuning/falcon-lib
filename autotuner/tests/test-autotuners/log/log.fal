@@ -1,4 +1,4 @@
-import log;
+import "log";
 
 autotuner LogTest -> () {
   start -> doinglog;
