@@ -1,6 +1,7 @@
 #pragma once
 
 #include "falcon-atc/AST.hpp"
+#include "falcon-autotuner/FunctionRegistry.hpp"
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include <functional>
 #include <map>
@@ -68,11 +69,23 @@ public:
     auto it = struct_registry_.find(type_name);
     return it != struct_registry_.end() ? it->second : nullptr;
   }
+  // Register a native (FFI) implementation for a struct routine.
+  void register_native_struct_method(const std::string &struct_name,
+                                     const std::string &method_name,
+                                     ExternalFunction func);
+
+  // Look up a registered native struct method; returns nullptr if not found.
+  [[nodiscard]] const ExternalFunction *
+  lookup_native_struct_method(const std::string &struct_name,
+                              const std::string &method_name) const;
 
 private:
   // Map: type_name -> (method_name -> method_impl)
   std::map<std::string, std::map<std::string, MethodFunction>> type_methods_;
   std::map<std::string, const atc::StructDecl *> struct_registry_;
+  // struct_name → method_name → ExternalFunction
+  std::map<std::string, std::map<std::string, ExternalFunction>>
+      native_struct_methods_;
 };
 
 /**

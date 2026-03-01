@@ -2,7 +2,7 @@
 #include "falcon_core/physics/device_structures/Connection.hpp"
 using Connection = falcon_core::physics::device_structures::Connection;
 using ConnectionSP = std::shared_ptr<Connection>;
-namespace {
+extern "C" {
 falcon::autotuner::FunctionResult
 STRUCTConnectionNewPlungerGate(falcon::autotuner::ParameterMap params) {
   std::string a = std::get<std::string>(params.at("name"));

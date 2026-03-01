@@ -4,6 +4,7 @@ struct Quantity {
   int64_t b;
 };
 
+extern "C" {
 falcon::autotuner::FunctionResult
 STRUCTQuantityNew(falcon::autotuner::ParameterMap params) {
   int64_t a = std::get<int64_t>(params.at("a"));
@@ -17,4 +18,5 @@ STRUCTQuantityValue(falcon::autotuner::ParameterMap params) {
   using QuantitySP = std::shared_ptr<Quantity>;
   QuantitySP q = std::get<QuantitySP>(params.at("this"));
   return falcon::autotuner::FunctionResult{q->a};
+}
 }
