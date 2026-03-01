@@ -1,6 +1,6 @@
 import (
-    io
-    log 
+"io"
+"log"
 )
 autotuner StateRead -> (bool completed) {
   completed = false;
