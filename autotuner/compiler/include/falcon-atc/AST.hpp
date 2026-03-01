@@ -1301,6 +1301,17 @@ struct StructDecl {
     return nullptr;
   }
 };
+
+struct FFImportDecl {
+  std::string wrapper_file;
+  std::vector<std::string> imports;
+  std::vector<std::string> build_libs;
+
+  FFImportDecl(std::string wrapper, std::vector<std::string> imps = {},
+               std::vector<std::string> libs = {})
+      : wrapper_file(std::move(wrapper)), imports(std::move(imps)),
+        build_libs(std::move(libs)) {}
+};
 /**
  * @brief Complete program (collection of autotuners and routines).
  *
@@ -1315,16 +1326,19 @@ struct Program {
   std::vector<AutotunerDecl> autotuners;
   std::vector<RoutineDecl> routines;
   std::vector<std::string> imports;
+  std::vector<FFImportDecl> ff_imports;
 
   // Fast lookup indexes (call build_indexes() after parsing)
   mutable std::map<std::string, const AutotunerDecl *> autotuner_index;
   mutable std::map<std::string, const RoutineDecl *> routine_index;
   mutable std::map<std::string, const StructDecl *> struct_index;
+  mutable std::map<std::string, const FFImportDecl *> ff_import_index;
 
   void build_indexes() const {
     struct_index.clear();
     autotuner_index.clear();
     routine_index.clear();
+    ff_import_index.clear();
     for (const auto &s : structs) {
       struct_index[s.name] = &s;
     }
@@ -1333,6 +1347,9 @@ struct Program {
     }
     for (const auto &r : routines) {
       routine_index[r.name] = &r;
+    }
+    for (const auto &ffi : ff_imports) {
+      ff_import_index[ffi.wrapper_file] = &ffi;
     }
   }
 

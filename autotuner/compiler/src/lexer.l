@@ -27,6 +27,7 @@ using namespace falcon::atc;
 "routine"       { return Parser::make_ROUTINE(*loc); }
 "state"         { return Parser::make_STATE(*loc); }
 "import"        { return Parser::make_IMPORT(*loc); }
+"ffimport"      { return Parser::make_FFIMPORT(*loc); }
 "start"         { return Parser::make_START(*loc); }
 "uses"          { return Parser::make_USES(*loc); }
 "terminal"      { return Parser::make_TERMINAL(*loc); }

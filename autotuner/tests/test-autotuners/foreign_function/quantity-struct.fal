@@ -6,7 +6,6 @@ struct Quantity {
 
 autotuner QuantityStruct (int a, int b) -> (int sum) {
   sum = 0;
-  product = 0;
   
   start -> calculate;
   
