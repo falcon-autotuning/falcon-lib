@@ -1,0 +1,25 @@
+import (
+"./Adder.fal"
+"./Multiplier.fal"
+)
+autotuner ConditionalNest (int a, int b) -> (int out) {
+  uses Adder::adder, Multiplier::multiplier;
+  out = 0;
+
+  start -> init;
+  
+  state init {
+      int add = 0;
+      add = Adder::adder(a,b);
+      -> multiplication(add);
+  }
+  state multiplication (int c) {
+      int multiplication = 0;
+      multiplication = Multiplier::multiplier(c, b);
+      -> done(multiplication);
+  }
+  state done (int out_inside) {
+      out = out_inside;
+      terminal;
+  }
+}
