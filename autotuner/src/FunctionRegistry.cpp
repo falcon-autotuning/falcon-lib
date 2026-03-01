@@ -120,20 +120,22 @@ std::optional<std::string> get_optional_string(const ParameterMap &params,
   return std::nullopt;
 }
 
-// Helper for loading optional Connection fields from ParameterMap
-std::optional<std::string>
-get_optional_connection_name(const ParameterMap &params, const char *key) {
-  auto it = params.find(key);
-  if (it != params.end() &&
-      std::holds_alternative<
-          falcon_core::physics::device_structures::ConnectionSP>(it->second)) {
-    auto conn = std::get<falcon_core::physics::device_structures::ConnectionSP>(
-        it->second);
-    return conn->name();
-  }
-  return std::nullopt;
-}
-
+// // Helper for loading optional Connection fields from ParameterMap
+// std::optional<std::string>
+// get_optional_connection_name(const ParameterMap &params, const char *key) {
+//   auto it = params.find(key);
+//   if (it != params.end() &&
+//       std::holds_alternative<
+//           falcon_core::physics::device_structures::ConnectionSP>(it->second))
+//           {
+//     auto conn =
+//     std::get<falcon_core::physics::device_structures::ConnectionSP>(
+//         it->second);
+//     return conn->name();
+//   }
+//   return std::nullopt;
+// }
+//
 // Helper for loading optional double fields from ParameterMap
 std::optional<double> get_optional_double(const ParameterMap &params,
                                           const char *key) {
@@ -159,106 +161,106 @@ void register_all_builtins(FunctionRegistry &registry) {
   // DATABASE FUNCTIONS
   // ========================================================================
 
-  registry.register_builtin(
-      "readLatest", [](const ParameterMap &params) -> FunctionResult {
-        std::string scope = std::get<std::string>(params.at("scope"));
-        std::string name = std::get<std::string>(params.at("name"));
-        database::ReadOnlyDatabaseConnection db;
-        database::DeviceCharacteristicQuery query;
-        query.scope = scope;
-        query.name = name;
-
-        query.barrier_gate =
-            get_optional_connection_name(params, "barrier_gate");
-        query.plunger_gate =
-            get_optional_connection_name(params, "plunger_gate");
-        query.reservoir_gate =
-            get_optional_connection_name(params, "reservoir_gate");
-        query.screening_gate =
-            get_optional_connection_name(params, "screening_gate");
-        query.extra = get_optional_string(params, "extra");
-        query.uncertainty = get_optional_double(params, "uncertainty");
-        query.hash = get_optional_string(params, "hash");
-        query.time = get_optional_int64(params, "time");
-        query.state = get_optional_string(params, "state");
-        query.unit_name = get_optional_string(params, "unit_name");
-
-        try {
-          auto dchars = db.get_by_query(query);
-          if (dchars.empty()) {
-            // No value found - return (nil, error)
-            return FunctionResult{
-                {nullptr, ErrorObject{"Value not found", false}}};
-          }
-
-          // Find the DeviceCharacteristic with the highest time, if any have
-          // time
-          auto best_it = std::max_element(
-              dchars.begin(), dchars.end(),
-              [](const database::DeviceCharacteristic &a,
-                 const database::DeviceCharacteristic &b) {
-                if (a.time && b.time) {
-                  return *a.time < *b.time;
-                }
-                if (a.time) {
-                  return false; // a has time, b does not
-                }
-                if (b.time) {
-                  return true; // b has time, a does not
-                }
-                return false; // neither has time, keep original order
-              });
-
-          const database::DeviceCharacteristic &chosen =
-              (best_it != dchars.end() && best_it->time) ? *best_it
-                                                         : dchars.front();
-
-          RuntimeValue value = json_to_runtime_value(chosen.characteristic);
-          RuntimeValue error = nullptr;
-
-          return FunctionResult{value, error};
-
-        } catch (const std::exception &e) {
-          // Database error
-          return FunctionResult{nullptr, ErrorObject{e.what(), false}};
-        }
-      });
-
-  registry.register_builtin(
-      "write", [](const ParameterMap &params) -> FunctionResult {
-        std::string scope = std::get<std::string>(params.at("scope"));
-        std::string name = std::get<std::string>(params.at("name"));
-        RuntimeValue value = params.at("characteristic");
-        database::ReadWriteDatabaseConnection db;
-        database::DeviceCharacteristic dchar;
-        dchar.scope = scope;
-        dchar.name = name;
-        dchar.characteristic = runtime_value_to_json(value);
-
-        // Optionally fill out other fields from params if needed
-        dchar.barrier_gate =
-            get_optional_connection_name(params, "barrier_gate");
-        dchar.plunger_gate =
-            get_optional_connection_name(params, "plunger_gate");
-        dchar.reservoir_gate =
-            get_optional_connection_name(params, "reservoir_gate");
-        dchar.screening_gate =
-            get_optional_connection_name(params, "screening_gate");
-        dchar.extra = get_optional_string(params, "extra");
-        dchar.uncertainty = get_optional_double(params, "uncertainty");
-        dchar.hash = get_optional_string(params, "hash");
-        dchar.time = get_optional_int64(params, "time");
-        dchar.state = get_optional_string(params, "state");
-        dchar.unit_name = get_optional_string(params, "unit_name");
-
-        try {
-          db.insert(dchar);
-          return FunctionResult{nullptr}; // nil error (success)
-        } catch (const std::exception &e) {
-          return FunctionResult{ErrorObject{e.what(), false}};
-        }
-      });
-
+  // registry.register_builtin(
+  //     "readLatest", [](const ParameterMap &params) -> FunctionResult {
+  //       std::string scope = std::get<std::string>(params.at("scope"));
+  //       std::string name = std::get<std::string>(params.at("name"));
+  //       database::ReadOnlyDatabaseConnection db;
+  //       database::DeviceCharacteristicQuery query;
+  //       query.scope = scope;
+  //       query.name = name;
+  //
+  //       query.barrier_gate =
+  //           get_optional_connection_name(params, "barrier_gate");
+  //       query.plunger_gate =
+  //           get_optional_connection_name(params, "plunger_gate");
+  //       query.reservoir_gate =
+  //           get_optional_connection_name(params, "reservoir_gate");
+  //       query.screening_gate =
+  //           get_optional_connection_name(params, "screening_gate");
+  //       query.extra = get_optional_string(params, "extra");
+  //       query.uncertainty = get_optional_double(params, "uncertainty");
+  //       query.hash = get_optional_string(params, "hash");
+  //       query.time = get_optional_int64(params, "time");
+  //       query.state = get_optional_string(params, "state");
+  //       query.unit_name = get_optional_string(params, "unit_name");
+  //
+  //       try {
+  //         auto dchars = db.get_by_query(query);
+  //         if (dchars.empty()) {
+  //           // No value found - return (nil, error)
+  //           return FunctionResult{
+  //               {nullptr, ErrorObject{"Value not found", false}}};
+  //         }
+  //
+  //         // Find the DeviceCharacteristic with the highest time, if any have
+  //         // time
+  //         auto best_it = std::max_element(
+  //             dchars.begin(), dchars.end(),
+  //             [](const database::DeviceCharacteristic &a,
+  //                const database::DeviceCharacteristic &b) {
+  //               if (a.time && b.time) {
+  //                 return *a.time < *b.time;
+  //               }
+  //               if (a.time) {
+  //                 return false; // a has time, b does not
+  //               }
+  //               if (b.time) {
+  //                 return true; // b has time, a does not
+  //               }
+  //               return false; // neither has time, keep original order
+  //             });
+  //
+  //         const database::DeviceCharacteristic &chosen =
+  //             (best_it != dchars.end() && best_it->time) ? *best_it
+  //                                                        : dchars.front();
+  //
+  //         RuntimeValue value = json_to_runtime_value(chosen.characteristic);
+  //         RuntimeValue error = nullptr;
+  //
+  //         return FunctionResult{value, error};
+  //
+  //       } catch (const std::exception &e) {
+  //         // Database error
+  //         return FunctionResult{nullptr, ErrorObject{e.what(), false}};
+  //       }
+  //     });
+  //
+  // registry.register_builtin(
+  //     "write", [](const ParameterMap &params) -> FunctionResult {
+  //       std::string scope = std::get<std::string>(params.at("scope"));
+  //       std::string name = std::get<std::string>(params.at("name"));
+  //       RuntimeValue value = params.at("characteristic");
+  //       database::ReadWriteDatabaseConnection db;
+  //       database::DeviceCharacteristic dchar;
+  //       dchar.scope = scope;
+  //       dchar.name = name;
+  //       dchar.characteristic = runtime_value_to_json(value);
+  //
+  //       // Optionally fill out other fields from params if needed
+  //       dchar.barrier_gate =
+  //           get_optional_connection_name(params, "barrier_gate");
+  //       dchar.plunger_gate =
+  //           get_optional_connection_name(params, "plunger_gate");
+  //       dchar.reservoir_gate =
+  //           get_optional_connection_name(params, "reservoir_gate");
+  //       dchar.screening_gate =
+  //           get_optional_connection_name(params, "screening_gate");
+  //       dchar.extra = get_optional_string(params, "extra");
+  //       dchar.uncertainty = get_optional_double(params, "uncertainty");
+  //       dchar.hash = get_optional_string(params, "hash");
+  //       dchar.time = get_optional_int64(params, "time");
+  //       dchar.state = get_optional_string(params, "state");
+  //       dchar.unit_name = get_optional_string(params, "unit_name");
+  //
+  //       try {
+  //         db.insert(dchar);
+  //         return FunctionResult{nullptr}; // nil error (success)
+  //       } catch (const std::exception &e) {
+  //         return FunctionResult{ErrorObject{e.what(), false}};
+  //       }
+  //     });
+  //
   // ========================================================================
   // LOGGING FUNCTIONS
   // ========================================================================
