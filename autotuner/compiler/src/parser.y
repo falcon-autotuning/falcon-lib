@@ -467,13 +467,13 @@ import_list[result]
 // ============================================================================
 
 autotuner_decl[result]
-    : AUTOTUNER IDENTIFIER[name] 
+    : AUTOTUNER IDENTIFIER[name]
       {
         clear_autotuner_scope();
       }
-      input_params[inputs] 
-      ARROW 
-      output_params[outputs] 
+      input_params[inputs]
+      ARROW
+      output_params[outputs]
       LBRACE
         requires_clause[uses]
         autotuner_var_decls[vars]
@@ -507,6 +507,8 @@ input_params[result]
         $result = std::move($params);
       }
     | LPAREN RPAREN
+      { $result = std::vector<std::unique_ptr<ParamDecl>>(); }
+    | %empty
       { $result = std::vector<std::unique_ptr<ParamDecl>>(); }
     ;
 
