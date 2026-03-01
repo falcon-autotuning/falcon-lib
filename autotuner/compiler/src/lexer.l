@@ -56,6 +56,7 @@ using namespace falcon::atc;
 "="             { return Parser::make_ASSIGN(*loc); }
 ","             { return Parser::make_COMMA(*loc); }
 ";"             { return Parser::make_SEMICOLON(*loc); }
+"::"            { return Parser::make_COLONCOLON(*loc); }
 "."             { return Parser::make_DOT(*loc); }
 "+"             { return Parser::make_PLUS(*loc); }
 "-"             { return Parser::make_MINUS(*loc); }

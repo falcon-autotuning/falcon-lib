@@ -3,6 +3,7 @@
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/StmtExecutor.hpp"
 #include "falcon-autotuner/log.hpp"
+#include "falcon-pm/PackageManager.hpp"
 #include <dlfcn.h>
 #include <filesystem>
 #include <fmt/format.h>
@@ -15,124 +16,185 @@ namespace falcon::autotuner {
 AutotunerEngine::AutotunerEngine() {
   function_registry_ = FunctionRegistry::create_default();
   type_registry_ = TypeRegistry::create_default();
-
   interpreter_ =
       std::make_shared<Interpreter>(function_registry_, type_registry_);
+}
+
+// ---------------------------------------------------------------------------
+// Helper: strip module qualifier from a symbol name.
+//   "Adder::adder" → "adder"
+//   "adder"        → "adder"
+// ---------------------------------------------------------------------------
+static std::string strip_module(const std::string &qualified) {
+  auto pos = qualified.find("::");
+  if (pos == std::string::npos)
+    return qualified;
+  return qualified.substr(pos + 2);
 }
 
 bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
   try {
     if (!std::filesystem::exists(fal_file_path)) {
-      std::ostringstream oss;
-      oss << "File not found: " << fal_file_path;
-      log::error(oss.str());
+      log::error("File not found: " + fal_file_path);
       return false;
     }
 
+    auto abs_path = std::filesystem::weakly_canonical(fal_file_path);
+
+    // ── Package manager: resolve imports ─────────────��────────────────────
+    falcon::pm::PackageManager pm(abs_path);
+
+    // We need a quick pre-scan of imports *before* we parse the main file,
+    // because the parser validates type names at parse time.
+    // Strategy: do a lightweight text-scan of `import "..."` lines, resolve
+    // them, pre-load them, and inject their exported struct names into the
+    // parser's module_known_types table via the Compiler hint API.
+    //
+    // We achieve this by loading each imported file first (recursively),
+    // then loading the main file.  Imported programs' struct names are
+    // registered in the type registry and will be available.
+
+    // Read imports from file without full parse (look for import strings)
+    std::vector<std::string> raw_imports = extract_imports_from_file(abs_path);
+
+    if (!raw_imports.empty()) {
+      auto resolved_imports = pm.resolve_imports(abs_path, raw_imports);
+
+      for (const auto &imp : resolved_imports) {
+        // Load the imported file (recursive) — this registers its structs
+        // in the type registry and its routines in the function registry.
+        // We track which modules we've loaded to avoid infinite recursion.
+        if (loaded_paths_.find(imp.absolute_path) == loaded_paths_.end()) {
+          if (!load_fal_file(imp.absolute_path.string())) {
+            log::error("Failed to load import: " + imp.absolute_path.string());
+            return false;
+          }
+        }
+
+        // Tell the compiler that "ModuleName::symbolName"-style type
+        // references are valid.  We inject the bare symbol names from the
+        // imported program's structs into the compiler's known-types hint.
+        auto loaded_prog_it = loaded_programs_by_path_.find(imp.absolute_path);
+        if (loaded_prog_it != loaded_programs_by_path_.end()) {
+          const auto *prog = loaded_prog_it->second;
+          for (const auto &s : prog->structs) {
+            // Register both the bare name AND the qualified name
+            import_struct_hints_.insert(s.name);
+            import_struct_hints_.insert(imp.module_name + "::" + s.name);
+          }
+        }
+      }
+    }
+
+    // ── Parse the main file ───────────────────────────────────────────────
     atc::Compiler compiler;
-    auto program = compiler.parse_file(fal_file_path);
+    // Pass any imported struct hints so the parser accepts them as types
+    compiler.set_known_struct_hints(import_struct_hints_);
+
+    auto program = compiler.parse_file(abs_path.string());
     if (!program) {
-      std::ostringstream oss;
-      oss << "Failed to parse: " << fal_file_path;
-      log::error(oss.str());
+      log::error("Failed to parse: " + fal_file_path);
       return false;
     }
 
-    {
-      std::ostringstream oss;
-      oss << "Loaded .fal file: " << fal_file_path;
-      log::info(oss.str());
-    }
-    {
-      std::ostringstream oss;
-      oss << "Found " << program->autotuners.size() << " autotuner(s), "
-          << program->routines.size() << " routine(s)";
-      log::info(oss.str());
-    }
+    log::info("Loaded .fal file: " + fal_file_path);
+    log::info(fmt::format("Found {} autotuner(s), {} routine(s)",
+                          program->autotuners.size(),
+                          program->routines.size()));
 
-    // Register user-defined structs in the type registry.
-    // Raw pointers into program->structs — the Program is kept alive below.
+    // ── Register structs ──────────────────────────────────────────────────
     for (const auto &struct_decl : program->structs) {
       type_registry_->register_struct(&struct_decl);
     }
 
-    // Process ALL autotuners in the file
+    // ── Register autotuners ───────────────────────────────────────────────
     for (auto &autotuner : program->autotuners) {
-      if (loaded_autotuners_.contains(autotuner.name)) {
-        std::ostringstream oss;
-        oss << "Autotuner '" << autotuner.name
-            << "' already loaded, overwriting";
-        log::warn(oss.str());
-      }
-      {
-        std::ostringstream oss;
-        oss << "  - Autotuner: " << autotuner.name;
-        log::info(oss.str());
-      }
-
-      for (const auto &required : autotuner.required_autotuners) {
-        {
-          std::ostringstream oss;
-          oss << "    requires: " << required;
-          log::debug(oss.str());
-        }
-        if (!has_autotuner(required) &&
-            !routine_declarations_.contains(required)) {
-          std::ostringstream oss;
-          oss << "    Required '" << required
-              << "' not yet loaded (must be loaded before running)";
-          log::warn(oss.str());
+      log::info("  - Autotuner: " + autotuner.name);
+      for (const auto &req : autotuner.required_autotuners) {
+        log::debug("    requires: " + req);
+        // Strip qualifier for dependency check — "Adder::adder" → "adder"
+        auto bare = strip_module(req);
+        if (!has_autotuner(bare) && !function_registry_->has_function(bare)) {
+          log::warn("    Required '" + bare +
+                    "' not yet loaded (must be loaded before running)");
         }
       }
-
       std::string name = autotuner.name;
       loaded_autotuners_.erase(name);
       loaded_autotuners_.insert({name, std::move(autotuner)});
-
       auto it = loaded_autotuners_.find(name);
-      if (it != loaded_autotuners_.end()) {
+      if (it != loaded_autotuners_.end())
         register_autotuner_as_function(it->second);
-      }
     }
 
-    // Process ALL routine declarations in the file
+    // ── Register inline routines ──────────────────────────────────────────
     for (auto &routine : program->routines) {
-      if (routine_declarations_.contains(routine.name)) {
-        std::ostringstream oss;
-        oss << "Routine '" << routine.name << "' already declared, overwriting";
-        log::warn(oss.str());
-      }
-      {
-        std::ostringstream oss;
-        oss << "  - Routine: " << routine.name;
-        log::info(oss.str());
-      }
-
-      std::string name = routine.name;
-
-      // If the routine has an inline body, register it directly as a callable
-      // function now — no .so needed.  This handles routines defined in .fal
-      // source files (e.g. `routine Adder (int a, int b) -> (int add) { ... }`)
-      // as opposed to routines whose body is compiled into a separate .so.
-      if (!routine.body.empty()) {
+      log::info("  - Routine: " + routine.name);
+      if (!routine.body.empty())
         register_inline_routine(routine);
-      }
-
+      std::string name = routine.name;
       routine_declarations_.erase(name);
       routine_declarations_.insert({name, std::move(routine)});
     }
 
-    // CRITICAL: Keep the Program alive so that raw StructDecl pointers
-    // in the TypeRegistry remain valid for the lifetime of this engine.
+    // ── Keep program alive; track by path ─────────────────────────────────
+    loaded_paths_.insert(abs_path);
+    loaded_programs_by_path_[abs_path] = program.get();
     loaded_programs_.push_back(std::move(program));
 
     return true;
   } catch (const std::exception &e) {
-    std::ostringstream oss;
-    oss << "Error loading file: " << e.what();
-    log::error(oss.str());
+    log::error(std::string("Error loading file: ") + e.what());
     return false;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Lightweight import extractor — reads the top of a .fal file and collects
+// all strings inside import(...) without running the full parser.
+// ---------------------------------------------------------------------------
+std::vector<std::string>
+AutotunerEngine::extract_imports_from_file(const std::filesystem::path &path) {
+  std::vector<std::string> imports;
+  std::ifstream f(path);
+  if (!f.is_open())
+    return imports;
+
+  std::string line;
+  bool in_import_block = false;
+  while (std::getline(f, line)) {
+    // Trim leading whitespace
+    auto start = line.find_first_not_of(" \t\r");
+    if (start == std::string::npos)
+      continue;
+    std::string trimmed = line.substr(start);
+
+    if (trimmed.rfind("import", 0) == 0) {
+      // Single-line: import "path";
+      auto q1 = trimmed.find('"');
+      auto q2 = trimmed.rfind('"');
+      if (q1 != std::string::npos && q2 != q1)
+        imports.push_back(trimmed.substr(q1 + 1, q2 - q1 - 1));
+      if (trimmed.find('(') != std::string::npos)
+        in_import_block = true;
+      continue;
+    }
+    if (in_import_block) {
+      if (trimmed.find(')') != std::string::npos) {
+        in_import_block = false;
+        continue;
+      }
+      auto q1 = trimmed.find('"');
+      auto q2 = trimmed.rfind('"');
+      if (q1 != std::string::npos && q2 != q1)
+        imports.push_back(trimmed.substr(q1 + 1, q2 - q1 - 1));
+      continue;
+    }
+    // Stop once we see a non-import keyword at the start
+    if (!trimmed.empty() && trimmed[0] != '/' && trimmed[0] != '#')
+      break;
+  }
+  return imports;
 }
 
 bool AutotunerEngine::load_fal_compiled(const std::string &compiled_path) {

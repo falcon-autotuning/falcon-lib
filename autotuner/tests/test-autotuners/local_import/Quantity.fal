@@ -1,6 +1,6 @@
 struct quantity {
     int a;
-    routine New (int a) -> (Quantity q) {
+    routine New (int a) -> (quantity q) {
         q.a = a;
     }
     routine Value  -> (int value) {

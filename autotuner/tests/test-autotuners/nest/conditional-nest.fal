@@ -1,4 +1,4 @@
-import log;
+import "log";
 autotuner ConditionalNest (int a, int b) -> (int out, Error err) {
   uses Adder, Multiplier;
 
