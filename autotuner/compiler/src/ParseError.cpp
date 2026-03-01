@@ -15,6 +15,11 @@ std::string current_filename;
 std::vector<ParseError> current_errors;
 std::vector<std::string> current_source_lines;
 
+// Definition of the cross-TU struct known types table.
+// Populated by Compiler::set_known_struct_hints() before each parse,
+// and also accumulated by struct_decl actions inside parser.y.
+std::set<std::string> struct_known_types;
+
 void reset_lexer_state() {
   yylineno = 1;
   yycolumn = 1;

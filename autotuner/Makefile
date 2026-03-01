@@ -245,6 +245,11 @@ test-local-debug: build-debug
 		echo "⚠ Warning: TEST_NATS_URL not set"; \
 		exit 1; \
 	fi
+	@cd $(BUILD_DIR_DEBUG)/package-manager && \
+		TEST_DATABASE_URL="$(TEST_DATABASE_URL)" \
+		TEST_NATS_URL="$(TEST_NATS_URL)" \
+		./falcon-pm-tests $(if $(GTEST_FILTER),--gtest_filter="$(GTEST_FILTER)",)
+	@echo "Running dsl tests..."
 	@cd $(BUILD_DIR_DEBUG)/tests && \
 		TEST_DATABASE_URL="$(TEST_DATABASE_URL)" \
 		TEST_NATS_URL="$(TEST_NATS_URL)" \

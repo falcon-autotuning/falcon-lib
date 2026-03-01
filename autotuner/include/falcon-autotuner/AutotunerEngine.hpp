@@ -6,8 +6,10 @@
 #include "falcon-autotuner/Interpreter.hpp"
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/TypeRegistry.hpp"
+#include <filesystem>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -41,11 +43,11 @@ public:
 
 private:
   void register_autotuner_as_function(const atc::AutotunerDecl &autotuner);
-
-  /// Register a routine that has an inline body (defined in the .fal source)
-  /// directly into the function registry so it can be called at runtime
-  /// without needing a compiled .so library.
   void register_inline_routine(const atc::RoutineDecl &routine);
+
+  /// Lightweight: extract raw import path strings without full parsing
+  static std::vector<std::string>
+  extract_imports_from_file(const std::filesystem::path &path);
 
   std::shared_ptr<FunctionRegistry> function_registry_;
   std::shared_ptr<TypeRegistry> type_registry_;
@@ -54,9 +56,20 @@ private:
   std::map<std::string, atc::AutotunerDecl> loaded_autotuners_;
   std::map<std::string, atc::RoutineDecl> routine_declarations_;
 
-  // Parsed Program objects — kept alive so that the StructDecl raw pointers
-  // stored in TypeRegistry remain valid for the lifetime of the engine.
+  // Lifetime storage for parsed Programs (raw StructDecl* pointers in
+  // TypeRegistry point into these).
   std::vector<std::unique_ptr<atc::Program>> loaded_programs_;
+
+  // Track which absolute paths have already been loaded (cycle prevention)
+  std::set<std::filesystem::path> loaded_paths_;
+
+  // Map abs_path → raw Program* for cross-file struct name lookup
+  std::map<std::filesystem::path, const atc::Program *>
+      loaded_programs_by_path_;
+
+  // Struct type names imported from other modules; passed to the Compiler
+  // as hints so the parser accepts them in type_spec positions.
+  std::set<std::string> import_struct_hints_;
 };
 
 } // namespace falcon::autotuner

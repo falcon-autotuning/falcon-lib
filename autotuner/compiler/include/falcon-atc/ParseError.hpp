@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,13 @@ struct ParseError {
 extern std::string current_filename;
 extern std::vector<ParseError> current_errors;
 extern std::vector<std::string> current_source_lines;
+
+// Struct type names known to the parser for the current parse session.
+// Populated by struct declarations within the file being parsed.
+// AutotunerEngine pre-populates this with names from imported files
+// before calling parse_file(), so that imported struct types pass
+// the type_spec validation check.
+extern std::set<std::string> struct_known_types;
 
 // Lexer state reset function (to be called before parsing each file)
 void reset_lexer_state();

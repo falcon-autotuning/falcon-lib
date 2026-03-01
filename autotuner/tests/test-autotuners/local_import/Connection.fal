@@ -1,6 +1,6 @@
 struct connection {
     string name;
-    routine New (string name) -> (Connection c) {
+    routine New (string name) -> (connection c) {
         c.name = name;
     }
     routine Name -> (string name) {
