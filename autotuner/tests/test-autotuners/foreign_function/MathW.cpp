@@ -1,19 +1,23 @@
-#include "falcon-autotuner/RuntimeValue.hpp"
+#include "falcon-autotuner/FfiHelpers.hpp"
+using namespace falcon::autotuner;
+using namespace falcon::autotuner::ffi::wrapper;
 
 extern "C" {
 
-falcon::autotuner::FunctionResult
-Adder(falcon::autotuner::ParameterMap params) {
-  int64_t a = std::get<int64_t>(params.at("a"));
-  int64_t b = std::get<int64_t>(params.at("b"));
-  return falcon::autotuner::FunctionResult{a + b};
+void Adder(const FalconParamEntry *params, int32_t param_count,
+           FalconResultSlot *out, int32_t *out_count) {
+  auto pm = unpack_params(params, param_count);
+  int64_t a = std::get<int64_t>(pm.at("a"));
+  int64_t b = std::get<int64_t>(pm.at("b"));
+  pack_results(FunctionResult{a + b}, out, 16, out_count);
 }
 
-falcon::autotuner::FunctionResult
-Multiplier(falcon::autotuner::ParameterMap params) {
-  int64_t a = std::get<int64_t>(params.at("a"));
-  int64_t b = std::get<int64_t>(params.at("b"));
-  return falcon::autotuner::FunctionResult{a * b};
+void Multiplier(const FalconParamEntry *params, int32_t param_count,
+                FalconResultSlot *out, int32_t *out_count) {
+  auto pm = unpack_params(params, param_count);
+  int64_t a = std::get<int64_t>(pm.at("a"));
+  int64_t b = std::get<int64_t>(pm.at("b"));
+  pack_results(FunctionResult{a * b}, out, 16, out_count);
 }
 
 } // extern "C"

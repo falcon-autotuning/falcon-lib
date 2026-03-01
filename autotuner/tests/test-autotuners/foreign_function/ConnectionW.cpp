@@ -1,108 +1,162 @@
-#include "falcon-autotuner/RuntimeValue.hpp"
+#include "falcon-autotuner/FfiHelpers.hpp"
 #include "falcon_core/physics/device_structures/Connection.hpp"
+
+using namespace falcon::autotuner;
+using namespace falcon::autotuner::ffi::wrapper;
 using Connection = falcon_core::physics::device_structures::Connection;
 using ConnectionSP = std::shared_ptr<Connection>;
+
+// Helper: pack an opaque ConnectionSP into a result slot
+static void pack_opaque_connection(ConnectionSP conn, FalconResultSlot *out,
+                                   int32_t *out_count) {
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_OPAQUE;
+  out[0].value.opaque.type_name = "ConnectionSP";
+  out[0].value.opaque.ptr = new ConnectionSP(std::move(conn));
+  out[0].value.opaque.deleter = [](void *p) {
+    delete static_cast<ConnectionSP *>(p);
+  };
+  *out_count = 1;
+}
+
 extern "C" {
-falcon::autotuner::FunctionResult
-STRUCTConnectionNewPlungerGate(falcon::autotuner::ParameterMap params) {
-  std::string a = std::get<std::string>(params.at("name"));
-  ConnectionSP conn = Connection::PlungerGate(a);
-  return falcon::autotuner::FunctionResult{conn};
+
+// NewPlungerGate(name: string) -> (Connection conn)
+void STRUCTConnectionNewPlungerGate(const FalconParamEntry *params,
+                                    int32_t param_count, FalconResultSlot *out,
+                                    int32_t *out_count) {
+  auto pm = unpack_params(params, param_count);
+  std::string name = std::get<std::string>(pm.at("name"));
+  ConnectionSP conn = Connection::PlungerGate(name);
+  pack_opaque_connection(std::move(conn), out, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionNewBarrierGate(falcon::autotuner::ParameterMap params) {
-  std::string a = std::get<std::string>(params.at("name"));
-  ConnectionSP conn = Connection::BarrierGate(a);
-  return falcon::autotuner::FunctionResult{conn};
+// NewBarrierGate(name: string) -> (Connection conn)
+void STRUCTConnectionNewBarrierGate(const FalconParamEntry *params,
+                                    int32_t param_count, FalconResultSlot *out,
+                                    int32_t *out_count) {
+  auto pm = unpack_params(params, param_count);
+  std::string name = std::get<std::string>(pm.at("name"));
+  ConnectionSP conn = Connection::BarrierGate(name);
+  pack_opaque_connection(std::move(conn), out, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionNewReservoirGate(falcon::autotuner::ParameterMap params) {
-  std::string a = std::get<std::string>(params.at("name"));
-  ConnectionSP conn = Connection::ReservoirGate(a);
-  return falcon::autotuner::FunctionResult{conn};
+// NewReservoirGate(name: string) -> (Connection conn)
+void STRUCTConnectionNewReservoirGate(const FalconParamEntry *params,
+                                      int32_t param_count,
+                                      FalconResultSlot *out,
+                                      int32_t *out_count) {
+  auto pm = unpack_params(params, param_count);
+  std::string name = std::get<std::string>(pm.at("name"));
+  ConnectionSP conn = Connection::ReservoirGate(name);
+  pack_opaque_connection(std::move(conn), out, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionNewScreeningGate(falcon::autotuner::ParameterMap params) {
-  std::string a = std::get<std::string>(params.at("name"));
-  ConnectionSP conn = Connection::ScreeningGate(a);
-  return falcon::autotuner::FunctionResult{conn};
+// NewScreeningGate(name: string) -> (Connection conn)
+void STRUCTConnectionNewScreeningGate(const FalconParamEntry *params,
+                                      int32_t param_count,
+                                      FalconResultSlot *out,
+                                      int32_t *out_count) {
+  auto pm = unpack_params(params, param_count);
+  std::string name = std::get<std::string>(pm.at("name"));
+  ConnectionSP conn = Connection::ScreeningGate(name);
+  pack_opaque_connection(std::move(conn), out, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionNewOhmic(falcon::autotuner::ParameterMap params) {
-  std::string a = std::get<std::string>(params.at("name"));
-  ConnectionSP conn = Connection::Ohmic(a);
-  return falcon::autotuner::FunctionResult{conn};
+// NewOhmic(name: string) -> (Connection conn)
+void STRUCTConnectionNewOhmic(const FalconParamEntry *params,
+                              int32_t param_count, FalconResultSlot *out,
+                              int32_t *out_count) {
+  auto pm = unpack_params(params, param_count);
+  std::string name = std::get<std::string>(pm.at("name"));
+  ConnectionSP conn = Connection::Ohmic(name);
+  pack_opaque_connection(std::move(conn), out, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionName(falcon::autotuner::ParameterMap params) {
-  ConnectionSP conn = std::get<ConnectionSP>(params.at("this"));
-  return falcon::autotuner::FunctionResult{conn->name()};
+// Name(this: Connection) -> (string name)
+void STRUCTConnectionName(const FalconParamEntry *params, int32_t param_count,
+                          FalconResultSlot *out, int32_t *out_count) {
+  ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
+  pack_results(FunctionResult{conn->name()}, out, 16, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionType(falcon::autotuner::ParameterMap params) {
-  ConnectionSP conn = std::get<ConnectionSP>(params.at("this"));
-  return falcon::autotuner::FunctionResult{conn->type()};
+// Type(this: Connection) -> (string type)
+void STRUCTConnectionType(const FalconParamEntry *params, int32_t param_count,
+                          FalconResultSlot *out, int32_t *out_count) {
+  ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
+  pack_results(FunctionResult{conn->type()}, out, 16, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionIsDotGate(falcon::autotuner::ParameterMap params) {
-  ConnectionSP conn = std::get<ConnectionSP>(params.at("this"));
-  return falcon::autotuner::FunctionResult{conn->is_dot_gate()};
+// IsDotGate(this: Connection) -> (bool)
+void STRUCTConnectionIsDotGate(const FalconParamEntry *params,
+                               int32_t param_count, FalconResultSlot *out,
+                               int32_t *out_count) {
+  ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
+  pack_results(FunctionResult{conn->is_dot_gate()}, out, 16, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionIsBarrierGate(falcon::autotuner::ParameterMap params) {
-  ConnectionSP conn = std::get<ConnectionSP>(params.at("this"));
-  return falcon::autotuner::FunctionResult{conn->is_barrier_gate()};
+// IsBarrierGate(this: Connection) -> (bool)
+void STRUCTConnectionIsBarrierGate(const FalconParamEntry *params,
+                                   int32_t param_count, FalconResultSlot *out,
+                                   int32_t *out_count) {
+  ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
+  pack_results(FunctionResult{conn->is_barrier_gate()}, out, 16, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionIsPlungerGate(falcon::autotuner::ParameterMap params) {
-  ConnectionSP conn = std::get<ConnectionSP>(params.at("this"));
-  return falcon::autotuner::FunctionResult{conn->is_plunger_gate()};
+// IsPlungerGate(this: Connection) -> (bool)
+void STRUCTConnectionIsPlungerGate(const FalconParamEntry *params,
+                                   int32_t param_count, FalconResultSlot *out,
+                                   int32_t *out_count) {
+  ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
+  pack_results(FunctionResult{conn->is_plunger_gate()}, out, 16, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionIsScreeningGate(falcon::autotuner::ParameterMap params) {
-  ConnectionSP conn = std::get<ConnectionSP>(params.at("this"));
-  return falcon::autotuner::FunctionResult{conn->is_screening_gate()};
+// IsScreeningGate(this: Connection) -> (bool)
+void STRUCTConnectionIsScreeningGate(const FalconParamEntry *params,
+                                     int32_t param_count, FalconResultSlot *out,
+                                     int32_t *out_count) {
+  ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
+  pack_results(FunctionResult{conn->is_screening_gate()}, out, 16, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionIsReservoirGate(falcon::autotuner::ParameterMap params) {
-  ConnectionSP conn = std::get<ConnectionSP>(params.at("this"));
-  return falcon::autotuner::FunctionResult{conn->is_reservoir_gate()};
+// IsReservoirGate(this: Connection) -> (bool)
+void STRUCTConnectionIsReservoirGate(const FalconParamEntry *params,
+                                     int32_t param_count, FalconResultSlot *out,
+                                     int32_t *out_count) {
+  ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
+  pack_results(FunctionResult{conn->is_reservoir_gate()}, out, 16, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionIsOhmic(falcon::autotuner::ParameterMap params) {
-  ConnectionSP conn = std::get<ConnectionSP>(params.at("this"));
-  return falcon::autotuner::FunctionResult{conn->is_ohmic()};
+// IsOhmic(this: Connection) -> (bool)
+void STRUCTConnectionIsOhmic(const FalconParamEntry *params,
+                             int32_t param_count, FalconResultSlot *out,
+                             int32_t *out_count) {
+  ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
+  pack_results(FunctionResult{conn->is_ohmic()}, out, 16, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionIsGate(falcon::autotuner::ParameterMap params) {
-  ConnectionSP conn = std::get<ConnectionSP>(params.at("this"));
-  return falcon::autotuner::FunctionResult{conn->is_gate()};
+// IsGate(this: Connection) -> (bool)
+void STRUCTConnectionIsGate(const FalconParamEntry *params, int32_t param_count,
+                            FalconResultSlot *out, int32_t *out_count) {
+  ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
+  pack_results(FunctionResult{conn->is_gate()}, out, 16, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionEqual(falcon::autotuner::ParameterMap params) {
-  ConnectionSP conn = std::get<ConnectionSP>(params.at("this"));
-  ConnectionSP other = std::get<ConnectionSP>(params.at("other"));
-  return falcon::autotuner::FunctionResult{conn == other};
+// Equal(this: Connection, other: Connection) -> (bool)
+void STRUCTConnectionEqual(const FalconParamEntry *params, int32_t param_count,
+                           FalconResultSlot *out, int32_t *out_count) {
+  ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
+  ConnectionSP other = get_opaque<Connection>(params, param_count, "other");
+  pack_results(FunctionResult{conn == other}, out, 16, out_count);
 }
 
-falcon::autotuner::FunctionResult
-STRUCTConnectionNotEqual(falcon::autotuner::ParameterMap params) {
-  ConnectionSP conn = std::get<ConnectionSP>(params.at("this"));
-  ConnectionSP other = std::get<ConnectionSP>(params.at("other"));
-  return falcon::autotuner::FunctionResult{conn != other};
+// NotEqual(this: Connection, other: Connection) -> (bool)
+void STRUCTConnectionNotEqual(const FalconParamEntry *params,
+                              int32_t param_count, FalconResultSlot *out,
+                              int32_t *out_count) {
+  ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
+  ConnectionSP other = get_opaque<Connection>(params, param_count, "other");
+  pack_results(FunctionResult{conn != other}, out, 16, out_count);
 }
+
 } // namespace

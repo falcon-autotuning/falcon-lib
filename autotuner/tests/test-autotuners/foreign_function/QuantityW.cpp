@@ -1,50 +1,54 @@
-#include "falcon-autotuner/RuntimeValue.hpp"
-#include <memory>
-
+#include "falcon-autotuner/FfiHelpers.hpp"
 using namespace falcon::autotuner;
+using namespace falcon::autotuner::ffi::wrapper;
 
+// User-defined struct — NOT a variant member of the engine's RuntimeValue.
+// We pass it as FALCON_TYPE_OPAQUE with type_name "Quantity".
 struct Quantity {
   int64_t a;
   int64_t b;
+  Quantity(int64_t a_, int64_t b_) : a(a_), b(b_) {}
 };
+using QuantitySP = std::shared_ptr<Quantity>;
+
+// Helper: pack an opaque user struct into a result slot
+static void pack_opaque_quantity(QuantitySP q, FalconResultSlot *out,
+                                 int32_t *out_count) {
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_OPAQUE;
+  out[0].value.opaque.type_name =
+      "Quantity"; // user-defined; not a known engine type
+  out[0].value.opaque.ptr = new QuantitySP(std::move(q));
+  out[0].value.opaque.deleter = [](void *p) {
+    delete static_cast<QuantitySP *>(p);
+  };
+  *out_count = 1;
+}
 
 extern "C" {
 
-// Constructor: STRUCTQuantityNew
-// Called as:   Quantity q = Quantity.New(a);
-// Params:      params["a"] = int64_t
-// Returns:     FunctionResult with one element: shared_ptr<StructInstance>
-//              whose native_handle owns the Quantity.
-FunctionResult STRUCTQuantityNew(ParameterMap params) {
-  int64_t a = std::get<int64_t>(params.at("a"));
-  // b is optional; default to 0 if not provided
-  int64_t b = 0;
-  if (params.count("b"))
-    b = std::get<int64_t>(params.at("b"));
-
+// New(int a, int b) -> (Quantity q)
+void STRUCTQuantityNew(const FalconParamEntry *params, int32_t param_count,
+                       FalconResultSlot *out, int32_t *out_count) {
+  auto pm = unpack_params(params, param_count);
+  int64_t a = std::get<int64_t>(pm.at("a"));
+  int64_t b = std::get<int64_t>(pm.at("b"));
   auto q = std::make_shared<Quantity>(a, b);
-  // Wrap in a StructInstance that owns q via native_handle.
-  // Fields map is left empty — all data lives in the native object.
-  auto inst = StructInstance::from_native("Quantity", q);
-  return FunctionResult{RuntimeValue{inst}};
+  pack_opaque_quantity(std::move(q), out, out_count);
 }
 
-// NewWithB: takes both a and b
-FunctionResult STRUCTQuantityNewWithB(ParameterMap params) {
-  int64_t a = std::get<int64_t>(params.at("a"));
-  int64_t b = std::get<int64_t>(params.at("b"));
-  auto q = std::make_shared<Quantity>(a, b);
-  return FunctionResult{
-      RuntimeValue{StructInstance::from_native("Quantity", q)}};
+// NewWithB(int a, int b) -> (Quantity q)  [alias kept for compatibility]
+void STRUCTQuantityNewWithB(const FalconParamEntry *params, int32_t param_count,
+                            FalconResultSlot *out, int32_t *out_count) {
+  STRUCTQuantityNew(params, param_count, out, out_count);
 }
 
-// Instance method: STRUCTQuantityValue
-// Called as:   int v = q.Value();
-// Params:      params["this"] = shared_ptr<StructInstance> with native_handle
-FunctionResult STRUCTQuantityValue(ParameterMap params) {
-  auto inst = std::get<std::shared_ptr<StructInstance>>(params.at("this"));
-  auto q = inst->get_native<Quantity>();
-  return FunctionResult{RuntimeValue{q->a}};
+// Value -> (int value)  [reads field 'a' as the value]
+void STRUCTQuantityValue(const FalconParamEntry *params, int32_t param_count,
+                         FalconResultSlot *out, int32_t *out_count) {
+  // 'this' is passed as FALCON_TYPE_OPAQUE with type_name "Quantity"
+  QuantitySP q = get_opaque<Quantity>(params, param_count, "this");
+  pack_results(FunctionResult{q->a}, out, 16, out_count);
 }
 
 } // extern "C"
