@@ -558,16 +558,12 @@ bool AutotunerEngine::process_ff_import(const atc::FFImportDecl &ffi,
   fs::path cache_dir = fal_dir.parent_path() / ".falcon" / "cache";
   fs::create_directories(cache_dir);
 
-  // Hash the wrapper source so we only recompile on changes
   std::string src_hash = compute_file_hash(wrapper_src);
   fs::path so_path = cache_dir / (wrapper_src.stem().string() + "_" +
                                   src_hash.substr(0, 16) + ".so");
 
   // ── 3. Compile the wrapper if the cached .so is stale ──────────────────
   if (!fs::exists(so_path)) {
-    // Build include flags.
-    // Always add the in-tree falcon-autotuner headers so wrappers can
-    // find RuntimeValue.hpp, StructInstance, etc. during development builds.
     std::string includes;
     for (const auto &inc : ffi.imports) {
       includes += " -I" + inc;
@@ -604,23 +600,14 @@ bool AutotunerEngine::process_ff_import(const atc::FFImportDecl &ffi,
     log::error("Failed to dlopen FFI wrapper: " + std::string(dlerror()));
     return false;
   }
-  // Keep the handle alive for the lifetime of the engine
   ffi_handles_.push_back(dl_handle);
 
   // ── 5. Register every struct routine whose body is empty ───────────────
-  // Convention: constructor symbol = "STRUCT<TypeName><RoutineName>"
-  //   e.g.  STRUCTQuantityNew, STRUCTQuantityValue
-  // Instance method symbol = same convention.
-  // The wrapper is responsible for:
-  //   - Constructors: allocate a native object, wrap in
-  //   StructInstance::from_native
-  //   - Instance methods: receive params["this"] as shared_ptr<StructInstance>,
-  //     cast native_handle to the concrete type, operate on it.
-
+  // Convention: symbol = "STRUCT<TypeName><RoutineName>"
+  // All wrapper functions now use the new C-ABI: FalconFFIFunc
   for (const auto &s : program.structs) {
     for (const auto &routine : s.routines) {
       if (!routine.body.empty()) {
-        // Has a FAL body — not an FFI stub, skip
         continue;
       }
 
@@ -628,24 +615,25 @@ bool AutotunerEngine::process_ff_import(const atc::FFImportDecl &ffi,
       dlerror();
       void *sym = dlsym(dl_handle, sym_name.c_str());
       if (!sym) {
-        // Symbol not in this .so — may be in another ffimport, skip silently
         continue;
       }
 
-      // Cast to the FFI function signature:
-      //   FunctionResult fn(ParameterMap)
-      auto fn_ptr = reinterpret_cast<FunctionResult (*)(ParameterMap)>(sym);
+      // FIX: use FalconFFIFunc, NOT the old FunctionResult(*)(ParameterMap)
+      auto ffi_ptr = reinterpret_cast<FalconFFIFunc>(sym);
 
-      // Build a TypeMethod that calls the FFI function.
-      // For the receiver RuntimeValue we pass the StructInstance directly,
-      // but the FFI fn receives a ParameterMap that already contains "this".
-      // We build that ParameterMap in exec_struct_routine (see ExprEvaluator),
-      // so here we just register a TypeMethod that forwards to fn_ptr.
+      // Build a TypeMethod that goes through the full C-ABI translation.
+      // The params ParameterMap already contains "this" and all input args
+      // (assembled by exec_struct_routine in ExprEvaluator.cpp).
       TypeMethod method =
-          [fn_ptr](const RuntimeValue & /*receiver*/,
-                   const ParameterMap &params) -> FunctionResult {
-        // params already contains "this" and all input args
-        return fn_ptr(params);
+          [ffi_ptr](const RuntimeValue & /*receiver*/,
+                    const ParameterMap &params) -> FunctionResult {
+        auto packed = ffi::engine::pack_params(params);
+        constexpr int32_t MAX_OUTPUTS = 16;
+        FalconResultSlot out_slots[MAX_OUTPUTS] = {};
+        int32_t out_count = 0;
+        ffi_ptr(packed.entries.data(), (int32_t)packed.entries.size(),
+                out_slots, &out_count);
+        return ffi::engine::unpack_results(out_slots, out_count);
       };
 
       type_registry_->register_ffi_method(s.name, routine.name,
@@ -658,7 +646,7 @@ bool AutotunerEngine::process_ff_import(const atc::FFImportDecl &ffi,
   // ── 6. Register top-level routines (non-struct FFI functions) ──────────
   for (const auto &routine : program.routines) {
     if (!routine.body.empty()) {
-      continue; // has FAL body, registered as inline routine
+      continue;
     }
 
     std::string sym_name = routine.name;
@@ -669,9 +657,18 @@ bool AutotunerEngine::process_ff_import(const atc::FFImportDecl &ffi,
       continue;
     }
 
-    auto fn_ptr = reinterpret_cast<FunctionResult (*)(ParameterMap)>(sym);
-    ExternalFunction ext_func = [fn_ptr](ParameterMap &params) {
-      return fn_ptr(params);
+    // FIX: use FalconFFIFunc, NOT the old FunctionResult(*)(ParameterMap)
+    auto ffi_ptr = reinterpret_cast<FalconFFIFunc>(sym);
+
+    ExternalFunction ext_func =
+        [ffi_ptr](ParameterMap &params) -> FunctionResult {
+      auto packed = ffi::engine::pack_params(params);
+      constexpr int32_t MAX_OUTPUTS = 16;
+      FalconResultSlot out_slots[MAX_OUTPUTS] = {};
+      int32_t out_count = 0;
+      ffi_ptr(packed.entries.data(), (int32_t)packed.entries.size(), out_slots,
+              &out_count);
+      return ffi::engine::unpack_results(out_slots, out_count);
     };
 
     std::vector<atc::BuiltinSignature::ParamSpec> params, returns;
