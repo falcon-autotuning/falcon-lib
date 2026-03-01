@@ -124,7 +124,7 @@
 // Token declarations
 %token <std::string> IDENTIFIER DOUBLE INTEGER STRING
 
-%token AUTOTUNER ROUTINE STATE STRUCT IMPORT START USES TERMINAL IF ELIF ELSE TRUE FALSE NIL THIS
+%token AUTOTUNER ROUTINE STATE STRUCT IMPORT FFIMPORT START USES TERMINAL IF ELIF ELSE TRUE FALSE NIL THIS
 %token FLOAT_KW INT_KW BOOL_KW STRING_KW ERROR_KW
 %token ARROW LBRACKET RBRACKET LBRACE RBRACE LPAREN RPAREN ASSIGN COMMA SEMICOLON DOT
 %token PLUS MINUS MUL DIV EQ NE LL GG LE GE AND OR NOT
@@ -136,7 +136,8 @@
 %type <std::vector<std::unique_ptr<ParamDecl>>> param_decl_list input_params output_params state_input_params
 %type <std::unique_ptr<ParamDecl>> param_decl
 %type <std::unique_ptr<TypeDescriptor>> type_spec
-%type <std::vector<std::string>> requires_clause identifier_list import_list import_stmt import_string_list
+%type <std::unique_ptr<FFImportDecl>> ffimport_decl
+%type <std::vector<std::string>> requires_clause identifier_list import_list import_stmt import_string_list ffimport_string_list
 %type <std::vector<std::unique_ptr<Stmt>>> autotuner_var_decls routine_body routine_body_stmts 
 %type <std::unique_ptr<VarDeclStmt>> var_decl_stmt struct_field_decl
 %type <std::string> entry_state 
@@ -160,13 +161,15 @@
 %type <std::vector<std::variant<
     std::unique_ptr<StructDecl>,
     std::unique_ptr<RoutineDecl>,
-    std::unique_ptr<AutotunerDecl>
+    std::unique_ptr<AutotunerDecl>,
+    std::unique_ptr<FFImportDecl>
 >> > program_items
 
 %type <std::variant<
     std::unique_ptr<StructDecl>,
     std::unique_ptr<RoutineDecl>,
-    std::unique_ptr<AutotunerDecl>
+    std::unique_ptr<AutotunerDecl>,
+    std::unique_ptr<FFImportDecl>
 >> program_item
 
 %left OR
@@ -198,6 +201,8 @@ program[result]
             prog->routines.push_back(std::move(*std::get<std::unique_ptr<RoutineDecl>>(item)));
           } else if (std::holds_alternative<std::unique_ptr<AutotunerDecl>>(item)) {
             prog->autotuners.push_back(std::move(*std::get<std::unique_ptr<AutotunerDecl>>(item)));
+          } else if (std::holds_alternative<std::unique_ptr<FFImportDecl>>(item)) {
+            prog->ff_imports.push_back(std::move(*std::get<std::unique_ptr<FFImportDecl>>(item)));
           }
         }
         $result = std::move(prog);
@@ -210,7 +215,8 @@ program_items[result]
       { $result = std::vector<std::variant<
           std::unique_ptr<StructDecl>,
           std::unique_ptr<RoutineDecl>,
-          std::unique_ptr<AutotunerDecl>
+          std::unique_ptr<AutotunerDecl>,
+          std::unique_ptr<FFImportDecl>
         >>(); }
     | program_items[prev] program_item[next]
       {
@@ -223,6 +229,7 @@ program_item[result]
     : struct_decl[item] { $result = std::move($item); }
     | routine_decl[item] { $result = std::move($item); }
     | autotuner_decl[item] { $result = std::move($item); }
+    | ffimport_decl[item] { $result = std::move($item); }
     ;
 
 import_list[result]
@@ -469,6 +476,31 @@ import_string_list[result]
         $result = std::move($existing); 
         $result.push_back(std::move($next)); 
       }
+    ;
+
+ffimport_decl[result]
+    : FFIMPORT STRING[wrapper]
+      LPAREN ffimport_string_list[imports] RPAREN
+      LPAREN ffimport_string_list[libs] RPAREN
+      {
+        $result = std::make_unique<FFImportDecl>(
+          std::move($wrapper),
+          std::move($imports),
+          std::move($libs)
+        );
+      }
+    ;
+
+ffimport_string_list[result]
+    : STRING[first]
+      { $result = std::vector<std::string>{std::move($first)}; }
+    | ffimport_string_list[existing] STRING[next]
+      {
+        $result = std::move($existing);
+        $result.push_back(std::move($next));
+      }
+    | %empty
+      { $result = std::vector<std::string>(); }
     ;
 
 
