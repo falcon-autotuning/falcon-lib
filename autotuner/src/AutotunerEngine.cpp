@@ -1,6 +1,7 @@
 #include "falcon-autotuner/AutotunerEngine.hpp"
 #include "falcon-atc/Compiler.hpp"
 #include "falcon-autotuner/RuntimeValue.hpp"
+#include "falcon-autotuner/StmtExecutor.hpp"
 #include "falcon-autotuner/log.hpp"
 #include <dlfcn.h>
 #include <filesystem>
@@ -15,14 +16,12 @@ AutotunerEngine::AutotunerEngine() {
   function_registry_ = FunctionRegistry::create_default();
   type_registry_ = TypeRegistry::create_default();
 
-  // Interpreter will initialize NATS and config
   interpreter_ =
       std::make_shared<Interpreter>(function_registry_, type_registry_);
 }
 
 bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
   try {
-    // Check if file exists
     if (!std::filesystem::exists(fal_file_path)) {
       std::ostringstream oss;
       oss << "File not found: " << fal_file_path;
@@ -30,9 +29,7 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
       return false;
     }
 
-    // Use the compiler from autotuner/compiler/
     atc::Compiler compiler;
-
     auto program = compiler.parse_file(fal_file_path);
     if (!program) {
       std::ostringstream oss;
@@ -46,7 +43,6 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
       oss << "Loaded .fal file: " << fal_file_path;
       log::info(oss.str());
     }
-
     {
       std::ostringstream oss;
       oss << "Found " << program->autotuners.size() << " autotuner(s), "
@@ -55,38 +51,31 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
     }
 
     // Register user-defined structs in the type registry.
-    // We store raw pointers into program->structs here, so the Program object
-    // MUST outlive these pointers.  We guarantee that by moving `program` into
-    // loaded_programs_ below BEFORE returning from this function.
+    // Raw pointers into program->structs — the Program is kept alive below.
     for (const auto &struct_decl : program->structs) {
       type_registry_->register_struct(&struct_decl);
     }
 
     // Process ALL autotuners in the file
     for (auto &autotuner : program->autotuners) {
-      // Check for duplicate names
       if (loaded_autotuners_.contains(autotuner.name)) {
         std::ostringstream oss;
         oss << "Autotuner '" << autotuner.name
             << "' already loaded, overwriting";
         log::warn(oss.str());
       }
-
       {
         std::ostringstream oss;
         oss << "  - Autotuner: " << autotuner.name;
         log::info(oss.str());
       }
 
-      // Validate dependencies
       for (const auto &required : autotuner.required_autotuners) {
         {
           std::ostringstream oss;
           oss << "    requires: " << required;
           log::debug(oss.str());
         }
-
-        // Check if required autotuner/routine exists or will be loaded
         if (!has_autotuner(required) &&
             !routine_declarations_.contains(required)) {
           std::ostringstream oss;
@@ -96,12 +85,10 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
         }
       }
 
-      // Store the autotuner (move it since AutotunerDecl is move-only)
       std::string name = autotuner.name;
       loaded_autotuners_.erase(name);
       loaded_autotuners_.insert({name, std::move(autotuner)});
 
-      // Register as callable function
       auto it = loaded_autotuners_.find(name);
       if (it != loaded_autotuners_.end()) {
         register_autotuner_as_function(it->second);
@@ -110,30 +97,33 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
 
     // Process ALL routine declarations in the file
     for (auto &routine : program->routines) {
-      // Check for duplicate names
       if (routine_declarations_.contains(routine.name)) {
         std::ostringstream oss;
         oss << "Routine '" << routine.name << "' already declared, overwriting";
         log::warn(oss.str());
       }
-
       {
         std::ostringstream oss;
         oss << "  - Routine: " << routine.name;
         log::info(oss.str());
       }
 
-      // Store routine declaration (for later .so loading)
       std::string name = routine.name;
+
+      // If the routine has an inline body, register it directly as a callable
+      // function now — no .so needed.  This handles routines defined in .fal
+      // source files (e.g. `routine Adder (int a, int b) -> (int add) { ... }`)
+      // as opposed to routines whose body is compiled into a separate .so.
+      if (!routine.body.empty()) {
+        register_inline_routine(routine);
+      }
+
       routine_declarations_.erase(name);
       routine_declarations_.insert({name, std::move(routine)});
     }
 
-    // CRITICAL: Keep the Program alive so that the raw StructDecl pointers
-    // registered above in type_registry_ remain valid for the lifetime of
-    // this engine.  Without this the StructDecl objects are destroyed when
-    // `program` goes out of scope at the end of this function, leaving
-    // dangling pointers in the TypeRegistry.
+    // CRITICAL: Keep the Program alive so that raw StructDecl pointers
+    // in the TypeRegistry remain valid for the lifetime of this engine.
     loaded_programs_.push_back(std::move(program));
 
     return true;
@@ -154,8 +144,6 @@ bool AutotunerEngine::load_fal_compiled(const std::string &compiled_path) {
       log::error(oss.str());
       return false;
     }
-
-    // TODO: Implement AST serialization/deserialization
     log::warn("Compiled .fal loading not yet implemented, use load_fal_file()");
     return false;
   } catch (const std::exception &e) {
@@ -175,8 +163,6 @@ bool AutotunerEngine::save_fal_compiled(const std::string &output_path) {
       log::error(oss.str());
       return false;
     }
-
-    // TODO: Implement AST serialization
     log::warn("Compiled .fal saving not yet implemented");
     return false;
   } catch (const std::exception &e) {
@@ -188,7 +174,6 @@ bool AutotunerEngine::save_fal_compiled(const std::string &output_path) {
 }
 
 bool AutotunerEngine::load_routine_library(const RoutineConfig &info) {
-  // Check if routine was declared
   auto decl_it = routine_declarations_.find(info.name);
   if (decl_it == routine_declarations_.end()) {
     std::ostringstream oss;
@@ -203,7 +188,6 @@ bool AutotunerEngine::load_routine_library(const RoutineConfig &info) {
     return false;
   }
 
-  // Load the .so file
   void *handle = dlopen(info.library_path.c_str(), RTLD_LAZY);
   if (handle == nullptr) {
     std::ostringstream oss;
@@ -215,16 +199,13 @@ bool AutotunerEngine::load_routine_library(const RoutineConfig &info) {
 
   std::string symbol =
       info.name_space.empty() ? info.name : info.name_space + "::" + info.name;
-
   dlerror();
-
   void *sym = dlsym(handle, symbol.c_str());
   const char *dlsym_error = dlerror();
   if (dlsym_error != nullptr) { /* error handling */
   }
 
   auto func_ptr = reinterpret_cast<FunctionResult (*)(ParameterMap &)>(sym);
-
   ExternalFunction ext_func = [func_ptr](ParameterMap &params) {
     return func_ptr(params);
   };
@@ -333,8 +314,101 @@ void AutotunerEngine::register_autotuner_as_function(
                                   std::move(returns));
 
   function_registry_->register_autotuner(sig, func);
-
   log::debug(fmt::format("Loaded autotuner: {}", autotuner.name));
+}
+
+void AutotunerEngine::register_inline_routine(const atc::RoutineDecl &routine) {
+  // Capture everything the lambda needs by value/shared_ptr so it remains
+  // valid even after the RoutineDecl is moved into routine_declarations_.
+  // We capture the routine name and rely on routine_declarations_ (via the
+  // engine pointer) to find the body at call time — this is safe because
+  // routine_declarations_ entries are never erased after insertion.
+  const std::string routine_name = routine.name;
+
+  auto func = [this, routine_name](ParameterMap &inputs) -> FunctionResult {
+    // Look up the stored RoutineDecl (guaranteed to exist after load_fal_file).
+    auto decl_it = routine_declarations_.find(routine_name);
+    if (decl_it == routine_declarations_.end()) {
+      throw std::runtime_error("Inline routine not found in declarations: " +
+                               routine_name);
+    }
+    const atc::RoutineDecl &decl = decl_it->second;
+
+    // Build the execution environment: bind all input params by name.
+    ParameterMap env;
+    for (const auto &param : decl.input_params) {
+      auto it = inputs.find(param->name);
+      if (it != inputs.end()) {
+        env[param->name] = it->second;
+      } else if (param->default_value.has_value()) {
+        // Default-value evaluation needs an evaluator — bootstrap with empty
+        // env; default values must be literals or already-bound names.
+        // For now leave unset; StmtExecutor will error if the body reads it.
+      }
+      // Primitive output params are default-initialized below.
+    }
+
+    // Default-initialize output params so the body can assign into them.
+    for (const auto &out : decl.output_params) {
+      switch (out->type.base_type) {
+      case atc::ParamType::Int:
+        env[out->name] = int64_t(0);
+        break;
+      case atc::ParamType::Float:
+        env[out->name] = 0.0;
+        break;
+      case atc::ParamType::Bool:
+        env[out->name] = false;
+        break;
+      case atc::ParamType::String:
+        env[out->name] = std::string("");
+        break;
+      default:
+        env[out->name] = nullptr;
+        break;
+      }
+    }
+
+    // Execute the routine body.
+    StmtExecutor executor(env, function_registry_, type_registry_);
+    executor.execute_block(decl.body);
+
+    // Collect outputs in declaration order.
+    FunctionResult result;
+    result.reserve(decl.output_params.size());
+    for (const auto &out : decl.output_params) {
+      auto it = env.find(out->name);
+      if (it == env.end()) {
+        throw std::runtime_error("Inline routine '" + routine_name +
+                                 "' did not set output: " + out->name);
+      }
+      result.push_back(it->second);
+    }
+    return result;
+  };
+
+  // Build the BuiltinSignature so the FunctionRegistry and call-site
+  // argument-matching logic can work with it.
+  std::vector<atc::BuiltinSignature::ParamSpec> params;
+  std::vector<atc::BuiltinSignature::ParamSpec> returns;
+  params.reserve(routine.input_params.size());
+  for (const auto &p : routine.input_params) {
+    params.emplace_back(p->name, p->type, true);
+  }
+  returns.reserve(routine.output_params.size());
+  for (const auto &p : routine.output_params) {
+    returns.emplace_back(p->name, p->type, true);
+  }
+  atc::BuiltinSignature sig(routine.name, std::move(params),
+                            std::move(returns));
+
+  // Register using the same path as external routines so has_function() and
+  // the call-site lookup both find it.
+  RoutineInfo routine_info{routine.name, /*library_path=*/"<inline>",
+                           ExternalFunction(func), sig};
+  function_registry_->register_routine(routine_info);
+
+  log::debug(fmt::format("Registered inline routine: {}", routine.name));
 }
 
 } // namespace falcon::autotuner
