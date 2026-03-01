@@ -302,7 +302,12 @@ FunctionResult AutotunerEngine::run_autotuner(const std::string &autotuner_name,
 
   const auto &autotuner = it->second;
   for (const auto &required : autotuner.required_autotuners) {
-    if (!function_registry_->has_function(required)) {
+    // The `uses` clause stores qualified names like "Adder::adder".
+    // Routines are registered under their bare name ("adder"), so strip
+    // the module prefix before checking.
+    auto bare = strip_module(required);
+    if (!function_registry_->has_function(bare) &&
+        !function_registry_->has_function(required)) {
       throw std::runtime_error("Required dependency '" + required +
                                "' not loaded for autotuner '" + autotuner_name +
                                "'");
