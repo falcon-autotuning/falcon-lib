@@ -11,7 +11,7 @@ static void pack_opaque_connection(ConnectionSP conn, FalconResultSlot *out,
                                    int32_t *out_count) {
   out[0] = {};
   out[0].tag = FALCON_TYPE_OPAQUE;
-  out[0].value.opaque.type_name = "ConnectionSP";
+  out[0].value.opaque.type_name = "Connection";
   out[0].value.opaque.ptr = new ConnectionSP(std::move(conn));
   out[0].value.opaque.deleter = [](void *p) {
     delete static_cast<ConnectionSP *>(p);

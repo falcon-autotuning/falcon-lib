@@ -137,29 +137,61 @@ FunctionResult ExprEvaluator::exec_struct_routine(
     const atc::StructDecl &struct_decl, const atc::RoutineDecl &routine,
     const std::vector<RuntimeValue> &call_args) {
 
-  // ---- FFI fast-path: if the receiver holds a native C++ object AND the
-  // routine body is empty, dispatch via the registered FFI method instead
-  // of running the FAL interpreter.
-  if (receiver_instance && receiver_instance->is_native() &&
-      routine.body.empty()) {
-    // Look up the registered FFI method for this type+method pair.
+  // ---- FFI fast-path -------------------------------------------------------
+  // If the routine has no body AND an FFI method is registered, dispatch
+  // through the C ABI. This covers two sub-cases:
+  //
+  //  A) Constructor / static call (receiver is a fresh, non-native instance):
+  //     The FFI function allocates the native object and returns it wrapped
+  //     in an opaque slot. We return that result directly — the caller
+  //     (eval_method_call) stores it as the new variable value.
+  //
+  //  B) Instance method call (receiver IS a native FFI object,
+  //  is_native()==true):
+  //     Pack "this" from the native_handle and pass along with input args.
+  //
+  if (routine.body.empty()) {
     const TypeMethod *ffi_method =
-        types_->lookup_method(struct_decl.name, routine.name);
+        types_->lookup_ffi_method(struct_decl.name, routine.name);
+
     if (ffi_method) {
-      // Build a ParameterMap: "this" = the StructInstance (which carries
-      // native_handle), plus positional call args mapped to param names.
       ParameterMap ffi_params;
-      ffi_params["this"] = receiver_instance;
+
+      if (receiver_instance && receiver_instance->is_native()) {
+        // Case B: instance method — forward the native handle as "this"
+        log::debug("FFI dispatch (instance): " + struct_decl.name + "." +
+                   routine.name);
+        ffi_params["this"] = receiver_instance;
+      } else {
+        // Case A: constructor — no "this", only input args
+        log::debug("FFI dispatch (constructor): " + struct_decl.name + "." +
+                   routine.name);
+      }
+
+      // Pack input arguments by name from the routine signature
       for (size_t i = 0;
            i < routine.input_params.size() && i < call_args.size(); ++i) {
         ffi_params[routine.input_params[i]->name] = call_args[i];
       }
-      return (*ffi_method)(receiver_instance, ffi_params);
+
+      FunctionResult result = (*ffi_method)(receiver_instance, ffi_params);
+      log::debug("FFI dispatch result count: " + std::to_string(result.size()));
+      return result;
     }
-    // No registered FFI method and empty body — error.
-    throw EvaluationError("FFI struct routine '" + routine.name +
-                          "' on type '" + struct_decl.name +
-                          "' has no registered implementation");
+
+    // Body is empty but no FFI method registered — always a hard error.
+    throw EvaluationError("Struct routine '" + routine.name + "' on type '" +
+                          struct_decl.name +
+                          "' has an empty body and no FFI implementation");
+  }
+
+  // If body is empty but instance is NOT native, this is the silent failure
+  // mode — the constructor returned nullptr or a plain StructInstance.
+  if (routine.body.empty()) {
+    log::debug("WARN: routine body empty but instance is not native: " +
+               struct_decl.name + "." + routine.name + " is_native=" +
+               std::to_string(receiver_instance ? receiver_instance->is_native()
+                                                : -1));
   }
 
   // ---- Build the sub-environment ----------------------------------------
@@ -428,7 +460,7 @@ RuntimeValue ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
   std::vector<RuntimeValue> values;
   values.reserve(result.size());
   for (const auto &val : result) {
-    values.push_back(val);
+    values.push_back(val.second);
   }
   return std::make_shared<TupleValue>(values);
 }

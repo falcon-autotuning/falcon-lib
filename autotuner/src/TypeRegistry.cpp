@@ -9,33 +9,37 @@ std::shared_ptr<TypeRegistry> TypeRegistry::create_default() {
   return registry;
 }
 
-void TypeRegistry::register_struct(const atc::StructDecl *decl) {
-  if (decl) {
-    struct_registry_[decl->name] = decl;
-  }
-}
-
-const atc::StructDecl *
-TypeRegistry::lookup_struct(const std::string &name) const {
-  auto it = struct_registry_.find(name);
-  return it != struct_registry_.end() ? it->second : nullptr;
-}
-
 void TypeRegistry::register_ffi_method(const std::string &type_name,
                                        const std::string &method_name,
                                        TypeMethod method) {
-  method_registry_[type_name][method_name] = std::move(method);
+  ffi_methods_[type_name][method_name] = std::move(method);
+}
+
+TypeRegistry::MethodFunction *
+TypeRegistry::lookup_method(const std::string &type_name,
+                            const std::string &method_name) {
+  auto type_it = type_methods_.find(type_name);
+  if (type_it == type_methods_.end()) {
+    return nullptr;
+  }
+  auto method_it = type_it->second.find(method_name);
+  if (method_it == type_it->second.end()) {
+    return nullptr;
+  }
+  return &method_it->second;
 }
 
 const TypeMethod *
-TypeRegistry::lookup_method(const std::string &type_name,
-                            const std::string &method_name) const {
-  auto type_it = method_registry_.find(type_name);
-  if (type_it == method_registry_.end())
+TypeRegistry::lookup_ffi_method(const std::string &type_name,
+                                const std::string &method_name) const {
+  auto type_it = ffi_methods_.find(type_name);
+  if (type_it == ffi_methods_.end()) {
     return nullptr;
+  }
   auto method_it = type_it->second.find(method_name);
-  if (method_it == type_it->second.end())
+  if (method_it == type_it->second.end()) {
     return nullptr;
+  }
   return &method_it->second;
 }
 
