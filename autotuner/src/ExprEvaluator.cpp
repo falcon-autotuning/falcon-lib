@@ -427,8 +427,8 @@ RuntimeValue ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
   }
   std::vector<RuntimeValue> values;
   values.reserve(result.size());
-  for (const auto &kv : result) {
-    values.push_back(kv.second);
+  for (const auto &val : result) {
+    values.push_back(val);
   }
   return std::make_shared<TupleValue>(values);
 }

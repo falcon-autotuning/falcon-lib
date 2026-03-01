@@ -500,8 +500,10 @@ void AutotunerEngine::register_inline_routine(const atc::RoutineDecl &routine) {
 
   // Register using the same path as external routines so has_function() and
   // the call-site lookup both find it.
-  RoutineInfo routine_info{routine.name, /*library_path=*/"<inline>",
-                           ExternalFunction(func), sig};
+  RoutineInfo routine_info{.name = routine.name,
+                           /*library_path=*/.library_path = "<inline>",
+                           .function = ExternalFunction(func),
+                           .signature = sig};
   function_registry_->register_routine(routine_info);
 
   log::debug(fmt::format("Registered inline routine: {}", routine.name));
@@ -553,7 +555,7 @@ bool AutotunerEngine::process_ff_import(const atc::FFImportDecl &ffi,
     includes += " -I/opt/falcon/include";
 
     std::string libs;
-    for (const auto &lib : ffi.libs) {
+    for (const auto &lib : ffi.build_libs) {
       libs += " " + lib;
     }
 
