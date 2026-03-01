@@ -130,7 +130,6 @@
 %token PLUS MINUS MUL DIV
 %token EQ NE LL GG LE GE AND OR NOT
 
-%type <std::unique_ptr<Program>> program
 %type <std::unique_ptr<AutotunerDecl>> autotuner_decl
 %type <std::vector<std::unique_ptr<ParamDecl>>> input_params output_params param_list state_params
 %type <std::unique_ptr<ParamDecl>> param_decl
@@ -187,7 +186,7 @@
 // PROGRAM STRUCTURE
 // ============================================================================
 
-program[result]
+program
     : import_list[imps] program_items[items]
       {
         auto prog = std::make_unique<Program>();
@@ -205,7 +204,9 @@ program[result]
         }
         prog->build_indexes();
         program_root = std::move(prog);
-        $result = std::move(program_root);
+        // NOTE: do NOT move program_root into $result — parse_file() reads
+        // program_root directly via the extern global.  Moving it into $result
+        // (which bison discards for the start symbol) would leave program_root null.
       }
     ;
 
