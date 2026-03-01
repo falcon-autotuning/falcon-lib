@@ -19,6 +19,7 @@
 #include <vector>
 
 // Pull in the falcon_core SP types so we can match type_name strings
+#include "falcon-autotuner/log.hpp"
 #include <falcon_core/autotuner_interfaces/names/Gname.hpp>
 #include <falcon_core/math/Quantity.hpp>
 #include <falcon_core/physics/device_structures/Connection.hpp>
@@ -92,28 +93,37 @@ inline PackedParams pack_params(const ParameterMap &params) {
             e.tag = FALCON_TYPE_OPAQUE;
             e.value.opaque.ptr = heap_sp;
             // Use mangled-free type_name convention (readable strings)
-            if constexpr (std::is_same_v<SP,
-                                         falcon_core::physics::
-                                             device_structures::ConnectionSP>) {
-              e.value.opaque.type_name = "ConnectionSP";
-            } else if constexpr (std::is_same_v<
-                                     SP,
-                                     falcon_core::physics::device_structures::
-                                         ConnectionsSP>) {
-              e.value.opaque.type_name = "ConnectionsSP";
-            } else if constexpr (std::is_same_v<
-                                     SP, falcon_core::math::QuantitySP>) {
-              e.value.opaque.type_name = "QuantitySP";
-            } else if constexpr (std::is_same_v<
-                                     SP, falcon_core::autotuner_interfaces::
-                                             names::GnameSP>) {
-              e.value.opaque.type_name = "GnameSP";
-            } else if constexpr (std::is_same_v<SP,
-                                                std::shared_ptr<TupleValue>>) {
+            if constexpr (std::is_same_v<SP, std::shared_ptr<TupleValue>>) {
               e.value.opaque.type_name = "TupleValue";
             } else if constexpr (std::is_same_v<
                                      SP, std::shared_ptr<StructInstance>>) {
-              e.value.opaque.type_name = "StructInstance";
+              // ── NEW: If the StructInstance carries a native handle, forward
+              // the raw native pointer and its type_name through the C ABI so
+              // the wrapper's get_opaque<T>() can reconstruct the concrete
+              // type. This is the critical path for FFI instance method calls
+              // (e.g. q.Value() where q wraps a heap-allocated Quantity).
+              if (val && val->is_native()) {
+                e.tag = FALCON_TYPE_OPAQUE;
+                // native_handle is a shared_ptr<void> wrapping a
+                // shared_ptr<T>*. We need to pass the inner shared_ptr<T>* to
+                // the wrapper, not the shared_ptr<void> itself. We get the raw
+                // void* from it:
+                e.value.opaque.ptr = val->native_handle->get();
+                e.value.opaque.type_name = val->type_name.c_str();
+                // No deleter — the StructInstance still owns the native_handle.
+                // The wrapper must NOT free this pointer.
+                e.value.opaque.deleter = nullptr;
+              } else {
+                // Plain FAL struct — pass as StructInstance opaque as before
+                e.tag = FALCON_TYPE_OPAQUE;
+                using SP2 = std::shared_ptr<StructInstance>;
+                auto *heap_ptr = new SP2(val);
+                e.value.opaque.type_name = "StructInstance";
+                e.value.opaque.ptr = heap_ptr;
+                e.value.opaque.deleter = [](void *p) {
+                  delete static_cast<SP2 *>(p);
+                };
+              }
             } else {
               e.value.opaque.type_name = "unknown_opaque";
             }
@@ -170,7 +180,6 @@ inline FunctionResult unpack_results(FalconResultSlot *slots, int32_t count) {
       break;
     }
     case FALCON_TYPE_OPAQUE: {
-      // Reconstruct the RuntimeValue from the type_name
       std::string tn = s.value.opaque.type_name ? s.value.opaque.type_name : "";
       void *ptr = s.value.opaque.ptr;
       auto del = s.value.opaque.deleter;
@@ -179,16 +188,23 @@ inline FunctionResult unpack_results(FalconResultSlot *slots, int32_t count) {
       if (tn == "TupleValue") {
         using SP = std::shared_ptr<TupleValue>;
         rv = *static_cast<SP *>(ptr);
+        if (del)
+          del(ptr);
       } else if (tn == "StructInstance") {
         using SP = std::shared_ptr<StructInstance>;
         rv = *static_cast<SP *>(ptr);
+        if (del)
+          del(ptr);
       } else {
-        // Unknown opaque — store as StructInstance with type_name tag
-        // so it doesn't get lost entirely
-        rv = nullptr;
+        // Unknown user opaque — wrap into StructInstance with native_handle
+        auto inst = std::make_shared<StructInstance>(tn);
+        inst->native_handle = std::shared_ptr<void>(ptr, del);
+        // Debug: confirm the native wrap succeeded
+        // (visible at LOG_LEVEL=debug)
+        log::debug("unpack_results: wrapped opaque '" + tn +
+                   "' as native StructInstance");
+        rv = std::move(inst);
       }
-      if (del)
-        del(ptr);
       result.push_back(std::move(rv));
       break;
     }
@@ -333,24 +349,7 @@ inline void pack_results(const FunctionResult &result, FalconResultSlot *slots,
             auto *heap_sp = new SP(val);
             s.tag = FALCON_TYPE_OPAQUE;
             s.value.opaque.ptr = heap_sp;
-            if constexpr (std::is_same_v<SP,
-                                         falcon_core::physics::
-                                             device_structures::ConnectionSP>) {
-              s.value.opaque.type_name = "ConnectionSP";
-            } else if constexpr (std::is_same_v<
-                                     SP,
-                                     falcon_core::physics::device_structures::
-                                         ConnectionsSP>) {
-              s.value.opaque.type_name = "ConnectionsSP";
-            } else if constexpr (std::is_same_v<
-                                     SP, falcon_core::math::QuantitySP>) {
-              s.value.opaque.type_name = "QuantitySP";
-            } else if constexpr (std::is_same_v<
-                                     SP, falcon_core::autotuner_interfaces::
-                                             names::GnameSP>) {
-              s.value.opaque.type_name = "GnameSP";
-            } else if constexpr (std::is_same_v<SP,
-                                                std::shared_ptr<TupleValue>>) {
+            if constexpr (std::is_same_v<SP, std::shared_ptr<TupleValue>>) {
               s.value.opaque.type_name = "TupleValue";
             } else if constexpr (std::is_same_v<
                                      SP, std::shared_ptr<StructInstance>>) {

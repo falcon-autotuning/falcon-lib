@@ -9,33 +9,67 @@
 
 namespace falcon::autotuner {
 
-// Method callable: receives the receiver object and a param map,
-// returns a FunctionResult.
-using TypeMethod =
-    std::function<FunctionResult(const RuntimeValue &, const ParameterMap &)>;
-
 class TypeRegistry {
 public:
-  static std::shared_ptr<TypeRegistry> create_default();
+  /**
+   * @brief Method signature for BUILTIN instance methods (Connection,
+   * Quantity…). Returns ParameterMap — legacy interface kept for backward
+   * compatibility.
+   */
+  using MethodFunction = std::function<ParameterMap(
+      const RuntimeValue &obj, const ParameterMap &params)>;
 
-  // FAL struct declarations (parsed from .fal files)
-  void register_struct(const atc::StructDecl *decl);
-  [[nodiscard]] const atc::StructDecl *
-  lookup_struct(const std::string &name) const;
+  // ── Builtin (non-FFI) methods ─────────────────────────────────────────────
+  void register_method(const std::string &type_name,
+                       const std::string &method_name, MethodFunction func);
+  MethodFunction *lookup_method(const std::string &type_name,
+                                const std::string &method_name);
+  [[nodiscard]] bool has_method(const std::string &type_name,
+                                const std::string &method_name) const;
 
-  // FFI method dispatch (registered by AutotunerEngine when loading ffimports)
+  // ── FFI struct methods ────────────────────────────────────────────────────
+  /**
+   * @brief Register a TypeMethod for a user-defined FFI struct.
+   *
+   * These are called by AutotunerEngine::process_ff_import when it loads a
+   * shared library and binds STRUCT<Type><Method> symbols.
+   *
+   * TypeMethod returns FunctionResult (ordered output list) rather than
+   * ParameterMap, matching the rest of the struct routine dispatch.
+   */
   void register_ffi_method(const std::string &type_name,
                            const std::string &method_name, TypeMethod method);
+
+  /**
+   * @brief Look up a registered FFI TypeMethod.
+   * Returns nullptr if no FFI method is registered for this type+method pair.
+   */
   [[nodiscard]] const TypeMethod *
-  lookup_method(const std::string &type_name,
-                const std::string &method_name) const;
+  lookup_ffi_method(const std::string &type_name,
+                    const std::string &method_name) const;
+
+  // ── Struct declarations ───────────────────────────────────────────────────
+  void register_struct(const atc::StructDecl *decl) {
+    struct_registry_[decl->name] = decl;
+  }
+  [[nodiscard]] const atc::StructDecl *
+  lookup_struct(const std::string &type_name) const {
+    auto it = struct_registry_.find(type_name);
+    return it != struct_registry_.end() ? it->second : nullptr;
+  }
+
+  static std::shared_ptr<TypeRegistry> create_default();
 
 private:
-  // Keyed by struct name → StructDecl*
-  std::map<std::string, const atc::StructDecl *> struct_registry_;
+  // Builtin methods: type_name → method_name → MethodFunction (→ ParameterMap)
+  std::map<std::string, std::map<std::string, MethodFunction>> type_methods_;
 
-  // Keyed by type_name → method_name → callable
-  std::map<std::string, std::map<std::string, TypeMethod>> method_registry_;
+  // FFI struct methods: type_name → method_name → TypeMethod (→ FunctionResult)
+  std::map<std::string, std::map<std::string, TypeMethod>> ffi_methods_;
+
+  std::map<std::string, const atc::StructDecl *> struct_registry_;
 };
+
+void register_all_type_methods(TypeRegistry &registry);
 
 } // namespace falcon::autotuner
