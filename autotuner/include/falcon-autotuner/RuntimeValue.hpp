@@ -85,58 +85,75 @@ struct TupleValue {
  *           ->native_handle.value());
  */
 struct StructInstance {
-  std::string type_name; // e.g. "Quantity"
+  std::string type_name;
 
-  // Field storage — for pure-FAL structs. FFI structs may leave this empty.
   std::shared_ptr<std::map<std::string, RuntimeValue>> fields =
       std::make_shared<std::map<std::string, RuntimeValue>>();
 
-  // Type-erased handle to the underlying C++ object for FFI structs.
-  // Empty for pure-FAL structs.
-  std::optional<std::shared_ptr<void>> native_handle;
+  // ── Native (FFI) handle ─────────────────────────────────────────────────
+  // When a struct is backed by a C++ object (e.g. a `shared_ptr<Quantity>`
+  // allocated in a wrapper), native_handle holds a heap-allocated
+  // `shared_ptr<T>*` and native_deleter frees it.
+  // is_native() returns true iff a native handle is present.
+  void *native_handle = nullptr;
+  void (*native_deleter)(void *) = nullptr;
+  const char *native_type_name = nullptr; // e.g. "Quantity", "Connection"
 
   StructInstance() = default;
   explicit StructInstance(std::string typeName)
       : type_name(std::move(typeName)) {}
 
-  /// Convenience: construct from a concrete C++ shared_ptr.
-  /// Usage:  StructInstance::from_native("Quantity", q_ptr)
+  ~StructInstance() {
+    if (native_handle && native_deleter) {
+      native_deleter(native_handle);
+      native_handle = nullptr;
+    }
+  }
+
+  // Non-copyable because of raw pointer ownership:
+  StructInstance(const StructInstance &) = delete;
+  StructInstance &operator=(const StructInstance &) = delete;
+  StructInstance(StructInstance &&) = default;
+  StructInstance &operator=(StructInstance &&) = default;
+
+  [[nodiscard]] bool is_native() const { return native_handle != nullptr; }
+
+  // Set a native handle (takes ownership; previous handle is freed).
   template <typename T>
-  static std::shared_ptr<StructInstance> from_native(std::string type_name,
-                                                     std::shared_ptr<T> ptr) {
-    auto inst = std::make_shared<StructInstance>(std::move(type_name));
-    inst->native_handle = std::static_pointer_cast<void>(ptr);
-    return inst;
+  void set_native(std::shared_ptr<T> sp, const char *type_name_str) {
+    if (native_handle && native_deleter)
+      native_deleter(native_handle);
+    native_handle = new std::shared_ptr<T>(std::move(sp));
+    native_type_name = type_name_str;
+    native_deleter = [](void *p) {
+      delete static_cast<std::shared_ptr<T> *>(p);
+    };
   }
 
-  /// Convenience: retrieve the native pointer cast to a concrete type.
-  /// Throws std::bad_cast (via std::bad_optional_access) if no handle.
-  template <typename T> std::shared_ptr<T> get_native() const {
-    return std::static_pointer_cast<T>(native_handle.value());
+  // Retrieve the native handle as shared_ptr<T>. Throws if wrong type.
+  template <typename T> [[nodiscard]] std::shared_ptr<T> get_native() const {
+    if (!native_handle)
+      throw std::runtime_error("StructInstance '" + type_name +
+                               "' has no native handle");
+    return *static_cast<std::shared_ptr<T> *>(native_handle);
   }
-
-  /// Returns true if this instance is backed by a native C++ object.
-  [[nodiscard]] bool is_native() const { return native_handle.has_value(); }
 
   [[nodiscard]] RuntimeValue &get_field(const std::string &fieldName) {
     return (*fields)[fieldName];
   }
   [[nodiscard]] const RuntimeValue &
   get_field(const std::string &fieldName) const {
-    auto fieldIter = fields->find(fieldName);
-    if (fieldIter == fields->end()) {
+    auto it = fields->find(fieldName);
+    if (it == fields->end())
       throw std::runtime_error("Struct '" + type_name +
                                "' has no field: " + fieldName);
-    }
-    return fieldIter->second;
+    return it->second;
   }
   void set_field(const std::string &fieldName, RuntimeValue val) {
     (*fields)[fieldName] = std::move(val);
   }
-
   bool operator==(const StructInstance &other) const {
-    return type_name == other.type_name && *fields == *other.fields &&
-           native_handle == other.native_handle;
+    return type_name == other.type_name && *fields == *other.fields;
   }
   bool operator!=(const StructInstance &other) const {
     return !(*this == other);

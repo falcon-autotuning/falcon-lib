@@ -24,11 +24,11 @@ TEST_F(ForeignFunctionTest, ConditionalNestGood) {
       std::filesystem::path("test-autotuners/foreign_function/routine.fal"),
       "ConditionalNest", params, true};
   params.emplace("a", static_cast<int64_t>(5));
-  params.emplace("b", static_cast<int64_t>(0));
+  params.emplace("b", static_cast<int64_t>(1));
   auto [success, outputs] = compile_and_run(cenv);
   ASSERT_TRUE(success);
   ASSERT_GE(outputs.size(), 1);
-  EXPECT_EQ(std::get<int64_t>(outputs[0]), static_cast<int64_t>(5));
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), static_cast<int64_t>(6));
 }
 
 TEST_F(ForeignFunctionTest, ConnectionBinding) {
