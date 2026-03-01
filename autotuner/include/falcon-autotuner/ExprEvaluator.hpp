@@ -40,6 +40,21 @@ private:
   RuntimeValue apply_unary_op(const std::string &op,
                               const RuntimeValue &operand);
 
+  /**
+   * @brief Execute a struct routine (constructor or instance method) in its
+   *        own sub-environment and return the ordered output values.
+   *
+   * Handles:
+   *  - Binding "self" and "this" to receiver_instance
+   *  - Flattening struct fields into the routine env (implicit self)
+   *  - Writing flat field mutations back to receiver_instance after execution
+   */
+  FunctionResult
+  exec_struct_routine(std::shared_ptr<StructInstance> receiver_instance,
+                      const atc::StructDecl &struct_decl,
+                      const atc::RoutineDecl &routine,
+                      const std::vector<RuntimeValue> &call_args);
+
   ParameterMap &variables_;
   std::shared_ptr<FunctionRegistry> functions_;
   std::shared_ptr<TypeRegistry> types_;

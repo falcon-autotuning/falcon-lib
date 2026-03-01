@@ -38,7 +38,6 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
       std::ostringstream oss;
       oss << "Failed to parse: " << fal_file_path;
       log::error(oss.str());
-
       return false;
     }
 
@@ -54,7 +53,11 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
           << program->routines.size() << " routine(s)";
       log::info(oss.str());
     }
-    // Register user-defined structs in the type registry
+
+    // Register user-defined structs in the type registry.
+    // We store raw pointers into program->structs here, so the Program object
+    // MUST outlive these pointers.  We guarantee that by moving `program` into
+    // loaded_programs_ below BEFORE returning from this function.
     for (const auto &struct_decl : program->structs) {
       type_registry_->register_struct(&struct_decl);
     }
@@ -126,6 +129,13 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
       routine_declarations_.insert({name, std::move(routine)});
     }
 
+    // CRITICAL: Keep the Program alive so that the raw StructDecl pointers
+    // registered above in type_registry_ remain valid for the lifetime of
+    // this engine.  Without this the StructDecl objects are destroyed when
+    // `program` goes out of scope at the end of this function, leaving
+    // dangling pointers in the TypeRegistry.
+    loaded_programs_.push_back(std::move(program));
+
     return true;
   } catch (const std::exception &e) {
     std::ostringstream oss;
@@ -136,7 +146,6 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
 }
 
 bool AutotunerEngine::load_fal_compiled(const std::string &compiled_path) {
-  // Load pre-compiled .fal file (serialized AST)
   try {
     std::ifstream file(compiled_path, std::ios::binary);
     if (!file.is_open()) {
@@ -158,7 +167,6 @@ bool AutotunerEngine::load_fal_compiled(const std::string &compiled_path) {
 }
 
 bool AutotunerEngine::save_fal_compiled(const std::string &output_path) {
-  // Save all loaded autotuners as pre-compiled binary
   try {
     std::ofstream file(output_path, std::ios::binary);
     if (!file.is_open()) {
@@ -186,7 +194,6 @@ bool AutotunerEngine::load_routine_library(const RoutineConfig &info) {
     std::ostringstream oss;
     oss << "Routine '" << info.name << "' not declared in any loaded .fal file";
     log::error(oss.str());
-    // Build list of available routines
     std::ostringstream list_oss;
     list_oss << "Available routines: ";
     for (const auto &r : routine_declarations_) {
@@ -206,11 +213,9 @@ bool AutotunerEngine::load_routine_library(const RoutineConfig &info) {
     return false;
   }
 
-  // Compose the symbol name (namespace + routine name)
   std::string symbol =
       info.name_space.empty() ? info.name : info.name_space + "::" + info.name;
 
-  // Clear dlerror before dlsym
   dlerror();
 
   void *sym = dlsym(handle, symbol.c_str());
@@ -224,7 +229,6 @@ bool AutotunerEngine::load_routine_library(const RoutineConfig &info) {
     return func_ptr(params);
   };
 
-  // Build BuiltinSignature from RoutineDecl
   const auto &decl = decl_it->second;
   std::vector<atc::BuiltinSignature::ParamSpec> params;
   std::vector<atc::BuiltinSignature::ParamSpec> returns;
@@ -253,7 +257,6 @@ FunctionResult AutotunerEngine::run_autotuner(const std::string &autotuner_name,
     throw std::runtime_error("Autotuner not loaded: " + autotuner_name);
   }
 
-  // Validate that all required dependencies are available
   const auto &autotuner = it->second;
   for (const auto &required : autotuner.required_autotuners) {
     if (!function_registry_->has_function(required)) {
@@ -282,7 +285,6 @@ std::vector<std::string> AutotunerEngine::get_loaded_autotuners() const {
 std::vector<std::string> AutotunerEngine::get_loaded_routines() const {
   std::vector<std::string> names;
   for (const auto &pair : routine_declarations_) {
-    // Check if the routine has been loaded from .so
     if (function_registry_->has_function(pair.first)) {
       names.push_back(pair.first);
     }
@@ -311,14 +313,12 @@ AutotunerEngine::get_autotuner(const std::string &name) const {
 
 void AutotunerEngine::register_autotuner_as_function(
     const atc::AutotunerDecl &autotuner) {
-  // Wrap autotuner in callable function
   auto func = [this,
                name = autotuner.name](ParameterMap &inputs) -> FunctionResult {
     auto iter = loaded_autotuners_.find(name);
     return interpreter_->run(iter->second, inputs);
   };
 
-  // Build BuiltinSignature from RoutineDecl
   std::vector<atc::BuiltinSignature::ParamSpec> params;
   std::vector<atc::BuiltinSignature::ParamSpec> returns;
   params.reserve(autotuner.input_params.size());
