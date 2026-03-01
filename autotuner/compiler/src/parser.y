@@ -37,6 +37,7 @@
   std::set<std::string> state_input_params;
   bool parsing_routine_params = false;
   std::set<std::string> routine_input_params;
+  bool in_state_body = false;
 
   void clear_autotuner_scope() {
     autotuner_scope.clear();
@@ -652,9 +653,11 @@ state_decl[result]
     : STATE IDENTIFIER[name] 
       {
         clear_state_scope();
+        in_state_body = true;
       }
       state_params[params] LBRACE stmt_list[stmts] RBRACE
       {
+        in_state_body = false;
         $result = std::make_unique<StateDecl>(
           std::move($name),
           std::move($params),
@@ -800,11 +803,11 @@ assign_target[result]
 var_decl_stmt[result]
     : type_spec[type] IDENTIFIER[name] SEMICOLON
       {
-        if (is_redeclaration($name, !state_local_scope.empty() || !state_input_params.empty())) {
+        if (is_redeclaration($name, in_state_body)) {
           error(@name, "Redeclaration of variable: " + $name);
         }
         if (!in_struct_routine) {
-          if (!state_local_scope.empty() || !state_input_params.empty()) {
+          if (in_state_body) {
             state_local_scope.insert($name);
           } else {
             autotuner_scope.insert($name);
@@ -815,11 +818,11 @@ var_decl_stmt[result]
       }
     | type_spec[type] IDENTIFIER[name] ASSIGN expr[init] SEMICOLON
       {
-        if (is_redeclaration($name, !state_local_scope.empty() || !state_input_params.empty())) {
+        if (is_redeclaration($name, in_state_body)) {
           error(@name, "Redeclaration of variable: " + $name);
         }
         if (!in_struct_routine) {
-          if (!state_local_scope.empty() || !state_input_params.empty()) {
+          if (in_state_body) {
             state_local_scope.insert($name);
           } else {
             autotuner_scope.insert($name);
@@ -883,10 +886,8 @@ primary_expr[result]
     | TRUE        { $result = std::make_unique<LiteralExpr>(true); }
     | FALSE       { $result = std::make_unique<LiteralExpr>(false); }
     | NIL         { $result = std::make_unique<NilLiteralExpr>(); }
+    | THIS        { $result = std::make_unique<VarExpr>("this"); }
     | IDENTIFIER[name] { $result = std::make_unique<VarExpr>($name); }
-    // Module-qualified variable/type reference: Module::symbol
-    // Produces a VarExpr with the fully-qualified name so the runtime
-    // can resolve it through the import namespace map.
     | IDENTIFIER[ns] COLONCOLON IDENTIFIER[sym]
       { $result = std::make_unique<VarExpr>($ns + "::" + $sym); }
     ;
