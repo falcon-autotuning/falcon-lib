@@ -42,6 +42,9 @@ public:
   std::shared_ptr<TypeRegistry> get_type_registry() { return type_registry_; }
 
 private:
+  bool process_ff_import(const atc::FFImportDecl &ffi,
+                         const std::filesystem::path &fal_dir,
+                         const atc::Program &program);
   void register_autotuner_as_function(const atc::AutotunerDecl &autotuner);
   void register_inline_routine(const atc::RoutineDecl &routine);
 
@@ -70,6 +73,7 @@ private:
   // Struct type names imported from other modules; passed to the Compiler
   // as hints so the parser accepts them in type_spec positions.
   std::set<std::string> import_struct_hints_;
+  std::vector<void *> ff_handles_; // dlopen handles — kept open for lifetime
 };
 
 } // namespace falcon::autotuner

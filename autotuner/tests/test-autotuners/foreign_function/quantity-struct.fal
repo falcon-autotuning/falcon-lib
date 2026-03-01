@@ -10,7 +10,7 @@ autotuner QuantityStruct (int a, int b) -> (int sum) {
   start -> calculate;
   
   state calculate {
-    Quantity q = Quantity.New(a);
+    Quantity q = Quantity.New(a, b);
     sum = q.Value() + b;
     -> done;
   }

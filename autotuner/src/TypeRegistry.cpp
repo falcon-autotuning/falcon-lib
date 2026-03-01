@@ -26,6 +26,22 @@ TypeRegistry::lookup_method(const std::string &type_name,
 
   return &method_it->second;
 }
+void TypeRegistry::register_native_struct_method(const std::string &struct_name,
+                                                 const std::string &method_name,
+                                                 ExternalFunction func) {
+  native_struct_methods_[struct_name][method_name] = std::move(func);
+}
+
+const ExternalFunction *TypeRegistry::lookup_native_struct_method(
+    const std::string &struct_name, const std::string &method_name) const {
+  auto sit = native_struct_methods_.find(struct_name);
+  if (sit == native_struct_methods_.end())
+    return nullptr;
+  auto mit = sit->second.find(method_name);
+  if (mit == sit->second.end())
+    return nullptr;
+  return &mit->second;
+}
 
 bool TypeRegistry::has_method(const std::string &type_name,
                               const std::string &method_name) const {

@@ -87,6 +87,12 @@ struct StructInstance {
   std::shared_ptr<std::map<std::string, RuntimeValue>> fields =
       std::make_shared<std::map<std::string, RuntimeValue>>();
 
+  // Native handle for FFI structs: holds the underlying C++ object (e.g.
+  // shared_ptr<Connection>).  std::nullopt means this is a pure-FAL struct.
+  // Stored as RuntimeValue so it can hold any of the known shared_ptr types
+  // already in the variant without adding shared_ptr<void>.
+  std::optional<RuntimeValue> native_handle = std::nullopt;
+
   StructInstance() = default;
   explicit StructInstance(std::string typeName)
       : type_name(std::move(typeName)) {}
@@ -96,21 +102,13 @@ struct StructInstance {
   }
   [[nodiscard]] const RuntimeValue &
   get_field(const std::string &fieldName) const {
-    auto fieldIter = fields->find(fieldName);
-    if (fieldIter == fields->end()) {
-      throw std::runtime_error("Struct '" + type_name +
-                               "' has no field: " + fieldName);
-    }
-    return fieldIter->second;
+    return fields->at(fieldName);
   }
   void set_field(const std::string &fieldName, RuntimeValue val) {
-    (*fields)[fieldName] = val;
+    (*fields)[fieldName] = std::move(val);
   }
-  bool operator==(const StructInstance &other) const {
-    return type_name == other.type_name && *fields == *other.fields;
-  }
-  bool operator!=(const StructInstance &other) const {
-    return !(*this == other);
+  [[nodiscard]] bool has_field(const std::string &fieldName) const {
+    return fields->contains(fieldName);
   }
 };
 
