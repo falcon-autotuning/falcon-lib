@@ -1,7 +1,9 @@
 #include "falcon-autotuner/AutotunerEngine.hpp"
 #include "falcon-atc/Compiler.hpp"
+#include "falcon-autotuner/FfiHelpers.hpp"
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/StmtExecutor.hpp"
+#include "falcon-autotuner/falcon_ffi.h"
 #include "falcon-autotuner/log.hpp"
 #include "falcon-pm/PackageManager.hpp"
 #include <dlfcn.h>
@@ -293,12 +295,34 @@ bool AutotunerEngine::load_routine_library(const RoutineConfig &info) {
   dlerror();
   void *sym = dlsym(handle, symbol.c_str());
   const char *dlsym_error = dlerror();
-  if (dlsym_error != nullptr) { /* error handling */
+  if (dlsym_error != nullptr) {
+    std::ostringstream oss;
+    oss << "Symbol '" << symbol << "' not found in " << info.library_path
+        << ": " << dlsym_error;
+    log::error(oss.str());
+    return false;
   }
 
-  auto func_ptr = reinterpret_cast<FunctionResult (*)(ParameterMap &)>(sym);
-  ExternalFunction ext_func = [func_ptr](ParameterMap &params) {
-    return func_ptr(params);
+  // Cast to the C-ABI FFI function type (no C++ types cross the boundary)
+  auto ffi_ptr = reinterpret_cast<FalconFFIFunc>(sym);
+
+  // Wrap the C-ABI call in an ExternalFunction adapter that handles
+  // ParameterMap ↔ FalconParamEntry[] and FunctionResult ↔ FalconResultSlot[]
+  ExternalFunction ext_func =
+      [ffi_ptr](ParameterMap &params) -> FunctionResult {
+    // Pack inputs
+    auto packed = ffi::engine::pack_params(params);
+    // Pre-allocate output slots (generous upper bound)
+    constexpr int32_t MAX_OUTPUTS = 16;
+    FalconResultSlot out_slots[MAX_OUTPUTS] = {};
+    int32_t out_count = 0;
+
+    // Call through C ABI — no C++ types cross here
+    ffi_ptr(packed.entries.data(), (int32_t)packed.entries.size(), out_slots,
+            &out_count);
+
+    // Unpack outputs
+    return ffi::engine::unpack_results(out_slots, out_count);
   };
 
   const auto &decl = decl_it->second;
@@ -317,8 +341,7 @@ bool AutotunerEngine::load_routine_library(const RoutineConfig &info) {
   RoutineInfo routine_info{info.name, info.library_path, ext_func, sig};
   function_registry_->register_routine(routine_info);
 
-  log::debug(fmt::format("Loaded routine: {} from {} (symbol: {})", info.name,
-                         info.library_path, symbol));
+  log::debug(fmt::format("Registered FFI routine: {}", info.name));
   return true;
 }
 
