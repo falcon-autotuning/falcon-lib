@@ -25,10 +25,10 @@ autotuner ConnectionBinding (string name) -> (string type, bool isNotEqual) {
   start -> create;
   
   state create {
-    Connection c = NewPlungerGate(name);
+    Connection c = Connection.NewPlungerGate(name);
     type = c.Type();
     bool isGate = c.IsGate();
-    Connection c2 = NewBarrierGate(name);
+    Connection c2 = Connection.NewBarrierGate(name);
     isNotEqual = (c !=c2);
     -> done;
   }
