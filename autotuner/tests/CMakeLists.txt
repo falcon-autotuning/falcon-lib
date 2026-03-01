@@ -16,6 +16,7 @@ add_executable(falcon_dsl_integration_tests
   integration/test_structs.cpp
   integration/test_log.cpp
   integration/test_foreign_function.cpp
+  integration/test_local_import.cpp
 )
 
 target_link_libraries(falcon_dsl_integration_tests
