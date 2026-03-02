@@ -36,7 +36,12 @@ FunctionResult Interpreter::run(const atc::AutotunerDecl &autotuner,
     set_input_parameters(autotuner, inputs);
 
     // Step 3: Initialize output parameters (to defaults or unset)
+    // Only initialize if not already set by autotuner_variables above.
     for (const auto &output_param : autotuner.output_params) {
+      if (variables_.count(output_param->name)) {
+        // Already initialized by autotuner_variables — keep that value.
+        continue;
+      }
       if (output_param->default_value.has_value()) {
         ExprEvaluator eval(variables_, functions_, types_);
         variables_[output_param->name] =
