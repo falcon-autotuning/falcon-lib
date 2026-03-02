@@ -1,17 +1,12 @@
 #pragma once
 
-#include <cstdint>
-#include <falcon_core/autotuner_interfaces/names/Gname.hpp>
-#include <falcon_core/math/Quantity.hpp>
-#include <falcon_core/physics/device_structures/Connection.hpp>
-#include <falcon_core/physics/device_structures/Connections.hpp>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <variant>
 #include <vector>
-
 namespace falcon::autotuner {
 
 // Forward declarations
@@ -37,11 +32,8 @@ struct ErrorObject {
  */
 using RuntimeValue =
     std::variant<int64_t, double, bool, std::string, std::nullptr_t,
-                 falcon_core::physics::device_structures::ConnectionSP,
-                 falcon_core::physics::device_structures::ConnectionsSP,
-                 falcon_core::math::QuantitySP,
-                 falcon_core::autotuner_interfaces::names::GnameSP, ErrorObject,
-                 std::shared_ptr<TupleValue>, std::shared_ptr<StructInstance>>;
+                 ErrorObject, std::shared_ptr<TupleValue>,
+                 std::shared_ptr<StructInstance>>;
 
 struct TupleValue {
   std::vector<RuntimeValue> values;
