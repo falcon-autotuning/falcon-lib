@@ -9,10 +9,10 @@ struct Quantity {
         q.b_ = b;
     }
     routine Value  -> (int value) {
-        value = a_;
+        value = this.a_;
     }
     routine ValueWithB -> (int value) {
-        value = a_ + b_;
+        value = this.a_ + this.b_;
     }
 }
 
