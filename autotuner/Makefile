@@ -86,7 +86,7 @@ configure-debug: check-vcpkg
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
 		-DCOMPILE_OPTIONS="-g " \
-		-Dfalcon_core_DIR=/opt/falcon/lib/cmake/falcon_core \
+		-Dfalcon_core_DIR=/opt/falcon/include/cmake \
 		-Dfalcon-database_DIR=/opt/falcon/lib/cmake/falcon-database \
 		-Dfalcon-comms_DIR=/opt/falcon/lib/cmake/falcon-comms \
 		-Dlsp_DIR=/opt/falcon/lib/cmake/lsp \
@@ -107,7 +107,7 @@ configure-release: check-vcpkg
 		-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_TOOLCHAIN) \
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
-    -Dfalcon_core_DIR=/opt/falcon/lib/cmake/falcon_core \
+    -Dfalcon_core_DIR=/opt/falcon/include/cmake \
     -Dfalcon-database_DIR=/opt/falcon/lib/cmake/falcon-database \
     -Dfalcon-comms_DIR=/opt/falcon/lib/cmake/falcon-comms \
 		-Dlsp_DIR=/opt/falcon/lib/cmake/lsp \
@@ -251,6 +251,7 @@ test-local-debug: build-debug
 		./falcon-pm-tests $(if $(GTEST_FILTER),--gtest_filter="$(GTEST_FILTER)",)
 	@echo "Running dsl tests..."
 	@cd $(BUILD_DIR_DEBUG)/tests && \
+		LD_LIBRARY_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG):$(VCPKG_INSTALLED_DIR)/$(VCPKG_TRIPLET)/lib:$(INSTALL_PREFIX)/lib:$$LD_LIBRARY_PATH \
 		TEST_DATABASE_URL="$(TEST_DATABASE_URL)" \
 		TEST_NATS_URL="$(TEST_NATS_URL)" \
 		./falcon_dsl_integration_tests $(if $(GTEST_FILTER),--gtest_filter="$(GTEST_FILTER)",)
