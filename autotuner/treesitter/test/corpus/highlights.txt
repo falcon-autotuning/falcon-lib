@@ -1,23 +1,18 @@
 ================================================================================
 Autotuner declaration with body-level assignment
 ================================================================================
-
 autotuner Calculator (int a, int b) -> (int sum) {
   sum = 0;
   start -> calculate;
-
   state calculate {
     sum = a + b;
     -> done;
   }
-
   state done {
     terminal;
   }
 }
-
 --------------------------------------------------------------------------------
-
 (program
   (autotuner_decl
     name: (identifier)
@@ -26,13 +21,10 @@ autotuner Calculator (int a, int b) -> (int sum) {
       (param_decl type: (type) name: (identifier)))
     outputs: (param_list
       (param_decl type: (type) name: (identifier)))
-    (autotuner_var_decl
+    (assign_stmt
       targets: (identifier)
-      value: (expr
-        (primary_expr
-          (int_literal))))
-    entry: (entry_stmt
-      target: (identifier))
+      value: (expr (primary_expr (int_literal))))
+    entry: (entry_stmt target: (identifier) next: (identifier))
     (state_decl
       name: (identifier)
       (stmt
@@ -40,24 +32,21 @@ autotuner Calculator (int a, int b) -> (int sum) {
           targets: (identifier)
           value: (expr
             (binary_expr
-              (expr (primary_expr (identifier)))
-              (expr (primary_expr (identifier)))))))
+              left: (expr (primary_expr (qualified_name symbol: (identifier))))
+              operator: (operator)
+              right: (expr (primary_expr (qualified_name symbol: (identifier)))))))
+      )
       (stmt
-        (transition_stmt
-          target: (identifier))))
+        (transition_stmt target: (identifier))))
     (state_decl
       name: (identifier)
       (stmt
         (terminal_stmt)))))
-
 ================================================================================
 Routine declaration
 ================================================================================
-
 routine MyRoutine (int x) -> (float y)
-
 --------------------------------------------------------------------------------
-
 (program
   (routine_decl
     name: (identifier)
@@ -65,20 +54,16 @@ routine MyRoutine (int x) -> (float y)
       (param_decl type: (type) name: (identifier)))
     outputs: (param_list
       (param_decl type: (type) name: (identifier)))))
-
 ================================================================================
 Comments
 ================================================================================
-
 // single line comment
 /* block comment */
 autotuner Foo (int x) -> (int y) {
   start -> done;
   state done { terminal; }
 }
-
 --------------------------------------------------------------------------------
-
 (program
   (comment)
   (comment)
@@ -88,17 +73,14 @@ autotuner Foo (int x) -> (int y) {
       (param_decl type: (type) name: (identifier)))
     outputs: (param_list
       (param_decl type: (type) name: (identifier)))
-    entry: (entry_stmt
-      target: (identifier))
+    entry: (entry_stmt target: (identifier) next: (identifier))
     (state_decl
       name: (identifier)
       (stmt
         (terminal_stmt)))))
-
 ================================================================================
 If statement with elif and else
 ================================================================================
-
 autotuner Branchy (int x) -> (int y) {
   start -> check;
   state check {
@@ -114,9 +96,7 @@ autotuner Branchy (int x) -> (int y) {
   state zero     { terminal; }
   state negative { terminal; }
 }
-
 --------------------------------------------------------------------------------
-
 (program
   (autotuner_decl
     name: (identifier)
@@ -124,68 +104,61 @@ autotuner Branchy (int x) -> (int y) {
       (param_decl type: (type) name: (identifier)))
     outputs: (param_list
       (param_decl type: (type) name: (identifier)))
-    entry: (entry_stmt
-      target: (identifier))
+    entry: (entry_stmt target: (identifier) next: (identifier))
     (state_decl
       name: (identifier)
       (stmt
         (if_stmt
           condition: (expr
             (binary_expr
-              (expr (primary_expr (identifier)))
-              (expr (primary_expr (int_literal)))))
+              left: (expr (primary_expr (qualified_name symbol: (identifier))))
+              operator: (operator)
+              right: (expr (primary_expr (int_literal)))))
           (stmt (transition_stmt target: (identifier)))
           (elif_clause
             condition: (expr
               (binary_expr
-                (expr (primary_expr (identifier)))
-                (expr (primary_expr (int_literal)))))
+                left: (expr (primary_expr (qualified_name symbol: (identifier))))
+                operator: (operator)
+                right: (expr (primary_expr (int_literal)))))
             (stmt (transition_stmt target: (identifier))))
           (else_clause
             (stmt (transition_stmt target: (identifier)))))))
     (state_decl name: (identifier) (stmt (terminal_stmt)))
     (state_decl name: (identifier) (stmt (terminal_stmt)))
     (state_decl name: (identifier) (stmt (terminal_stmt)))))
-
 ================================================================================
 Uses clause
 ================================================================================
-
 autotuner WithDeps () -> (int result) {
   uses dep1, dep2;
   start -> run;
   state run { terminal; }
 }
-
 --------------------------------------------------------------------------------
-
 (program
   (autotuner_decl
     name: (identifier)
     inputs: (param_list)
     outputs: (param_list
       (param_decl type: (type) name: (identifier)))
-    uses: (requires_clause
-      (identifier)
-      (identifier))
-    entry: (entry_stmt target: (identifier))
+    (requires_clause
+      (qualified_name symbol: (identifier))
+      (qualified_name symbol: (identifier)))
+    entry: (entry_stmt target: (identifier) next: (identifier))
     (state_decl
       name: (identifier)
       (stmt (terminal_stmt)))))
-
 ================================================================================
 Autotuner-scope variable declaration
 ================================================================================
-
 autotuner Scoped (int x) -> (int out) {
   int counter;
   int total = 0;
   start -> run;
   state run { terminal; }
 }
-
 --------------------------------------------------------------------------------
-
 (program
   (autotuner_decl
     name: (identifier)
@@ -200,15 +173,13 @@ autotuner Scoped (int x) -> (int out) {
       type: (type)
       name: (identifier)
       init: (expr (primary_expr (int_literal))))
-    entry: (entry_stmt target: (identifier))
+    entry: (entry_stmt target: (identifier) next: (identifier))
     (state_decl
       name: (identifier)
       (stmt (terminal_stmt)))))
-
 ================================================================================
 State-scope variable declaration
 ================================================================================
-
 autotuner StateScopedVars (int x) -> (int out) {
   start -> run;
   state run {
@@ -217,9 +188,7 @@ autotuner StateScopedVars (int x) -> (int out) {
     terminal;
   }
 }
-
 --------------------------------------------------------------------------------
-
 (program
   (autotuner_decl
     name: (identifier)
@@ -227,7 +196,7 @@ autotuner StateScopedVars (int x) -> (int out) {
       (param_decl type: (type) name: (identifier)))
     outputs: (param_list
       (param_decl type: (type) name: (identifier)))
-    entry: (entry_stmt target: (identifier))
+    entry: (entry_stmt target: (identifier) next: (identifier))
     (state_decl
       name: (identifier)
       (stmt
@@ -240,20 +209,16 @@ autotuner StateScopedVars (int x) -> (int out) {
           name: (identifier)
           init: (expr (primary_expr (int_literal)))))
       (stmt (terminal_stmt)))))
-
 ================================================================================
 State input parameters
 ================================================================================
-
 autotuner WithStateParams (int x) -> (int out) {
   start -> run;
   state run (int val) {
     terminal;
   }
 }
-
 --------------------------------------------------------------------------------
-
 (program
   (autotuner_decl
     name: (identifier)
@@ -261,9 +226,629 @@ autotuner WithStateParams (int x) -> (int out) {
       (param_decl type: (type) name: (identifier)))
     outputs: (param_list
       (param_decl type: (type) name: (identifier)))
-    entry: (entry_stmt target: (identifier))
+    entry: (entry_stmt target: (identifier) next: (identifier))
     (state_decl
       name: (identifier)
       params: (param_list
         (param_decl type: (type) name: (identifier)))
       (stmt (terminal_stmt)))))
+================================================================================
+Single import statement
+================================================================================
+import "other.fal";
+--------------------------------------------------------------------------------
+(program
+  (import_stmt
+    path: (string_literal)))
+================================================================================
+Multi-path import statement
+================================================================================
+import ("a.fal" "b.fal")
+--------------------------------------------------------------------------------
+(program
+  (import_stmt
+    paths: (string_literal)
+    paths: (string_literal)))
+================================================================================
+FFI import empty lists
+================================================================================
+ffimport "QuantityW.cpp" () ()
+--------------------------------------------------------------------------------
+(program
+  (ffimport_decl
+    wrapper: (string_literal)))
+================================================================================
+FFI import with imports and libs
+================================================================================
+ffimport "ConnectionW.cpp" ("dep.fal") ("libconn.so")
+--------------------------------------------------------------------------------
+(program
+  (ffimport_decl
+    wrapper: (string_literal)
+    imports: (string_literal)
+    libs: (string_literal)))
+================================================================================
+Struct declaration with FFI routine stubs
+================================================================================
+struct Quantity {
+  routine New (int a, int b) -> (Quantity q)
+  routine Value () -> (int value)
+}
+--------------------------------------------------------------------------------
+(program
+  (struct_decl
+    name: (identifier)
+    (struct_routine_decl
+      name: (identifier)
+      inputs: (param_list
+        (param_decl type: (type) name: (identifier))
+        (param_decl type: (type) name: (identifier)))
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier))))
+    (struct_routine_decl
+      name: (identifier)
+      inputs: (param_list)
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier))))))
+================================================================================
+Struct declaration with field declarations
+================================================================================
+struct Point {
+  int x;
+  int y = 0;
+  routine New (int px, int py) -> (Point p)
+}
+--------------------------------------------------------------------------------
+(program
+  (struct_decl
+    name: (identifier)
+    (struct_field_decl
+      type: (type)
+      name: (identifier))
+    (struct_field_decl
+      type: (type)
+      name: (identifier)
+      default: (expr (primary_expr (int_literal))))
+    (struct_routine_decl
+      name: (identifier)
+      inputs: (param_list
+        (param_decl type: (type) name: (identifier))
+        (param_decl type: (type) name: (identifier)))
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier))))))
+================================================================================
+Uses clause with module-qualified name
+================================================================================
+autotuner ModuleUser () -> (int out) {
+  uses MyModule::Adder;
+  start -> run;
+  state run { terminal; }
+}
+--------------------------------------------------------------------------------
+(program
+  (autotuner_decl
+    name: (identifier)
+    inputs: (param_list)
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    (requires_clause
+      (qualified_name module: (identifier) symbol: (identifier)))
+    entry: (entry_stmt target: (identifier) next: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt (terminal_stmt)))))
+================================================================================
+Module-qualified call expression
+================================================================================
+autotuner QualExpr (int x) -> (int y) {
+  start -> run;
+  state run {
+    y = Math::square(x);
+    terminal;
+  }
+}
+--------------------------------------------------------------------------------
+(program
+  (autotuner_decl
+    name: (identifier)
+    inputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    entry: (entry_stmt target: (identifier) next: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt
+        (assign_stmt
+          targets: (identifier)
+          value: (expr
+            (call_expr
+              func: (qualified_name module: (identifier) symbol: (identifier))
+              (expr (primary_expr (qualified_name symbol: (identifier))))))))
+      (stmt (terminal_stmt)))))
+================================================================================
+Method call on struct instance
+================================================================================
+ffimport "QuantityW.cpp" () ()
+struct Quantity {
+  routine New (int a, int b) -> (Quantity q)
+  routine Value () -> (int value)
+}
+autotuner UseStruct (int a, int b) -> (int sum) {
+  sum = 0;
+  start -> calc;
+  state calc {
+    Quantity q = Quantity.New(a, b);
+    sum = q.Value() + b;
+    -> done;
+  }
+  state done { terminal; }
+}
+--------------------------------------------------------------------------------
+(program
+  (ffimport_decl
+    wrapper: (string_literal))
+  (struct_decl
+    name: (identifier)
+    (struct_routine_decl
+      name: (identifier)
+      inputs: (param_list
+        (param_decl type: (type) name: (identifier))
+        (param_decl type: (type) name: (identifier)))
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier))))
+    (struct_routine_decl
+      name: (identifier)
+      inputs: (param_list)
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier)))))
+  (autotuner_decl
+    name: (identifier)
+    inputs: (param_list
+      (param_decl type: (type) name: (identifier))
+      (param_decl type: (type) name: (identifier)))
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    (assign_stmt
+      targets: (identifier)
+      value: (expr (primary_expr (int_literal))))
+    entry: (entry_stmt 
+      target: (identifier) 
+      next: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt
+        (var_decl_stmt
+          type: (type)
+          name: (identifier)
+          init: (expr
+            (method_call_expr
+              object: (expr 
+                (primary_expr 
+                  (qualified_name 
+                    symbol: (identifier))))
+              method: (identifier)
+              (expr
+                (primary_expr
+                  (qualified_name
+                    symbol: (identifier))))
+              (expr
+                (primary_expr
+                  (qualified_name
+                    symbol: (identifier))))))))
+      (stmt
+        (assign_stmt
+          targets: (identifier)
+          value: (expr
+            (binary_expr
+              left: (expr
+                (method_call_expr
+                  object: (expr (primary_expr (qualified_name symbol: (identifier))))
+                  method: (identifier)))
+              operator: (operator)
+              right: (expr (primary_expr (qualified_name symbol: (identifier))))
+            )
+          )
+        )
+      )
+      (stmt (transition_stmt target: (identifier))))
+    (state_decl
+      name: (identifier)
+      (stmt (terminal_stmt)))))
+
+================================================================================
+Multiple autotuners in one file (nest test)
+================================================================================
+autotuner ErrorViewer -> (bool outer_completed, bool inner_completed) {
+  uses DoNothing, FatalOtherError;
+  outer_completed = false;
+  inner_completed = false;
+  start -> init;
+  state init {
+      outer_completed = DoNothing();
+      -> done;
+  }
+  state done {
+      Error err = nil;
+      inner_completed, err = FatalOtherError();
+      -> exit;
+  }
+  state exit {
+      terminal;
+  }
+}
+autotuner DoNothing -> (bool completed) {
+  completed = true;
+  start -> init;
+  state init {
+      terminal; 
+  }
+}
+autotuner FatalOtherError() -> (bool completed, Error err) {
+  completed = false;
+  err = nil;
+  start -> init;
+  state init {
+      err = fatalErrorMsg("We are really broken :(");
+      terminal;
+  }
+}
+--------------------------------------------------------------------------------
+(program
+  (autotuner_decl
+    name: (identifier)
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier))
+      (param_decl type: (type) name: (identifier)))
+    (requires_clause
+      (qualified_name symbol: (identifier))
+      (qualified_name symbol: (identifier)))
+    (assign_stmt
+      targets: (identifier)
+      value: (expr (primary_expr (bool_literal))))
+    (assign_stmt
+      targets: (identifier)
+      value: (expr (primary_expr (bool_literal))))
+    entry: (entry_stmt target: (identifier) next: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt
+        (assign_stmt
+          targets: (identifier)
+          value: (expr
+            (call_expr
+              func: (qualified_name symbol: (identifier))))))
+      (stmt
+        (transition_stmt target: (identifier))))
+    (state_decl
+      name: (identifier)
+      (stmt
+        (var_decl_stmt
+          type: (type)
+          name: (identifier)
+          init: (expr (primary_expr (nil_literal))))
+      )
+      (stmt
+        (assign_stmt
+          targets: (identifier)
+          targets: (identifier)
+          value: (expr
+            (call_expr
+              func: (qualified_name symbol: (identifier))))))
+      (stmt
+        (transition_stmt target: (identifier))))
+    (state_decl
+      name: (identifier)
+      (stmt (terminal_stmt))))
+  (autotuner_decl
+    name: (identifier)
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier)))
+    (assign_stmt
+      targets: (identifier)
+      value: (expr (primary_expr (bool_literal))))
+    entry: (entry_stmt target: (identifier) next: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt (terminal_stmt))))
+  (autotuner_decl
+    name: (identifier)
+    inputs: (param_list)
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier))
+      (param_decl type: (type) name: (identifier)))
+    (assign_stmt
+      targets: (identifier)
+      value: (expr (primary_expr (bool_literal))))
+    (assign_stmt
+      targets: (identifier)
+      value: (expr (primary_expr (nil_literal))))
+    entry: (entry_stmt target: (identifier) next: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt
+        (assign_stmt
+          targets: (identifier)
+          value: (expr
+            (call_expr
+              func: (qualified_name symbol: (identifier))
+              (expr (primary_expr (string_literal)))))))
+      (stmt (terminal_stmt)))))
+
+================================================================================
+Just struct with field assignments and routines with bodies
+================================================================================
+struct Quantity {
+  int a_;
+  int b_ = 0; // default value for b
+  routine New (int a) -> (Quantity q) {
+    q.a_ = a;
+  }
+  routine NewWithB (int a, int b) -> (Quantity q) {
+    q.a_ = a;
+    q.b_ = b;
+  }
+  routine Value  -> (int value) {
+    value = a_;
+  }
+  routine ValueWithB -> (int value) {
+    value = a_ + b_;
+  }
+}
+
+--------------------------------------------------------------------------------
+(program
+  (struct_decl
+    name: (identifier)
+    (struct_field_decl
+      type: (type)
+      name: (identifier))
+    (struct_field_decl
+      type: (type)
+      name: (identifier)
+      default: (expr (primary_expr (int_literal))))
+    (struct_routine_decl
+      name: (identifier)
+      inputs: (param_list
+        (param_decl type: (type) name: (identifier)))
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier)))
+      body: (block
+        (struct_field_assign_stmt
+          field: (identifier)
+          value: (expr (primary_expr (qualified_name symbol: (identifier))))
+        )
+      )
+    )
+    (struct_routine_decl
+      name: (identifier)
+      inputs: (param_list
+        (param_decl type: (type) name: (identifier))
+        (param_decl type: (type) name: (identifier)))
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier)))
+      body: (block
+        (struct_field_assign_stmt
+          field: (identifier)
+          value: (expr (primary_expr (qualified_name symbol: (identifier))))
+        )
+        (struct_field_assign_stmt
+          field: (identifier)
+          value: (expr (primary_expr (qualified_name symbol: (identifier))))
+        )
+      )
+    )
+    (struct_routine_decl
+      name: (identifier)
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier)))
+      body: (block
+        (assign_stmt
+          targets: (identifier)
+          value: (expr (primary_expr (qualified_name symbol: (identifier))))
+        )
+      )
+    )
+    (struct_routine_decl
+      name: (identifier)
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier)))
+      body: (block
+        (assign_stmt
+          targets: (identifier)
+          value: (expr
+            (binary_expr
+              left: (expr (primary_expr (qualified_name symbol: (identifier))))
+              operator: (operator)
+              right: (expr (primary_expr (qualified_name symbol: (identifier))))
+            )
+          )
+        )
+      )
+    )
+  )
+================================================================================
+Struct with field assignments and routines with bodies
+================================================================================
+struct Quantity {
+  int a_;
+  int b_ = 0; // default value for b
+  routine New (int a) -> (Quantity q) {
+    q.a_ = a;
+  }
+  routine NewWithB (int a, int b) -> (Quantity q) {
+    q.a_ = a;
+    q.b_ = b;
+  }
+  routine Value  -> (int value) {
+    value = a_;
+  }
+  routine ValueWithB -> (int value) {
+    value = a_ + b_;
+  }
+}
+autotuner QuantityStruct (int a, int b) -> (int sum, int other_sum) {
+  sum = 0;
+  other_sum = 0;
+  start -> calculate;
+  state calculate {
+    Quantity q = Quantity.New(a);
+    sum = q.Value() + b;
+    Quantity q_with_b = Quantity.NewWithB(a, b);
+    other_sum = q_with_b.ValueWithB();
+    -> done;
+  }
+  state done {
+    terminal;
+  }
+}
+--------------------------------------------------------------------------------
+(program
+  (struct_decl
+    name: (identifier)
+    (struct_field_decl
+      type: (type)
+      name: (identifier))
+    (struct_field_decl
+      type: (type)
+      name: (identifier)
+      default: (expr (primary_expr (int_literal))))
+    (struct_routine_decl
+      name: (identifier)
+      inputs: (param_list
+        (param_decl type: (type) name: (identifier)))
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier)))
+      body: (block
+        (struct_field_assign_stmt
+          field: (identifier)
+          value: (expr (primary_expr (qualified_name symbol: (identifier))))
+        )
+      )
+    )
+    (struct_routine_decl
+      name: (identifier)
+      inputs: (param_list
+        (param_decl type: (type) name: (identifier))
+        (param_decl type: (type) name: (identifier)))
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier)))
+      body: (block
+        (struct_field_assign_stmt
+          field: (identifier)
+          value: (expr (primary_expr (qualified_name symbol: (identifier))))
+        )
+        (struct_field_assign_stmt
+          field: (identifier)
+          value: (expr (primary_expr (qualified_name symbol: (identifier))))
+        )
+      )
+    )
+    (struct_routine_decl
+      name: (identifier)
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier)))
+      body: (block
+        (assign_stmt
+          targets: (identifier)
+          value: (expr (primary_expr (qualified_name symbol: (identifier))))
+        )
+      )
+    )
+    (struct_routine_decl
+      name: (identifier)
+      outputs: (param_list
+        (param_decl type: (type) name: (identifier)))
+      body: (block
+        (assign_stmt
+          targets: (identifier)
+          value: (expr
+            (binary_expr
+              left: (expr (primary_expr (qualified_name symbol: (identifier))))
+              operator: (operator)
+              right: (expr (primary_expr (qualified_name symbol: (identifier))))
+            )
+          )
+        )
+      )
+    )
+  )
+  (autotuner_decl
+    name: (identifier)
+    inputs: (param_list
+      (param_decl type: (type) name: (identifier))
+      (param_decl type: (type) name: (identifier)))
+    outputs: (param_list
+      (param_decl type: (type) name: (identifier))
+      (param_decl type: (type) name: (identifier)))
+    (assign_stmt
+      targets: (identifier)
+      value: (expr (primary_expr (int_literal))))
+    (assign_stmt
+      targets: (identifier)
+      value: (expr (primary_expr (int_literal))))
+    entry: (entry_stmt target: (identifier) next: (identifier))
+    (state_decl
+      name: (identifier)
+      (stmt
+        (var_decl_stmt
+          type: (type)
+          name: (identifier)
+          init: (expr
+            (method_call_expr
+              object: (expr (primary_expr (qualified_name symbol: (identifier))))
+              method: (identifier)
+              (expr (primary_expr (qualified_name symbol: (identifier))))
+            )
+          )
+        )
+      )
+      (stmt
+        (assign_stmt
+          targets: (identifier)
+          value: (expr
+            (binary_expr
+              left: (expr
+                (method_call_expr
+                  object: (expr (primary_expr (qualified_name symbol: (identifier))))
+                  method: (identifier)
+                )
+              )
+              operator: (operator)
+              right: (expr (primary_expr (qualified_name symbol: (identifier))))
+            )
+          )
+        )
+      )
+      (stmt
+        (var_decl_stmt
+          type: (type)
+          name: (identifier)
+          init: (expr
+            (method_call_expr
+              object: (expr (primary_expr (qualified_name symbol: (identifier))))
+              method: (identifier)
+              (expr (primary_expr (qualified_name symbol: (identifier))))
+              (expr (primary_expr (qualified_name symbol: (identifier))))
+            )
+          )
+        )
+      )
+      (stmt
+        (assign_stmt
+          targets: (identifier)
+          value: (expr
+            (method_call_expr
+              object: (expr (primary_expr (qualified_name symbol: (identifier))))
+              method: (identifier)
+            )
+          )
+        )
+      )
+      (stmt (transition_stmt target: (identifier)))
+    )
+    (state_decl
+      name: (identifier)
+      (stmt (terminal_stmt)))
+  )
+)

@@ -105,3 +105,52 @@ TEST(FalFilesIntegration, MultiStageWorkflow) {
   EXPECT_NE(doc.program, nullptr);
   EXPECT_TRUE(doc.parse_errors.empty());
 }
+
+// ---- foreign_function ----
+// These tests verify that the LSP parser (which reuses the bison grammar)
+// correctly handles ffimport, struct declarations, and module-qualified names
+// without emitting any parse errors.  They point at the same .fal files used
+// by the runtime integration tests in autotuner/tests/test-autotuners/.
+
+TEST(FalFilesIntegration, ForeignFunctionQuantityStruct) {
+  auto doc = parse_file("foreign_function/quantity-struct.fal");
+  EXPECT_NE(doc.program, nullptr);
+  EXPECT_TRUE(doc.parse_errors.empty())
+      << "Parse errors in quantity-struct.fal: "
+      << (doc.parse_errors.empty() ? "" : doc.parse_errors[0].message);
+
+  // The file declares a struct named "Quantity" — verify the LSP indexes it.
+  bool found_quantity = false;
+  for (const auto &s : doc.symbols) {
+    if (s.name == "Quantity")
+      found_quantity = true;
+  }
+  EXPECT_TRUE(found_quantity) << "Expected symbol 'Quantity' in document index";
+}
+
+TEST(FalFilesIntegration, ForeignFunctionConnectionBinding) {
+  auto doc = parse_file("foreign_function/connection-binding.fal");
+  EXPECT_NE(doc.program, nullptr);
+  EXPECT_TRUE(doc.parse_errors.empty())
+      << "Parse errors in connection-binding.fal: "
+      << (doc.parse_errors.empty() ? "" : doc.parse_errors[0].message);
+
+  // The file declares a struct named "Connection".
+  bool found_connection = false;
+  for (const auto &s : doc.symbols) {
+    if (s.name == "Connection")
+      found_connection = true;
+  }
+  EXPECT_TRUE(found_connection)
+      << "Expected symbol 'Connection' in document index";
+}
+
+TEST(FalFilesIntegration, ForeignFunctionRoutine) {
+  // routine.fal uses only plain FFI routine declarations (no struct), which
+  // the runtime already passes.  Verify the LSP parses it cleanly too.
+  auto doc = parse_file("foreign_function/routine.fal");
+  EXPECT_NE(doc.program, nullptr);
+  EXPECT_TRUE(doc.parse_errors.empty())
+      << "Parse errors in routine.fal: "
+      << (doc.parse_errors.empty() ? "" : doc.parse_errors[0].message);
+}
