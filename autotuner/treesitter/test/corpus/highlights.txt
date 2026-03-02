@@ -588,11 +588,11 @@ struct Quantity {
     q.a_ = a;
     q.b_ = b;
   }
-  routine Value  -> (int value) {
-    value = a_;
+  routine Value -> (int value) {
+    value = this.a_;
   }
   routine ValueWithB -> (int value) {
-    value = a_ + b_;
+    value = this.a_ + this.b_;
   }
 }
 
@@ -600,73 +600,78 @@ struct Quantity {
 (program
   (struct_decl
     name: (identifier)
-    (struct_field_decl
-      type: (type)
-      name: (identifier))
-    (struct_field_decl
-      type: (type)
-      name: (identifier)
+    (struct_field_decl type: (type) name: (identifier))
+    (struct_field_decl type: (type) name: (identifier)
       default: (expr (primary_expr (int_literal))))
+    (comment)
     (struct_routine_decl
       name: (identifier)
-      inputs: (param_list
-        (param_decl type: (type) name: (identifier)))
-      outputs: (param_list
-        (param_decl type: (type) name: (identifier)))
-      body: (block
-        (struct_field_assign_stmt
-          field: (identifier)
-          value: (expr (primary_expr (qualified_name symbol: (identifier))))
-        )
-      )
-    )
+      inputs: (param_list (param_decl type: (type) name: (identifier)))
+      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      body: (struct_routine_body
+              (struct_routine_stmt
+                (struct_field_assign_stmt
+                  object: (identifier)
+                  field: (identifier)
+                  value: (expr
+                    (primary_expr
+                      (qualified_name
+                        symbol: (identifier))))))))
     (struct_routine_decl
       name: (identifier)
       inputs: (param_list
         (param_decl type: (type) name: (identifier))
         (param_decl type: (type) name: (identifier)))
-      outputs: (param_list
-        (param_decl type: (type) name: (identifier)))
-      body: (block
-        (struct_field_assign_stmt
-          field: (identifier)
-          value: (expr (primary_expr (qualified_name symbol: (identifier))))
-        )
-        (struct_field_assign_stmt
-          field: (identifier)
-          value: (expr (primary_expr (qualified_name symbol: (identifier))))
-        )
-      )
-    )
+      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      body: (struct_routine_body
+              (struct_routine_stmt
+                (struct_field_assign_stmt
+                  object: (identifier)
+                  field: (identifier)
+                  value: (expr
+                    (primary_expr
+                      (qualified_name
+                        symbol: (identifier))))))
+              (struct_routine_stmt
+                (struct_field_assign_stmt
+                  object: (identifier)
+                  field: (identifier)
+                  value: (expr
+                    (primary_expr
+                      (qualified_name
+                        symbol: (identifier))))))))
     (struct_routine_decl
       name: (identifier)
-      outputs: (param_list
-        (param_decl type: (type) name: (identifier)))
-      body: (block
-        (assign_stmt
-          targets: (identifier)
-          value: (expr (primary_expr (qualified_name symbol: (identifier))))
-        )
-      )
-    )
+      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      body: (struct_routine_body
+              (struct_routine_stmt
+                (assign_stmt
+                  targets: (identifier)
+                  value: (expr
+                    (member_expr
+                      object: (expr
+                        (primary_expr))
+                      member: (identifier)))))))
     (struct_routine_decl
       name: (identifier)
-      outputs: (param_list
-        (param_decl type: (type) name: (identifier)))
-      body: (block
-        (assign_stmt
-          targets: (identifier)
-          value: (expr
-            (binary_expr
-              left: (expr (primary_expr (qualified_name symbol: (identifier))))
-              operator: (operator)
-              right: (expr (primary_expr (qualified_name symbol: (identifier))))
-            )
-          )
-        )
-      )
-    )
-  )
+      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      body: (struct_routine_body
+              (struct_routine_stmt
+                (assign_stmt
+                  targets: (identifier)
+                  value: (expr
+                    (member_expr
+                      object: (expr
+                        (binary_expr
+                          left: (expr
+                            (member_expr
+                              object: (expr
+                                (primary_expr))
+                              member: (identifier)))
+                          operator: (operator)
+                          right: (expr
+                            (primary_expr))))
+                      member: (identifier)))))))))
 ================================================================================
 Struct with field assignments and routines with bodies
 ================================================================================
@@ -706,73 +711,75 @@ autotuner QuantityStruct (int a, int b) -> (int sum, int other_sum) {
 (program
   (struct_decl
     name: (identifier)
-    (struct_field_decl
-      type: (type)
-      name: (identifier))
-    (struct_field_decl
-      type: (type)
-      name: (identifier)
+    (struct_field_decl type: (type) name: (identifier))
+    (struct_field_decl type: (type) name: (identifier)
       default: (expr (primary_expr (int_literal))))
+    (comment)
     (struct_routine_decl
       name: (identifier)
-      inputs: (param_list
-        (param_decl type: (type) name: (identifier)))
-      outputs: (param_list
-        (param_decl type: (type) name: (identifier)))
-      body: (block
-        (struct_field_assign_stmt
-          field: (identifier)
-          value: (expr (primary_expr (qualified_name symbol: (identifier))))
-        )
-      )
-    )
+      inputs: (param_list (param_decl type: (type) name: (identifier)))
+      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      body: (struct_routine_body
+              (struct_routine_stmt
+                (struct_field_assign_stmt
+                  object: (identifier)
+                  field: (identifier)
+                  value: (expr
+                    (primary_expr
+                      (qualified_name
+                        symbol: (identifier))))))))
     (struct_routine_decl
       name: (identifier)
       inputs: (param_list
         (param_decl type: (type) name: (identifier))
         (param_decl type: (type) name: (identifier)))
-      outputs: (param_list
-        (param_decl type: (type) name: (identifier)))
-      body: (block
-        (struct_field_assign_stmt
-          field: (identifier)
-          value: (expr (primary_expr (qualified_name symbol: (identifier))))
-        )
-        (struct_field_assign_stmt
-          field: (identifier)
-          value: (expr (primary_expr (qualified_name symbol: (identifier))))
-        )
-      )
-    )
+      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      body: (struct_routine_body
+              (struct_routine_stmt
+                (struct_field_assign_stmt
+                  object: (identifier)
+                  field: (identifier)
+                  value: (expr
+                    (primary_expr
+                      (qualified_name
+                        symbol: (identifier))))))
+              (struct_routine_stmt
+                (struct_field_assign_stmt
+                  object: (identifier)
+                  field: (identifier)
+                  value: (expr
+                    (primary_expr
+                      (qualified_name
+                        symbol: (identifier))))))))
     (struct_routine_decl
       name: (identifier)
-      outputs: (param_list
-        (param_decl type: (type) name: (identifier)))
-      body: (block
-        (assign_stmt
-          targets: (identifier)
-          value: (expr (primary_expr (qualified_name symbol: (identifier))))
-        )
-      )
-    )
+      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      body: (struct_routine_body
+              (struct_routine_stmt
+                (assign_stmt
+                  targets: (identifier)
+                  value: (expr
+                    (primary_expr
+                      (qualified_name
+                        symbol: (identifier))))))))
     (struct_routine_decl
       name: (identifier)
-      outputs: (param_list
-        (param_decl type: (type) name: (identifier)))
-      body: (block
-        (assign_stmt
-          targets: (identifier)
-          value: (expr
-            (binary_expr
-              left: (expr (primary_expr (qualified_name symbol: (identifier))))
-              operator: (operator)
-              right: (expr (primary_expr (qualified_name symbol: (identifier))))
-            )
-          )
-        )
-      )
-    )
-  )
+      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      body: (struct_routine_body
+              (struct_routine_stmt
+                (assign_stmt
+                  targets: (identifier)
+                  value: (expr
+                    (binary_expr
+                      left: (expr
+                        (primary_expr
+                          (qualified_name
+                            symbol: (identifier))))
+                      operator: (operator)
+                      right: (expr
+                        (primary_expr
+                          (qualified_name
+                            symbol: (identifier)))))))))))
   (autotuner_decl
     name: (identifier)
     inputs: (param_list
