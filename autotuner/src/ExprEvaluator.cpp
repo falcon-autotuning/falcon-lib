@@ -7,6 +7,7 @@
 #include <sstream>
 
 namespace falcon::autotuner {
+using fmt::format;
 
 // ---------------------------------------------------------------------------
 // Helper: strip the "Module::" prefix from a qualified name.
@@ -154,7 +155,7 @@ FunctionResult ExprEvaluator::exec_struct_routine(
     const TypeMethod *ffi_method =
         types_->lookup_ffi_method(struct_decl.name, routine.name);
 
-    if (ffi_method) {
+    if (ffi_method != nullptr) {
       ParameterMap ffi_params;
 
       if (receiver_instance && receiver_instance->is_native()) {
@@ -176,6 +177,11 @@ FunctionResult ExprEvaluator::exec_struct_routine(
 
       FunctionResult result = (*ffi_method)(receiver_instance, ffi_params);
       log::debug("FFI dispatch result count: " + std::to_string(result.size()));
+      // Use runtime_value_to_string for safe serialization of all variant types
+      for (size_t i = 0; i < result.size(); ++i) {
+        log::debug("FFI dispatch result[" + std::to_string(i) +
+                   "]: " + runtime_value_to_string(result[i]));
+      }
       return result;
     }
 
@@ -370,6 +376,12 @@ RuntimeValue ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
           case atc::ParamType::String:
             fval = std::string("");
             break;
+          case atc::ParamType::Struct: {
+            // Initialise a fresh empty instance; the FFI constructor will
+            // replace it.
+            fval = std::make_shared<StructInstance>(field.type.struct_name);
+            break;
+          }
           default:
             fval = nullptr;
             break;
@@ -386,6 +398,16 @@ RuntimeValue ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
 
       FunctionResult outputs =
           exec_struct_routine(receiver, *struct_decl, *routine, call_args);
+
+      // DEBUG: log what the constructor produced
+      log::debug("Constructor outputs.size(): " +
+                 std::to_string(outputs.size()));
+      if (!outputs.empty()) {
+        log::debug("Constructor output[0] type: " +
+                   get_runtime_type_name(outputs[0]));
+        log::debug("Constructor output[0] value: " +
+                   runtime_value_to_string(outputs[0]));
+      }
 
       if (outputs.empty()) {
         return nullptr;

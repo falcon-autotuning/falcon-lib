@@ -1,8 +1,8 @@
-#include <utility>
-
+#include "falcon-autotuner/StmtExecutor.hpp"
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/SourceContext.hpp"
-#include "falcon-autotuner/StmtExecutor.hpp"
+#include <falcon-autotuner/log.hpp>
+#include <utility>
 
 namespace falcon::autotuner {
 
@@ -129,6 +129,9 @@ ControlFlow StmtExecutor::exec_var_decl(const atc::VarDeclStmt &stmt) {
   }
 
   // Add to variable environment
+  log::debug("exec_var_decl storing '" + stmt.name +
+             "' = " + runtime_value_to_string(initial_value) +
+             " (type: " + get_runtime_type_name(initial_value) + ")");
   variables_[stmt.name] = initial_value;
 
   return ControlFlow::none();

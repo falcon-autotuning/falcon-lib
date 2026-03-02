@@ -17,9 +17,6 @@ std::string get_runtime_type_name(const RuntimeValue &value) {
   if (std::holds_alternative<std::string>(value)) {
     return "string";
   }
-  if (std::holds_alternative<std::nullptr_t>(value)) {
-    return "nil";
-  }
   if (std::holds_alternative<ErrorObject>(value)) {
     return "Error";
   }
@@ -28,6 +25,9 @@ std::string get_runtime_type_name(const RuntimeValue &value) {
   }
   if (std::holds_alternative<std::shared_ptr<StructInstance>>(value)) {
     return "StructInstance";
+  }
+  if (std::holds_alternative<std::nullptr_t>(value)) {
+    return "nil";
   }
   return "<unknown>";
 }
