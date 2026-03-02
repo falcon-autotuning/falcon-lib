@@ -18,13 +18,6 @@
 #include <string>
 #include <vector>
 
-// Pull in the falcon_core SP types so we can match type_name strings
-#include "falcon-autotuner/log.hpp"
-#include <falcon_core/autotuner_interfaces/names/Gname.hpp>
-#include <falcon_core/math/Quantity.hpp>
-#include <falcon_core/physics/device_structures/Connection.hpp>
-#include <falcon_core/physics/device_structures/Connections.hpp>
-
 namespace falcon::autotuner::ffi {
 
 // ============================================================================
@@ -199,11 +192,6 @@ inline FunctionResult unpack_results(FalconResultSlot *slots, int32_t count) {
         // Unknown user opaque — wrap into StructInstance with native_handle
         auto inst = std::make_shared<StructInstance>(tn);
         inst->native_handle = std::shared_ptr<void>(ptr, del);
-        // Debug: confirm the native wrap succeeded
-        // (visible at LOG_LEVEL=debug)
-        log::debug("unpack_results: wrapped opaque '" + tn +
-                   "' as native StructInstance");
-        rv = std::move(inst);
       }
       result.push_back(std::move(rv));
       break;
