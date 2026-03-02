@@ -1,8 +1,6 @@
-#include "falcon-autotuner/RuntimeValue.hpp"
-#include <falcon_core/autotuner_interfaces/names/Gname.hpp>
-#include <falcon_core/math/Quantity.hpp>
+#include "falcon-typing/PrimitiveTypes.hpp"
 
-namespace falcon::autotuner {
+namespace falcon::typing {
 
 std::string get_runtime_type_name(const RuntimeValue &value) {
   if (std::holds_alternative<int64_t>(value)) {
@@ -77,4 +75,4 @@ std::string runtime_value_to_string(const RuntimeValue &value) {
   return "<object:" + get_runtime_type_name(value) + ">";
 }
 
-} // namespace falcon::autotuner
+} // namespace falcon::typing
