@@ -1,14 +1,6 @@
 /**
  * TreeSitter grammar for the Falcon Autotuner DSL (.fal files)
  * Mirrors the Bison grammar in autotuner/compiler/src/parser.y
- *
- * Key changes:
- *   - Added conflict for struct_field_assign_stmt vs primary_expr
- *   - Removed duplicate 'type' fields/aliases
- *   - Used qualified_name everywhere appropriate
- *   - Fixed import/ffimport statement semicolon handling
- *   - Allowed interleaving of struct fields/routines in structs
- *   - Checked all field() usages for duplicates
  */
 module.exports = grammar({
   name: 'falcon',  // Must match the compiled .so symbol: tree_sitter_falcon
@@ -18,19 +10,16 @@ module.exports = grammar({
     $.comment,
   ],
 
-  // Resolve ambiguity between method_call_expr/member_expr and struct_field_assign_stmt/primary_expr
   conflicts: $ => [
     [$.method_call_expr, $.member_expr],
     [$.struct_field_assign_stmt, $.primary_expr],
     [$.autotuner_var_decl, $.assign_stmt],
     [$.var_decl_stmt, $.assign_stmt],
-    [$.struct_field_assign_stmt, $.qualified_name],
-    [$.struct_field_assign_stmt, $.assign_stmt],
   ],
 
   rules: {
     // -----------------------------------------------------------------------
-    // Top-level program: sequence of imports, ffimports, structs, routines, autotuners
+    // Top-level program
     // -----------------------------------------------------------------------
     program: $ => repeat(
       choice(
@@ -69,7 +58,10 @@ module.exports = grammar({
     ),
 
     // -----------------------------------------------------------------------
-    // Struct declarations: fields and routines (interleaved)
+    // Struct declarations: fields and routines may interleave in source but
+    // parser.y enforces struct_field_list then struct_routine_list.
+    // We keep interleaving here for resilience; the test corpus only uses
+    // fields-first order anyway.
     // -----------------------------------------------------------------------
     struct_decl: $ => seq(
       'struct',
@@ -86,16 +78,23 @@ module.exports = grammar({
       ';'
     ),
 
-    // Routine stub inside a struct — body is optional (FFI-backed method)
+    // Routine inside a struct.
+    // FIX: inputs is optional — parser.y's input_params has a %empty production,
+    //      so `routine Value -> (int value) { ... }` (no input parens) is valid.
+    // FIX: body uses struct_routine_body (not block) so statements are NOT
+    //      wrapped in a `stmt` node, matching parser.y's routine_body_stmts.
     struct_routine_decl: $ => seq(
       'routine',
       field('name', $.identifier),
-      field('inputs', $.param_list),
+      optional(field('inputs', $.param_list)),  // ← was required, now optional
       '->',
       field('outputs', $.param_list),
-      optional(field('body', $.block))
+      optional(field('body', $.struct_routine_body))  // ← dedicated node type
     ),
 
+    // -----------------------------------------------------------------------
+    // Block for state bodies — statements ARE wrapped in `stmt`
+    // -----------------------------------------------------------------------
     block: $ => seq(
       '{',
       repeat($.stmt),
@@ -103,12 +102,37 @@ module.exports = grammar({
     ),
 
     // -----------------------------------------------------------------------
-    // Routine declaration (top-level, no body)
+    // Struct routine body — matches parser.y's routine_body_stmts.
+    // Statements are NOT wrapped in `stmt`; they are direct children.
+    // -----------------------------------------------------------------------
+    struct_routine_body: $ => seq(
+      '{',
+      repeat($.struct_routine_stmt),
+      '}'
+    ),
+
+    // Statements valid inside a struct routine body.
+    // Matches parser.y's struct_routine_stmt alternatives.
+    // Note: bare `identifier = expr ;` is handled as struct_field_assign_stmt
+    // when the identifier is a known struct field (runtime context in Bison).
+    // In tree-sitter we cannot replicate that context, so we use assign_stmt
+    // for the bare form and struct_field_assign_stmt only for dot-notation.
+    struct_routine_stmt: $ => choice(
+      $.var_decl_stmt,
+      $.struct_field_assign_stmt,
+      $.assign_stmt,
+      $.expr_stmt,
+      $.if_stmt,
+    ),
+
+    // -----------------------------------------------------------------------
+    // Top-level routine declaration
+    // FIX: inputs is optional (same reason as struct_routine_decl)
     // -----------------------------------------------------------------------
     routine_decl: $ => seq(
       'routine',
       field('name', $.identifier),
-      field('inputs', $.param_list),
+      optional(field('inputs', $.param_list)),  // ← was required, now optional
       '->',
       field('outputs', $.param_list),
       optional(field('body', $.block))
@@ -122,13 +146,14 @@ module.exports = grammar({
       field('name', $.identifier),
       optional(field('inputs', $.param_list)),
       '->',
-      field('outputs', $.param_list), '{',
+      field('outputs', $.param_list),
+      '{',
       repeat(choice($.autotuner_var_decl, $.assign_stmt, $.requires_clause)),
       field('entry', $.entry_stmt),
-      repeat($.state_decl), '}'
+      repeat($.state_decl),
+      '}'
     ),
 
-    // Body-level declarations/assignments inside the autotuner
     autotuner_var_decl: $ => seq(
       field('type', alias($.identifier, $.type)),
       field('name', $.identifier),
@@ -136,14 +161,12 @@ module.exports = grammar({
       ';'
     ),
 
-    // uses clause — supports Module::symbol qualified names
     requires_clause: $ => seq(
       'uses',
       commaSep1($.qualified_name),
       ';'
     ),
 
-    // Entry statement: start -> target;
     entry_stmt: $ => seq(
       field('target', $.identifier),
       '->',
@@ -164,7 +187,7 @@ module.exports = grammar({
     ),
 
     // -----------------------------------------------------------------------
-    // Statements (inside states)
+    // Statements (inside states and autotuner bodies) — wrapped in `stmt`
     // -----------------------------------------------------------------------
     stmt: $ => choice(
       $.assign_stmt,
@@ -202,7 +225,7 @@ module.exports = grammar({
     ),
 
     // -----------------------------------------------------------------------
-    // If/elif/else statements
+    // If/elif/else
     // -----------------------------------------------------------------------
     if_stmt: $ => seq(
       'if',
@@ -234,12 +257,29 @@ module.exports = grammar({
     ),
 
     // -----------------------------------------------------------------------
-    // Struct field assignment: this.field = expr;
+    // Struct field assignment: obj.field = expr;  or  this.field = expr;
+    //
+    // prec(1) is required on both variants to resolve the generate-time
+    // conflict: when tree-sitter sees `this .` or `identifier .` inside a
+    // struct_routine_body it cannot immediately tell whether this is the start
+    // of a struct_field_assign_stmt or a primary_expr/member_expr/method_call.
+    // Giving this rule higher precedence tells tree-sitter to prefer the
+    // statement interpretation.
+    //
+    // The bare-name variant (field_ = val ;) is intentionally omitted — it is
+    // syntactically identical to assign_stmt and Bison resolves it only via
+    // runtime struct_field_scope context which tree-sitter cannot replicate.
+    // In practice, bare assignments inside struct routines will parse as
+    // assign_stmt, which is correct for the value = a_; / value = a_ + b_;
+    // cases (output params, not struct fields).
     // -----------------------------------------------------------------------
     struct_field_assign_stmt: $ => choice(
-      seq('this', '.', field('field', $.identifier), '=', field('value', $.expr), ';'),
-      seq(field('field', $.identifier), '=', field('value', $.expr), ';'), // bare field assignment
-      seq(alias($.identifier, '_'), '.', field('field', $.identifier), '=', field('value', $.expr), ';')
+      prec(1, seq(
+        'this', '.', field('field', $.identifier), '=', field('value', $.expr), ';'
+      )),
+      prec(1, seq(
+        field('object', $.identifier), '.', field('field', $.identifier), '=', field('value', $.expr), ';'
+      )),
     ),
 
     expr_stmt: $ => seq(
@@ -276,11 +316,11 @@ module.exports = grammar({
       )),
       field('right', $.expr),
     )),
+
     operator: $ => token(choice(
       '+', '-', '*', '/', '==', '!=', '<', '>', '<=', '>=', '&&', '||'
     )),
 
-    // Plain call: name(args) or Module::name(args)
     call_expr: $ => seq(
       field('func', $.qualified_name),
       '(',
@@ -288,7 +328,6 @@ module.exports = grammar({
       ')'
     ),
 
-    // Method call: obj.method(args)
     method_call_expr: $ => seq(
       field('object', $.expr),
       '.',
@@ -298,7 +337,6 @@ module.exports = grammar({
       ')'
     ),
 
-    // Member access: obj.field
     member_expr: $ => seq(
       field('object', $.expr),
       '.',
@@ -312,7 +350,7 @@ module.exports = grammar({
     ),
 
     // -----------------------------------------------------------------------
-    // Primary expressions: literals, identifiers, qualified names, parens
+    // Primary expressions
     // -----------------------------------------------------------------------
     primary_expr: $ => choice(
       $.int_literal,
@@ -350,7 +388,6 @@ module.exports = grammar({
       field('name', $.identifier)
     ),
 
-
     // -----------------------------------------------------------------------
     // Literals
     // -----------------------------------------------------------------------
@@ -364,7 +401,6 @@ module.exports = grammar({
   }
 });
 
-// Helpers for comma separated lists
 function commaSep1(rule) {
   return seq(rule, repeat(seq(',', rule)));
 }
