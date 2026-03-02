@@ -15,6 +15,7 @@ add_library(falcon-lsp-lib
     src/DiagnosticsProvider.cpp
     src/DefinitionProvider.cpp
     src/FalconServer.cpp
+    src/ImportResolver.cpp
 )
 set_target_properties(falcon-lsp-lib PROPERTIES OUTPUT_NAME "falcon-lsp")
 target_include_directories(falcon-lsp-lib PUBLIC
