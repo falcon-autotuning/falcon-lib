@@ -31,6 +31,8 @@ public:
   bool load_routine_library(const RoutineConfig &info);
   FunctionResult run_autotuner(const std::string &autotuner_name,
                                ParameterMap &inputs);
+  FunctionResult run_routine(const std::string &routine_name,
+                             ParameterMap &inputs);
 
   [[nodiscard]] std::vector<std::string> get_loaded_autotuners() const;
   [[nodiscard]] std::vector<std::string> get_loaded_routines() const;

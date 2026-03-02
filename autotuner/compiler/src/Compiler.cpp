@@ -1,5 +1,6 @@
 #include "falcon-atc/Compiler.hpp"
 #include "parser.tab.hpp"
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -77,6 +78,10 @@ std::unique_ptr<Program> Compiler::parse_file(const std::string &filename) {
     errors_ = current_errors;
 
     throw std::runtime_error(error_details.str());
+  }
+
+  if (program_root) {
+    program_root->module_name = std::filesystem::path(filename).stem().string();
   }
 
   return std::move(program_root);

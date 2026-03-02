@@ -37,7 +37,16 @@ enum class ParamType : std::uint8_t {
   Tuple, // Multiple return values (e.g., (int, Error))
   Void,  // No return value (for procedures with side effects only)
   Union,
-  Struct // User-defined struct type; name stored in TypeDescriptor::struct_name
+  Struct, // User-defined struct type; name stored in
+          // TypeDescriptor::struct_name
+  Connection,
+  Connections,
+  Quantity,
+  Gname,
+  DeviceCharacteristic,
+  DeviceCharacteristicQuery,
+  Config,
+  Configs
 };
 
 inline std::string to_string(ParamType type) {
@@ -60,6 +69,22 @@ inline std::string to_string(ParamType type) {
     return "void";
   case ParamType::Struct:
     return "struct";
+  case ParamType::Connection:
+    return "Connection";
+  case ParamType::Connections:
+    return "Connections";
+  case ParamType::Quantity:
+    return "Quantity";
+  case ParamType::Gname:
+    return "Gname";
+  case ParamType::DeviceCharacteristic:
+    return "DeviceCharacteristic";
+  case ParamType::DeviceCharacteristicQuery:
+    return "DeviceCharacteristicQuery";
+  case ParamType::Config:
+    return "Config";
+  case ParamType::Configs:
+    return "Configs";
   default:
     return "<unknown>";
   }
@@ -1131,6 +1156,7 @@ struct StateDecl {
  */
 struct AutotunerDecl {
   std::string name;
+  std::string module_name; // Set after parsing
 
   // Interface
   std::vector<std::unique_ptr<ParamDecl>>
@@ -1193,6 +1219,7 @@ struct AutotunerDecl {
  */
 struct RoutineDecl {
   std::string name;
+  std::string module_name; // Set after parsing
   std::vector<std::unique_ptr<ParamDecl>> input_params;
   std::vector<std::unique_ptr<ParamDecl>> output_params;
   std::vector<std::unique_ptr<Stmt>> body;
@@ -1254,7 +1281,8 @@ struct RoutineDecl {
  *   }
  */
 struct StructDecl {
-  std::string name; // The type name, e.g. "Quantity"
+  std::string name;        // The type name, e.g. "Quantity"
+  std::string module_name; // Set after parsing
 
   // Fields stored as VarDeclStmt (decl_scope = StructField).
   // Reuses VarDeclStmt's type, name, and optional initializer directly.
@@ -1321,6 +1349,7 @@ struct FFImportDecl {
  * - All of the imports for the project
  */
 struct Program {
+  std::string module_name; // Set after parsing
   std::vector<StructDecl>
       structs; // User-defined struct types (parsed before autotuners)
   std::vector<AutotunerDecl> autotuners;

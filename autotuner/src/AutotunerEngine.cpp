@@ -123,7 +123,8 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
                           program->routines.size()));
 
     // ── Register structs ──────────────────────────────────────────────────
-    for (const auto &struct_decl : program->structs) {
+    for (auto &struct_decl : program->structs) {
+      struct_decl.module_name = program->module_name;
       type_registry_->register_struct(&struct_decl);
     }
 
@@ -140,6 +141,7 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
 
     // ── Register autotuners ───────────────────────────────────────────────
     for (auto &autotuner : program->autotuners) {
+      autotuner.module_name = program->module_name;
       log::info("  - Autotuner: " + autotuner.name);
       for (const auto &req : autotuner.required_autotuners) {
         log::debug("    requires: " + req);
@@ -150,22 +152,27 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
                     "' not yet loaded (must be loaded before running)");
         }
       }
-      std::string name = autotuner.name;
-      loaded_autotuners_.erase(name);
-      loaded_autotuners_.insert({name, std::move(autotuner)});
-      auto it = loaded_autotuners_.find(name);
+      std::string qname = autotuner.module_name.empty()
+                              ? autotuner.name
+                              : autotuner.module_name + "::" + autotuner.name;
+      loaded_autotuners_.erase(qname);
+      loaded_autotuners_.insert({qname, std::move(autotuner)});
+      auto it = loaded_autotuners_.find(qname);
       if (it != loaded_autotuners_.end())
         register_autotuner_as_function(it->second);
     }
 
     // ── Register inline routines ──────────────────────────────────────────
     for (auto &routine : program->routines) {
+      routine.module_name = program->module_name;
       log::info("  - Routine: " + routine.name);
       if (!routine.body.empty())
         register_inline_routine(routine);
-      std::string name = routine.name;
-      routine_declarations_.erase(name);
-      routine_declarations_.insert({name, std::move(routine)});
+      std::string qname = routine.module_name.empty()
+                              ? routine.name
+                              : routine.module_name + "::" + routine.name;
+      routine_declarations_.erase(qname);
+      routine_declarations_.insert({qname, std::move(routine)});
     }
 
     // ── Keep program alive; track by path ─────────────────────────────────
@@ -349,6 +356,17 @@ FunctionResult AutotunerEngine::run_autotuner(const std::string &autotuner_name,
                                               ParameterMap &inputs) {
   auto it = loaded_autotuners_.find(autotuner_name);
   if (it == loaded_autotuners_.end()) {
+    // Try bare name fallback
+    for (auto iter = loaded_autotuners_.begin();
+         iter != loaded_autotuners_.end(); ++iter) {
+      if (strip_module(iter->first) == autotuner_name) {
+        it = iter;
+        break;
+      }
+    }
+  }
+
+  if (it == loaded_autotuners_.end()) {
     throw std::runtime_error("Autotuner not loaded: " + autotuner_name);
   }
 
@@ -371,6 +389,15 @@ FunctionResult AutotunerEngine::run_autotuner(const std::string &autotuner_name,
   log::info(oss.str());
 
   return interpreter_->run(autotuner, inputs);
+}
+
+FunctionResult AutotunerEngine::run_routine(const std::string &routine_name,
+                                            ParameterMap &inputs) {
+  auto *func = function_registry_->lookup(routine_name);
+  if (!func) {
+    throw std::runtime_error("Routine not found: " + routine_name);
+  }
+  return (*func)(inputs);
 }
 
 std::vector<std::string> AutotunerEngine::get_loaded_autotuners() const {
@@ -402,20 +429,39 @@ std::vector<std::string> AutotunerEngine::get_declared_routines() const {
 }
 
 bool AutotunerEngine::has_autotuner(const std::string &name) const {
-  return loaded_autotuners_.find(name) != loaded_autotuners_.end();
+  if (loaded_autotuners_.count(name) > 0)
+    return true;
+  for (const auto &pair : loaded_autotuners_) {
+    if (strip_module(pair.first) == name)
+      return true;
+  }
+  return false;
 }
 
 const atc::AutotunerDecl *
 AutotunerEngine::get_autotuner(const std::string &name) const {
   auto iter = loaded_autotuners_.find(name);
-  return iter != loaded_autotuners_.end() ? &iter->second : nullptr;
+  if (iter != loaded_autotuners_.end())
+    return &iter->second;
+
+  for (const auto &pair : loaded_autotuners_) {
+    if (strip_module(pair.first) == name)
+      return &pair.second;
+  }
+  return nullptr;
 }
 
 void AutotunerEngine::register_autotuner_as_function(
     const atc::AutotunerDecl &autotuner) {
-  auto func = [this,
-               name = autotuner.name](ParameterMap &inputs) -> FunctionResult {
-    auto iter = loaded_autotuners_.find(name);
+  std::string qname = autotuner.module_name.empty()
+                          ? autotuner.name
+                          : autotuner.module_name + "::" + autotuner.name;
+
+  auto func = [this, qname](ParameterMap &inputs) -> FunctionResult {
+    auto iter = loaded_autotuners_.find(qname);
+    if (iter == loaded_autotuners_.end()) {
+      throw std::runtime_error("Autotuner not found for execution: " + qname);
+    }
     return interpreter_->run(iter->second, inputs);
   };
 
@@ -429,11 +475,20 @@ void AutotunerEngine::register_autotuner_as_function(
   for (const auto &param : autotuner.output_params) {
     returns.emplace_back(param->name, param->type, true);
   }
-  const atc::BuiltinSignature sig(autotuner.name, std::move(params),
-                                  std::move(returns));
 
-  function_registry_->register_autotuner(sig, func);
-  log::debug(fmt::format("Loaded autotuner: {}", autotuner.name));
+  // Register bare name
+  atc::BuiltinSignature bare_sig(autotuner.name, params, returns);
+  function_registry_->register_autotuner(bare_sig, func);
+
+  // Register qualified name if module is known
+  if (!autotuner.module_name.empty()) {
+    std::string qname = autotuner.module_name + "::" + autotuner.name;
+    atc::BuiltinSignature q_sig(qname, std::move(params), std::move(returns));
+    function_registry_->register_autotuner(q_sig, func);
+    log::debug(fmt::format("Loaded autotuner: {}", qname));
+  } else {
+    log::debug(fmt::format("Loaded autotuner: {}", autotuner.name));
+  }
 }
 
 void AutotunerEngine::register_inline_routine(const atc::RoutineDecl &routine) {
@@ -442,9 +497,12 @@ void AutotunerEngine::register_inline_routine(const atc::RoutineDecl &routine) {
   // We capture the routine name and rely on routine_declarations_ (via the
   // engine pointer) to find the body at call time — this is safe because
   // routine_declarations_ entries are never erased after insertion.
-  const std::string routine_name = routine.name;
+  std::string qname = routine.module_name.empty()
+                          ? routine.name
+                          : routine.module_name + "::" + routine.name;
 
-  auto func = [this, routine_name](ParameterMap &inputs) -> FunctionResult {
+  auto func = [this,
+               routine_name = qname](ParameterMap &inputs) -> FunctionResult {
     // Look up the stored RoutineDecl (guaranteed to exist after load_fal_file).
     auto decl_it = routine_declarations_.find(routine_name);
     if (decl_it == routine_declarations_.end()) {
@@ -518,18 +576,27 @@ void AutotunerEngine::register_inline_routine(const atc::RoutineDecl &routine) {
   for (const auto &p : routine.output_params) {
     returns.emplace_back(p->name, p->type, true);
   }
-  atc::BuiltinSignature sig(routine.name, std::move(params),
-                            std::move(returns));
+  // Register bare name
+  atc::BuiltinSignature bare_sig(routine.name, params, returns);
+  RoutineInfo bare_info{.name = routine.name,
+                        .library_path = "<inline>",
+                        .function = ExternalFunction(func),
+                        .signature = bare_sig};
+  function_registry_->register_routine(bare_info);
 
-  // Register using the same path as external routines so has_function() and
-  // the call-site lookup both find it.
-  RoutineInfo routine_info{.name = routine.name,
-                           /*library_path=*/.library_path = "<inline>",
-                           .function = ExternalFunction(func),
-                           .signature = sig};
-  function_registry_->register_routine(routine_info);
-
-  log::debug(fmt::format("Registered inline routine: {}", routine.name));
+  // Register qualified name if module is known
+  if (!routine.module_name.empty()) {
+    std::string qname = routine.module_name + "::" + routine.name;
+    atc::BuiltinSignature q_sig(qname, std::move(params), std::move(returns));
+    RoutineInfo q_info{.name = qname,
+                       .library_path = "<inline>",
+                       .function = ExternalFunction(func),
+                       .signature = q_sig};
+    function_registry_->register_routine(q_info);
+    log::debug(fmt::format("Registered inline routine: {}", qname));
+  } else {
+    log::debug(fmt::format("Registered inline routine: {}", routine.name));
+  }
 }
 // ---------------------------------------------------------------------------
 // process_ff_import: compile wrapper .cpp → .so, dlopen, register symbols.
