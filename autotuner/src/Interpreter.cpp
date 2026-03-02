@@ -13,7 +13,6 @@ Interpreter::Interpreter(std::shared_ptr<FunctionRegistry> functions,
     : functions_(std::move(functions)), types_(std::move(types)) {
 
   log::debug("Interpreter booting up");
-  log::debug("Interpreter booted up");
   auto resp = comms_.subscribe_config_response(INSTRUMENT_SERVER_LATENCY,
                                                (int)Time().time());
   config_ = falcon_core::physics::config::core::Config::from_json_string<

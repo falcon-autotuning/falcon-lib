@@ -13,17 +13,11 @@
 
 #include "falcon-autotuner/RuntimeValue.hpp"
 #include "falcon-autotuner/falcon_ffi.h"
+#include <algorithm>
 #include <cstring>
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-// Pull in the falcon_core SP types so we can match type_name strings
-#include "falcon-autotuner/log.hpp"
-#include <falcon_core/autotuner_interfaces/names/Gname.hpp>
-#include <falcon_core/math/Quantity.hpp>
-#include <falcon_core/physics/device_structures/Connection.hpp>
-#include <falcon_core/physics/device_structures/Connections.hpp>
 
 namespace falcon::autotuner::ffi {
 
@@ -95,42 +89,32 @@ inline PackedParams pack_params(const ParameterMap &params) {
             // Use mangled-free type_name convention (readable strings)
             if constexpr (std::is_same_v<SP, std::shared_ptr<TupleValue>>) {
               e.value.opaque.type_name = "TupleValue";
+              e.value.opaque.deleter = [](void *p) {
+                delete static_cast<SP *>(p);
+              };
             } else if constexpr (std::is_same_v<
                                      SP, std::shared_ptr<StructInstance>>) {
-              // ── NEW: If the StructInstance carries a native handle, forward
-              // the raw native pointer and its type_name through the C ABI so
-              // the wrapper's get_opaque<T>() can reconstruct the concrete
-              // type. This is the critical path for FFI instance method calls
-              // (e.g. q.Value() where q wraps a heap-allocated Quantity).
               if (val && val->is_native()) {
-                e.tag = FALCON_TYPE_OPAQUE;
-                // native_handle is a shared_ptr<void> wrapping a
-                // shared_ptr<T>*. We need to pass the inner shared_ptr<T>* to
-                // the wrapper, not the shared_ptr<void> itself. We get the raw
-                // void* from it:
                 e.value.opaque.ptr = val->native_handle->get();
                 e.value.opaque.type_name = val->type_name.c_str();
-                // No deleter — the StructInstance still owns the native_handle.
-                // The wrapper must NOT free this pointer.
-                e.value.opaque.deleter = nullptr;
+                e.value.opaque.deleter =
+                    nullptr;    // engine still owns via native_handle
+                delete heap_sp; // delete the shared_ptr wrapper we made here
               } else {
-                // Plain FAL struct — pass as StructInstance opaque as before
-                e.tag = FALCON_TYPE_OPAQUE;
-                using SP2 = std::shared_ptr<StructInstance>;
-                auto *heap_ptr = new SP2(val);
+                // Plain FAL struct — pass as StructInstance opaque
                 e.value.opaque.type_name = "StructInstance";
-                e.value.opaque.ptr = heap_ptr;
-                e.value.opaque.deleter = [](void *p) {
-                  delete static_cast<SP2 *>(p);
-                };
+                e.value.opaque.deleter =
+                    [](void *p) { // ← deleter only in this branch
+                      delete static_cast<SP *>(p);
+                    };
               }
             } else {
               e.value.opaque.type_name = "unknown_opaque";
+              e.value.opaque.deleter = [](void *p) {
+                delete static_cast<SP *>(p);
+              };
             }
-            e.value.opaque.deleter = [](void *p) {
-              delete static_cast<SP *>(p);
-            };
-          }
+          };
         },
         v);
 
@@ -155,28 +139,28 @@ inline FunctionResult unpack_results(FalconResultSlot *slots, int32_t count) {
     FalconResultSlot &s = slots[i];
     switch (s.tag) {
     case FALCON_TYPE_NIL:
-      result.push_back(nullptr);
+      result.emplace_back(nullptr);
       break;
     case FALCON_TYPE_INT:
-      result.push_back(s.value.int_val);
+      result.emplace_back(s.value.int_val);
       break;
     case FALCON_TYPE_FLOAT:
-      result.push_back(s.value.float_val);
+      result.emplace_back(s.value.float_val);
       break;
     case FALCON_TYPE_BOOL:
-      result.push_back(s.value.bool_val != 0);
+      result.emplace_back(s.value.bool_val != 0);
       break;
     case FALCON_TYPE_STRING: {
       std::string str(s.value.str.ptr, (size_t)s.value.str.len);
       ::free(s.value.str.ptr); // wrapper must use malloc/strdup
-      result.push_back(std::move(str));
+      result.emplace_back(std::move(str));
       break;
     }
     case FALCON_TYPE_ERROR: {
       std::string msg(s.value.error.message);
       bool fatal = s.value.error.is_fatal != 0;
       ::free(s.value.error.message);
-      result.push_back(ErrorObject{std::move(msg), fatal});
+      result.emplace_back(ErrorObject{std::move(msg), fatal});
       break;
     }
     case FALCON_TYPE_OPAQUE: {
@@ -188,28 +172,26 @@ inline FunctionResult unpack_results(FalconResultSlot *slots, int32_t count) {
       if (tn == "TupleValue") {
         using SP = std::shared_ptr<TupleValue>;
         rv = *static_cast<SP *>(ptr);
-        if (del)
+        if (del != nullptr) {
           del(ptr);
+        }
       } else if (tn == "StructInstance") {
         using SP = std::shared_ptr<StructInstance>;
         rv = *static_cast<SP *>(ptr);
-        if (del)
+        if (del != nullptr) {
           del(ptr);
+        }
       } else {
         // Unknown user opaque — wrap into StructInstance with native_handle
         auto inst = std::make_shared<StructInstance>(tn);
         inst->native_handle = std::shared_ptr<void>(ptr, del);
-        // Debug: confirm the native wrap succeeded
-        // (visible at LOG_LEVEL=debug)
-        log::debug("unpack_results: wrapped opaque '" + tn +
-                   "' as native StructInstance");
-        rv = std::move(inst);
+        rv = std::move(inst); // ← ADD THIS LINE
       }
       result.push_back(std::move(rv));
       break;
     }
     default:
-      result.push_back(nullptr);
+      result.emplace_back(nullptr);
       break;
     }
   }
@@ -310,8 +292,7 @@ inline std::shared_ptr<T> get_opaque(const FalconParamEntry *entries,
 inline void pack_results(const FunctionResult &result, FalconResultSlot *slots,
                          int32_t capacity, int32_t *out_count) {
   int32_t n = (int32_t)result.size();
-  if (n > capacity)
-    n = capacity;
+  n = std::min(n, capacity);
   *out_count = n;
 
   for (int32_t i = 0; i < n; ++i) {
