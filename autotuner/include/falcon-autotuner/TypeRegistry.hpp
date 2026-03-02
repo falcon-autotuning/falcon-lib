@@ -50,7 +50,12 @@ public:
 
   // ── Struct declarations ───────────────────────────────────────────────────
   void register_struct(const atc::StructDecl *decl) {
+    // Register bare name
     struct_registry_[decl->name] = decl;
+    // Register qualified name if module is known
+    if (!decl->module_name.empty()) {
+      struct_registry_[decl->module_name + "::" + decl->name] = decl;
+    }
   }
   [[nodiscard]] const atc::StructDecl *
   lookup_struct(const std::string &type_name) const {

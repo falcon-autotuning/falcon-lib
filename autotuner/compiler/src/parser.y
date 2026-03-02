@@ -567,11 +567,11 @@ type_spec[result]
       { $result = std::make_unique<TypeDescriptor>(ParamType::String); }
     | ERROR_KW         
       { $result = std::make_unique<TypeDescriptor>(ParamType::Error, "Error"); }
-    | IDENTIFIER[name]
+    | qualified_name[name]
       {
         // Allow plain struct names OR module-registered struct names.
-        // module_known_types holds "Module::TypeName"-style keys but we also
-        // allow the bare type name if it was registered from an import.
+        // struct_known_types holds names that the compiler was "hinted" with
+        // (from imports) or that were defined earlier in this file.
         if (struct_known_types.count($name) == 0 &&
             module_known_types.count($name) == 0) {
           error(@name, "Unknown type '" + $name + "' — "

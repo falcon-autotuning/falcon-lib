@@ -41,8 +41,11 @@ FunctionResult Interpreter::run(const atc::AutotunerDecl &autotuner,
         ExprEvaluator eval(variables_, functions_, types_);
         variables_[output_param->name] =
             eval.evaluate(*output_param->default_value.value());
+      } else {
+        // Ensure the variable exists so it is treated as a global in states.
+        // It will be overwritten by any assignments in states.
+        variables_[output_param->name] = RuntimeValue();
       }
-      // Otherwise leave uninitialized (will be set before terminal)
     }
 
     // Step 4: Execute state machine starting from entry state
