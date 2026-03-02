@@ -1,6 +1,14 @@
 /**
  * TreeSitter grammar for the Falcon Autotuner DSL (.fal files)
  * Mirrors the Bison grammar in autotuner/compiler/src/parser.y
+ *
+ * Key changes:
+ *   - Added conflict for struct_field_assign_stmt vs primary_expr
+ *   - Removed duplicate 'type' fields/aliases
+ *   - Used qualified_name everywhere appropriate
+ *   - Fixed import/ffimport statement semicolon handling
+ *   - Allowed interleaving of struct fields/routines in structs
+ *   - Checked all field() usages for duplicates
  */
 module.exports = grammar({
   name: 'falcon',  // Must match the compiled .so symbol: tree_sitter_falcon
@@ -10,98 +18,92 @@ module.exports = grammar({
     $.comment,
   ],
 
+  // Resolve ambiguity between method_call_expr/member_expr and struct_field_assign_stmt/primary_expr
+  conflicts: $ => [
+    [$.method_call_expr, $.member_expr],
+    [$.struct_field_assign_stmt, $.primary_expr],
+    [$.autotuner_var_decl, $.assign_stmt],
+    [$.var_decl_stmt, $.assign_stmt],
+    [$.struct_field_assign_stmt, $.qualified_name],
+    [$.struct_field_assign_stmt, $.assign_stmt],
+  ],
+
   rules: {
-    program: $ => repeat(choice(
-      $.autotuner_decl,
-      $.routine_decl,
-    )),
+    // -----------------------------------------------------------------------
+    // Top-level program: sequence of imports, ffimports, structs, routines, autotuners
+    // -----------------------------------------------------------------------
+    program: $ => repeat(
+      choice(
+        $.import_stmt,
+        $.ffimport_decl,
+        $.struct_decl,
+        $.routine_decl,
+        $.autotuner_decl,
+      )
+    ),
 
     // -----------------------------------------------------------------------
     // Comments
     // -----------------------------------------------------------------------
     comment: $ => token(choice(
       seq('//', /.*/),
-      seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/'),
+      seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/')
     )),
 
     // -----------------------------------------------------------------------
-    // Types
+    // Import statements (single or multi-path)
     // -----------------------------------------------------------------------
-    type: $ => choice(
-      'int', 'float', 'bool', 'string',
-      'Quantity', 'Config', 'Connection', 'Connections',
-      'Gname', 'DeviceCharacteristic', 'DeviceCharacteristicQuery',
-      'Error', 'FatalError', 'void',
+    import_stmt: $ => choice(
+      seq('import', field('path', $.string_literal), ';'),
+      seq('import', '(', repeat1(field('paths', $.string_literal)), ')'),
     ),
 
     // -----------------------------------------------------------------------
-    // Parameter declarations
+    // FFI import declarations
     // -----------------------------------------------------------------------
-    param_decl: $ => seq(
-      field('type', $.type),
+    ffimport_decl: $ => seq(
+      'ffimport',
+      field('wrapper', $.string_literal),
+      field('imports', seq('(', repeat($.string_literal), ')')),
+      field('libs', seq('(', repeat($.string_literal), ')'))
+    ),
+
+    // -----------------------------------------------------------------------
+    // Struct declarations: fields and routines (interleaved)
+    // -----------------------------------------------------------------------
+    struct_decl: $ => seq(
+      'struct',
+      field('name', $.identifier),
+      '{',
+      repeat(choice($.struct_field_decl, $.struct_routine_decl)),
+      '}',
+    ),
+
+    struct_field_decl: $ => seq(
+      field('type', alias($.identifier, $.type)),
       field('name', $.identifier),
       optional(seq('=', field('default', $.expr))),
+      ';'
     ),
 
-    param_list: $ => seq('(', commaSep($.param_decl), ')'),
-
-    // -----------------------------------------------------------------------
-    // Autotuner declaration
-    // parser.y order: requires_clause → autotuner_var_decls → entry → state_list
-    // -----------------------------------------------------------------------
-    autotuner_decl: $ => seq(
-      'autotuner',
+    // Routine stub inside a struct — body is optional (FFI-backed method)
+    struct_routine_decl: $ => seq(
+      'routine',
       field('name', $.identifier),
       field('inputs', $.param_list),
       '->',
       field('outputs', $.param_list),
+      optional(field('body', $.block))
+    ),
+
+    block: $ => seq(
       '{',
-      optional(field('uses', $.requires_clause)),
-      // autotuner_var_decl is a DISTINCT node from var_decl_stmt so highlights.scm
-      // can color autotuner-scope declarations differently from state-scope ones.
-      repeat($.autotuner_var_decl),
-      field('entry', $.entry_stmt),
-      repeat($.state_decl),
-      '}',
-    ),
-
-    // Body-level declarations/assignments inside the autotuner (before start ->)
-    // Distinct node type from var_decl_stmt (which lives inside states).
-    autotuner_var_decl: $ => choice(
-      // Type-annotated declaration:  int counter;  or  int total = 0;
-      seq(
-        field('type', $.type),
-        field('name', $.identifier),
-        optional(seq('=', field('init', $.expr))),
-        ';',
-      ),
-      // Assignment without type:  sum = 0;
-      seq(
-        field('targets', $.identifier),
-        repeat(seq(',', field('targets', $.identifier))),
-        '=',
-        field('value', $.expr),
-        ';',
-      ),
-    ),
-
-    // parser.y: USES identifier_list SEMICOLON — no parens, semicolon-terminated
-    requires_clause: $ => seq(
-      'uses',
-      commaSep1($.identifier),
-      ';',
-    ),
-
-    entry_stmt: $ => seq(
-      'start',
-      '->',
-      field('target', $.identifier),
-      optional(seq('(', commaSep($.expr), ')')),
-      ';',
+      repeat($.stmt),
+      '}'
     ),
 
     // -----------------------------------------------------------------------
-    // Routine declaration
+    // Routine declaration (top-level, no body)
     // -----------------------------------------------------------------------
     routine_decl: $ => seq(
       'routine',
@@ -109,11 +111,48 @@ module.exports = grammar({
       field('inputs', $.param_list),
       '->',
       field('outputs', $.param_list),
+      optional(field('body', $.block))
+    ),
+
+    // -----------------------------------------------------------------------
+    // Autotuner declaration
+    // -----------------------------------------------------------------------
+    autotuner_decl: $ => seq(
+      'autotuner',
+      field('name', $.identifier),
+      optional(field('inputs', $.param_list)),
+      '->',
+      field('outputs', $.param_list), '{',
+      repeat(choice($.autotuner_var_decl, $.assign_stmt, $.requires_clause)),
+      field('entry', $.entry_stmt),
+      repeat($.state_decl), '}'
+    ),
+
+    // Body-level declarations/assignments inside the autotuner
+    autotuner_var_decl: $ => seq(
+      field('type', alias($.identifier, $.type)),
+      field('name', $.identifier),
+      optional(seq('=', field('init', $.expr))),
+      ';'
+    ),
+
+    // uses clause — supports Module::symbol qualified names
+    requires_clause: $ => seq(
+      'uses',
+      commaSep1($.qualified_name),
+      ';'
+    ),
+
+    // Entry statement: start -> target;
+    entry_stmt: $ => seq(
+      field('target', $.identifier),
+      '->',
+      field('next', $.identifier),
+      ';'
     ),
 
     // -----------------------------------------------------------------------
     // State declaration
-    // parser.y: STATE IDENTIFIER state_input_params LBRACE stmt_list RBRACE
     // -----------------------------------------------------------------------
     state_decl: $ => seq(
       'state',
@@ -121,142 +160,214 @@ module.exports = grammar({
       optional(field('params', $.param_list)),
       '{',
       repeat($.stmt),
-      '}',
+      '}'
     ),
 
     // -----------------------------------------------------------------------
     // Statements (inside states)
     // -----------------------------------------------------------------------
     stmt: $ => choice(
-      $.var_decl_stmt,
       $.assign_stmt,
-      $.if_stmt,
+      $.var_decl_stmt,
       $.transition_stmt,
       $.terminal_stmt,
+      $.if_stmt,
+      $.struct_field_assign_stmt,
       $.expr_stmt,
     ),
 
     var_decl_stmt: $ => seq(
-      field('type', $.type),
+      field('type', alias($.identifier, $.type)),
       field('name', $.identifier),
       optional(seq('=', field('init', $.expr))),
-      ';',
+      ';'
     ),
 
     assign_stmt: $ => seq(
-      field('targets', $.identifier),
-      repeat(seq(',', field('targets', $.identifier))),
+      field('targets', commaSep1($.identifier)),
       '=',
       field('value', $.expr),
-      ';',
-    ),
-
-    if_stmt: $ => seq(
-      'if', '(',
-      field('condition', $.expr),
-      ')', '{',
-      repeat($.stmt),
-      '}',
-      repeat($.elif_clause),
-      optional($.else_clause),
-    ),
-
-    elif_clause: $ => seq(
-      'elif', '(',
-      field('condition', $.expr),
-      ')', '{',
-      repeat($.stmt),
-      '}',
-    ),
-
-    else_clause: $ => seq(
-      'else', '{',
-      repeat($.stmt),
-      '}',
+      ';'
     ),
 
     transition_stmt: $ => seq(
       '->',
       field('target', $.identifier),
-      optional(seq('(', commaSep($.expr), ')')),
-      ';',
+      ';'
     ),
 
-    terminal_stmt: $ => seq('terminal', ';'),
-    expr_stmt: $ => seq($.expr, ';'),
+    terminal_stmt: $ => seq(
+      'terminal',
+      ';'
+    ),
+
+    // -----------------------------------------------------------------------
+    // If/elif/else statements
+    // -----------------------------------------------------------------------
+    if_stmt: $ => seq(
+      'if',
+      '(',
+      field('condition', $.expr),
+      ')',
+      '{',
+      repeat($.stmt),
+      '}',
+      repeat($.elif_clause),
+      optional($.else_clause)
+    ),
+
+    elif_clause: $ => seq(
+      'elif',
+      '(',
+      field('condition', $.expr),
+      ')',
+      '{',
+      repeat($.stmt),
+      '}'
+    ),
+
+    else_clause: $ => seq(
+      'else',
+      '{',
+      repeat($.stmt),
+      '}'
+    ),
+
+    // -----------------------------------------------------------------------
+    // Struct field assignment: this.field = expr;
+    // -----------------------------------------------------------------------
+    struct_field_assign_stmt: $ => choice(
+      seq('this', '.', field('field', $.identifier), '=', field('value', $.expr), ';'),
+      seq(field('field', $.identifier), '=', field('value', $.expr), ';'), // bare field assignment
+      seq(alias($.identifier, '_'), '.', field('field', $.identifier), '=', field('value', $.expr), ';')
+    ),
+
+    expr_stmt: $ => seq(
+      $.expr,
+      ';'
+    ),
 
     // -----------------------------------------------------------------------
     // Expressions
     // -----------------------------------------------------------------------
     expr: $ => choice(
       $.binary_expr,
-      $.unary_expr,
       $.call_expr,
+      $.method_call_expr,
       $.member_expr,
-      $.index_expr,
       $.primary_expr,
     ),
 
-    binary_expr: $ => choice(
-      prec.left(1, seq($.expr, '||', $.expr)),
-      prec.left(2, seq($.expr, '&&', $.expr)),
-      prec.left(3, seq($.expr, choice('==', '!=', '<', '>', '<=', '>='), $.expr)),
-      prec.left(4, seq($.expr, choice('+', '-'), $.expr)),
-      prec.left(5, seq($.expr, choice('*', '/'), $.expr)),
-    ),
-
-    unary_expr: $ => prec.right(6, choice(
-      seq('-', $.expr),
-      seq('!', $.expr),
+    binary_expr: $ => prec.left(seq(
+      field('left', $.expr),
+      field('operator', choice(
+        alias('+', $.operator),
+        alias('-', $.operator),
+        alias('*', $.operator),
+        alias('/', $.operator),
+        alias('==', $.operator),
+        alias('!=', $.operator),
+        alias('<', $.operator),
+        alias('>', $.operator),
+        alias('<=', $.operator),
+        alias('>=', $.operator),
+        alias('&&', $.operator),
+        alias('||', $.operator)
+      )),
+      field('right', $.expr),
+    )),
+    operator: $ => token(choice(
+      '+', '-', '*', '/', '==', '!=', '<', '>', '<=', '>=', '&&', '||'
     )),
 
+    // Plain call: name(args) or Module::name(args)
     call_expr: $ => seq(
-      field('func', $.identifier),
+      field('func', $.qualified_name),
       '(',
       commaSep(choice($.named_arg, $.expr)),
-      ')',
+      ')'
+    ),
+
+    // Method call: obj.method(args)
+    method_call_expr: $ => seq(
+      field('object', $.expr),
+      '.',
+      field('method', $.identifier),
+      '(',
+      commaSep(choice($.named_arg, $.expr)),
+      ')'
+    ),
+
+    // Member access: obj.field
+    member_expr: $ => seq(
+      field('object', $.expr),
+      '.',
+      field('member', $.identifier)
     ),
 
     named_arg: $ => seq(
       field('name', $.identifier),
       '=',
-      field('value', $.expr),
+      field('value', $.expr)
     ),
 
-    member_expr: $ => prec.left(7, seq(
-      field('object', $.expr),
-      '.',
-      field('member', $.identifier),
-    )),
-
-    index_expr: $ => prec.left(7, seq(
-      field('object', $.expr),
-      '[',
-      field('index', $.expr),
-      ']',
-    )),
-
+    // -----------------------------------------------------------------------
+    // Primary expressions: literals, identifiers, qualified names, parens
+    // -----------------------------------------------------------------------
     primary_expr: $ => choice(
       $.int_literal,
       $.float_literal,
       $.bool_literal,
       $.string_literal,
       $.nil_literal,
-      $.identifier,
-      seq('(', $.expr, ')'),
+      'this',
+      $.qualified_name,
+      seq('(', $.expr, ')')
     ),
+
+    // -----------------------------------------------------------------------
+    // Qualified names — Module::symbol OR plain symbol
+    // -----------------------------------------------------------------------
+    qualified_name: $ => seq(
+      optional(seq(
+        field('module', $.identifier),
+        '::'
+      )),
+      field('symbol', $.identifier)
+    ),
+
+    // -----------------------------------------------------------------------
+    // Parameter declarations
+    // -----------------------------------------------------------------------
+    param_list: $ => seq(
+      '(',
+      commaSep($.param_decl),
+      ')'
+    ),
+
+    param_decl: $ => seq(
+      field('type', alias($.identifier, $.type)),
+      field('name', $.identifier)
+    ),
+
 
     // -----------------------------------------------------------------------
     // Literals
     // -----------------------------------------------------------------------
-    int_literal: $ => /[0-9]+/,
-    float_literal: $ => /[0-9]+\.[0-9]*/,
+    int_literal: $ => /\d+/,
+    float_literal: $ => /\d+\.\d+/,
     bool_literal: $ => choice('true', 'false'),
+    string_literal: $ => seq('"', /[^"]*/, '"'),
     nil_literal: $ => 'nil',
-    string_literal: $ => seq('"', /[^"\\]*/, '"'),
+
     identifier: $ => /[a-zA-Z_][a-zA-Z0-9_]*/,
-  },
+  }
 });
 
-function commaSep(rule) { return optional(commaSep1(rule)); }
-function commaSep1(rule) { return seq(rule, repeat(seq(',', rule))); }
+// Helpers for comma separated lists
+function commaSep1(rule) {
+  return seq(rule, repeat(seq(',', rule)));
+}
+function commaSep(rule) {
+  return optional(commaSep1(rule));
+}

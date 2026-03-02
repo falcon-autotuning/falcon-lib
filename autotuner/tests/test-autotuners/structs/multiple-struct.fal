@@ -1,4 +1,3 @@
-
 struct Quantity {
     int a;
     routine New (int a) -> (Quantity q) {
