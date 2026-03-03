@@ -1,6 +1,0 @@
-ffimport "log-wrapper.cpp" ("/opt/falcon/include/spdlog/") ("/opt/falcon/lib/libspdlog.so")
-routine INFO(string message) -> (Error err)
-routine DEBUG(string message) -> (Error err)
-routine WARN(string message) -> (Error err)
-routine ERROR(string message) -> (Error err)
-
