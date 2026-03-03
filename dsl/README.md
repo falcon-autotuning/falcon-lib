@@ -13,6 +13,7 @@ A domain-specific language and runtime for defining and executing **quantum devi
 - [The Falcon Language (.fal)](#the-falcon-language-fal)
 - [The Interpreter / AutotunerEngine](#the-interpreter--autotunerengine)
 - [CLI: `falcon-run`](#cli-falcon-run)
+- [CLI: `falcon-test`](#cli-falcon-test)
 - [Package Manager (`falcon-pm`)](#package-manager-falcon-pm)
 - [Language Server (falcon-lsp)](#language-server-falcon-lsp)
 - [Documentation Index](#documentation-index)
@@ -64,6 +65,7 @@ autotuner ChargeStability {
 | `falcon-pm` | Package manager: resolves `import` paths, handles manifests |
 | `falcon-lsp` | Language server: IDE integration for `.fal` files |
 | `falcon-run` | CLI tool: run any autotuner from the command line |
+| `falcon-test` | CLI tool: fixture-aware test runner for `.fal` test suites |
 
 ---
 
@@ -86,14 +88,14 @@ This single command calls three sub-targets in order:
 
 | Sub-target | What it installs |
 |------------|-----------------|
-| `make install-dsl` | `libfalcon-dsl.so`, headers, CMake config, `falcon-run` binary |
+| `make install-dsl` | `libfalcon-dsl.so`, headers, CMake config, `falcon-run`, `falcon-test` binaries |
 | `make install-lsp` | `falcon-lsp` language server binary, `libfalcon-lsp.a` |
 | `make install-pm` | `libfalcon-pm.a`, `falcon-pm` binary, headers |
 
 You can also install components individually:
 
 ```bash
-make install-dsl    # runtime library + CLI only
+make install-dsl    # runtime library + CLIs only
 make install-lsp    # language server only
 make install-pm     # package manager only
 ```
@@ -381,6 +383,160 @@ See [docs/CLI.md](docs/CLI.md) for the full CLI reference.
 
 ---
 
+## CLI: `falcon-test`
+
+`falcon-test` is the dedicated test runner for Falcon DSL test suites. It provides gtest-style coloured output, per-test `setup`/`teardown` fixture support, and non-aborting assertions so all failures within a test are always reported.
+
+### How it works
+
+`falcon-test` reads one or more `.fal` test files. It discovers **test suite autotuners** — autotuners with the signature `-> (int passed, int failed)` — and for each one it:
+
+1. Scans the body for `state test_*` declarations to build the test list.
+2. Detects optional `state setup` and `state teardown` declarations.
+3. Generates and injects five harness states (`__init`, `__loop`, `__begin`, `__dispatch`, `__end`, `__finish`) that manage the test loop, registration, and output.
+4. Writes the expanded source next to the original file so all `import` paths continue to resolve correctly.
+5. Loads and runs each suite through `AutotunerEngine`.
+
+Users never write or see the harness states. Their complete contract is:
+
+```fal
+import "/opt/falcon/libs/testing/testing.fal";
+
+autotuner MySuite -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;           // only required boilerplate line
+
+    // optional — runs before every test
+    state setup (TestRunner runner) {
+        // reset environment
+        -> __begin(runner);    // required terminal transition for setup
+    }
+
+    // optional — runs after every test
+    state teardown (TestRunner runner, TestContext t) {
+        // cleanup
+        -> __end(runner, t);   // required terminal transition for teardown
+    }
+
+    // one state per test — name must start with test_
+    state test_my_feature (TestRunner runner, TestContext t) {
+        Error err = t.ExpectIntEq(1 + 1, 2, "addition works");
+        -> teardown(runner, t);    // or -> __end(runner, t) if no teardown
+    }
+}
+```
+
+All `import` statements, structs, routines, and other autotuners defined in the same file are available to test bodies as normal.
+
+### Usage
+
+```bash
+falcon-test <file.fal> [file2.fal ...] [options]
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `--log-level L` | Set log level: `trace`, `debug`, `info`, `warn`, `error` (default: `warn`) |
+| `--dump` | Print the generated `.fal` source and exit — useful for debugging |
+| `--help` | Print help |
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | All tests in all suites passed |
+| `1` | Usage / argument error |
+| `2` | File load or generation error |
+| `3` | One or more tests failed |
+
+### Examples
+
+```bash
+# Run a single test file
+falcon-test my_tests.fal
+
+# Run multiple files — all suites run, combined exit code
+falcon-test unit_tests.fal integration_tests.fal hardware_tests.fal
+
+# Inspect the generated harness source without running
+falcon-test my_tests.fal --dump
+
+# Suppress engine log noise in CI
+falcon-test my_tests.fal --log-level error
+```
+
+### Terminal output
+
+```
+falcon-test: my_tests.fal
+  suite [MySuite]  3 test(s)  setup  teardown
+
+[==========] Running 3 test(s) from MySuite
+[----------] Global test environment set-up.
+[ RUN      ] MySuite.test_addition
+[ INFO     ] test_addition: teardown: cleanup done
+[       OK ] MySuite.test_addition
+[ RUN      ] MySuite.test_bad_math
+             ✗ 1 != 2 — mismatch (expected=1 actual=2)
+[  FAILED  ] MySuite.test_bad_math
+[ RUN      ] MySuite.test_strings
+[       OK ] MySuite.test_strings
+
+[==========] 3 test(s) from MySuite
+[----------] Global test environment tear-down.
+[  PASSED  ] test_addition
+[  FAILED  ] test_bad_math
+             ✗ 1 != 2 — mismatch (expected=1 actual=2)
+[  PASSED  ] test_strings
+[----------]
+[  PASSED  ] 2 test(s)
+[  FAILED  ] 1 test(s)
+[==========] 3 test(s) ran.
+```
+
+### Multi-step tests
+
+A test can pass its `TestContext` through multiple intermediate states. Name continuation states without the `test_` prefix so they are not independently registered:
+
+```fal
+    state test_sequence (TestRunner runner, TestContext t) {
+        Error err = t.Log("phase 1");
+        err = t.ExpectIntEq(1, 1, "phase 1 ok");
+        -> test_sequence_phase2(runner, t);   // continuation
+    }
+    state test_sequence_phase2 (TestRunner runner, TestContext t) {
+        Error err = t.Log("phase 2");
+        err = t.ExpectStrEq("ok", "ok", "phase 2 ok");
+        -> teardown(runner, t);
+    }
+```
+
+`falcon-test` recognises `test_sequence_phase2` as a transition target of another `test_*` state and skips it during registration.
+
+### Multiple suites per file
+
+Any number of suite autotuners can live in one file. Each gets its own header/summary block:
+
+```fal
+autotuner UnitTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+    // ...
+}
+
+autotuner IntegrationTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+    // ...
+}
+```
+
+See [libs/testing/README.md](../libs/testing/README.md) for the full testing library reference.
+
+---
+
 ## Package Manager (`falcon-pm`)
 
 The package manager resolves `import` statements in `.fal` files, handling both relative paths and manifest-declared packages.
@@ -394,7 +550,6 @@ name: my-autotuner-suite
 version: 1.0.0
 dependencies:
   shared-routines: "../shared"
-  device-types:    "/opt/falcon/packages/device-types"
 ```
 
 ### Import resolution order
@@ -465,9 +620,10 @@ See [docs/LSP.md](docs/LSP.md) for setup guides for all major editors.
 |----------|-------------|
 | [docs/LANGUAGE_REFERENCE.md](docs/LANGUAGE_REFERENCE.md) | Complete `.fal` syntax and language reference |
 | [docs/TUTORIAL.md](docs/TUTORIAL.md) | Step-by-step tutorial: build your first autotuner |
-| [docs/CLI.md](docs/CLI.md) | `falcon-run` CLI reference |
+| [docs/CLI.md](docs/CLI.md) | `falcon-run` and `falcon-test` CLI reference |
 | [docs/LSP.md](docs/LSP.md) | Language server setup for all editors |
 | [docs/PACKAGE_MANAGER.md](docs/PACKAGE_MANAGER.md) | Package manager guide |
+| [libs/testing/README.md](../libs/testing/README.md) | Testing library: `TestContext`, `TestRunner`, fixture patterns |
 
 ---
 
@@ -481,6 +637,10 @@ make test
 export TEST_DATABASE_URL=postgresql://falcon_test:falcon_test_password@127.0.0.1:5433/falcon_test
 export TEST_NATS_URL=nats://localhost:4222
 make test-local
+
+# Run the Falcon DSL self-tests with falcon-test
+falcon-test libs/testing/tests/run_tests.fal
+falcon-test libs/testing/tests/error_detection.fal || true  # failures expected
 ```
 
 ---
