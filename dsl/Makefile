@@ -1,7 +1,7 @@
 # Falcon dsl Makefile
 # Manages build configurations and testing
 
-.PHONY: all configure build-debug build-release test clean install help
+.PHONY: all configure build-debug build-release test clean install install-dsl install-lsp install-pm help
 
 # Detect OS
 UNAME_S := $(shell uname -s)
@@ -140,13 +140,30 @@ build-release: configure-release
 	@echo "✓ Release build complete"
 
 
-install: build-release
+# ── Install ────────────────────────────────────────────────────────────────────
+install: install-dsl install-lsp install-pm
+	@echo "✓ Full DSL suite installed to $(INSTALL_PREFIX)"
+
+install-dsl: build-release
 	@echo "Installing falcon-dsl to $(INSTALL_PREFIX)..."
 	$(SUDO) cmake --install $(BUILD_DIR_RELEASE) --prefix $(INSTALL_PREFIX)
-	@echo "✓ Installation complete"
+	@echo "✓ falcon-dsl installed"
 	@echo "  Library : $(INSTALL_LIBDIR)/libfalcon-dsl.so"
 	@echo "  Headers : $(INSTALL_INCLUDEDIR)/falcon-dsl/"
 	@echo "  CMake   : $(INSTALL_CMAKEDIR)/"
+	@echo "  CLI     : $(INSTALL_PREFIX)/bin/falcon-run"
+
+install-pm: build-release
+	@echo "Installing falcon-pm (package manager) to $(INSTALL_PREFIX)..."
+	$(SUDO) mkdir -p $(INSTALL_LIBDIR)
+	$(SUDO) mkdir -p $(INSTALL_INCLUDEDIR)/falcon-pm
+	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/package-manager/libfalcon-pm.a $(INSTALL_LIBDIR)/ 2>/dev/null || true
+	$(SUDO) find $(BUILD_DIR_RELEASE)/package-manager -name "falcon-pm" -type f \
+		-exec cp -v {} $(INSTALL_PREFIX)/bin/falcon-pm \; 2>/dev/null || true
+	@if [ -d lsp/package-manager/include ]; then \
+		$(SUDO) cp -r package-manager/include/* $(INSTALL_INCLUDEDIR)/falcon-pm/; \
+	fi
+	@echo "✓ falcon-pm installed"
 
 # ── Uninstall ─────────────────────────────────────────────────────────────────
 uninstall:
@@ -157,6 +174,17 @@ uninstall:
 	$(SUDO) rm -r $(INSTALL_INCLUDEDIR)/falcon-dsl
 	$(SUDO) rm -r $(INSTALL_CMAKEDIR)
 	@echo "✓ Uninstall complete"
+
+install-lsp: build-release
+	@echo "Installing lsp library to $(INSTALL_PREFIX)..."
+	$(SUDO) mkdir -p $(INSTALL_LIBDIR)
+	$(SUDO) mkdir -p $(INSTALL_INCLUDEDIR)/falcon-lsp
+	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/lsp/libfalcon-lsp.a $(INSTALL_LIBDIR)/
+	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/lsp/falcon-lsp $(INSTALL_LIBDIR)/
+	@if [ -d $(BUILD_DIR_RELEASE)/lsp/include ]; then \
+		$(SUDO) cp -r $(BUILD_DIR_RELEASE)/lsp/include/* $(INSTALL_INCLUDEDIR)/lsp/; \
+	fi
+	@echo "✓ lsp library installed"
 
 clean:
 	@echo "Cleaning build artifacts..."
@@ -293,16 +321,6 @@ test-interactive: docker-up build-debug
 test: test-with-docker
 test-debug: test-debug-docker
 
-install-lsp: build-release
-	@echo "Installing lsp library to $(INSTALL_PREFIX)..."
-	$(SUDO) mkdir -p $(INSTALL_LIBDIR)
-	$(SUDO) mkdir -p $(INSTALL_INCLUDEDIR)/falcon-lsp
-	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/lsp/libfalcon-lsp.a $(INSTALL_LIBDIR)/
-	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/lsp/falcon-lsp $(INSTALL_LIBDIR)/
-	@if [ -d $(BUILD_DIR_RELEASE)/lsp/include ]; then \
-		$(SUDO) cp -r $(BUILD_DIR_RELEASE)/lsp/include/* $(INSTALL_INCLUDEDIR)/lsp/; \
-	fi
-	@echo "✓ lsp library installed"
 
 uninstall-lsp:
 	@echo "Uninstalling lsp library from $(INSTALL_PREFIX)..."

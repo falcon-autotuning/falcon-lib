@@ -18,6 +18,7 @@ add_executable(falcon_dsl_integration_tests
   integration/test_foreign_function.cpp
   integration/test_local_import.cpp
   integration/test_namespacing.cpp
+  integration/test_cli.cpp
 )
 
 target_link_libraries(falcon_dsl_integration_tests

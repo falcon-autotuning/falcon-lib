@@ -102,6 +102,17 @@ target_compile_definitions(falcon-dsl PRIVATE
     FALCON_AUTOTUNER_INCLUDE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/include"
     FALCON_TYPING_INCLUDE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../typing/include"
 )
+# ── 4. CLI tool (falcon-run) ─────────────────────────────────────────────────
+option(BUILD_TOOLS "Build CLI tools" ON)
+if(BUILD_TOOLS)
+  add_executable(falcon-run src/cli/main.cpp)
+  target_link_libraries(falcon-run PRIVATE falcon-dsl)
+  target_include_directories(falcon-run
+    PRIVATE
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  )
+  install(TARGETS falcon-run RUNTIME DESTINATION bin)
+endif()
 
 if(MSVC)
   target_compile_options(falcon-dsl PRIVATE /W4)
@@ -116,8 +127,7 @@ if(ENABLE_PCH)
       <nlohmann/json.hpp>
   )
 endif()
-
-# 4. LSP
+# ── 5. LSP ─────────────────────────────────────────────────
 add_subdirectory(lsp)
 
 if(BUILD_TESTS)
