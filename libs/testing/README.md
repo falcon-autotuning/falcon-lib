@@ -1,6 +1,6 @@
 # falcon/testing
 
-A native Falcon testing library that provides a lightweight test harness for writing and running tests in the Falcon DSL. It follows the same `ffimport` FFI pattern as `libs/log/`, binding a C++ backend to Falcon via the established foreign-function interface mechanism.
+A native Falcon testing library that provides a lightweight test harness for writing and running tests in the Falcon DSL. It binds a C++ backend to Falcon via the established foreign-function interface mechanism.
 
 ## Overview
 
@@ -9,7 +9,7 @@ The library exposes two structs:
 - **`TestContext`** — analogous to Go's `*testing.T`. Create one per test, pass it through states, and check `Passed()` at the end.
 - **`TestSuite`** — groups multiple `TestContext` results for summary reporting.
 
-There is no class inheritance involved. The fixture pattern is simulated by passing a `TestContext` struct explicitly between states.
+Fixture pattern is simulated by passing a `TestContext` struct explicitly between states.
 
 ## TestContext API
 

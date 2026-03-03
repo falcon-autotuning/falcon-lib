@@ -144,8 +144,8 @@ install: build-release
 	@echo "Installing falcon-dsl to $(INSTALL_PREFIX)..."
 	$(SUDO) cmake --install $(BUILD_DIR_RELEASE) --prefix $(INSTALL_PREFIX)
 	@echo "✓ Installation complete"
-	@echo "  Library : $(INSTALL_LIBDIR)/libfalcon-typing.so"
-	@echo "  Headers : $(INSTALL_INCLUDEDIR)/falcon-typing/"
+	@echo "  Library : $(INSTALL_LIBDIR)/libfalcon-dsl.so"
+	@echo "  Headers : $(INSTALL_INCLUDEDIR)/falcon-dsl/"
 	@echo "  CMake   : $(INSTALL_CMAKEDIR)/"
 
 # ── Uninstall ─────────────────────────────────────────────────────────────────
