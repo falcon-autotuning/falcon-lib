@@ -1,0 +1,67 @@
+#pragma once
+
+#include "falcon-atc/AST.hpp"
+#include "falcon-dsl/ExprEvaluator.hpp"
+#include "falcon-dsl/FunctionRegistry.hpp"
+#include "falcon-dsl/TypeRegistry.hpp"
+#include <falcon-typing/PrimitiveTypes.hpp>
+#include <memory>
+#include <string>
+
+namespace falcon::dsl {
+
+struct ControlFlow {
+  enum class Type {
+    None,       // Continue execution
+    Transition, // Move to another state
+    Terminal    // End autotuner execution
+  };
+
+  Type type = Type::None;
+  std::string target_state;                     // For Transition
+  std::vector<typing::RuntimeValue> parameters; // For Transition
+
+  static ControlFlow none() { return ControlFlow{Type::None, "", {}}; }
+
+  static ControlFlow transition(std::string state,
+                                std::vector<typing::RuntimeValue> params = {}) {
+    return ControlFlow{Type::Transition, std::move(state), std::move(params)};
+  }
+
+  static ControlFlow terminal() { return ControlFlow{Type::Terminal, "", {}}; }
+};
+
+class StmtExecutor {
+public:
+  /**
+   * @brief Construct executor with variable environment, function registry, and
+   * type registry.
+   */
+  StmtExecutor(typing::ParameterMap &variables,
+               std::shared_ptr<FunctionRegistry> functions,
+               std::shared_ptr<TypeRegistry> types);
+
+  ControlFlow execute(const atc::Stmt &stmt);
+  ControlFlow
+  execute_block(const std::vector<std::unique_ptr<atc::Stmt>> &stmts);
+
+private:
+  ControlFlow exec_var_decl(const atc::VarDeclStmt &stmt);
+  ControlFlow exec_assign(const atc::AssignStmt &stmt);
+  ControlFlow exec_struct_field_assign(const atc::StructFieldAssignStmt &stmt);
+  ControlFlow exec_expr(const atc::ExprStmt &stmt);
+  ControlFlow exec_if(const atc::IfStmt &stmt);
+  ControlFlow exec_transition(const atc::TransitionStmt &stmt);
+  static ControlFlow exec_terminal(const atc::TerminalStmt &stmt);
+
+  // Helper to wrap execution with error context
+  template <typename Func>
+  ControlFlow execute_with_context(const atc::Stmt &stmt, Func func);
+
+  typing::ParameterMap &variables_;
+  std::shared_ptr<FunctionRegistry> functions_;
+  std::shared_ptr<TypeRegistry> types_;
+  ExprEvaluator evaluator_;
+};
+
+} // namespace falcon::dsl
