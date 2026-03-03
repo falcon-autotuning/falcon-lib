@@ -118,7 +118,7 @@ if(ENABLE_PCH)
 endif()
 
 # 4. LSP
-# add_subdirectory(lsp)
+add_subdirectory(lsp)
 
 if(BUILD_TESTS)
   enable_testing()
