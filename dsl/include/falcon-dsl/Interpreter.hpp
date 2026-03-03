@@ -5,7 +5,7 @@
 #include "falcon-dsl/StmtExecutor.hpp"
 #include "falcon-dsl/TypeRegistry.hpp"
 #include <falcon-comms/runtime_comms.hpp>
-#include <falcon-database/DatabaseConnection.hpp>
+// #include <falcon-database/DatabaseConnection.hpp>
 #include <falcon-typing/PrimitiveTypes.hpp>
 #include <falcon_core/physics/config/core/Config.hpp>
 #include <memory>
@@ -66,7 +66,7 @@ private:
   std::shared_ptr<FunctionRegistry> functions_;
   std::shared_ptr<TypeRegistry> types_; // Added TypeRegistry
   typing::ParameterMap variables_;
-  database::ReadWriteDatabaseConnection db_;
+  // database::ReadWriteDatabaseConnection db_;
   falcon_core::physics::config::core::ConfigSP config_;
   comms::RuntimeComms comms_;
 };
