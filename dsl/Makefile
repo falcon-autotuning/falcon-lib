@@ -148,11 +148,13 @@ install-dsl: build-release
 	@echo "Installing falcon-dsl to $(INSTALL_PREFIX)..."
 	$(SUDO) cmake --install $(BUILD_DIR_RELEASE) --prefix $(INSTALL_PREFIX)
 	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/falcon-run $(INSTALL_LIBDIR)/falcon-run
+	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/falcon-test $(INSTALL_LIBDIR)/falcon-test
 	@echo "✓ falcon-dsl installed"
 	@echo "  Library : $(INSTALL_LIBDIR)/libfalcon-dsl.so"
 	@echo "  Headers : $(INSTALL_INCLUDEDIR)/falcon-dsl/"
 	@echo "  CMake   : $(INSTALL_CMAKEDIR)/"
 	@echo "  CLI     : $(INSTALL_LIBDIR)/falcon-run"
+	@echo "  TEST    : $(INSTALL_LIBDIR)/falcon-test"
 
 uninstall: uninstall-lsp
 	@echo "Uninstalling falcon-dsl from $(INSTALL_PREFIX)..."
@@ -162,6 +164,7 @@ uninstall: uninstall-lsp
 	$(SUDO) rm -r $(INSTALL_INCLUDEDIR)/falcon-dsl
 	$(SUDO) rm -r $(INSTALL_CMAKEDIR)
 	$(SUDO) rm -f $(INSTALL_PREFIX)/bin/falcon-run
+	$(SUDO) rm -f $(INSTALL_PREFIX)/bin/falcon-test
 	@echo "✓ Uninstall complete"
 
 uninstall-lsp:

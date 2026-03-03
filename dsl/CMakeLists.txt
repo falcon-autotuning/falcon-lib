@@ -112,6 +112,16 @@ if(BUILD_TOOLS)
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   )
   install(TARGETS falcon-run RUNTIME DESTINATION bin)
+# falcon-test: fixture-aware test runner
+# Reads user .fal test files, injects harness states, and executes all
+# discovered test suite autotuners.
+  add_executable(falcon-test src/cli/test_main.cpp)
+  target_link_libraries(falcon-test PRIVATE falcon-dsl)
+  target_include_directories(falcon-test
+    PRIVATE
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  )
+  install(TARGETS falcon-test RUNTIME DESTINATION bin)
 endif()
 
 if(MSVC)
