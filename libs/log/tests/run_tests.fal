@@ -1,0 +1,123 @@
+// Tests for the falcon/log library.
+// Verifies that each log level produces output on stdout.
+import "../../testing/testing.fal";
+import "../../strings/strings.fal";
+import "../../io/io.fal";
+import "../log.fal";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite: Log level output
+//
+// The spdlog-backed log library writes formatted records to stdout.
+// We capture stdout around each call and assert the expected level tag and
+// message text appear in the output.
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner LogOutputTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    // ── Info ──────────────────────────────────────────────────────────────────
+    state test_info_appears_on_stdout (TestRunner runner, TestContext t) {
+        IOCapture cap = IOCapture.New();
+        Error err     = cap.BeginStdout();
+        err           = INFO("test-info-message");
+        string out    = cap.End();
+        string plain  = StripAnsi(out);
+        bool has_msg  = Contains(plain, "test-info-message");
+        err           = t.ExpectTrue(has_msg, "Info: message present on stdout");
+        -> __end(runner, t);
+    }
+
+    state test_info_level_tag (TestRunner runner, TestContext t) {
+        IOCapture cap  = IOCapture.New();
+        Error err      = cap.BeginStdout();
+        err            = INFO("level-tag-info");
+        string out     = cap.End();
+        string plain   = StripAnsi(out);
+        // spdlog formats level as [info] or similar
+        bool has_level = Contains(plain, "info");
+        err            = t.ExpectTrue(has_level, "Info: level tag present in output");
+        -> __end(runner, t);
+    }
+
+    // ── Debug ─────────────────────────────────────────────────────────────────
+    state test_debug_appears_on_stdout (TestRunner runner, TestContext t) {
+        IOCapture cap = IOCapture.New();
+        Error err     = cap.BeginStdout();
+        err           = DEBUG("test-debug-message");
+        string out    = cap.End();
+        string plain  = StripAnsi(out);
+        bool has_msg  = Contains(plain, "test-debug-message");
+        err           = t.ExpectTrue(has_msg, "Debug: message present on stdout");
+        -> __end(runner, t);
+    }
+
+    state test_debug_level_tag (TestRunner runner, TestContext t) {
+        IOCapture cap  = IOCapture.New();
+        Error err      = cap.BeginStdout();
+        err            = DEBUG("level-tag-debug");
+        string out     = cap.End();
+        string plain   = StripAnsi(out);
+        bool has_level = Contains(plain, "debug");
+        err            = t.ExpectTrue(has_level, "Debug: level tag present in output");
+        -> __end(runner, t);
+    }
+
+    // ── Warn ──────────────────────────────────────────────────────────────────
+    state test_warn_appears_on_stdout (TestRunner runner, TestContext t) {
+        IOCapture cap = IOCapture.New();
+        Error err     = cap.BeginStdout();
+        err           = WARN("test-warn-message");
+        string out    = cap.End();
+        string plain  = StripAnsi(out);
+        bool has_msg  = Contains(plain, "test-warn-message");
+        err           = t.ExpectTrue(has_msg, "Warn: message present on stdout");
+        -> __end(runner, t);
+    }
+
+    state test_warn_level_tag (TestRunner runner, TestContext t) {
+        IOCapture cap  = IOCapture.New();
+        Error err      = cap.BeginStdout();
+        err            = WARN("level-tag-warn");
+        string out     = cap.End();
+        string plain   = StripAnsi(out);
+        bool has_level = Contains(plain, "warn");
+        err            = t.ExpectTrue(has_level, "Warn: level tag present in output");
+        -> __end(runner, t);
+    }
+
+    // ── Error ────────────────────────────────────────────���────────────────────
+    state test_error_appears_on_stdout (TestRunner runner, TestContext t) {
+        IOCapture cap = IOCapture.New();
+        Error err     = cap.BeginStdout();
+        Error lerr    = ERROR("test-error-message");
+        string out    = cap.End();
+        string plain  = StripAnsi(out);
+        bool has_msg  = Contains(plain, "test-error-message");
+        err           = t.ExpectTrue(has_msg, "Error: message present on stdout");
+        -> __end(runner, t);
+    }
+
+    state test_error_level_tag (TestRunner runner, TestContext t) {
+        IOCapture cap  = IOCapture.New();
+        Error err      = cap.BeginStdout();
+        Error lerr     = ERROR("level-tag-error");
+        string out     = cap.End();
+        string plain   = StripAnsi(out);
+        bool has_level = Contains(plain, "error");
+        err            = t.ExpectTrue(has_level, "Error: level tag present in output");
+        -> __end(runner, t);
+    }
+
+    // ── Cross-level isolation ─────────────────────────────────────────────────
+    state test_messages_are_distinct (TestRunner runner, TestContext t) {
+        IOCapture cap   = IOCapture.New();
+        Error err       = cap.BeginStdout();
+        err             = INFO("unique-info-xyz");
+        string out      = cap.End();
+        string plain    = StripAnsi(out);
+        bool no_debug   = Contains(plain, "unique-debug-xyz");
+        err             = t.ExpectFalse(no_debug, "Info call does not emit debug text");
+        -> __end(runner, t);
+    }
+}

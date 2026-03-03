@@ -1,0 +1,50 @@
+ffimport "io-wrapper.cpp" ("/opt/falcon/include/") ()
+
+// ── IOCapture ─────────────────────────────────────────────────────────────────
+// Intercepts writes to stdout or stderr so Falcon code can inspect them.
+//
+// Typical stdout-capture pattern:
+//
+//   IOCapture cap = IOCapture.New();
+//   Error err = cap.BeginStdout();
+//   // ... code that writes to stdout ...
+//   string captured = cap.End();
+//   // captured now holds everything written; it was also forwarded to real stdout.
+//
+struct IOCapture {
+    // Create a new capture handle (not yet capturing).
+    routine New                              -> (IOCapture cap)
+
+    // Start intercepting stdout / stderr respectively.
+    routine BeginStdout                      -> (Error err)
+    routine BeginStderr                      -> (Error err)
+
+    // Stop capturing; flush the pipe; tee bytes to the real fd; return all
+    // captured text as a single string.
+    routine End                              -> (string captured)
+
+    // Non-destructively drain whatever has landed in the pipe so far.
+    // Capture continues after this call.
+    routine Peek                             -> (string captured)
+
+    // Returns true while a capture is in progress.
+    routine IsActive                         -> (bool active)
+
+    // Write directly to the real stdout/stderr, bypassing any active capture.
+    routine WriteStdout (string msg)         -> (Error err)
+    routine WriteStderr (string msg)         -> (Error err)
+}
+
+// ── Convenience top-level I/O routines ───────────────────────────────────────
+
+// Write msg followed by a newline to stdout.
+routine Println   (string msg)  -> (Error err)
+
+// Write msg (no newline) to stdout.
+routine Print     (string msg)  -> (Error err)
+
+// Write msg followed by a newline to stderr.
+routine Eprintln  (string msg)  -> (Error err)
+
+// Write msg (no newline) to stderr.
+routine Eprint    (string msg)  -> (Error err)
