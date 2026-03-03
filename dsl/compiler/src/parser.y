@@ -567,7 +567,7 @@ type_spec[result]
       { $result = std::make_unique<TypeDescriptor>(ParamType::String); }
     | ERROR_KW         
       { $result = std::make_unique<TypeDescriptor>(ParamType::Error, "Error"); }
-    | ARRAY_KW LBRACKET type_spec[elem] RBRACKET
+    | ARRAY_KW LL type_spec[elem] GG 
       { $result = std::make_unique<TypeDescriptor>(TypeDescriptor::make_array(std::move(*$elem))); }
     | qualified_name[name]
       {
