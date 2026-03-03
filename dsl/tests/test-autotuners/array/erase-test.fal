@@ -7,7 +7,7 @@ autotuner EraseTest (Array<int> arr, int erase_idx) -> (int first, int second) {
     start -> run;
 
     state run {
-        arr.erase(index = erase_idx);
+        arr.erase(erase_idx);
         first  = arr[0];
         second = arr[1];
         terminal;

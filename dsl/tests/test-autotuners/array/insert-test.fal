@@ -8,7 +8,7 @@ autotuner InsertTest (Array<int> arr, int insert_idx, int insert_val) -> (int fi
     start -> run;
 
     state run {
-        arr.insert(index= insert_idx, value = insert_val);
+        arr.insert(insert_idx, insert_val);
         first  = arr[0];
         second = arr[1];
         third  = arr[2];
