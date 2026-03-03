@@ -403,6 +403,40 @@ TEST_F(FfiRoundTripTest, BoolArrayRoundTrip) {
   EXPECT_TRUE(std::get<bool>((*out)[2]));
 }
 
+TEST_F(FfiRoundTripTest, StructArrayRoundTrip) {
+  auto arr = std::make_shared<ArrayValue>("StructInstance");
+  auto s1 = std::make_shared<StructInstance>("Point");
+  s1->set_field("x", int64_t{1});
+  s1->set_field("y", int64_t{2});
+  auto s2 = std::make_shared<StructInstance>("Point");
+  s2->set_field("x", int64_t{3});
+  s2->set_field("y", int64_t{4});
+  arr->elements.push_back(s1);
+  arr->elements.push_back(s2);
+
+  ParameterMap params;
+  params["arr"] = arr;
+  auto result = round_trip(params);
+
+  ASSERT_EQ(result.size(), 1u);
+  ASSERT_TRUE(std::holds_alternative<std::shared_ptr<ArrayValue>>(result[0]));
+  auto out = std::get<std::shared_ptr<ArrayValue>>(result[0]);
+  ASSERT_NE(out, nullptr);
+  EXPECT_EQ(out->element_type_name, "StructInstance");
+  ASSERT_EQ(out->size(), 2u);
+
+  auto out_s1 = std::get<std::shared_ptr<StructInstance>>((*out)[0]);
+  auto out_s2 = std::get<std::shared_ptr<StructInstance>>((*out)[1]);
+  ASSERT_NE(out_s1, nullptr);
+  ASSERT_NE(out_s2, nullptr);
+  EXPECT_EQ(out_s1->type_name, "Point");
+  EXPECT_EQ(std::get<int64_t>(out_s1->get_field("x")), 1);
+  EXPECT_EQ(std::get<int64_t>(out_s1->get_field("y")), 2);
+  EXPECT_EQ(out_s2->type_name, "Point");
+  EXPECT_EQ(std::get<int64_t>(out_s2->get_field("x")), 3);
+  EXPECT_EQ(std::get<int64_t>(out_s2->get_field("y")), 4);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Tests: get_runtime_type_name for ArrayValue
 // ─────────────────────────────────────────────────────────────────────────────

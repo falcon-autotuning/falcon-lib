@@ -473,7 +473,9 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
   }
 
   // ------------------------------------------------------------------
-  // Existing falcon-core built-in type method dispatch (unchanged).
+  // Existing falcon-core built-in type method dispatch.
+  // For Array methods we forward positional arguments by their
+  // canonical parameter names so the registered lambdas can find them.
   // ------------------------------------------------------------------
   std::string type_name = get_runtime_type_name(object);
   auto *method = types_->lookup_method(type_name, expr.method_name);
@@ -481,10 +483,36 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
     throw EvaluationError("Unknown method '" + expr.method_name +
                           "' for type '" + type_name + "'");
   }
+
+  // Evaluate all positional arguments
+  std::vector<typing::RuntimeValue> arg_values;
+  arg_values.reserve(expr.args.size());
+  for (const auto &arg : expr.args) {
+    arg_values.push_back(evaluate(*arg));
+  }
+
+  // Map positional arguments to canonical parameter names for Array methods.
   typing::ParameterMap params;
+  if (type_name == "Array") {
+    // erase(index)
+    if (expr.method_name == "erase" && arg_values.size() == 1) {
+      params["index"] = arg_values[0];
+    }
+    // insert(index, value)
+    else if (expr.method_name == "insert" && arg_values.size() == 2) {
+      params["index"] = arg_values[0];
+      params["value"] = arg_values[1];
+    }
+    // pushback(value)
+    else if (expr.method_name == "pushback" && arg_values.size() == 1) {
+      params["value"] = arg_values[0];
+    }
+  }
+
   auto result = (*method)(object, params);
+  // Methods that return nothing (erase, insert, pushback) return an empty map.
   if (result.empty()) {
-    throw EvaluationError("Method returned no value");
+    return nullptr;
   }
   if (result.size() == 1) {
     return result[0];
@@ -492,7 +520,7 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
   std::vector<typing::RuntimeValue> values;
   values.reserve(result.size());
   for (const auto &val : result) {
-    values.push_back(val.second);
+    values.push_back(val);
   }
   return std::make_shared<typing::TupleValue>(values);
 }
@@ -502,8 +530,7 @@ typing::RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
   auto index = evaluate(*expr.index);
 
   if (std::holds_alternative<std::shared_ptr<typing::ArrayValue>>(object)) {
-    const auto &arrPtr =
-        std::get<std::shared_ptr<typing::ArrayValue>>(object);
+    const auto &arrPtr = std::get<std::shared_ptr<typing::ArrayValue>>(object);
     if (!arrPtr) {
       throw EvaluationError("Cannot index into a nil Array");
     }
@@ -517,9 +544,9 @@ typing::RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
                             std::to_string(idx));
     }
     if (static_cast<size_t>(idx) >= arrPtr->size()) {
-      throw EvaluationError("Array index out of bounds: " +
-                            std::to_string(idx) +
-                            " (size=" + std::to_string(arrPtr->size()) + ")");
+      throw EvaluationError(
+          "Array index out of bounds: " + std::to_string(idx) +
+          " (size=" + std::to_string(arrPtr->size()) + ")");
     }
     return (*arrPtr)[static_cast<size_t>(idx)];
   }
