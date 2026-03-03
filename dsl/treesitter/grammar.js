@@ -15,6 +15,7 @@ module.exports = grammar({
     [$.struct_field_assign_stmt, $.primary_expr],
     [$.autotuner_var_decl, $.assign_stmt],
     [$.var_decl_stmt, $.assign_stmt],
+    [$.type, $.qualified_name],
   ],
 
   rules: {
@@ -72,7 +73,7 @@ module.exports = grammar({
     ),
 
     struct_field_decl: $ => seq(
-      field('type', alias($.identifier, $.type)),
+      field('type', $.type),
       field('name', $.identifier),
       optional(seq('=', field('default', $.expr))),
       ';'
@@ -155,7 +156,7 @@ module.exports = grammar({
     ),
 
     autotuner_var_decl: $ => seq(
-      field('type', alias($.identifier, $.type)),
+      field('type', $.type),
       field('name', $.identifier),
       optional(seq('=', field('init', $.expr))),
       ';'
@@ -200,7 +201,7 @@ module.exports = grammar({
     ),
 
     var_decl_stmt: $ => seq(
-      field('type', alias($.identifier, $.type)),
+      field('type', $.type),
       field('name', $.identifier),
       optional(seq('=', field('init', $.expr))),
       ';'
@@ -384,8 +385,16 @@ module.exports = grammar({
     ),
 
     param_decl: $ => seq(
-      field('type', alias($.identifier, $.type)),
+      field('type', $.type),
       field('name', $.identifier)
+    ),
+    type: $ => seq(
+      $.identifier,
+      optional(seq(
+        '<',
+        commaSep1($.type),
+        '>'
+      ))
     ),
 
     // -----------------------------------------------------------------------

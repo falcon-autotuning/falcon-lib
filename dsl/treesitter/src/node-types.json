@@ -1031,6 +1031,25 @@
     }
   },
   {
+    "type": "type",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "type",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "var_decl_stmt",
     "named": true,
     "fields": {
@@ -1099,7 +1118,15 @@
     "named": false
   },
   {
+    "type": "<",
+    "named": false
+  },
+  {
     "type": "=",
+    "named": false
+  },
+  {
+    "type": ">",
     "named": false
   },
   {
@@ -1178,10 +1205,6 @@
   {
     "type": "true",
     "named": false
-  },
-  {
-    "type": "type",
-    "named": true
   },
   {
     "type": "uses",
