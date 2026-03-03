@@ -1,22 +1,22 @@
 #include "falcon-dsl/Interpreter.hpp"
 #include "falcon-dsl/log.hpp"
 #include <falcon-typing/PrimitiveTypes.hpp>
-#include <falcon_core/communications/Time.hpp>
+// #include <falcon_core/communications/Time.hpp>
 #include <fmt/format.h>
 namespace {
-const int INSTRUMENT_SERVER_LATENCY = 1000;
+// const int INSTRUMENT_SERVER_LATENCY = 1000;
 }
 namespace falcon::dsl {
-using falcon_core::communications::Time;
+// using falcon_core::communications::Time;
 Interpreter::Interpreter(std::shared_ptr<FunctionRegistry> functions,
                          std::shared_ptr<TypeRegistry> types)
     : functions_(std::move(functions)), types_(std::move(types)) {
 
   log::debug("Interpreter booting up");
-  auto resp = comms_.subscribe_config_response(INSTRUMENT_SERVER_LATENCY,
-                                               (int)Time().time());
-  config_ = falcon_core::physics::config::core::Config::from_json_string<
-      falcon_core::physics::config::core::Config>(resp.response);
+  // auto resp = comms_.subscribe_config_response(INSTRUMENT_SERVER_LATENCY,
+  //                                              (int)Time().time());
+  // config_ = falcon_core::physics::config::core::Config::from_json_string<
+  //     falcon_core::physics::config::core::Config>(resp.response);
 }
 
 typing::FunctionResult Interpreter::run(const atc::AutotunerDecl &autotuner,

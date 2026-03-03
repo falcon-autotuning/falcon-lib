@@ -1,4 +1,4 @@
-ffimport "testing-wrapper.cpp" ("/opt/falcon/include/") ("/opt/falcon/lib/libgtest.so")
+ffimport "testing-wrapper.cpp" ("/opt/falcon/include/") ("/opt/falcon/lib/libgtest.so" "/opt/falcon/lib/libgtest_main.so")
 
 // TestContext: a lightweight test harness (analogous to Go's *testing.T)
 // Create one per test, pass it around, check Passed() at the end.

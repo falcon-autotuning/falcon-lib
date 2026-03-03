@@ -1,4 +1,4 @@
-import "../testing.fal"
+import "./testing.fal"
 
 // ─── Test 1: basic pass ───────────────────────────────────────────────────────
 autotuner TestExpectTruePass -> (bool overall_passed) {
