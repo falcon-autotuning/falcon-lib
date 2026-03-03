@@ -5,6 +5,39 @@ namespace falcon::lsp {
 
 void TypeChecker::analyze(const falcon::atc::Program &program) {
   symbols.clear();
+  import_paths.clear();
+  ffimport_paths.clear();
+
+  for (const auto &st : program.structs) {
+    {
+      Symbol s;
+      s.name = st.name;
+      s.kind = "struct";
+      s.type_str = "struct";
+      symbols.push_back(std::move(s));
+    }
+    for (const auto &field : st.fields) {
+      Symbol s;
+      s.name = field.name;
+      s.kind = "struct_field";
+      s.type_str = field.type.to_string();
+      s.line = field.line;
+      s.col = field.column;
+      s.autotuner_name = st.name;
+      symbols.push_back(std::move(s));
+    }
+    for (const auto &rt : st.routines) {
+      {
+        Symbol s;
+        s.name = rt.name;
+        s.kind = "struct_routine";
+        s.type_str = "routine";
+        s.autotuner_name = st.name;
+        symbols.push_back(std::move(s));
+      }
+      analyze_routine(rt, st.name);
+    }
+  }
 
   for (const auto &at : program.autotuners) {
     analyze_autotuner(at);
@@ -19,22 +52,25 @@ void TypeChecker::analyze(const falcon::atc::Program &program) {
     s.col = 0;
     symbols.push_back(std::move(s));
 
-    for (const auto &p : rt.input_params) {
-      Symbol ps;
-      ps.name = p->name;
-      ps.kind = "input_param";
-      ps.type_str = p->type.to_string();
-      ps.autotuner_name = rt.name;
-      symbols.push_back(std::move(ps));
-    }
-    for (const auto &p : rt.output_params) {
-      Symbol ps;
-      ps.name = p->name;
-      ps.kind = "output_param";
-      ps.type_str = p->type.to_string();
-      ps.autotuner_name = rt.name;
-      symbols.push_back(std::move(ps));
-    }
+    analyze_routine(rt, rt.name);
+  }
+
+  for (const auto &path : program.imports) {
+    Symbol s;
+    s.name = path;
+    s.kind = "import";
+    s.type_str = "import";
+    symbols.push_back(std::move(s));
+    import_paths.push_back(path);
+  }
+
+  for (const auto &ffi : program.ff_imports) {
+    Symbol s;
+    s.name = ffi.wrapper_file;
+    s.kind = "ffimport";
+    s.type_str = "ffimport";
+    symbols.push_back(std::move(s));
+    ffimport_paths.push_back(ffi.wrapper_file);
   }
 }
 
@@ -130,6 +166,29 @@ void TypeChecker::analyze_stmt(const falcon::atc::Stmt &stmt,
     for (const auto &s : ifs->else_body) {
       analyze_stmt(*s, autotuner_name, state_name);
     }
+  }
+}
+
+void TypeChecker::analyze_routine(const falcon::atc::RoutineDecl &rt,
+                                  const std::string &parent_name) {
+  for (const auto &p : rt.input_params) {
+    Symbol s;
+    s.name = p->name;
+    s.kind = "input_param";
+    s.type_str = p->type.to_string();
+    s.autotuner_name = parent_name;
+    symbols.push_back(std::move(s));
+  }
+  for (const auto &p : rt.output_params) {
+    Symbol s;
+    s.name = p->name;
+    s.kind = "output_param";
+    s.type_str = p->type.to_string();
+    s.autotuner_name = parent_name;
+    symbols.push_back(std::move(s));
+  }
+  for (const auto &stmt : rt.body) {
+    analyze_stmt(*stmt, parent_name, "");
   }
 }
 
