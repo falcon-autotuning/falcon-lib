@@ -121,6 +121,13 @@ ControlFlow StmtExecutor::exec_var_decl(const atc::VarDeclStmt &stmt) {
     case atc::ParamType::Error:
       initial_value = nullptr; // nil
       break;
+    case atc::ParamType::Array: {
+      std::string elem_type_name =
+          stmt.type.element_type ? stmt.type.element_type->to_string() : "";
+      initial_value =
+          std::make_shared<typing::ArrayValue>(std::move(elem_type_name));
+      break;
+    }
     default:
       // Other types don't have default values
       throw EvaluationError("Type requires explicit initialization: " +

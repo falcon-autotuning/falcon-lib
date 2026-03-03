@@ -98,6 +98,12 @@ inline PackedParams pack_params(const ParameterMap &params) {
                 delete static_cast<SP *>(p);
               };
             } else if constexpr (std::is_same_v<
+                                     SP, std::shared_ptr<ArrayValue>>) {
+              e.value.opaque.type_name = "ArrayValue";
+              e.value.opaque.deleter = [](void *p) {
+                delete static_cast<SP *>(p);
+              };
+            } else if constexpr (std::is_same_v<
                                      SP, std::shared_ptr<StructInstance>>) {
               if (val && val->is_native()) {
                 e.value.opaque.ptr = val->native_handle->get();
@@ -169,6 +175,12 @@ inline FunctionResult unpack_results(FalconResultSlot *slots, int32_t count) {
       RuntimeValue rv = nullptr;
       if (tn == "TupleValue") {
         using SP = std::shared_ptr<TupleValue>;
+        rv = *static_cast<SP *>(ptr);
+        if (del != nullptr) {
+          del(ptr);
+        }
+      } else if (tn == "ArrayValue") {
+        using SP = std::shared_ptr<ArrayValue>;
         rv = *static_cast<SP *>(ptr);
         if (del != nullptr) {
           del(ptr);
@@ -248,6 +260,9 @@ inline ParameterMap unpack_params(const FalconParamEntry *entries,
         result[key] = *static_cast<SP *>(ptr);
       } else if (tn == "TupleValue") {
         using SP = std::shared_ptr<TupleValue>;
+        result[key] = *static_cast<SP *>(ptr);
+      } else if (tn == "ArrayValue") {
+        using SP = std::shared_ptr<ArrayValue>;
         result[key] = *static_cast<SP *>(ptr);
       } else if (tn == "ErrorObject") {
         using SP = std::shared_ptr<ErrorObject>;
@@ -338,6 +353,9 @@ inline void pack_results(const FunctionResult &result, FalconResultSlot *slots,
             s.value.opaque.ptr = heap_sp;
             if constexpr (std::is_same_v<SP, std::shared_ptr<TupleValue>>) {
               s.value.opaque.type_name = "TupleValue";
+            } else if constexpr (std::is_same_v<
+                                     SP, std::shared_ptr<ArrayValue>>) {
+              s.value.opaque.type_name = "ArrayValue";
             } else if constexpr (std::is_same_v<
                                      SP, std::shared_ptr<StructInstance>>) {
               s.value.opaque.type_name = "StructInstance";

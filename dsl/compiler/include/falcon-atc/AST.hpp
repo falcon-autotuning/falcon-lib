@@ -39,6 +39,8 @@ enum class ParamType : std::uint8_t {
   Union,
   Struct, // User-defined struct type; name stored in
           // TypeDescriptor::struct_name
+  Array,  // Generic array type; element type stored in
+          // TypeDescriptor::element_type
   Connection,
   Connections,
   Quantity,
@@ -69,6 +71,8 @@ inline std::string to_string(ParamType type) {
     return "void";
   case ParamType::Struct:
     return "struct";
+  case ParamType::Array:
+    return "Array";
   case ParamType::Connection:
     return "Connection";
   case ParamType::Connections:
@@ -116,6 +120,8 @@ struct TypeDescriptor {
   std::vector<TypeDescriptor> union_types; // For union types
   // For struct types: the name of the user-defined struct
   std::string struct_name;
+  // For array types: the element type (e.g. int for Array[int])
+  std::shared_ptr<TypeDescriptor> element_type;
 
   // Simple type constructor
   explicit TypeDescriptor(ParamType t) : base_type(t) {}
@@ -139,9 +145,17 @@ struct TypeDescriptor {
     return desc;
   }
 
+  // Array type constructor — use for generic array types (e.g. Array[int])
+  static TypeDescriptor make_array(TypeDescriptor elem) {
+    TypeDescriptor desc(ParamType::Array);
+    desc.element_type = std::make_shared<TypeDescriptor>(std::move(elem));
+    return desc;
+  }
+
   [[nodiscard]] bool is_struct() const {
     return base_type == ParamType::Struct;
   }
+  [[nodiscard]] bool is_array() const { return base_type == ParamType::Array; }
   TypeDescriptor(const TypeDescriptor &) = default;
   TypeDescriptor &operator=(const TypeDescriptor &) = default;
   static TypeDescriptor make_union(std::vector<TypeDescriptor> types) {
@@ -188,6 +202,10 @@ struct TypeDescriptor {
     if (is_struct()) {
       return struct_name;
     }
+    if (is_array()) {
+      return "Array[" +
+             (element_type ? element_type->to_string() : "?") + "]";
+    }
     return falcon::atc::to_string(base_type);
   }
 
@@ -217,6 +235,12 @@ struct TypeDescriptor {
         }
       }
       return true;
+    }
+    if (is_array()) {
+      if (!element_type || !other.element_type) {
+        return element_type == other.element_type;
+      }
+      return *element_type == *other.element_type;
     }
     // Error variants are considered compatible (Error == FatalError for type
     // checking) Specific variant checking happens at runtime

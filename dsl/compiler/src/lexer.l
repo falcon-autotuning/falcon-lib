@@ -45,6 +45,7 @@ using namespace falcon::atc;
 "bool"          { return Parser::make_BOOL_KW(*loc); }
 "string"        { return Parser::make_STRING_KW(*loc); }
 "Error"         { return Parser::make_ERROR_KW(*loc); }
+"Array"         { return Parser::make_ARRAY_KW(*loc); }
 
 "->"            { return Parser::make_ARROW(*loc); }
 "["             { return Parser::make_LBRACKET(*loc); }

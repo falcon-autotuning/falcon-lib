@@ -123,7 +123,7 @@
 %token AUTOTUNER ROUTINE STATE IMPORT FFIMPORT START USES TERMINAL
 %token IF ELIF ELSE STRUCT THIS
 %token <std::string> IDENTIFIER STRING INTEGER DOUBLE
-%token INT_KW FLOAT_KW BOOL_KW STRING_KW ERROR_KW
+%token INT_KW FLOAT_KW BOOL_KW STRING_KW ERROR_KW ARRAY_KW
 %token TRUE FALSE NIL
 %token ARROW ASSIGN SEMICOLON COMMA DOT
 %token LBRACE RBRACE LPAREN RPAREN LBRACKET RBRACKET
@@ -567,6 +567,8 @@ type_spec[result]
       { $result = std::make_unique<TypeDescriptor>(ParamType::String); }
     | ERROR_KW         
       { $result = std::make_unique<TypeDescriptor>(ParamType::Error, "Error"); }
+    | ARRAY_KW LBRACKET type_spec[elem] RBRACKET
+      { $result = std::make_unique<TypeDescriptor>(TypeDescriptor::make_array(std::move(*$elem))); }
     | qualified_name[name]
       {
         // Allow plain struct names OR module-registered struct names.

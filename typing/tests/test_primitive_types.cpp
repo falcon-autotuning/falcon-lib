@@ -298,3 +298,148 @@ TEST(PrimitiveTypesTest, ToStringNilStruct) {
   RuntimeValue v = std::shared_ptr<StructInstance>{nullptr};
   EXPECT_EQ(runtime_value_to_string(v), "<StructInstance:nil>");
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tests: ArrayValue — FFI round-trip
+// ─────────────────────────────────────────────────────────────────────────────
+
+TEST_F(FfiRoundTripTest, EmptyIntArrayRoundTrip) {
+  auto arr = std::make_shared<ArrayValue>("int");
+
+  ParameterMap params;
+  params["arr"] = arr;
+
+  auto result = round_trip(params);
+  ASSERT_EQ(result.size(), 1u);
+  ASSERT_TRUE(std::holds_alternative<std::shared_ptr<ArrayValue>>(result[0]));
+
+  auto out = std::get<std::shared_ptr<ArrayValue>>(result[0]);
+  ASSERT_NE(out, nullptr);
+  EXPECT_EQ(out->element_type_name, "int");
+  EXPECT_EQ(out->size(), 0u);
+}
+
+TEST_F(FfiRoundTripTest, IntArrayRoundTrip) {
+  auto arr = std::make_shared<ArrayValue>("int");
+  arr->elements.push_back(int64_t{1});
+  arr->elements.push_back(int64_t{2});
+  arr->elements.push_back(int64_t{3});
+
+  ParameterMap params;
+  params["arr"] = arr;
+
+  auto result = round_trip(params);
+  ASSERT_EQ(result.size(), 1u);
+  ASSERT_TRUE(std::holds_alternative<std::shared_ptr<ArrayValue>>(result[0]));
+
+  auto out = std::get<std::shared_ptr<ArrayValue>>(result[0]);
+  ASSERT_NE(out, nullptr);
+  EXPECT_EQ(out->element_type_name, "int");
+  ASSERT_EQ(out->size(), 3u);
+  EXPECT_EQ(std::get<int64_t>((*out)[0]), 1);
+  EXPECT_EQ(std::get<int64_t>((*out)[1]), 2);
+  EXPECT_EQ(std::get<int64_t>((*out)[2]), 3);
+}
+
+TEST_F(FfiRoundTripTest, FloatArrayRoundTrip) {
+  auto arr = std::make_shared<ArrayValue>("float");
+  arr->elements.push_back(double{1.1});
+  arr->elements.push_back(double{2.2});
+
+  ParameterMap params;
+  params["arr"] = arr;
+
+  auto result = round_trip(params);
+  ASSERT_EQ(result.size(), 1u);
+  ASSERT_TRUE(std::holds_alternative<std::shared_ptr<ArrayValue>>(result[0]));
+
+  auto out = std::get<std::shared_ptr<ArrayValue>>(result[0]);
+  ASSERT_NE(out, nullptr);
+  EXPECT_EQ(out->element_type_name, "float");
+  ASSERT_EQ(out->size(), 2u);
+  EXPECT_DOUBLE_EQ(std::get<double>((*out)[0]), 1.1);
+  EXPECT_DOUBLE_EQ(std::get<double>((*out)[1]), 2.2);
+}
+
+TEST_F(FfiRoundTripTest, StringArrayRoundTrip) {
+  auto arr = std::make_shared<ArrayValue>("string");
+  arr->elements.push_back(std::string{"hello"});
+  arr->elements.push_back(std::string{"world"});
+
+  ParameterMap params;
+  params["arr"] = arr;
+
+  auto result = round_trip(params);
+  ASSERT_EQ(result.size(), 1u);
+  ASSERT_TRUE(std::holds_alternative<std::shared_ptr<ArrayValue>>(result[0]));
+
+  auto out = std::get<std::shared_ptr<ArrayValue>>(result[0]);
+  ASSERT_NE(out, nullptr);
+  EXPECT_EQ(out->element_type_name, "string");
+  ASSERT_EQ(out->size(), 2u);
+  EXPECT_EQ(std::get<std::string>((*out)[0]), "hello");
+  EXPECT_EQ(std::get<std::string>((*out)[1]), "world");
+}
+
+TEST_F(FfiRoundTripTest, BoolArrayRoundTrip) {
+  auto arr = std::make_shared<ArrayValue>("bool");
+  arr->elements.push_back(bool{true});
+  arr->elements.push_back(bool{false});
+  arr->elements.push_back(bool{true});
+
+  ParameterMap params;
+  params["arr"] = arr;
+
+  auto result = round_trip(params);
+  ASSERT_EQ(result.size(), 1u);
+  ASSERT_TRUE(std::holds_alternative<std::shared_ptr<ArrayValue>>(result[0]));
+
+  auto out = std::get<std::shared_ptr<ArrayValue>>(result[0]);
+  ASSERT_NE(out, nullptr);
+  EXPECT_EQ(out->element_type_name, "bool");
+  ASSERT_EQ(out->size(), 3u);
+  EXPECT_TRUE(std::get<bool>((*out)[0]));
+  EXPECT_FALSE(std::get<bool>((*out)[1]));
+  EXPECT_TRUE(std::get<bool>((*out)[2]));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tests: get_runtime_type_name for ArrayValue
+// ─────────────────────────────────────────────────────────────────────────────
+
+TEST(PrimitiveTypesTest, TypeNameIntArray) {
+  RuntimeValue v = std::make_shared<ArrayValue>("int");
+  EXPECT_EQ(get_runtime_type_name(v), "Array[int]");
+}
+
+TEST(PrimitiveTypesTest, TypeNameFloatArray) {
+  RuntimeValue v = std::make_shared<ArrayValue>("float");
+  EXPECT_EQ(get_runtime_type_name(v), "Array[float]");
+}
+
+TEST(PrimitiveTypesTest, TypeNameNilArray) {
+  RuntimeValue v = std::shared_ptr<ArrayValue>{nullptr};
+  EXPECT_EQ(get_runtime_type_name(v), "Array");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tests: runtime_value_to_string for ArrayValue
+// ─────────────────────────────────────────────────────────────────────────────
+
+TEST(PrimitiveTypesTest, ToStringEmptyArray) {
+  RuntimeValue v = std::make_shared<ArrayValue>("int");
+  EXPECT_EQ(runtime_value_to_string(v), "[]");
+}
+
+TEST(PrimitiveTypesTest, ToStringIntArray) {
+  auto arr = std::make_shared<ArrayValue>("int");
+  arr->elements.push_back(int64_t{1});
+  arr->elements.push_back(int64_t{2});
+  RuntimeValue v = arr;
+  EXPECT_EQ(runtime_value_to_string(v), "[1, 2]");
+}
+
+TEST(PrimitiveTypesTest, ToStringNilArray) {
+  RuntimeValue v = std::shared_ptr<ArrayValue>{nullptr};
+  EXPECT_EQ(runtime_value_to_string(v), "[nil]");
+}
