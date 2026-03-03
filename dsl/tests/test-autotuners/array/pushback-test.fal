@@ -6,7 +6,7 @@ autotuner PushbackTest (Array<int> arr, int push_val) -> (int last_element) {
     start -> run;
 
     state run {
-        arr.pushback(value = push_val);
+        arr.pushback(push_val);
         last_element = arr[arr.size() -1];
         terminal;
     }
