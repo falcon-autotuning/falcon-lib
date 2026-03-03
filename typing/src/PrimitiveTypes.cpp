@@ -24,6 +24,13 @@ std::string get_runtime_type_name(const RuntimeValue &value) {
   if (std::holds_alternative<std::shared_ptr<StructInstance>>(value)) {
     return "StructInstance";
   }
+  if (std::holds_alternative<std::shared_ptr<ArrayValue>>(value)) {
+    const auto &arrPtr = std::get<std::shared_ptr<ArrayValue>>(value);
+    if (arrPtr) {
+      return "Array[" + arrPtr->element_type_name + "]";
+    }
+    return "Array";
+  }
   if (std::holds_alternative<std::nullptr_t>(value)) {
     return "nil";
   }
@@ -71,6 +78,21 @@ std::string runtime_value_to_string(const RuntimeValue &value) {
       return "<StructInstance:nil>";
     }
     return "<StructInstance:" + structPtr->type_name + ">";
+  }
+  if (std::holds_alternative<std::shared_ptr<ArrayValue>>(value)) {
+    const auto &arrPtr = std::get<std::shared_ptr<ArrayValue>>(value);
+    if (!arrPtr) {
+      return "[nil]";
+    }
+    std::string result = "[";
+    for (size_t i = 0; i < arrPtr->elements.size(); ++i) {
+      if (i > 0) {
+        result += ", ";
+      }
+      result += runtime_value_to_string(arrPtr->elements[i]);
+    }
+    result += "]";
+    return result;
   }
   return "<object:" + get_runtime_type_name(value) + ">";
 }

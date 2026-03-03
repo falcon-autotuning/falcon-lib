@@ -501,8 +501,32 @@ typing::RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
   auto object = evaluate(*expr.object);
   auto index = evaluate(*expr.index);
 
-  // TODO: Implement indexing for array-like types (Connections, etc.)
-  throw EvaluationError("Indexing not yet implemented");
+  if (std::holds_alternative<std::shared_ptr<typing::ArrayValue>>(object)) {
+    const auto &arrPtr =
+        std::get<std::shared_ptr<typing::ArrayValue>>(object);
+    if (!arrPtr) {
+      throw EvaluationError("Cannot index into a nil Array");
+    }
+    if (!std::holds_alternative<int64_t>(index)) {
+      throw EvaluationError("Array index must be an integer, got: " +
+                            get_runtime_type_name(index));
+    }
+    int64_t idx = std::get<int64_t>(index);
+    if (idx < 0) {
+      throw EvaluationError("Array index must be non-negative, got: " +
+                            std::to_string(idx));
+    }
+    if (static_cast<size_t>(idx) >= arrPtr->size()) {
+      throw EvaluationError("Array index out of bounds: " +
+                            std::to_string(idx) +
+                            " (size=" + std::to_string(arrPtr->size()) + ")");
+    }
+    return (*arrPtr)[static_cast<size_t>(idx)];
+  }
+
+  // TODO: Implement indexing for other collection types (Connections, etc.)
+  throw EvaluationError("Indexing not supported for type: " +
+                        get_runtime_type_name(object));
 }
 
 typing::RuntimeValue ExprEvaluator::eval_call(const atc::CallExpr &expr) {

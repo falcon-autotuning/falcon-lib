@@ -13,6 +13,7 @@ namespace falcon::typing {
 // Forward declarations
 struct TupleValue;
 struct StructInstance;
+struct ArrayValue;
 
 struct ErrorObject {
   std::string message;
@@ -34,7 +35,8 @@ struct ErrorObject {
 using RuntimeValue =
     std::variant<int64_t, double, bool, std::string, std::nullptr_t,
                  ErrorObject, std::shared_ptr<TupleValue>,
-                 std::shared_ptr<StructInstance>>;
+                 std::shared_ptr<StructInstance>,
+                 std::shared_ptr<ArrayValue>>;
 
 struct TupleValue {
   std::vector<RuntimeValue> values;
@@ -104,6 +106,34 @@ struct StructInstance {
 
 using ParameterMap = std::map<std::string, RuntimeValue>;
 using FunctionResult = std::vector<RuntimeValue>;
+
+/**
+ * @brief A generic, dynamically-typed array of RuntimeValues.
+ *
+ * Array is the first "generic" type: you can have an Array of int,
+ * Array of float, Array of string, etc. The element_type_name field
+ * records the declared element type (e.g. "int", "float") for
+ * serialization and type-checking purposes.
+ */
+struct ArrayValue {
+  std::string element_type_name; // e.g. "int", "float", "string"
+  std::vector<RuntimeValue> elements;
+
+  ArrayValue() = default;
+  explicit ArrayValue(std::string elem_type)
+      : element_type_name(std::move(elem_type)) {}
+  ArrayValue(std::string elem_type, std::vector<RuntimeValue> elems)
+      : element_type_name(std::move(elem_type)), elements(std::move(elems)) {}
+
+  bool operator==(const ArrayValue &other) const {
+    return element_type_name == other.element_type_name &&
+           elements == other.elements;
+  }
+  bool operator!=(const ArrayValue &other) const { return !(*this == other); }
+  [[nodiscard]] size_t size() const { return elements.size(); }
+  RuntimeValue &operator[](size_t idx) { return elements[idx]; }
+  const RuntimeValue &operator[](size_t idx) const { return elements[idx]; }
+};
 
 /**
  * @brief Signature for FFI struct instance methods.
