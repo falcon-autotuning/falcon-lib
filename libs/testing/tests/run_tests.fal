@@ -1,30 +1,94 @@
-import "test_self.fal"
+import "../testing.fal";
 
-// RunAllTests exercises one representative assertion inline.
-// Autotuners cannot be called as sub-routines in Falcon, so each test
-// is inlined here using TestContext directly rather than delegating to the
-// autotuners defined in test_self.fal.
 autotuner RunAllTests -> (int passed, int failed) {
   passed = 0;
   failed = 0;
-
   start -> run_expect_true_pass;
 
+// ─── Test 1: basic pass ───────────────────────────────────────────────────────
   state run_expect_true_pass {
     TestContext t = TestContext.New("ExpectTrue-pass");
-    t.ExpectTrue(true, "true should pass");
+    Error err = t.ExpectTrue(true, "true should pass");
     bool p = t.Passed();
-    if (p) -> inc_passed;
-    else -> inc_failed;
+    if (p) { passed = passed + 1; } else { failed = failed + 1; }
+    -> run_expect_true_fail;
   }
 
-  state inc_passed {
-    passed = passed + 1;
-    -> done;
+// ─── Test 2: basic fail ───────────────────────────────────────────────────────
+  state run_expect_true_fail {
+    TestContext t = TestContext.New("ExpectTrue-fail");
+    Error err = t.ExpectTrue(false, "false should record failure");
+    int fc = t.FailureCount();
+    if (fc > 0) { passed = passed + 1; } else { failed = failed + 1; }
+    -> run_int_eq_pass;
   }
 
-  state inc_failed {
-    failed = failed + 1;
+// ─── Test 3: IntEq pass ───────────────────────────────────────────────────────
+  state run_int_eq_pass {
+    TestContext t = TestContext.New("IntEq-pass");
+    Error err = t.ExpectIntEq(42, 42, "42 == 42");
+    bool p = t.Passed();
+    if (p) { passed = passed + 1; } else { failed = failed + 1; }
+    -> run_int_eq_fail;
+  }
+
+// ─── Test 4: IntEq fail ───────────────────────────────────────────────────────
+  state run_int_eq_fail {
+    TestContext t = TestContext.New("IntEq-fail");
+    Error err = t.ExpectIntEq(1, 2, "1 != 2 should fail");
+    int fc = t.FailureCount();
+    if (fc > 0) { passed = passed + 1; } else { failed = failed + 1; }
+    -> run_suite_aggregation;
+  }
+
+// ─── Test 5: Suite aggregation ────────────────────────────────────────────────
+  state run_suite_aggregation {
+    TestSuite suite = TestSuite.New("aggregate-suite");
+    TestContext t1 = TestContext.New("pass-test");
+    Error err = t1.ExpectTrue(true, "should pass");
+    TestContext t2 = TestContext.New("fail-test");
+    err = t2.ExpectTrue(false, "should fail");
+    err = suite.AddResult(t1);
+    err = suite.AddResult(t2);
+    int total = suite.TotalCount();
+    int passed_count = suite.PassedCount();
+    int failed_count = suite.FailedCount();
+    err = suite.PrintSummary();
+    if (passed_count == 1 && failed_count == 1) { passed = passed + 1; } else { failed = failed + 1; }
+    -> run_float_eq;
+  }
+
+// ─── Test 6: Float equality ───────────────────────────────────────────────────
+  state run_float_eq {
+    TestContext t = TestContext.New("FloatEq");
+    Error err = t.ExpectFloatEq(3.14, 3.14, 0.001, "pi == pi within tol");
+    bool p = t.Passed();
+    if (p) { passed = passed + 1; } else { failed = failed + 1; }
+    -> run_str_eq;
+  }
+
+// ─── Test 7: String equality ──────────────────────────────────────────────────
+  state run_str_eq {
+    TestContext t = TestContext.New("StrEq");
+    Error err = t.ExpectStrEq("hello", "hello", "same string");
+    bool p = t.Passed();
+    if (p) { passed = passed + 1; } else { failed = failed + 1; }
+    -> run_fixture_pattern;
+  }
+
+// ─── Test 8: Fixture pattern ──────────────────────────────────────────────────
+// Demonstrates the "fixture" idiom: a shared TestContext is passed through
+// multiple states (simulating setup → test → teardown).
+  state run_fixture_pattern {
+    TestContext ctx = TestContext.New("fixture-pattern");
+    Error err = ctx.Log("fixture: setup complete");
+    err = ctx.ExpectIntEq(1, 1, "step 1: 1==1");
+    err = ctx.Log("fixture: step one done");
+    err = ctx.ExpectStrEq("falcon", "falcon", "step 2: strings match");
+    err = ctx.Log("fixture: step two done");
+    err = ctx.Log("fixture: teardown");
+    bool all_passed = ctx.Passed();
+    if (all_passed) { passed = passed + 1; } else { failed = failed + 1; }
     -> done;
   }
 
