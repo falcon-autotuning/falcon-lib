@@ -17,10 +17,10 @@ autotuner Calculator (int a, int b) -> (int sum) {
   (autotuner_decl
     name: (identifier)
     inputs: (param_list
-      (param_decl type: (type) name: (identifier))
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier))
+      (param_decl type: (type (identifier)) name: (identifier)))
     outputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     (assign_stmt
       targets: (identifier)
       value: (expr (primary_expr (int_literal))))
@@ -51,9 +51,9 @@ routine MyRoutine (int x) -> (float y)
   (routine_decl
     name: (identifier)
     inputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     outputs: (param_list
-      (param_decl type: (type) name: (identifier)))))
+      (param_decl type: (type (identifier)) name: (identifier)))))
 ================================================================================
 Comments
 ================================================================================
@@ -70,9 +70,9 @@ autotuner Foo (int x) -> (int y) {
   (autotuner_decl
     name: (identifier)
     inputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     outputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     entry: (entry_stmt target: (identifier) next: (identifier))
     (state_decl
       name: (identifier)
@@ -101,9 +101,9 @@ autotuner Branchy (int x) -> (int y) {
   (autotuner_decl
     name: (identifier)
     inputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     outputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     entry: (entry_stmt target: (identifier) next: (identifier))
     (state_decl
       name: (identifier)
@@ -141,7 +141,7 @@ autotuner WithDeps () -> (int result) {
     name: (identifier)
     inputs: (param_list)
     outputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     (requires_clause
       (qualified_name symbol: (identifier))
       (qualified_name symbol: (identifier)))
@@ -163,14 +163,14 @@ autotuner Scoped (int x) -> (int out) {
   (autotuner_decl
     name: (identifier)
     inputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     outputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     (autotuner_var_decl
-      type: (type)
+      type: (type (identifier))
       name: (identifier))
     (autotuner_var_decl
-      type: (type)
+      type: (type (identifier))
       name: (identifier)
       init: (expr (primary_expr (int_literal))))
     entry: (entry_stmt target: (identifier) next: (identifier))
@@ -193,19 +193,19 @@ autotuner StateScopedVars (int x) -> (int out) {
   (autotuner_decl
     name: (identifier)
     inputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     outputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     entry: (entry_stmt target: (identifier) next: (identifier))
     (state_decl
       name: (identifier)
       (stmt
         (var_decl_stmt
-          type: (type)
+          type: (type (identifier))
           name: (identifier)))
       (stmt
         (var_decl_stmt
-          type: (type)
+          type: (type (identifier))
           name: (identifier)
           init: (expr (primary_expr (int_literal)))))
       (stmt (terminal_stmt)))))
@@ -223,14 +223,14 @@ autotuner WithStateParams (int x) -> (int out) {
   (autotuner_decl
     name: (identifier)
     inputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     outputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     entry: (entry_stmt target: (identifier) next: (identifier))
     (state_decl
       name: (identifier)
       params: (param_list
-        (param_decl type: (type) name: (identifier)))
+        (param_decl type: (type (identifier)) name: (identifier)))
       (stmt (terminal_stmt)))))
 ================================================================================
 Single import statement
@@ -281,15 +281,15 @@ struct Quantity {
     (struct_routine_decl
       name: (identifier)
       inputs: (param_list
-        (param_decl type: (type) name: (identifier))
-        (param_decl type: (type) name: (identifier)))
+        (param_decl type: (type (identifier)) name: (identifier))
+        (param_decl type: (type (identifier)) name: (identifier)))
       outputs: (param_list
-        (param_decl type: (type) name: (identifier))))
+        (param_decl type: (type (identifier)) name: (identifier))))
     (struct_routine_decl
       name: (identifier)
       inputs: (param_list)
       outputs: (param_list
-        (param_decl type: (type) name: (identifier))))))
+        (param_decl type: (type (identifier)) name: (identifier))))))
 ================================================================================
 Struct declaration with field declarations
 ================================================================================
@@ -303,19 +303,19 @@ struct Point {
   (struct_decl
     name: (identifier)
     (struct_field_decl
-      type: (type)
+      type: (type (identifier))
       name: (identifier))
     (struct_field_decl
-      type: (type)
+      type: (type (identifier))
       name: (identifier)
       default: (expr (primary_expr (int_literal))))
     (struct_routine_decl
       name: (identifier)
       inputs: (param_list
-        (param_decl type: (type) name: (identifier))
-        (param_decl type: (type) name: (identifier)))
+        (param_decl type: (type (identifier)) name: (identifier))
+        (param_decl type: (type (identifier)) name: (identifier)))
       outputs: (param_list
-        (param_decl type: (type) name: (identifier))))))
+        (param_decl type: (type (identifier)) name: (identifier))))))
 ================================================================================
 Uses clause with module-qualified name
 ================================================================================
@@ -330,7 +330,7 @@ autotuner ModuleUser () -> (int out) {
     name: (identifier)
     inputs: (param_list)
     outputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     (requires_clause
       (qualified_name module: (identifier) symbol: (identifier)))
     entry: (entry_stmt target: (identifier) next: (identifier))
@@ -352,9 +352,9 @@ autotuner QualExpr (int x) -> (int y) {
   (autotuner_decl
     name: (identifier)
     inputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     outputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     entry: (entry_stmt target: (identifier) next: (identifier))
     (state_decl
       name: (identifier)
@@ -393,22 +393,22 @@ autotuner UseStruct (int a, int b) -> (int sum) {
     (struct_routine_decl
       name: (identifier)
       inputs: (param_list
-        (param_decl type: (type) name: (identifier))
-        (param_decl type: (type) name: (identifier)))
+        (param_decl type: (type (identifier)) name: (identifier))
+        (param_decl type: (type (identifier)) name: (identifier)))
       outputs: (param_list
-        (param_decl type: (type) name: (identifier))))
+        (param_decl type: (type (identifier)) name: (identifier))))
     (struct_routine_decl
       name: (identifier)
       inputs: (param_list)
       outputs: (param_list
-        (param_decl type: (type) name: (identifier)))))
+        (param_decl type: (type (identifier)) name: (identifier)))))
   (autotuner_decl
     name: (identifier)
     inputs: (param_list
-      (param_decl type: (type) name: (identifier))
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier))
+      (param_decl type: (type (identifier)) name: (identifier)))
     outputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     (assign_stmt
       targets: (identifier)
       value: (expr (primary_expr (int_literal))))
@@ -419,7 +419,7 @@ autotuner UseStruct (int a, int b) -> (int sum) {
       name: (identifier)
       (stmt
         (var_decl_stmt
-          type: (type)
+          type: (type (identifier))
           name: (identifier)
           init: (expr
             (method_call_expr
@@ -498,8 +498,8 @@ autotuner FatalOtherError() -> (bool completed, Error err) {
   (autotuner_decl
     name: (identifier)
     outputs: (param_list
-      (param_decl type: (type) name: (identifier))
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier))
+      (param_decl type: (type (identifier)) name: (identifier)))
     (requires_clause
       (qualified_name symbol: (identifier))
       (qualified_name symbol: (identifier)))
@@ -524,7 +524,7 @@ autotuner FatalOtherError() -> (bool completed, Error err) {
       name: (identifier)
       (stmt
         (var_decl_stmt
-          type: (type)
+          type: (type (identifier))
           name: (identifier)
           init: (expr (primary_expr (nil_literal))))
       )
@@ -543,7 +543,7 @@ autotuner FatalOtherError() -> (bool completed, Error err) {
   (autotuner_decl
     name: (identifier)
     outputs: (param_list
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier)))
     (assign_stmt
       targets: (identifier)
       value: (expr (primary_expr (bool_literal))))
@@ -555,8 +555,8 @@ autotuner FatalOtherError() -> (bool completed, Error err) {
     name: (identifier)
     inputs: (param_list)
     outputs: (param_list
-      (param_decl type: (type) name: (identifier))
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier))
+      (param_decl type: (type (identifier)) name: (identifier)))
     (assign_stmt
       targets: (identifier)
       value: (expr (primary_expr (bool_literal))))
@@ -600,14 +600,14 @@ struct Quantity {
 (program
   (struct_decl
     name: (identifier)
-    (struct_field_decl type: (type) name: (identifier))
-    (struct_field_decl type: (type) name: (identifier)
+    (struct_field_decl type: (type (identifier)) name: (identifier))
+    (struct_field_decl type: (type (identifier)) name: (identifier)
       default: (expr (primary_expr (int_literal))))
     (comment)
     (struct_routine_decl
       name: (identifier)
-      inputs: (param_list (param_decl type: (type) name: (identifier)))
-      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      inputs: (param_list (param_decl type: (type (identifier)) name: (identifier)))
+      outputs: (param_list (param_decl type: (type (identifier)) name: (identifier)))
       body: (struct_routine_body
               (struct_routine_stmt
                 (struct_field_assign_stmt
@@ -620,9 +620,9 @@ struct Quantity {
     (struct_routine_decl
       name: (identifier)
       inputs: (param_list
-        (param_decl type: (type) name: (identifier))
-        (param_decl type: (type) name: (identifier)))
-      outputs: (param_list (param_decl type: (type) name: (identifier)))
+        (param_decl type: (type (identifier)) name: (identifier))
+        (param_decl type: (type (identifier)) name: (identifier)))
+      outputs: (param_list (param_decl type: (type (identifier)) name: (identifier)))
       body: (struct_routine_body
               (struct_routine_stmt
                 (struct_field_assign_stmt
@@ -642,7 +642,7 @@ struct Quantity {
                         symbol: (identifier))))))))
     (struct_routine_decl
       name: (identifier)
-      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      outputs: (param_list (param_decl type: (type (identifier)) name: (identifier)))
       body: (struct_routine_body
               (struct_routine_stmt
                 (assign_stmt
@@ -654,7 +654,7 @@ struct Quantity {
                       member: (identifier)))))))
     (struct_routine_decl
       name: (identifier)
-      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      outputs: (param_list (param_decl type: (type (identifier)) name: (identifier)))
       body: (struct_routine_body
               (struct_routine_stmt
                 (assign_stmt
@@ -711,14 +711,14 @@ autotuner QuantityStruct (int a, int b) -> (int sum, int other_sum) {
 (program
   (struct_decl
     name: (identifier)
-    (struct_field_decl type: (type) name: (identifier))
-    (struct_field_decl type: (type) name: (identifier)
+    (struct_field_decl type: (type (identifier)) name: (identifier))
+    (struct_field_decl type: (type (identifier)) name: (identifier)
       default: (expr (primary_expr (int_literal))))
     (comment)
     (struct_routine_decl
       name: (identifier)
-      inputs: (param_list (param_decl type: (type) name: (identifier)))
-      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      inputs: (param_list (param_decl type: (type (identifier)) name: (identifier)))
+      outputs: (param_list (param_decl type: (type (identifier)) name: (identifier)))
       body: (struct_routine_body
               (struct_routine_stmt
                 (struct_field_assign_stmt
@@ -731,9 +731,9 @@ autotuner QuantityStruct (int a, int b) -> (int sum, int other_sum) {
     (struct_routine_decl
       name: (identifier)
       inputs: (param_list
-        (param_decl type: (type) name: (identifier))
-        (param_decl type: (type) name: (identifier)))
-      outputs: (param_list (param_decl type: (type) name: (identifier)))
+        (param_decl type: (type (identifier)) name: (identifier))
+        (param_decl type: (type (identifier)) name: (identifier)))
+      outputs: (param_list (param_decl type: (type (identifier)) name: (identifier)))
       body: (struct_routine_body
               (struct_routine_stmt
                 (struct_field_assign_stmt
@@ -753,7 +753,7 @@ autotuner QuantityStruct (int a, int b) -> (int sum, int other_sum) {
                         symbol: (identifier))))))))
     (struct_routine_decl
       name: (identifier)
-      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      outputs: (param_list (param_decl type: (type (identifier)) name: (identifier)))
       body: (struct_routine_body
               (struct_routine_stmt
                 (assign_stmt
@@ -764,7 +764,7 @@ autotuner QuantityStruct (int a, int b) -> (int sum, int other_sum) {
                         symbol: (identifier))))))))
     (struct_routine_decl
       name: (identifier)
-      outputs: (param_list (param_decl type: (type) name: (identifier)))
+      outputs: (param_list (param_decl type: (type (identifier)) name: (identifier)))
       body: (struct_routine_body
               (struct_routine_stmt
                 (assign_stmt
@@ -783,11 +783,11 @@ autotuner QuantityStruct (int a, int b) -> (int sum, int other_sum) {
   (autotuner_decl
     name: (identifier)
     inputs: (param_list
-      (param_decl type: (type) name: (identifier))
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier))
+      (param_decl type: (type (identifier)) name: (identifier)))
     outputs: (param_list
-      (param_decl type: (type) name: (identifier))
-      (param_decl type: (type) name: (identifier)))
+      (param_decl type: (type (identifier)) name: (identifier))
+      (param_decl type: (type (identifier)) name: (identifier)))
     (assign_stmt
       targets: (identifier)
       value: (expr (primary_expr (int_literal))))
@@ -799,7 +799,7 @@ autotuner QuantityStruct (int a, int b) -> (int sum, int other_sum) {
       name: (identifier)
       (stmt
         (var_decl_stmt
-          type: (type)
+          type: (type (identifier))
           name: (identifier)
           init: (expr
             (method_call_expr
@@ -829,7 +829,7 @@ autotuner QuantityStruct (int a, int b) -> (int sum, int other_sum) {
       )
       (stmt
         (var_decl_stmt
-          type: (type)
+          type: (type (identifier))
           name: (identifier)
           init: (expr
             (method_call_expr
