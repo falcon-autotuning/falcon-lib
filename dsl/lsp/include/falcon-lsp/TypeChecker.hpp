@@ -9,6 +9,8 @@ namespace falcon::lsp {
 class TypeChecker {
 public:
   std::vector<Symbol> symbols;
+  std::vector<std::string> import_paths;
+  std::vector<std::string> ffimport_paths;
 
   void analyze(const falcon::atc::Program &program);
 
@@ -19,6 +21,8 @@ private:
   void analyze_stmt(const falcon::atc::Stmt &stmt,
                     const std::string &autotuner_name,
                     const std::string &state_name);
+  void analyze_routine(const falcon::atc::RoutineDecl &rt,
+                       const std::string &parent_name);
 };
 
 } // namespace falcon::lsp

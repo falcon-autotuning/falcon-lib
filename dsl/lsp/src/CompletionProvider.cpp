@@ -9,6 +9,7 @@ static const std::vector<std::string> KEYWORDS = {"autotuner",
                                                   "start",
                                                   "terminal",
                                                   "if",
+                                                  "elif",
                                                   "else",
                                                   "true",
                                                   "false",
@@ -17,6 +18,10 @@ static const std::vector<std::string> KEYWORDS = {"autotuner",
                                                   "float",
                                                   "bool",
                                                   "string",
+                                                  "import",
+                                                  "ffimport",
+                                                  "struct",
+                                                  "this",
                                                   "Quantity",
                                                   "Config",
                                                   "Connection",
@@ -81,6 +86,19 @@ CompletionProvider::complete(const FalconDocument &doc,
     } else if (sym.kind == "routine") {
       item.kind =
           ::lsp::CompletionItemKindEnum{::lsp::CompletionItemKind::Function};
+    } else if (sym.kind == "struct") {
+      item.kind =
+          ::lsp::CompletionItemKindEnum{::lsp::CompletionItemKind::Struct};
+    } else if (sym.kind == "struct_field") {
+      item.kind =
+          ::lsp::CompletionItemKindEnum{::lsp::CompletionItemKind::Field};
+      item.detail = sym.type_str;
+    } else if (sym.kind == "struct_routine") {
+      item.kind =
+          ::lsp::CompletionItemKindEnum{::lsp::CompletionItemKind::Function};
+    } else if (sym.kind == "import" || sym.kind == "ffimport") {
+      item.kind =
+          ::lsp::CompletionItemKindEnum{::lsp::CompletionItemKind::Module};
     } else if (sym.kind == "input_param" || sym.kind == "output_param" ||
                sym.kind == "var") {
       item.kind =

@@ -70,6 +70,8 @@ FalconDocument FalconDocumentParser::parse(const std::string &uri,
     TypeChecker checker;
     checker.analyze(*doc.program);
     doc.symbols = std::move(checker.symbols);
+    doc.import_paths = std::move(checker.import_paths);
+    doc.ffimport_paths = std::move(checker.ffimport_paths);
   }
 
   return doc;

@@ -79,16 +79,34 @@ std::optional<::lsp::Hover> HoverProvider::hover(const FalconDocument &doc,
   for (const auto &sym : doc.symbols) {
     if (sym.name == word) {
       std::ostringstream ss;
-      ss << "**" << sym.kind << "** `" << sym.name << "`";
-      if (!sym.type_str.empty() && sym.kind != "autotuner" &&
-          sym.kind != "state" && sym.kind != "routine") {
-        ss << ": `" << sym.type_str << "`";
-      }
-      if (!sym.autotuner_name.empty()) {
-        ss << "\n\n*autotuner*: " << sym.autotuner_name;
-      }
-      if (!sym.state_name.empty()) {
-        ss << "\n\n*state*: " << sym.state_name;
+      if (sym.kind == "struct") {
+        ss << "**struct** `" << sym.name << "`";
+      } else if (sym.kind == "struct_field") {
+        ss << "**field** `" << sym.name << "`: `" << sym.type_str << "`";
+        if (!sym.autotuner_name.empty()) {
+          ss << "\n\n*struct*: **" << sym.autotuner_name << "**";
+        }
+      } else if (sym.kind == "struct_routine") {
+        ss << "**routine** `" << sym.name << "`";
+        if (!sym.autotuner_name.empty()) {
+          ss << " inside **struct** " << sym.autotuner_name;
+        }
+      } else if (sym.kind == "import") {
+        ss << "**import** `" << sym.name << "`";
+      } else if (sym.kind == "ffimport") {
+        ss << "**ffimport** `" << sym.name << "`";
+      } else {
+        ss << "**" << sym.kind << "** `" << sym.name << "`";
+        if (!sym.type_str.empty() && sym.kind != "autotuner" &&
+            sym.kind != "state" && sym.kind != "routine") {
+          ss << ": `" << sym.type_str << "`";
+        }
+        if (!sym.autotuner_name.empty()) {
+          ss << "\n\n*autotuner*: " << sym.autotuner_name;
+        }
+        if (!sym.state_name.empty()) {
+          ss << "\n\n*state*: " << sym.state_name;
+        }
       }
       ::lsp::Hover hover;
       hover.contents = ::lsp::MarkupContent{
