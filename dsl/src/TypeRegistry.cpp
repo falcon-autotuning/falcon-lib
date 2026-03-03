@@ -111,29 +111,53 @@ void TypeRegistry::register_ffi_method(const std::string &type_name,
 const typing::TypeMethod *
 TypeRegistry::lookup_method(const std::string &type_name,
                             const std::string &method_name) const {
+  // First, try the exact type name
   auto type_it = type_methods_.find(type_name);
-  if (type_it == type_methods_.end()) {
-    return nullptr;
+  if (type_it != type_methods_.end()) {
+    auto method_it = type_it->second.find(method_name);
+    if (method_it != type_it->second.end()) {
+      return &method_it->second;
+    }
   }
-  auto method_it = type_it->second.find(method_name);
-  if (method_it == type_it->second.end()) {
-    return nullptr;
+  // If not found, check for generic type (e.g., Array[int] -> Array)
+  auto lbracket = type_name.find('[');
+  if (lbracket != std::string::npos) {
+    std::string generic_type = type_name.substr(0, lbracket);
+    auto gen_it = type_methods_.find(generic_type);
+    if (gen_it != type_methods_.end()) {
+      auto method_it = gen_it->second.find(method_name);
+      if (method_it != gen_it->second.end()) {
+        return &method_it->second;
+      }
+    }
   }
-  return &method_it->second;
+  return nullptr;
 }
 
 const typing::TypeMethod *
 TypeRegistry::lookup_ffi_method(const std::string &type_name,
                                 const std::string &method_name) const {
+  // First, try the exact type name
   auto type_it = ffi_methods_.find(type_name);
-  if (type_it == ffi_methods_.end()) {
-    return nullptr;
+  if (type_it != ffi_methods_.end()) {
+    auto method_it = type_it->second.find(method_name);
+    if (method_it != type_it->second.end()) {
+      return &method_it->second;
+    }
   }
-  auto method_it = type_it->second.find(method_name);
-  if (method_it == type_it->second.end()) {
-    return nullptr;
+  // If not found, check for generic type (e.g., Array[int] -> Array)
+  auto lbracket = type_name.find('[');
+  if (lbracket != std::string::npos) {
+    std::string generic_type = type_name.substr(0, lbracket);
+    auto gen_it = ffi_methods_.find(generic_type);
+    if (gen_it != ffi_methods_.end()) {
+      auto method_it = gen_it->second.find(method_name);
+      if (method_it != gen_it->second.end()) {
+        return &method_it->second;
+      }
+    }
   }
-  return &method_it->second;
+  return nullptr;
 }
 
 } // namespace falcon::dsl

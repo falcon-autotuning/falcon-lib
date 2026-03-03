@@ -493,8 +493,10 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
 
   // Map positional arguments to canonical parameter names for Array methods.
   typing::ParameterMap params;
-  if (type_name == "Array") {
-    // erase(index)
+  if (type_name == "Array" ||
+      (type_name.size() > 6 && type_name.substr(0, 6) == "Array[")) {
+    // TODO: Type checking for "value" arguments to ensure they match the
+    // array's generic type. erase(index)
     if (expr.method_name == "erase" && arg_values.size() == 1) {
       params["index"] = arg_values[0];
     }
@@ -502,10 +504,12 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
     else if (expr.method_name == "insert" && arg_values.size() == 2) {
       params["index"] = arg_values[0];
       params["value"] = arg_values[1];
+      // TODO: Check that params["value"] matches the array element type.
     }
     // pushback(value)
     else if (expr.method_name == "pushback" && arg_values.size() == 1) {
       params["value"] = arg_values[0];
+      // TODO: Check that params["value"] matches the array element type.
     }
   }
 

@@ -375,6 +375,21 @@ struct_routine_stmt[result]
         }
         set_stmt_location($result.get(), @name);
       }
+    // ── Method call as a void statement inside struct routines
+    // Must appear before IDENTIFIER DOT IDENTIFIER ASSIGN for the same
+    // LALR(1) lookahead reason as in stmt.
+    | IDENTIFIER[object] DOT IDENTIFIER[method] LPAREN call_arg_list[args] RPAREN SEMICOLON
+      {
+        std::vector<std::unique_ptr<Expr>> arg_exprs;
+        arg_exprs.reserve($args.size());
+        for (auto& a : $args) { arg_exprs.push_back(std::move(a.value)); }
+        auto method_call = std::make_unique<MethodCallExpr>(
+            std::make_unique<VarExpr>(std::move($object)),
+            std::move($method),
+            std::move(arg_exprs));
+        $result = std::make_unique<ExprStmt>(std::move(method_call));
+        set_stmt_location($result.get(), @object);
+      }
     | IDENTIFIER[object] DOT IDENTIFIER[field] ASSIGN expr[val] SEMICOLON
       {
         $result = std::make_unique<StructFieldAssignStmt>(
@@ -708,6 +723,22 @@ stmt[result]
             std::move($targets),
             std::move($val));
         set_stmt_location($result.get(), @targets);
+      }
+    // ── Method call as a void statement: arr.erase(i);  arr.pushback(v); etc.
+    // This rule MUST appear before the IDENTIFIER DOT IDENTIFIER ASSIGN rule
+    // so that Bison, when it has shifted IDENTIFIER DOT IDENTIFIER and sees
+    // LPAREN as lookahead, prefers this path over the field-assign path.
+    | IDENTIFIER[object] DOT IDENTIFIER[method] LPAREN call_arg_list[args] RPAREN SEMICOLON
+      {
+        std::vector<std::unique_ptr<Expr>> arg_exprs;
+        arg_exprs.reserve($args.size());
+        for (auto& a : $args) { arg_exprs.push_back(std::move(a.value)); }
+        auto method_call = std::make_unique<MethodCallExpr>(
+            std::make_unique<VarExpr>(std::move($object)),
+            std::move($method),
+            std::move(arg_exprs));
+        $result = std::make_unique<ExprStmt>(std::move(method_call));
+        set_stmt_location($result.get(), @object);
       }
     | IDENTIFIER[object] DOT IDENTIFIER[field] ASSIGN expr[val] SEMICOLON
       {
