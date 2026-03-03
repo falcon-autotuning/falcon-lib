@@ -136,9 +136,8 @@ protected:
     return file_path;
   }
 
-  std::tuple<bool, std::vector<typing::RuntimeValue>>
-  compile_and_run(CompileEnvironment &cenv) {
-
+  template <typename Func>
+  void with_test_environment(CompileEnvironment &cenv, Func &&func) {
     // Fill database
     database::SnapshotManager snapm(db_);
     log::debug("The snapshot manager is started");
@@ -146,13 +145,8 @@ protected:
       snapm.import_from_json(cenv.globals.value().string(), true);
     }
     log::debug("Imported the snapshot from the json");
-
     std::atomic<bool> responder_ready{false};
-    std::atomic<bool> request_received{false};
-    std::atomic<bool> autotuner_result{false};
     std::atomic<bool> client_done{false};
-    std::mutex result_mutex;
-    std::vector<typing::RuntimeValue> autotuner_output;
 
     // Start the device config responder thread (NATS)
     std::thread responder([&]() {
@@ -160,7 +154,6 @@ protected:
       hub.subscribe(
           "INSTRUMENTHUB.DEVICE_CONFIG_REQUEST",
           [&](const std::string & /*msg*/) {
-            request_received = true;
             DeviceConfigResponse response;
             response.timestamp =
                 (int)falcon_core::communications::Time().time();
@@ -182,7 +175,20 @@ protected:
       std::this_thread::yield();
     }
 
-    std::thread client([&]() {
+    // Run the provided function (e.g., CLI subprocess)
+    func();
+
+    client_done = true;
+    responder.join();
+  }
+  std::tuple<bool, std::vector<typing::RuntimeValue>>
+  compile_and_run(CompileEnvironment &cenv) {
+    std::atomic<bool> autotuner_result{false};
+    std::atomic<bool> client_done{false};
+    std::mutex result_mutex;
+    std::vector<typing::RuntimeValue> autotuner_output;
+
+    auto client_func = [&]() {
       try {
         falcon::dsl::AutotunerEngine engine;
         // Load all DSL files
@@ -205,8 +211,7 @@ protected:
         auto result = engine.run_autotuner(cenv.autotuner_name, cenv.params);
         {
           std::lock_guard<std::mutex> lock(result_mutex);
-          autotuner_output =
-              result; // assuming result is std::vector<RuntimeValue>
+          autotuner_output = result;
         }
         autotuner_result = true;
       } catch (const std::exception &e) {
@@ -214,10 +219,9 @@ protected:
         autotuner_result = false;
       }
       client_done = true;
-    });
+    };
 
-    client.join();
-    responder.join();
+    with_test_environment(cenv, client_func);
 
     bool result = autotuner_result;
     std::vector<typing::RuntimeValue> output;

@@ -1,0 +1,17 @@
+// SimpleBool: minimal autotuner used by the CLI integration test.
+// It sets result = true and terminates immediately.
+
+autotuner SimpleBool -> (bool result) {
+  result = false;
+
+  start -> run;
+
+  state run {
+    result = true;
+    -> done;
+  }
+
+  state done {
+    terminal;
+  }
+}
