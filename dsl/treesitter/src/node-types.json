@@ -557,7 +557,7 @@
         "required": true,
         "types": [
           {
-            "type": "expr",
+            "type": "identifier",
             "named": true
           }
         ]
@@ -667,6 +667,14 @@
         },
         {
           "type": "int_literal",
+          "named": true
+        },
+        {
+          "type": "member_expr",
+          "named": true
+        },
+        {
+          "type": "method_call_expr",
           "named": true
         },
         {
@@ -1118,11 +1126,15 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "direction",
+          "named": true
+        },
+        {
+          "type": "expr",
           "named": true
         }
       ]

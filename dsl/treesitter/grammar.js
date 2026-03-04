@@ -10,13 +10,14 @@ module.exports = grammar({
     $.comment,
   ],
 
-  conflicts: $ => [
+conflicts: $ => [
     [$.method_call_expr, $.member_expr],
     [$.struct_field_assign_stmt, $.primary_expr],
     [$.autotuner_var_decl, $.assign_stmt],
     [$.var_decl_stmt, $.assign_stmt],
     [$.type, $.qualified_name],
-  ],
+    [$.expr, $.primary_expr],
+],
 
   rules: {
     // -----------------------------------------------------------------------
@@ -217,6 +218,7 @@ module.exports = grammar({
     transition_stmt: $ => seq(
       alias('->', $.direction),
       field('target', $.identifier),
+      optional(seq('(', commaSep($.expr), ')')),
       ';'
     ),
 
@@ -293,8 +295,8 @@ module.exports = grammar({
     // -----------------------------------------------------------------------
     expr: $ => choice(
       $.binary_expr,
-      $.call_expr,
       $.method_call_expr,
+      $.call_expr,
       $.member_expr,
       $.primary_expr,
       $.index_expr,
@@ -312,6 +314,7 @@ module.exports = grammar({
       field('operator', choice(
         alias('+', $.operator),
         alias('-', $.operator),
+        alias('!', $.operator),
         alias('*', $.operator),
         alias('/', $.operator),
         alias('==', $.operator),
@@ -330,21 +333,20 @@ module.exports = grammar({
       '+', '-', '*', '/', '==', '!=', '<', '>', '<=', '>=', '&&', '||'
     )),
 
-    call_expr: $ => seq(
-      field('func', $.qualified_name),
-      '(',
-      commaSep(choice($.named_arg, $.expr)),
-      ')'
-    ),
-
-    method_call_expr: $ => seq(
-      field('object', $.expr),
+    method_call_expr: $ => prec(2, seq(
+      field('object', $.identifier),
       '.',
       field('method', $.identifier),
       '(',
       commaSep(choice($.named_arg, $.expr)),
       ')'
-    ),
+    )),
+    call_expr: $ => prec(1, seq(
+      field('func', $.qualified_name),
+      '(',
+      commaSep(choice($.named_arg, $.expr)),
+      ')'
+    )),
 
     member_expr: $ => seq(
       field('object', $.expr),
@@ -362,15 +364,17 @@ module.exports = grammar({
     // Primary expressions
     // -----------------------------------------------------------------------
     primary_expr: $ => choice(
-      $.int_literal,
-      $.float_literal,
-      $.bool_literal,
-      $.string_literal,
-      $.nil_literal,
-      'this',
-      $.qualified_name,
-      seq('(', $.expr, ')')
-    ),
+        $.int_literal,
+        $.float_literal,
+        $.bool_literal,
+        $.string_literal,
+        $.nil_literal,
+        'this',
+        $.qualified_name,
+        $.member_expr,         
+        $.method_call_expr,   
+        seq('(', $.expr, ')')
+      ),
 
     // -----------------------------------------------------------------------
     // Qualified names — Module::symbol OR plain symbol
