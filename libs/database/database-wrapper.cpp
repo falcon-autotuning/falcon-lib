@@ -165,7 +165,7 @@ void STRUCTDeviceCharacteristicQuerySetScope(const FalconParamEntry *p,
   }
 
 IMPLEMENT_SETTER(Name, name, "name")
-IMPLEMENT_SETTER(State, state, "state")
+IMPLEMENT_SETTER(State, state, "state_val")
 IMPLEMENT_SETTER(Hash, hash, "hash")
 IMPLEMENT_SETTER(UnitName, unit_name, "unit_name")
 }
