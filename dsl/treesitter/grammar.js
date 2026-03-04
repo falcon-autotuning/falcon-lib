@@ -87,10 +87,10 @@ module.exports = grammar({
     struct_routine_decl: $ => seq(
       'routine',
       field('name', $.identifier),
-      optional(field('inputs', $.param_list)),  // ← was required, now optional
-      '->',
+      optional(field('inputs', $.param_list)), 
+      alias('->', $.direction),
       field('outputs', $.param_list),
-      optional(field('body', $.struct_routine_body))  // ← dedicated node type
+      optional(field('body', $.struct_routine_body))
     ),
 
     // -----------------------------------------------------------------------
@@ -134,7 +134,7 @@ module.exports = grammar({
       'routine',
       field('name', $.identifier),
       optional(field('inputs', $.param_list)),  // ← was required, now optional
-      '->',
+      alias('->', $.direction),
       field('outputs', $.param_list),
       optional(field('body', $.block))
     ),
@@ -146,8 +146,7 @@ module.exports = grammar({
       'autotuner',
       field('name', $.identifier),
       optional(field('inputs', $.param_list)),
-      '->',
-      field('outputs', $.param_list),
+      optional(seq(alias('->', $.direction), field('outputs', $.param_list))),
       '{',
       repeat(choice($.autotuner_var_decl, $.assign_stmt, $.requires_clause)),
       field('entry', $.entry_stmt),
@@ -169,9 +168,10 @@ module.exports = grammar({
     ),
 
     entry_stmt: $ => seq(
-      field('target', $.identifier),
-      '->',
-      field('next', $.identifier),
+      'start',
+      alias('->', $.direction),
+      field('next', alias($.identifier, $.entry_target)),
+      optional(seq('(', field('inputs', commaSep($.identifier)), ')')),
       ';'
     ),
 
@@ -202,20 +202,20 @@ module.exports = grammar({
 
     var_decl_stmt: $ => seq(
       field('type', $.type),
-      field('name', $.identifier),
+      field('variable_name', alias($.identifier, $.variable)),
       optional(seq('=', field('init', $.expr))),
       ';'
     ),
 
     assign_stmt: $ => seq(
-      field('targets', commaSep1($.identifier)),
+      field('targets', commaSep1(alias($.identifier, $.variable))),
       '=',
       field('value', $.expr),
       ';'
     ),
 
     transition_stmt: $ => seq(
-      '->',
+      alias('->', $.direction),
       field('target', $.identifier),
       ';'
     ),
@@ -297,6 +297,14 @@ module.exports = grammar({
       $.method_call_expr,
       $.member_expr,
       $.primary_expr,
+      $.index_expr,
+    ),
+
+    index_expr: $ => seq(
+      field('object', alias($.qualified_name, $.variable)),
+      field('open_bracket', token.immediate('[')),
+      field('index', $.expr),
+      field('close_bracket', token.immediate(']'))
     ),
 
     binary_expr: $ => prec.left(seq(
@@ -369,7 +377,7 @@ module.exports = grammar({
     // -----------------------------------------------------------------------
     qualified_name: $ => seq(
       optional(seq(
-        field('module', $.identifier),
+        field('module', $.qualified_name),
         '::'
       )),
       field('symbol', $.identifier)
@@ -386,14 +394,15 @@ module.exports = grammar({
 
     param_decl: $ => seq(
       field('type', $.type),
-      field('name', $.identifier)
+      field('param_name', $.identifier )
     ),
+
     type: $ => seq(
       $.identifier,
       optional(seq(
-        '<',
-        commaSep1($.type),
-        '>'
+        alias('<', $.type_args_open),
+        commaSep($.type),
+        alias('>', $.type_args_close)
       ))
     ),
 

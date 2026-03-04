@@ -1,6 +1,4 @@
-; ============================================================================
-; Keywords (highlighted via context nodes, not raw tokens)
-; ============================================================================
+; Keywords
 (autotuner_decl) @keyword
 (routine_decl)   @keyword
 (state_decl)     @keyword
@@ -11,119 +9,130 @@
 (else_clause)    @keyword.conditional
 (import_stmt)    @keyword.import
 (ffimport_decl)  @keyword.import
+"start"          @keyword
 
-; ============================================================================
 ; Types
-; ============================================================================
-(type) @type
+(type (identifier) @type.definition (#set! priority 200))
+(entry_target) @function.method
+(param_decl type: (type) @type.definition 
+  param_name: (identifier) @variable (#set! priority 200))
 
-; ============================================================================
-; Declaration names — priority 200 so they beat the (identifier) @variable fallback
-; ============================================================================
-(autotuner_decl name: (identifier) @type.definition
-  (#set! priority 200))
-(struct_decl name: (identifier) @type.definition
-  (#set! priority 200))
-(routine_decl name: (identifier) @function
-  (#set! priority 200))
-(struct_routine_decl name: (identifier) @function
-  (#set! priority 200))
-(state_decl name: (identifier) @function.method
-  (#set! priority 200))
+; Declaration names — priority 200 to override fallback
+(autotuner_decl name: (identifier) @type.definition (#set! priority 200))
+(struct_decl name: (identifier) @type.definition (#set! priority 200))
+(routine_decl name: (identifier) @function (#set! priority 200))
+(struct_routine_decl name: (identifier) @function (#set! priority 200))
+(state_decl name: (identifier) @function.method (#set! priority 200))
 
-; ============================================================================
-; Parameters — priority 150
-; ============================================================================
-(param_decl name: (identifier) @variable.parameter
-  (#set! priority 150))
+; Struct field declarations
+(struct_field_decl name: (identifier) @variable)
 
-; ============================================================================
-; Autotuner-scope declarations — priority 150
-; ============================================================================
-(autotuner_var_decl name:    (identifier) @variable.builtin
-  (#set! priority 150))
+; Assignments and transitions
+(assign_stmt (variable) @variable)
+(transition_stmt 
+  target: (identifier) @function.method (#set! priority 201))
 
-; ============================================================================
-; State-scope declarations — priority 150
-; ============================================================================
-(var_decl_stmt name: (identifier) @variable
-  (#set! priority 150))
+; Calls and members
+(method_call_expr
+  method: (identifier) @function.method.call (#set! priority 201))
+;; Highlight object ("conn") as variable in method calls (priority must be high)
+(method_call_expr
+  object: (expr
+    (primary_expr
+      (qualified_name
+        symbol: (identifier) @variable (#set! priority 200)))))
+(method_call_expr ; [22, 12] - [22, 38]
+  object: (expr ; [22, 12] - [22, 31]
+    (binary_expr ; [22, 12] - [22, 31]
+      right: (expr ; [22, 20] - [22, 31]
+        (primary_expr ; [22, 20] - [22, 31]
+          (qualified_name ; [22, 20] - [22, 31]
+            symbol: (identifier) @variable (#set! priority 202)))))))
+(method_call_expr ; [22, 12] - [22, 38]
+  object: (expr ; [22, 12] - [22, 31]
+    (binary_expr ; [22, 12] - [22, 31]
+      left: (expr ; [22, 12] - [22, 17]
+        (primary_expr ; [22, 12] - [22, 17]
+          (qualified_name ; [22, 12] - [22, 17]
+            symbol: (identifier) @variable (#set! priority 202)))))))
+(member_expr member: (identifier) @property)
+(assign_stmt ; [23, 12] - [23, 30]
+  targets: (variable) ; [23, 12] - [23, 17]
+  value: (expr ; [23, 20] - [23, 29]
+    (binary_expr ; [23, 20] - [23, 29]
+      left: (expr ; [23, 20] - [23, 25]
+        (primary_expr ; [23, 20] - [23, 25]
+          (qualified_name ; [23, 20] - [23, 25]
+            symbol: (identifier) @variable (#set! priority 202)))))))
+(primary_expr
+  (qualified_name
+    symbol: (identifier) @variable (#set! priority 200)))
+(primary_expr
+  (expr
+    (index_expr
+      index: (expr
+        (primary_expr
+          (qualified_name
+            symbol: (identifier) @variable (#set! priority 202)))))))
+(autotuner_var_decl
+  init: (expr
+    (index_expr
+      index: (expr
+        (primary_expr
+          (qualified_name
+            symbol: (identifier) @variable (#set! priority 202)))))))
+(struct_routine_stmt ; [8, 8] - [8, 21]
+  (assign_stmt ; [8, 8] - [8, 21]
+    targets: (variable) ; [8, 8] - [8, 13]
+    value: (expr ; [8, 16] - [8, 20]
+      (primary_expr ; [8, 16] - [8, 20]
+        (qualified_name ; [8, 16] - [8, 20]
+          symbol: (identifier) @variable (#set! priority 202))))))
+; Module-qualified names in expressions / uses clauses
+(call_expr func: (qualified_name symbol: (identifier) @function.call))
 
-; ============================================================================
-; Struct field declarations — priority 150
-; ============================================================================
-(struct_field_decl name: (identifier) @variable
-  (#set! priority 150))
+; Highlight modules (supports 1-2 nesting levels)
+;; Color module portion in io::println
+(qualified_name
+  module: (qualified_name
+    symbol: (identifier) @module (#set! priority 201)))
 
-; ============================================================================
-; Assignments and transitions — priority 150
-; ============================================================================
-(assign_stmt     targets: (identifier) @variable
-  (#set! priority 150))
-(entry_stmt      target:  (identifier) @label
-  (#set! priority 150))
-(transition_stmt target:  (identifier) @label
-  (#set! priority 150))
+;; Color function portion in io::println
+(qualified_name
+  symbol: (identifier) @function.call (#set! priority 200))
 
-; ============================================================================
-; Calls and members — priority 150
-; ============================================================================
-(call_expr func: (qualified_name symbol: (identifier) @function.call)
-  (#set! priority 160))
-(call_expr func: (qualified_name module: (identifier) @module)
-  (#set! priority 160))
-(method_call_expr method: (identifier) @function.method.call
-  (#set! priority 150))
-(member_expr member: (identifier) @property
-  (#set! priority 150))
+; index in get expression
+(index_expr (_ (identifier) @variable))
 
-; ============================================================================
-; Module-qualified names in expressions / uses clauses: Module::symbol
-; Priority 160 so it beats the plain @variable fallback at 100.
-; ============================================================================
-(qualified_name module: (identifier) @module
-  (#set! priority 160))
-(qualified_name symbol: (identifier) @variable
-  (#set! priority 160))
-
-; ============================================================================
-; Import paths — @string.special.path follows nvim-treesitter conventions for
-; file-path strings (distinct color from regular string data in many themes).
-; ============================================================================
+; Import paths
 (import_stmt    path:    (string_literal) @string.special.path)
 (ffimport_decl  wrapper: (string_literal) @string.special.path)
 
-; ============================================================================
 ; Operators
-; ============================================================================
 (operator) @operator
 
-; ============================================================================
 ; Punctuation
-; ============================================================================
 ["{" "}"] @punctuation.bracket
 ["(" ")"] @punctuation.bracket
+["[" "]"] @punctuation.bracket
+(type_args_open)  @punctuation.bracket
+(type_args_close) @punctuation.bracket
+(direction) @punctuation.delimiter
 ";"       @punctuation.delimiter
 ","       @punctuation.delimiter
 "."       @punctuation.delimiter
 "::"      @punctuation.delimiter
+"="       @punctuation.delimiter
 
-; ============================================================================
 ; Literals
-; ============================================================================
 (int_literal)    @number
 (float_literal)  @number.float
 (bool_literal)   @boolean
 (nil_literal)    @constant.builtin
 (string_literal) @string
 
-; ============================================================================
 ; Comments
-; ============================================================================
 (comment) @comment @spell
 
-; ; ============================================================================
-; ; Fallback — priority 100 (default). Catches all remaining identifier nodes.
-; ; Specific patterns above at priority 150-200 will override this.
-; ; ============================================================================
-; (identifier) @variable
+; Fallback — priority 100 (default)
+(identifier) @variable
