@@ -1,4 +1,4 @@
-ffimport "database-wrapper.cpp" ("-I/opt/falcon/include/" "-std=c++20") ("-lfalcon-database" "-lpqxx")
+ffimport "database-wrapper.cpp" ("-I/opt/falcon/include/" "-std=c++20") ("-L/opt/falcon/lib" "-lfalcon-database" "-lpqxx")
 
 // ── DeviceCharacteristic ──────────────────────────────────────────────────────
 
@@ -7,7 +7,7 @@ struct DeviceCharacteristic {
     routine GetName()       -> (string name)
     routine GetHash()       -> (string hash)
     routine GetTime()       -> (int time)
-    routine GetState()      -> (string state)
+    routine GetState()      -> (string state_val)
     routine GetUnitName()   -> (string unit_name)
     routine ToJson()        -> (string json_str)
 }
@@ -21,7 +21,7 @@ struct DeviceCharacteristicQuery {
     routine New()                             -> (DeviceCharacteristicQuery q)
     routine SetScope(string scope)            -> (DeviceCharacteristicQuery q)
     routine SetName(string name)              -> (DeviceCharacteristicQuery q)
-    routine SetState(string state)            -> (DeviceCharacteristicQuery q)
+    routine SetState(string state_val)        -> (DeviceCharacteristicQuery q)
     routine SetHash(string hash)              -> (DeviceCharacteristicQuery q)
     routine SetUnitName(string unit_name)     -> (DeviceCharacteristicQuery q)
 }
@@ -41,13 +41,13 @@ struct Database {
     routine IsConnected() -> (bool connected)
     
     // Write methods
-    routine Insert(DeviceCharacteristic dchar)
+    routine Insert(DeviceCharacteristic dchar) -> ()
     routine DeleteByName(string name) -> (bool deleted)
     routine DeleteByHash(string hash) -> (int deleted_count)
     
     // Admin & Snapshot methods
-    routine InitializeSchema()
-    routine ClearAll()
-    routine ExportToJson(string filename)
-    routine ImportFromJson(string filename, bool clear_existing)
+    routine InitializeSchema() -> ()
+    routine ClearAll() -> ()
+    routine ExportToJson(string filename) -> ()
+    routine ImportFromJson(string filename, bool clear_existing) -> ()
 }
