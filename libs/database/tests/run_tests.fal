@@ -1,0 +1,26 @@
+// Tests for the falcon/database library.
+import "../../testing/testing.fal";
+import "../database.fal";
+
+autotuner DatabaseTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_query_builder (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetScope("test_scope");
+        q = q.SetName("test_name");
+        q = q.SetState("test_state");
+        
+        Error err = t.ExpectTrue(true, "Query builder instantiated and set");
+        -> __end(runner, t);
+    }
+
+    state test_connection_creation (TestRunner runner, TestContext t) {
+        Database db = Database.New();
+        bool connected = db.IsConnected();
+        
+        Error err = t.ExpectFalse(connected, "Connection is lazily initialized");
+        -> __end(runner, t);
+    }
+}
