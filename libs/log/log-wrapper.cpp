@@ -190,8 +190,8 @@ void STRUCTLogWarn(const FalconParamEntry *params, int32_t param_count,
   }
 }
 
-void STRUCTLogError(const FalconParamEntry *params, int32_t param_count,
-                    FalconResultSlot *out, int32_t *out_count) {
+void STRUCTLogErr(const FalconParamEntry *params, int32_t param_count,
+                  FalconResultSlot *out, int32_t *out_count) {
   auto pm = unpack_params(params, param_count);
   std::string message = std::get<std::string>(pm.at("message"));
   try {

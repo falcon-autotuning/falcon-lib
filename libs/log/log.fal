@@ -5,5 +5,5 @@ struct Log {
     routine Info(string message) -> (Error err)
     routine Debug(string message) -> (Error err)
     routine Warn(string message) -> (Error err)
-    routine Error(string message) -> (Error err)
+    routine Err(string message) -> (Error err)
 }
