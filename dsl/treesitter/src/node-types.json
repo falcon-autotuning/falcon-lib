@@ -557,7 +557,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "expr",
             "named": true
           }
         ]

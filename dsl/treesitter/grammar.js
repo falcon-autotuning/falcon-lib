@@ -333,14 +333,14 @@ conflicts: $ => [
       '+', '-', '*', '/', '==', '!=', '<', '>', '<=', '>=', '&&', '||'
     )),
 
-    method_call_expr: $ => prec(2, seq(
-      field('object', $.identifier),
-      '.',
-      field('method', $.identifier),
-      '(',
-      commaSep(choice($.named_arg, $.expr)),
-      ')'
-    )),
+  method_call_expr: $ => prec(2, seq(
+    field('object', $.expr),
+    '.',
+    field('method', $.identifier),
+    '(',
+    commaSep(choice($.named_arg, $.expr)),
+    ')'
+  )),
     call_expr: $ => prec(1, seq(
       field('func', $.qualified_name),
       '(',

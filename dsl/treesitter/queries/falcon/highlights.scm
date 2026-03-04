@@ -38,8 +38,6 @@
 (method_call_expr
   method: (identifier) @function.method.call (#set! priority 201))
 ;; Highlight object ("conn") as variable in method calls (priority must be high)
-(method_call_expr
-  object: (identifier) @variable (#set! priority 200))
 (member_expr member: (identifier) @property)
 (assign_stmt ; [23, 12] - [23, 30]
   targets: (variable) ; [23, 12] - [23, 17]
@@ -98,7 +96,6 @@
           (qualified_name
             symbol: (identifier) @variable (#set! priority 202)))))))
 (method_call_expr ; [9, 8] - [9, 28]
-  object: (identifier) ; [9, 8] - [9, 11]
   method: (identifier) ; [9, 12] - [9, 17]
   (expr ; [9, 18] - [9, 27]
     (primary_expr ; [9, 18] - [9, 27]

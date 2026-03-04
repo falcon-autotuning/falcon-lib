@@ -1573,7 +1573,7 @@
             "name": "object",
             "content": {
               "type": "SYMBOL",
-              "name": "identifier"
+              "name": "expr"
             }
           },
           {
