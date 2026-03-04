@@ -14,7 +14,9 @@ std::shared_ptr<spdlog::logger> g_logger;
 std::once_flag g_init_flag;
 
 static void pack_nil(FalconResultSlot *out, int32_t *oc) {
-    out[0] = {}; out[0].tag = FALCON_TYPE_NIL; *oc = 1;
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_NIL;
+  *oc = 1;
 }
 void initialize_logger() {
   try {
@@ -136,51 +138,68 @@ std::shared_ptr<spdlog::logger> get_logger() { return get_logger_internal(); }
 
 extern "C" {
 
-void INFO(const FalconParamEntry *params, int32_t param_count,
-          FalconResultSlot *out, int32_t *out_count) {
+void STRUCTLogNew(const FalconParamEntry *params, int32_t param_count,
+                  FalconResultSlot *out, int32_t *out_count) {
+  (void)params;
+  (void)param_count;
+  // Dummy opaque pointer to satisfy struct instantiation
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_OPAQUE;
+  out[0].value.opaque.type_name = "Log";
+  out[0].value.opaque.ptr = nullptr;
+  out[0].value.opaque.deleter = [](void *) {};
+  *out_count = 1;
+}
+
+void STRUCTLogInfo(const FalconParamEntry *params, int32_t param_count,
+                   FalconResultSlot *out, int32_t *out_count) {
   auto pm = unpack_params(params, param_count);
   std::string message = std::get<std::string>(pm.at("message"));
   try {
     info(message);
     pack_nil(out, out_count);
   } catch (const std::exception &e) {
-    pack_results(FunctionResult{nullptr, ErrorObject{e.what(), false}}, out, 16, out_count);
+    pack_results(FunctionResult{nullptr, ErrorObject{e.what(), false}}, out, 16,
+                 out_count);
   }
 }
 
-void DEBUG(const FalconParamEntry *params, int32_t param_count,
-          FalconResultSlot *out, int32_t *out_count) {
+void STRUCTLogDebug(const FalconParamEntry *params, int32_t param_count,
+                    FalconResultSlot *out, int32_t *out_count) {
   auto pm = unpack_params(params, param_count);
   std::string message = std::get<std::string>(pm.at("message"));
   try {
     debug(message);
     pack_nil(out, out_count);
   } catch (const std::exception &e) {
-    pack_results(FunctionResult{nullptr, ErrorObject{e.what(), false}}, out, 16, out_count);
+    pack_results(FunctionResult{nullptr, ErrorObject{e.what(), false}}, out, 16,
+                 out_count);
   }
 }
 
-void WARN(const FalconParamEntry *params, int32_t param_count,
-          FalconResultSlot *out, int32_t *out_count) {
+void STRUCTLogWarn(const FalconParamEntry *params, int32_t param_count,
+                   FalconResultSlot *out, int32_t *out_count) {
   auto pm = unpack_params(params, param_count);
   std::string message = std::get<std::string>(pm.at("message"));
   try {
     warn(message);
     pack_nil(out, out_count);
   } catch (const std::exception &e) {
-    pack_results(FunctionResult{nullptr, ErrorObject{e.what(), false}}, out, 16, out_count);
+    pack_results(FunctionResult{nullptr, ErrorObject{e.what(), false}}, out, 16,
+                 out_count);
   }
 }
 
-void ERROR(const FalconParamEntry *params, int32_t param_count,
-          FalconResultSlot *out, int32_t *out_count) {
+void STRUCTLogError(const FalconParamEntry *params, int32_t param_count,
+                    FalconResultSlot *out, int32_t *out_count) {
   auto pm = unpack_params(params, param_count);
   std::string message = std::get<std::string>(pm.at("message"));
   try {
     error(message);
     pack_nil(out, out_count);
   } catch (const std::exception &e) {
-    pack_results(FunctionResult{nullptr, ErrorObject{e.what(), false}}, out, 16, out_count);
+    pack_results(FunctionResult{nullptr, ErrorObject{e.what(), false}}, out, 16,
+                 out_count);
   }
 }
 

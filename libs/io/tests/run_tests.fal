@@ -14,9 +14,10 @@ autotuner WriteRoutineTests -> (int passed, int failed) {
     // beyond the capture confirming the text appeared on stdout.
 
     state test_println_appears_on_stdout (TestRunner runner, TestContext t) {
+        IO io_obj     = IO.New();
         IOCapture cap = IOCapture.New();
         Error err     = cap.BeginStdout();
-        err           = Println("hello-println");
+        err           = io_obj.Println("hello-println");
         string out    = cap.End();
         string plain  = StripAnsi(out);
         bool   ok     = Contains(plain, "hello-println");
@@ -25,9 +26,10 @@ autotuner WriteRoutineTests -> (int passed, int failed) {
     }
 
     state test_print_no_newline (TestRunner runner, TestContext t) {
+        IO io_obj     = IO.New();
         IOCapture cap = IOCapture.New();
         Error err     = cap.BeginStdout();
-        err           = Print("no-newline");
+        err           = io_obj.Print("no-newline");
         string out    = cap.End();
         string plain  = StripAnsi(out);
         bool   has    = Contains(plain, "no-newline");
@@ -36,9 +38,10 @@ autotuner WriteRoutineTests -> (int passed, int failed) {
     }
 
     state test_eprintln_appears_on_stderr (TestRunner runner, TestContext t) {
+        IO io_obj     = IO.New();
         IOCapture cap = IOCapture.New();
         Error err     = cap.BeginStderr();
-        err           = Eprintln("hello-stderr");
+        err           = io_obj.Eprintln("hello-stderr");
         string out    = cap.End();
         string plain  = StripAnsi(out);
         bool   ok     = Contains(plain, "hello-stderr");
@@ -71,9 +74,10 @@ autotuner CaptureLifecycleTests -> (int passed, int failed) {
     }
 
     state test_captured_string_contains_output (TestRunner runner, TestContext t) {
+        IO io_obj     = IO.New();
         IOCapture cap = IOCapture.New();
         Error err     = cap.BeginStdout();
-        err           = Println("capture-marker-42");
+        err           = io_obj.Println("capture-marker-42");
         string out    = cap.End();
         string plain  = StripAnsi(out);
         bool   ok     = Contains(plain, "capture-marker-42");
@@ -82,11 +86,12 @@ autotuner CaptureLifecycleTests -> (int passed, int failed) {
     }
 
     state test_multiple_writes_all_captured (TestRunner runner, TestContext t) {
+        IO io_obj     = IO.New();
         IOCapture cap = IOCapture.New();
         Error err     = cap.BeginStdout();
-        err           = Println("line-a");
-        err           = Println("line-b");
-        err           = Println("line-c");
+        err           = io_obj.Println("line-a");
+        err           = io_obj.Println("line-b");
+        err           = io_obj.Println("line-c");
         string out    = cap.End();
         string plain  = StripAnsi(out);
         bool has_a    = Contains(plain, "line-a");
@@ -129,9 +134,10 @@ autotuner PeekTests -> (int passed, int failed) {
     start -> __init;
 
     state test_peek_partial (TestRunner runner, TestContext t) {
+        IO io_obj      = IO.New();
         IOCapture cap  = IOCapture.New();
         Error err      = cap.BeginStdout();
-        err            = Println("peek-line");
+        err            = io_obj.Println("peek-line");
         string peeked  = cap.Peek();
         string plain   = StripAnsi(peeked);
         bool   ok      = Contains(plain, "peek-line");
@@ -141,11 +147,12 @@ autotuner PeekTests -> (int passed, int failed) {
     }
 
     state test_peek_then_more_writes (TestRunner runner, TestContext t) {
+        IO io_obj       = IO.New();
         IOCapture cap   = IOCapture.New();
         Error err       = cap.BeginStdout();
-        err             = Println("before-peek");
+        err             = io_obj.Println("before-peek");
         string _peek    = cap.Peek();
-        err             = Println("after-peek");
+        err             = io_obj.Println("after-peek");
         string final    = cap.End();
         string plain    = StripAnsi(final);
         bool has_before = Contains(plain, "before-peek");

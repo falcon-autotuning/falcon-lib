@@ -1,7 +1,27 @@
 ffimport "io-wrapper.cpp" ("/opt/falcon/include/") ()
 
+// ── IO ────────────────────────────────────────────────────────────────────────
+// Stateless struct for top-level I/O operations.
+
+struct IO {
+    routine New() -> (IO io)
+    
+    // Write msg followed by a newline to stdout.
+    routine Println   (string msg)  -> (Error err)
+
+    // Write msg (no newline) to stdout.
+    routine Print     (string msg)  -> (Error err)
+
+    // Write msg followed by a newline to stderr.
+    routine Eprintln  (string msg)  -> (Error err)
+
+    // Write msg (no newline) to stderr.
+    routine Eprint    (string msg)  -> (Error err)
+}
+
 // ── IOCapture ─────────────────────────────────────────────────────────────────
 // Intercepts writes to stdout or stderr so Falcon code can inspect them.
+// Now acts as a proxy to a globally managed C++ singleton.
 //
 // Typical stdout-capture pattern:
 //
@@ -12,7 +32,7 @@ ffimport "io-wrapper.cpp" ("/opt/falcon/include/") ()
 //   // captured now holds everything written; it was also forwarded to real stdout.
 //
 struct IOCapture {
-    // Create a new capture handle (not yet capturing).
+    // Return a logical handle (singleton) to the global capture logic
     routine New                              -> (IOCapture cap)
 
     // Start intercepting stdout / stderr respectively.
@@ -34,17 +54,3 @@ struct IOCapture {
     routine WriteStdout (string msg)         -> (Error err)
     routine WriteStderr (string msg)         -> (Error err)
 }
-
-// ── Convenience top-level I/O routines ───────────────────────────────────────
-
-// Write msg followed by a newline to stdout.
-routine Println   (string msg)  -> (Error err)
-
-// Write msg (no newline) to stdout.
-routine Print     (string msg)  -> (Error err)
-
-// Write msg followed by a newline to stderr.
-routine Eprintln  (string msg)  -> (Error err)
-
-// Write msg (no newline) to stderr.
-routine Eprint    (string msg)  -> (Error err)
