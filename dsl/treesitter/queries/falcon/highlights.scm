@@ -12,6 +12,8 @@
 "start"          @keyword
 
 ; Types
+(type (type_args_open) @punctuation.bracket (#set! priority 300))
+(type (type_args_close) @punctuation.bracket (#set! priority 300))
 (type (identifier) @type.definition (#set! priority 200))
 (entry_target) @function.method
 (param_decl type: (type) @type.definition 
@@ -37,24 +39,7 @@
   method: (identifier) @function.method.call (#set! priority 201))
 ;; Highlight object ("conn") as variable in method calls (priority must be high)
 (method_call_expr
-  object: (expr
-    (primary_expr
-      (qualified_name
-        symbol: (identifier) @variable (#set! priority 200)))))
-(method_call_expr ; [22, 12] - [22, 38]
-  object: (expr ; [22, 12] - [22, 31]
-    (binary_expr ; [22, 12] - [22, 31]
-      right: (expr ; [22, 20] - [22, 31]
-        (primary_expr ; [22, 20] - [22, 31]
-          (qualified_name ; [22, 20] - [22, 31]
-            symbol: (identifier) @variable (#set! priority 202)))))))
-(method_call_expr ; [22, 12] - [22, 38]
-  object: (expr ; [22, 12] - [22, 31]
-    (binary_expr ; [22, 12] - [22, 31]
-      left: (expr ; [22, 12] - [22, 17]
-        (primary_expr ; [22, 12] - [22, 17]
-          (qualified_name ; [22, 12] - [22, 17]
-            symbol: (identifier) @variable (#set! priority 202)))))))
+  object: (identifier) @variable (#set! priority 200))
 (member_expr member: (identifier) @property)
 (assign_stmt ; [23, 12] - [23, 30]
   targets: (variable) ; [23, 12] - [23, 17]
@@ -64,9 +49,47 @@
         (primary_expr ; [23, 20] - [23, 25]
           (qualified_name ; [23, 20] - [23, 25]
             symbol: (identifier) @variable (#set! priority 202)))))))
+(assign_stmt ; [7, 4] - [7, 16]
+  targets: (variable) ; [7, 4] - [7, 7]
+  value: (expr ; [7, 10] - [7, 15]
+    (binary_expr ; [7, 10] - [7, 15]
+      right: (expr ; [7, 14] - [7, 15]
+        (primary_expr ; [7, 14] - [7, 15]
+          (qualified_name ; [7, 14] - [7, 15]
+            symbol: (identifier) @variable (#set! priority 202)))))))
+(if_stmt ; [22, 8] - [28, 9]
+  condition: (expr ; [22, 12] - [22, 38]
+    (binary_expr ; [22, 12] - [22, 38]
+      left: (expr ; [22, 12] - [22, 17]
+        (primary_expr ; [22, 12] - [22, 17]
+          (qualified_name ; [22, 12] - [22, 17]
+            symbol: (identifier) @variable (#set! priority 202)))))))
+(if_stmt ; [7, 4] - [12, 5]
+  condition: (expr ; [7, 8] - [7, 25]
+    (binary_expr ; [7, 8] - [7, 25]
+      right: (expr ; [7, 16] - [7, 25]
+        (primary_expr ; [7, 16] - [7, 25]
+          (qualified_name ; [7, 16] - [7, 25]
+            symbol: (identifier) @variable (#set! priority 202)))))))
+(elif_clause ; [9, 4] - [11, 5]
+  condition: (expr ; [9, 10] - [9, 20]
+    (binary_expr ; [9, 10] - [9, 20]
+      left: (expr ; [9, 10] - [9, 15]
+        (primary_expr ; [9, 10] - [9, 15]
+          (qualified_name ; [9, 10] - [9, 15]
+            symbol: (identifier) @variable (#set! priority 202)))))))
+(elif_clause ; [9, 4] - [11, 5]
+  condition: (expr ; [9, 10] - [9, 20]
+    (binary_expr ; [9, 10] - [9, 20]
+      right: (expr ; [9, 10] - [9, 15]
+        (primary_expr ; [9, 10] - [9, 15]
+          (qualified_name ; [9, 10] - [9, 15]
+            symbol: (identifier) @variable (#set! priority 202)))))))
+(var_decl_stmt ; [6, 4] - [6, 25]
+  variable_name: (variable) @variable (#set! priority 202))
 (primary_expr
   (qualified_name
-    symbol: (identifier) @variable (#set! priority 200)))
+    symbol: (identifier) @variable (#set! priority 202)))
 (primary_expr
   (expr
     (index_expr
@@ -74,6 +97,13 @@
         (primary_expr
           (qualified_name
             symbol: (identifier) @variable (#set! priority 202)))))))
+(method_call_expr ; [9, 8] - [9, 28]
+  object: (identifier) ; [9, 8] - [9, 11]
+  method: (identifier) ; [9, 12] - [9, 17]
+  (expr ; [9, 18] - [9, 27]
+    (primary_expr ; [9, 18] - [9, 27]
+      (qualified_name ; [9, 18] - [9, 27]
+        symbol: (identifier) @variable (#set! priority 202)))))
 (autotuner_var_decl
   init: (expr
     (index_expr
@@ -81,13 +111,12 @@
         (primary_expr
           (qualified_name
             symbol: (identifier) @variable (#set! priority 202)))))))
-(struct_routine_stmt ; [8, 8] - [8, 21]
-  (assign_stmt ; [8, 8] - [8, 21]
-    targets: (variable) ; [8, 8] - [8, 13]
-    value: (expr ; [8, 16] - [8, 20]
-      (primary_expr ; [8, 16] - [8, 20]
-        (qualified_name ; [8, 16] - [8, 20]
-          symbol: (identifier) @variable (#set! priority 202))))))
+(assign_stmt ; [8, 8] - [8, 21]
+  targets: (variable) ; [8, 8] - [8, 13]
+  value: (expr ; [8, 16] - [8, 20]
+    (primary_expr ; [8, 16] - [8, 20]
+      (qualified_name ; [8, 16] - [8, 20]
+        symbol: (identifier) @variable (#set! priority 202)))))
 ; Module-qualified names in expressions / uses clauses
 (call_expr func: (qualified_name symbol: (identifier) @function.call))
 
@@ -115,20 +144,18 @@
 ["{" "}"] @punctuation.bracket
 ["(" ")"] @punctuation.bracket
 ["[" "]"] @punctuation.bracket
-(type_args_open)  @punctuation.bracket
-(type_args_close) @punctuation.bracket
 (direction) @punctuation.delimiter
 ";"       @punctuation.delimiter
 ","       @punctuation.delimiter
 "."       @punctuation.delimiter
 "::"      @punctuation.delimiter
-"="       @punctuation.delimiter
+"="       @operator.assignment
 
 ; Literals
 (int_literal)    @number
 (float_literal)  @number.float
 (bool_literal)   @boolean
-(nil_literal)    @constant.builtin
+(nil_literal)    @number
 (string_literal) @string
 
 ; Comments
