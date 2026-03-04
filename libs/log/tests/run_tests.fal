@@ -18,9 +18,10 @@ autotuner LogOutputTests -> (int passed, int failed) {
 
     // ── Info ──────────────────────────────────────────────────────────────────
     state test_info_appears_on_stdout (TestRunner runner, TestContext t) {
+        Log logger    = Log.New();
         IOCapture cap = IOCapture.New();
         Error err     = cap.BeginStdout();
-        err           = INFO("test-info-message");
+        err           = logger.Info("test-info-message");
         string out    = cap.End();
         string plain  = StripAnsi(out);
         bool has_msg  = Contains(plain, "test-info-message");
@@ -29,9 +30,10 @@ autotuner LogOutputTests -> (int passed, int failed) {
     }
 
     state test_info_level_tag (TestRunner runner, TestContext t) {
+        Log logger     = Log.New();
         IOCapture cap  = IOCapture.New();
         Error err      = cap.BeginStdout();
-        err            = INFO("level-tag-info");
+        err            = logger.Info("level-tag-info");
         string out     = cap.End();
         string plain   = StripAnsi(out);
         // spdlog formats level as [info] or similar
@@ -42,9 +44,10 @@ autotuner LogOutputTests -> (int passed, int failed) {
 
     // ── Debug ─────────────────────────────────────────────────────────────────
     state test_debug_appears_on_stdout (TestRunner runner, TestContext t) {
+        Log logger    = Log.New();
         IOCapture cap = IOCapture.New();
         Error err     = cap.BeginStdout();
-        err           = DEBUG("test-debug-message");
+        err           = logger.Debug("test-debug-message");
         string out    = cap.End();
         string plain  = StripAnsi(out);
         bool has_msg  = Contains(plain, "test-debug-message");
@@ -53,9 +56,10 @@ autotuner LogOutputTests -> (int passed, int failed) {
     }
 
     state test_debug_level_tag (TestRunner runner, TestContext t) {
+        Log logger     = Log.New();
         IOCapture cap  = IOCapture.New();
         Error err      = cap.BeginStdout();
-        err            = DEBUG("level-tag-debug");
+        err            = logger.Debug("level-tag-debug");
         string out     = cap.End();
         string plain   = StripAnsi(out);
         bool has_level = Contains(plain, "debug");
@@ -65,9 +69,10 @@ autotuner LogOutputTests -> (int passed, int failed) {
 
     // ── Warn ──────────────────────────────────────────────────────────────────
     state test_warn_appears_on_stdout (TestRunner runner, TestContext t) {
+        Log logger    = Log.New();
         IOCapture cap = IOCapture.New();
         Error err     = cap.BeginStdout();
-        err           = WARN("test-warn-message");
+        err           = logger.Warn("test-warn-message");
         string out    = cap.End();
         string plain  = StripAnsi(out);
         bool has_msg  = Contains(plain, "test-warn-message");
@@ -76,9 +81,10 @@ autotuner LogOutputTests -> (int passed, int failed) {
     }
 
     state test_warn_level_tag (TestRunner runner, TestContext t) {
+        Log logger     = Log.New();
         IOCapture cap  = IOCapture.New();
         Error err      = cap.BeginStdout();
-        err            = WARN("level-tag-warn");
+        err            = logger.Warn("level-tag-warn");
         string out     = cap.End();
         string plain   = StripAnsi(out);
         bool has_level = Contains(plain, "warn");
@@ -88,9 +94,10 @@ autotuner LogOutputTests -> (int passed, int failed) {
 
     // ── Error ────────────────────────────────────────────���────────────────────
     state test_error_appears_on_stdout (TestRunner runner, TestContext t) {
+        Log logger    = Log.New();
         IOCapture cap = IOCapture.New();
         Error err     = cap.BeginStdout();
-        Error lerr    = ERROR("test-error-message");
+        err           = logger.Err("test-error-message");
         string out    = cap.End();
         string plain  = StripAnsi(out);
         bool has_msg  = Contains(plain, "test-error-message");
@@ -99,9 +106,10 @@ autotuner LogOutputTests -> (int passed, int failed) {
     }
 
     state test_error_level_tag (TestRunner runner, TestContext t) {
+        Log logger     = Log.New();
         IOCapture cap  = IOCapture.New();
         Error err      = cap.BeginStdout();
-        Error lerr     = ERROR("level-tag-error");
+        err            = logger.Err("level-tag-error");
         string out     = cap.End();
         string plain   = StripAnsi(out);
         bool has_level = Contains(plain, "error");
@@ -111,9 +119,10 @@ autotuner LogOutputTests -> (int passed, int failed) {
 
     // ── Cross-level isolation ─────────────────────────────────────────────────
     state test_messages_are_distinct (TestRunner runner, TestContext t) {
+        Log logger      = Log.New();
         IOCapture cap   = IOCapture.New();
         Error err       = cap.BeginStdout();
-        err             = INFO("unique-info-xyz");
+        err             = logger.Info("unique-info-xyz");
         string out      = cap.End();
         string plain    = StripAnsi(out);
         bool no_debug   = Contains(plain, "unique-debug-xyz");
