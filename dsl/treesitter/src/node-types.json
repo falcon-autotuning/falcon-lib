@@ -12,7 +12,7 @@
             "named": false
           },
           {
-            "type": "identifier",
+            "type": "variable",
             "named": true
           }
         ]
@@ -65,7 +65,7 @@
       },
       "outputs": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "param_list",
@@ -84,6 +84,10 @@
         },
         {
           "type": "autotuner_var_decl",
+          "named": true
+        },
+        {
+          "type": "direction",
           "named": true
         },
         {
@@ -264,26 +268,40 @@
     "type": "entry_stmt",
     "named": true,
     "fields": {
-      "next": {
-        "multiple": false,
-        "required": true,
+      "inputs": {
+        "multiple": true,
+        "required": false,
         "types": [
+          {
+            "type": ",",
+            "named": false
+          },
           {
             "type": "identifier",
             "named": true
           }
         ]
       },
-      "target": {
+      "next": {
         "multiple": false,
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "entry_target",
             "named": true
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "direction",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -300,6 +318,10 @@
         },
         {
           "type": "call_expr",
+          "named": true
+        },
+        {
+          "type": "index_expr",
           "named": true
         },
         {
@@ -445,6 +467,52 @@
     }
   },
   {
+    "type": "index_expr",
+    "named": true,
+    "fields": {
+      "close_bracket": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "]",
+            "named": false
+          }
+        ]
+      },
+      "index": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expr",
+            "named": true
+          }
+        ]
+      },
+      "object": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "variable",
+            "named": true
+          }
+        ]
+      },
+      "open_bracket": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "[",
+            "named": false
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "member_expr",
     "named": true,
     "fields": {
@@ -540,7 +608,7 @@
     "type": "param_decl",
     "named": true,
     "fields": {
-      "name": {
+      "param_name": {
         "multiple": false,
         "required": true,
         "types": [
@@ -657,7 +725,7 @@
         "required": false,
         "types": [
           {
-            "type": "identifier",
+            "type": "qualified_name",
             "named": true
           }
         ]
@@ -733,6 +801,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "direction",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -976,6 +1054,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "direction",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1028,6 +1116,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "direction",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1044,6 +1142,14 @@
         },
         {
           "type": "type",
+          "named": true
+        },
+        {
+          "type": "type_args_close",
+          "named": true
+        },
+        {
+          "type": "type_args_open",
           "named": true
         }
       ]
@@ -1063,22 +1169,48 @@
           }
         ]
       },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
       "type": {
         "multiple": false,
         "required": true,
         "types": [
           {
             "type": "type",
+            "named": true
+          }
+        ]
+      },
+      "variable_name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "variable",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "variable",
+    "named": true,
+    "fields": {
+      "module": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "qualified_name",
+            "named": true
+          }
+        ]
+      },
+      "symbol": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
             "named": true
           }
         ]
@@ -1102,10 +1234,6 @@
     "named": false
   },
   {
-    "type": "->",
-    "named": false
-  },
-  {
     "type": ".",
     "named": false
   },
@@ -1118,15 +1246,15 @@
     "named": false
   },
   {
-    "type": "<",
-    "named": false
-  },
-  {
     "type": "=",
     "named": false
   },
   {
-    "type": ">",
+    "type": "[",
+    "named": false
+  },
+  {
+    "type": "]",
     "named": false
   },
   {
@@ -1139,12 +1267,20 @@
     "extra": true
   },
   {
+    "type": "direction",
+    "named": true
+  },
+  {
     "type": "elif",
     "named": false
   },
   {
     "type": "else",
     "named": false
+  },
+  {
+    "type": "entry_target",
+    "named": true
   },
   {
     "type": "false",
@@ -1187,6 +1323,10 @@
     "named": false
   },
   {
+    "type": "start",
+    "named": false
+  },
+  {
     "type": "state",
     "named": false
   },
@@ -1205,6 +1345,14 @@
   {
     "type": "true",
     "named": false
+  },
+  {
+    "type": "type_args_close",
+    "named": true
+  },
+  {
+    "type": "type_args_open",
+    "named": true
   },
   {
     "type": "uses",
