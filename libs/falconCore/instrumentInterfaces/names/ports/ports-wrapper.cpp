@@ -94,9 +94,10 @@ void STRUCTPortsGetDefaultNames(const FalconParamEntry *params,
                                  int32_t param_count, FalconResultSlot *out,
                                  int32_t *oc) {
   auto ports_obj = get_opaque<Ports>(params, param_count, "this");
-  auto name_list = ports_obj->get_default_names();
+  auto name_list = *ports_obj->get_default_names();
   std::vector<RuntimeValue> elements;
-  for (const auto &name : *name_list) {
+  for (const auto &name : name_list.items()) {
+    std::cout << "Got default name: " << name << "\n";
     elements.push_back(std::string(name));
   }
   auto arr_val = std::make_shared<ArrayValue>("string", std::move(elements));
