@@ -14,7 +14,16 @@
 ; Types
 (type (type_args_open) @punctuation.bracket (#set! priority 300))
 (type (type_args_close) @punctuation.bracket (#set! priority 300))
-(type (identifier) @type.definition (#set! priority 200))
+(module_sep)      @punctuation.delimiter (#set! priority 300)
+(type
+  (qualified_type
+    module: (qualified_type
+      symbol: (identifier) @module (#set! priority 201))
+    (module_sep)      @punctuation.delimiter (#set! priority 300)
+    symbol: (identifier) @type.definition (#set! priority 200)))
+(type ; [7, 17] - [7, 39]
+  (qualified_type ; [7, 17] - [7, 39]
+    symbol: (identifier)) @type.definition (#set! priority 200))
 (entry_target) @function.method
 (param_decl type: (type) @type.definition 
   param_name: (identifier) @variable (#set! priority 200))
@@ -121,11 +130,11 @@
 ;; Color module portion in io::println
 (qualified_name
   module: (qualified_name
-    symbol: (identifier) @module (#set! priority 201)))
-
-;; Color function portion in io::println
-(qualified_name
+    symbol: (identifier) @module (#set! priority 201))
+  (module_sep)      @punctuation.delimiter (#set! priority 300)
   symbol: (identifier) @function.call (#set! priority 200))
+(qualified_name ; [7, 17] - [7, 39]
+  symbol: (identifier)) @function.call (#set! priority 200)
 
 ; index in get expression
 (index_expr (_ (identifier) @variable))
@@ -145,7 +154,6 @@
 ";"       @punctuation.delimiter
 ","       @punctuation.delimiter
 "."       @punctuation.delimiter
-"::"      @punctuation.delimiter
 "="       @operator.assignment
 
 ; Literals

@@ -643,7 +643,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "qualified_name"
+              "name": "qualified_type"
             },
             {
               "type": "REPEAT",
@@ -656,7 +656,7 @@
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "qualified_name"
+                    "name": "qualified_type"
                   }
                 ]
               }
@@ -1852,8 +1852,56 @@
                   }
                 },
                 {
-                  "type": "STRING",
-                  "value": "::"
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "STRING",
+                    "value": "::"
+                  },
+                  "named": true,
+                  "value": "module_sep"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "FIELD",
+          "name": "symbol",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        }
+      ]
+    },
+    "qualified_type": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "module",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "qualified_type"
+                  }
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "STRING",
+                    "value": "::"
+                  },
+                  "named": true,
+                  "value": "module_sep"
                 }
               ]
             },
@@ -1944,7 +1992,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "identifier"
+          "name": "qualified_type"
         },
         {
           "type": "CHOICE",
@@ -2089,6 +2137,10 @@
     [
       "type",
       "qualified_name"
+    ],
+    [
+      "qualified_name",
+      "qualified_type"
     ],
     [
       "expr",
