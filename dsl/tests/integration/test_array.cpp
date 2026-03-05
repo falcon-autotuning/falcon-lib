@@ -163,3 +163,16 @@ TEST_F(ArrayMethodTest, PushbackOnTwoElementArray) {
   ASSERT_EQ(outputs.size(), 1u);
   EXPECT_EQ(std::get<int64_t>(outputs[0]), 99);
 }
+
+TEST_F(ArrayMethodTest, ArrayAssignment) {
+  ParameterMap params;
+  SingleCompileEnvironment cenv{
+      std::filesystem::path("test-autotuners/array/assignment.fal"),
+      "AssignmentTest", params, true};
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(outputs.size(), 3u);
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), 1);
+  EXPECT_EQ(std::get<int64_t>(outputs[1]), 2);
+  EXPECT_EQ(std::get<int64_t>(outputs[2]), 3);
+}

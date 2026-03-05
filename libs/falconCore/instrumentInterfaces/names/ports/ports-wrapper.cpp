@@ -126,26 +126,14 @@ void STRUCTPortsGetPsuedoNames(const FalconParamEntry *params,
 void STRUCTPortsIsKnobs(const FalconParamEntry *params, int32_t param_count,
                          FalconResultSlot *out, int32_t *oc) {
   auto ports_obj = get_opaque<Ports>(params, param_count, "this");
-  auto flag_list = ports_obj->is_knobs();
-  std::vector<RuntimeValue> elements;
-  for (bool flag : *flag_list) {
-    elements.push_back(flag);
-  }
-  auto arr_val = std::make_shared<ArrayValue>("bool", std::move(elements));
-  pack_results(FunctionResult{arr_val}, out, 16, oc);
+  pack_results(FunctionResult{ports_obj->is_knobs()}, out, 16, oc);
 }
 
 // IsMeters(this: Ports) -> (Array<bool> is_meters)
 void STRUCTPortsIsMeters(const FalconParamEntry *params, int32_t param_count,
                           FalconResultSlot *out, int32_t *oc) {
   auto ports_obj = get_opaque<Ports>(params, param_count, "this");
-  auto flag_list = ports_obj->is_meters();
-  std::vector<RuntimeValue> elements;
-  for (bool flag : *flag_list) {
-    elements.push_back(flag);
-  }
-  auto arr_val = std::make_shared<ArrayValue>("bool", std::move(elements));
-  pack_results(FunctionResult{arr_val}, out, 16, oc);
+  pack_results(FunctionResult{ports_obj->is_meters()}, out, 16, oc);
 }
 
 // ── Equality ──────────────────────────────────────────────────────────────────
