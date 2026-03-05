@@ -28,16 +28,19 @@ static void pack_opaque_ports(PortsSP ports, FalconResultSlot *out,
   *oc = 1;
 }
 
-static void pack_opaque_port(InstrumentPortSP port, FalconResultSlot *out,
-                              int32_t *oc) {
-  out[0]                        = {};
-  out[0].tag                    = FALCON_TYPE_OPAQUE;
-  out[0].value.opaque.type_name = "InstrumentPort";
-  out[0].value.opaque.ptr       = new InstrumentPortSP(std::move(port));
-  out[0].value.opaque.deleter   = [](void *p) {
-    delete static_cast<InstrumentPortSP *>(p);
-  };
-  *oc = 1;
+// Wrap an InstrumentPortSP as a StructInstance with native_handle — this is
+// how the engine represents opaque FFI objects inside an ArrayValue element.
+static RuntimeValue wrap_port_as_struct(InstrumentPortSP port) {
+  auto inst = std::make_shared<StructInstance>("InstrumentPort");
+  inst->native_handle = std::static_pointer_cast<void>(port);
+  return inst;
+}
+
+// Wrap a ConnectionSP the same way.
+static RuntimeValue wrap_conn_as_struct(ConnectionSP conn) {
+  auto inst = std::make_shared<StructInstance>("Connection");
+  inst->native_handle = std::static_pointer_cast<void>(conn);
+  return inst;
 }
 
 extern "C" {
@@ -45,82 +48,104 @@ extern "C" {
 // ── Constructor ───────────────────────────────────────────────────────────────
 
 // New(ports: Array<InstrumentPort>) -> (Ports ports)
+//
+// The engine delivers Array<InstrumentPort> as a shared_ptr<ArrayValue> where
+// each element is a shared_ptr<StructInstance> whose native_handle holds the
+// actual shared_ptr<InstrumentPort>.
 void STRUCTPortsNew(const FalconParamEntry *params, int32_t param_count,
                     FalconResultSlot *out, int32_t *oc) {
-  auto pm = unpack_params(params, param_count);
+  auto pm      = unpack_params(params, param_count);
   auto arr_val = std::get<std::shared_ptr<ArrayValue>>(pm.at("ports"));
   std::vector<InstrumentPortSP> vec;
   vec.reserve(arr_val->elements.size());
   for (const auto &elem : arr_val->elements) {
-      auto port_instance = std::get<std::shared_ptr<StructInstance>>(elem);
-      auto port = std::static_pointer_cast<InstrumentPort>(port_instance);
-      vec.push_back(port);
+    auto inst = std::get<std::shared_ptr<StructInstance>>(elem);
+    // native_handle holds the shared_ptr<InstrumentPort> — recover it.
+    auto port = std::static_pointer_cast<InstrumentPort>(
+        inst->native_handle.value());
+    vec.push_back(std::move(port));
   }
-  auto ports_obj = std::make_shared<Ports>(vec);
-  pack_opaque_ports(std::move(ports_obj), out, oc);
+  pack_opaque_ports(std::make_shared<Ports>(vec), out, oc);
 }
 
 // ── Accessors ─────────────────────────────────────────────────────────────────
 
 // Ports(this: Ports) -> (Array<InstrumentPort> ports)
+//
+// Returns an ArrayValue of StructInstance wrappers, each carrying the
+// InstrumentPort via native_handle — the mirror of how New() receives them.
 void STRUCTPortsPorts(const FalconParamEntry *params, int32_t param_count,
                       FalconResultSlot *out, int32_t *oc) {
-  auto ports_obj  = get_opaque<Ports>(params, param_count, "this");
-  const auto &vec = ports_obj->ports();
+  auto ports_obj = get_opaque<Ports>(params, param_count, "this");
   std::vector<RuntimeValue> elements;
   for (const auto &port : *ports_obj->ports()) {
-      elements.push_back(std::static_pointer_cast<StructInstance>(port));
+    elements.push_back(wrap_port_as_struct(port));
   }
-  auto arr_val = std::make_shared<ArrayValue>("InstrumentPort", std::move(elements));
+  auto arr_val = std::make_shared<ArrayValue>("InstrumentPort",
+                                              std::move(elements));
   pack_results(FunctionResult{arr_val}, out, 16, oc);
 }
 
 // GetDefaultNames(this: Ports) -> (Array<string> names)
+//
+// get_default_names() returns a falcon_core ListSP<string>.  We iterate it
+// and build a proper ArrayValue of std::string RuntimeValues.
 void STRUCTPortsGetDefaultNames(const FalconParamEntry *params,
                                  int32_t param_count, FalconResultSlot *out,
                                  int32_t *oc) {
   auto ports_obj = get_opaque<Ports>(params, param_count, "this");
-  auto names     = ports_obj->get_default_names();
-  pack_results(FunctionResult{names}, out, 16, oc);
+  auto name_list = ports_obj->get_default_names();
+  std::vector<RuntimeValue> elements;
+  for (const auto &name : *name_list) {
+    elements.push_back(std::string(name));
+  }
+  auto arr_val = std::make_shared<ArrayValue>("string", std::move(elements));
+  pack_results(FunctionResult{arr_val}, out, 16, oc);
 }
 
 // GetPsuedoNames(this: Ports) -> (Array<Connection> connections)
+//
+// Same pattern: iterate the ListSP<Connection>, wrap each as a StructInstance
+// carrying a native_handle, and return as an ArrayValue.
 void STRUCTPortsGetPsuedoNames(const FalconParamEntry *params,
                                 int32_t param_count, FalconResultSlot *out,
                                 int32_t *oc) {
-  auto ports_obj    = get_opaque<Ports>(params, param_count, "this");
-  const auto &conns = ports_obj->get_pseudo_names();
-  auto *arr         = new falcon::typing::ArrayValue();
-  arr->element_type = FALCON_TYPE_OPAQUE;
-  arr->count        = static_cast<int32_t>(conns.size());
-  arr->elements     = new FalconValue[arr->elements.size()];
-  for (int32_t i = 0; i < arr->elements.size(); ++i) {
-    arr->elements[i].opaque.type_name = "Connection";
-    arr->elements[i].opaque.ptr       = new ConnectionSP(conns[i]);
-    arr->elements[i].opaque.deleter   = [](void *p) {
-      delete static_cast<ConnectionSP *>(p);
-    };
+  auto ports_obj = get_opaque<Ports>(params, param_count, "this");
+  auto conn_list = ports_obj->get_pseudo_names();
+  std::vector<RuntimeValue> elements;
+  for (const auto &conn : *conn_list) {
+    elements.push_back(wrap_conn_as_struct(conn));
   }
-  out[0]             = {};
-  out[0].tag         = FALCON_TYPE_ARRAY;
-  out[0].value.array = arr;
-  *oc = 1;
+  auto arr_val = std::make_shared<ArrayValue>("Connection", std::move(elements));
+  pack_results(FunctionResult{arr_val}, out, 16, oc);
 }
 
 // IsKnobs(this: Ports) -> (Array<bool> is_knobs)
+//
+// is_knobs() returns a ListSP<bool>.  Iterate and build an ArrayValue of bool.
 void STRUCTPortsIsKnobs(const FalconParamEntry *params, int32_t param_count,
                          FalconResultSlot *out, int32_t *oc) {
   auto ports_obj = get_opaque<Ports>(params, param_count, "this");
-  auto flags     = ports_obj->is_knobs();
-  pack_results(FunctionResult{flags}, out, 16, oc);
+  auto flag_list = ports_obj->is_knobs();
+  std::vector<RuntimeValue> elements;
+  for (bool flag : *flag_list) {
+    elements.push_back(flag);
+  }
+  auto arr_val = std::make_shared<ArrayValue>("bool", std::move(elements));
+  pack_results(FunctionResult{arr_val}, out, 16, oc);
 }
 
 // IsMeters(this: Ports) -> (Array<bool> is_meters)
 void STRUCTPortsIsMeters(const FalconParamEntry *params, int32_t param_count,
                           FalconResultSlot *out, int32_t *oc) {
   auto ports_obj = get_opaque<Ports>(params, param_count, "this");
-  auto flags     = ports_obj->is_meters();
-  pack_results(FunctionResult{flags}, out, 16, oc);
+  auto flag_list = ports_obj->is_meters();
+  std::vector<RuntimeValue> elements;
+  for (bool flag : *flag_list) {
+    elements.push_back(flag);
+  }
+  auto arr_val = std::make_shared<ArrayValue>("bool", std::move(elements));
+  pack_results(FunctionResult{arr_val}, out, 16, oc);
 }
 
 // ── Equality ──────────────────────────────────────────────────────────────────
