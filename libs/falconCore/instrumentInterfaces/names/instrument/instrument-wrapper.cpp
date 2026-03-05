@@ -1,4 +1,5 @@
 #include "falcon_core/instrument_interfaces/names/Instrument.hpp"
+#include "falcon_core/instrument_interfaces/names/InstrumentTypes.hpp"
 #include <falcon-typing/FFIHelpers.hpp>
 
 using namespace falcon::typing;
@@ -6,6 +7,7 @@ using namespace falcon::typing::ffi::wrapper;
 
 using Instrument   = falcon_core::instrument_interfaces::names::Instrument;
 using InstrumentSP = std::shared_ptr<Instrument>;
+using InstrumentTypes = falcon_core::instrument_interfaces::names::InstrumentTypes;
 
 // ── helper ────────────────────────────────────────────────────────────────────
 
@@ -28,33 +30,33 @@ extern "C" {
 // DCVoltageSource() -> (string type)
 void STRUCTInstrumentDCVoltageSource(const FalconParamEntry *, int32_t,
                                       FalconResultSlot *out, int32_t *oc) {
-  pack_results(FunctionResult{std::string(Instrument::DCVoltageSource())},
+  pack_results(FunctionResult{std::string(InstrumentTypes::DC_VOLTAGE_SOURCE)},
                out, 16, oc);
 }
 
 // Amnmeter() -> (string type)
 void STRUCTInstrumentAmnmeter(const FalconParamEntry *, int32_t,
                                FalconResultSlot *out, int32_t *oc) {
-  pack_results(FunctionResult{std::string(Instrument::Ammeter())}, out, 16, oc);
+  pack_results(FunctionResult{std::string(InstrumentTypes::AMNMETER)}, out, 16, oc);
 }
 
 // Magnet() -> (string type)
 void STRUCTInstrumentMagnet(const FalconParamEntry *, int32_t,
                              FalconResultSlot *out, int32_t *oc) {
-  pack_results(FunctionResult{std::string(Instrument::Magnet())}, out, 16, oc);
+  pack_results(FunctionResult{std::string(InstrumentTypes::MAGNET)}, out, 16, oc);
 }
 
 // VoltageSource() -> (string type)
 void STRUCTInstrumentVoltageSource(const FalconParamEntry *, int32_t,
                                     FalconResultSlot *out, int32_t *oc) {
-  pack_results(FunctionResult{std::string(Instrument::VoltageSource())},
+  pack_results(FunctionResult{std::string(InstrumentTypes::VOLTAGE_SOURCE)},
                out, 16, oc);
 }
 
 // Clock() -> (string type)
 void STRUCTInstrumentClock(const FalconParamEntry *, int32_t,
                             FalconResultSlot *out, int32_t *oc) {
-  pack_results(FunctionResult{std::string(Instrument::Clock())}, out, 16, oc);
+  pack_results(FunctionResult{std::string(InstrumentTypes::CLOCK)}, out, 16, oc);
 }
 
 } // extern "C"

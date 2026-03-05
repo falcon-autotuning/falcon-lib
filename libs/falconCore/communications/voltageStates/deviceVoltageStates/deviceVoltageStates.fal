@@ -7,8 +7,8 @@ import (
 ffimport "device-voltage-states-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct DeviceVoltageStates {
     routine New (Array<DeviceVoltageState> conn) -> (DeviceVoltageStates states)
-    routine AddState (DeviceVoltageState state) -> ()
-    routine FindState (connection::Connection conn) -> (DeviceVoltageState state)
+    routine AddState (DeviceVoltageState dstate) -> ()
+    routine FindState (connection::Connection conn) -> (DeviceVoltageState dstate)
     routine ToPoint () -> (point::Point point) 
     routine Connection -> (connection::Connection conn)
     routine Insert (connection::Connection conn, int location) -> ()

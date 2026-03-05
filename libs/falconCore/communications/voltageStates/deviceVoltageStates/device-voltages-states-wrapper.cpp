@@ -69,7 +69,7 @@ void STRUCTDeviceVoltageStatesAddState(const FalconParamEntry *params,
                                         int32_t param_count,
                                         FalconResultSlot *out, int32_t *oc) {
   auto self  = get_opaque<DeviceVoltageStates>(params, param_count, "this");
-  auto state = get_opaque<DeviceVoltageState>(params, param_count, "state");
+  auto state = get_opaque<DeviceVoltageState>(params, param_count, "dstate");
   self->add_state(state);
   out[0] = {}; out[0].tag = FALCON_TYPE_NIL; *oc = 1;
 }
