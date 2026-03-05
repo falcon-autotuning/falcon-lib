@@ -48,13 +48,13 @@ extern "C" {
 void STRUCTPortsNew(const FalconParamEntry *params, int32_t param_count,
                     FalconResultSlot *out, int32_t *oc) {
   auto pm = unpack_params(params, param_count);
-  // The Array<InstrumentPort> arrives as an ArrayValue in the ParameterMap.
-  // Each element is an opaque InstrumentPort shared_ptr.
-  const auto &arr_val = std::get<ArrayValue>(pm.at("ports"));
+  auto arr_val = std::get<std::shared_ptr<ArrayValue>>(pm.at("ports"));
   std::vector<InstrumentPortSP> vec;
-  vec.reserve(arr_val.elements.size());
-  for (const auto &elem : arr_val.elements) {
-    vec.push_back(std::get<InstrumentPortSP>(elem));
+  vec.reserve(arr_val->elements.size());
+  for (const auto &elem : arr_val->elements) {
+      auto port_instance = std::get<std::shared_ptr<StructInstance>>(elem);
+      auto port = std::static_pointer_cast<InstrumentPort>(port_instance);
+      vec.push_back(port);
   }
   auto ports_obj = std::make_shared<Ports>(vec);
   pack_opaque_ports(std::move(ports_obj), out, oc);
@@ -67,21 +67,12 @@ void STRUCTPortsPorts(const FalconParamEntry *params, int32_t param_count,
                       FalconResultSlot *out, int32_t *oc) {
   auto ports_obj  = get_opaque<Ports>(params, param_count, "this");
   const auto &vec = ports_obj->ports();
-  auto *arr       = new FalconArray();
-  arr->element_type = FALCON_TYPE_OPAQUE;
-  arr->count        = static_cast<int32_t>(vec.size());
-  arr->elements     = new FalconValue[arr->count];
-  for (int32_t i = 0; i < arr->count; ++i) {
-    arr->elements[i].opaque.type_name = "InstrumentPort";
-    arr->elements[i].opaque.ptr       = new InstrumentPortSP(vec[i]);
-    arr->elements[i].opaque.deleter   = [](void *p) {
-      delete static_cast<InstrumentPortSP *>(p);
-    };
+  std::vector<RuntimeValue> elements;
+  for (const auto &port : *ports_obj->ports()) {
+      elements.push_back(std::static_pointer_cast<StructInstance>(port));
   }
-  out[0]             = {};
-  out[0].tag         = FALCON_TYPE_ARRAY;
-  out[0].value.array = arr;
-  *oc = 1;
+  auto arr_val = std::make_shared<ArrayValue>("InstrumentPort", std::move(elements));
+  pack_results(FunctionResult{arr_val}, out, 16, oc);
 }
 
 // GetDefaultNames(this: Ports) -> (Array<string> names)
@@ -89,7 +80,7 @@ void STRUCTPortsGetDefaultNames(const FalconParamEntry *params,
                                  int32_t param_count, FalconResultSlot *out,
                                  int32_t *oc) {
   auto ports_obj = get_opaque<Ports>(params, param_count, "this");
-  auto names     = ports_obj->default_names();
+  auto names     = ports_obj->get_default_names();
   pack_results(FunctionResult{names}, out, 16, oc);
 }
 
@@ -98,8 +89,8 @@ void STRUCTPortsGetPsuedoNames(const FalconParamEntry *params,
                                 int32_t param_count, FalconResultSlot *out,
                                 int32_t *oc) {
   auto ports_obj    = get_opaque<Ports>(params, param_count, "this");
-  const auto &conns = ports_obj->pseudo_names();
-  auto *arr         = new FalconArray();
+  const auto &conns = ports_obj->get_pseudo_names();
+  auto *arr         = new typing::ArrayValue();
   arr->element_type = FALCON_TYPE_OPAQUE;
   arr->count        = static_cast<int32_t>(conns.size());
   arr->elements     = new FalconValue[arr->count];

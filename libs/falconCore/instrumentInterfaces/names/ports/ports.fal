@@ -1,9 +1,10 @@
-ffimport "ports-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 import (
-"../../../physics/deviceStructures/connection.fal"
+"../../../physics/deviceStructures/connection/connection.fal"
 "../../../physics/units/symbolUnit/symbolUnit.fal"
-"./instrument.fal"
+"../instrument/instrument.fal"
+"../instrumentPort/instrumentPort.fal"
 )
+ffimport "ports-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct Ports {
     routine New (Array<instrumentPort::InstrumentPort> ports) -> (Ports ports)
     routine Ports -> (Array<instrumentPort::InstrumentPort> ports)
