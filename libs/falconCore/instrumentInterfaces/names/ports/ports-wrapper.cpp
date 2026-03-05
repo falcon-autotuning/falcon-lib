@@ -48,10 +48,6 @@ extern "C" {
 // ── Constructor ───────────────────────────────────────────────────────────────
 
 // New(ports: Array<InstrumentPort>) -> (Ports ports)
-//
-// The engine delivers Array<InstrumentPort> as a shared_ptr<ArrayValue> where
-// each element is a shared_ptr<StructInstance> whose native_handle holds the
-// actual shared_ptr<InstrumentPort>.
 void STRUCTPortsNew(const FalconParamEntry *params, int32_t param_count,
                     FalconResultSlot *out, int32_t *oc) {
   auto pm      = unpack_params(params, param_count);
@@ -60,7 +56,6 @@ void STRUCTPortsNew(const FalconParamEntry *params, int32_t param_count,
   vec.reserve(arr_val->elements.size());
   for (const auto &elem : arr_val->elements) {
     auto inst = std::get<std::shared_ptr<StructInstance>>(elem);
-    // native_handle holds the shared_ptr<InstrumentPort> — recover it.
     auto port = std::static_pointer_cast<InstrumentPort>(
         inst->native_handle.value());
     vec.push_back(std::move(port));
@@ -71,9 +66,6 @@ void STRUCTPortsNew(const FalconParamEntry *params, int32_t param_count,
 // ── Accessors ─────────────────────────────────────────────────────────────────
 
 // Ports(this: Ports) -> (Array<InstrumentPort> ports)
-//
-// Returns an ArrayValue of StructInstance wrappers, each carrying the
-// InstrumentPort via native_handle — the mirror of how New() receives them.
 void STRUCTPortsPorts(const FalconParamEntry *params, int32_t param_count,
                       FalconResultSlot *out, int32_t *oc) {
   auto ports_obj = get_opaque<Ports>(params, param_count, "this");
@@ -88,16 +80,16 @@ void STRUCTPortsPorts(const FalconParamEntry *params, int32_t param_count,
 
 // GetDefaultNames(this: Ports) -> (Array<string> names)
 //
-// get_default_names() returns a falcon_core ListSP<string>.  We iterate it
-// and build a proper ArrayValue of std::string RuntimeValues.
+// BUG FIX: keep the ListSP alive as a shared_ptr; never copy List<T> by value
+// since its items() view points into internal storage that moves with the copy.
+// Iterate via the shared_ptr dereference in-place, identical to GetPsuedoNames.
 void STRUCTPortsGetDefaultNames(const FalconParamEntry *params,
                                  int32_t param_count, FalconResultSlot *out,
                                  int32_t *oc) {
   auto ports_obj = get_opaque<Ports>(params, param_count, "this");
-  auto name_list = *ports_obj->get_default_names();
+  auto name_list = ports_obj->get_default_names(); // shared_ptr — NO copy
   std::vector<RuntimeValue> elements;
-  for (const auto &name : name_list.items()) {
-    std::cout << "Got default name: " << name << "\n";
+  for (const auto &name : *name_list) {            // dereference in range expr
     elements.push_back(std::string(name));
   }
   auto arr_val = std::make_shared<ArrayValue>("string", std::move(elements));
@@ -105,9 +97,6 @@ void STRUCTPortsGetDefaultNames(const FalconParamEntry *params,
 }
 
 // GetPsuedoNames(this: Ports) -> (Array<Connection> connections)
-//
-// Same pattern: iterate the ListSP<Connection>, wrap each as a StructInstance
-// carrying a native_handle, and return as an ArrayValue.
 void STRUCTPortsGetPsuedoNames(const FalconParamEntry *params,
                                 int32_t param_count, FalconResultSlot *out,
                                 int32_t *oc) {
@@ -122,8 +111,6 @@ void STRUCTPortsGetPsuedoNames(const FalconParamEntry *params,
 }
 
 // IsKnobs(this: Ports) -> (Array<bool> is_knobs)
-//
-// is_knobs() returns a ListSP<bool>.  Iterate and build an ArrayValue of bool.
 void STRUCTPortsIsKnobs(const FalconParamEntry *params, int32_t param_count,
                          FalconResultSlot *out, int32_t *oc) {
   auto ports_obj = get_opaque<Ports>(params, param_count, "this");

@@ -5,7 +5,9 @@
 using namespace falcon::typing;
 using namespace falcon::typing::ffi::wrapper;
 
-using FArray   = falcon_core::generic::FArray;
+// FArray<T> is a C++ template. The Falcon DSL binding is always over doubles
+// (the optimiser pipeline operates in double precision). Monomorphize here.
+using FArray   = falcon_core::generic::FArray<double>;
 using FArraySP = std::shared_ptr<FArray>;
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -49,7 +51,7 @@ void STRUCTFArrayTimesFloat(const FalconParamEntry *params, int32_t param_count,
   auto pm    = unpack_params(params, param_count);
   auto self  = get_opaque<FArray>(params, param_count, "this");
   double fac = std::get<double>(pm.at("factor"));
-  pack_farray(std::make_shared<FArray>(*self * fac), out, oc);
+  pack_farray(*self * fac, out, oc);
 }
 
 // Times(this: FArray, factor: int) -> (FArray scaled_state)
@@ -58,18 +60,8 @@ void STRUCTFArrayTimesInt(const FalconParamEntry *params, int32_t param_count,
   auto pm     = unpack_params(params, param_count);
   auto self   = get_opaque<FArray>(params, param_count, "this");
   int64_t fac = std::get<int64_t>(pm.at("factor"));
-  pack_farray(std::make_shared<FArray>(*self * static_cast<int>(fac)), out, oc);
-}
-
-// Times(this: FArray, factor: Quantity) -> (FArray scaled_state)
-void STRUCTFArrayTimesQuantity(const FalconParamEntry *params,
-                                int32_t param_count, FalconResultSlot *out,
-                                int32_t *oc) {
-  auto self  = get_opaque<FArray>(params, param_count, "this");
-  auto other = get_opaque<FArray>(params, param_count, "factor");
-  pack_farray(std::make_shared<FArray>(
-      *self * std::static_pointer_cast<falcon_core::math::Quantity>(other)),
-              out, oc);
+  pack_farray(*self * static_cast<double>(fac), out,
+              oc);
 }
 
 // ── Arithmetic: Divides ───────────────────────────────────────────────────────
@@ -81,7 +73,7 @@ void STRUCTFArrayDividesFloat(const FalconParamEntry *params,
   auto pm    = unpack_params(params, param_count);
   auto self  = get_opaque<FArray>(params, param_count, "this");
   double div = std::get<double>(pm.at("divisor"));
-  pack_farray(std::make_shared<FArray>(*self / div), out, oc);
+  pack_farray(*self / div, out, oc);
 }
 
 // Divides(this: FArray, divisor: int) -> (FArray scaled_state)
@@ -90,18 +82,7 @@ void STRUCTFArrayDividesInt(const FalconParamEntry *params, int32_t param_count,
   auto pm     = unpack_params(params, param_count);
   auto self   = get_opaque<FArray>(params, param_count, "this");
   int64_t div = std::get<int64_t>(pm.at("divisor"));
-  pack_farray(std::make_shared<FArray>(*self / static_cast<int>(div)), out, oc);
-}
-
-// Divides(this: FArray, divisor: Quantity) -> (FArray scaled_state)
-void STRUCTFArrayDividesQuantity(const FalconParamEntry *params,
-                                  int32_t param_count, FalconResultSlot *out,
-                                  int32_t *oc) {
-  auto self  = get_opaque<FArray>(params, param_count, "this");
-  auto other = get_opaque<FArray>(params, param_count, "divisor");
-  pack_farray(std::make_shared<FArray>(
-      *self / std::static_pointer_cast<falcon_core::math::Quantity>(other)),
-              out, oc);
+  pack_farray(*self / static_cast<double>(div), out, oc);
 }
 
 // ── Arithmetic: Power ─────────────────────────────────────────────────────────
@@ -112,7 +93,7 @@ void STRUCTFArrayPower(const FalconParamEntry *params, int32_t param_count,
   auto pm     = unpack_params(params, param_count);
   auto self   = get_opaque<FArray>(params, param_count, "this");
   int64_t exp = std::get<int64_t>(pm.at("exponent"));
-  pack_farray(std::make_shared<FArray>(*self ^ static_cast<int>(exp)), out, oc);
+  pack_farray(*self ^ static_cast<int>(exp), out, oc);
 }
 
 // ── Arithmetic: Add ───────────────────────────────────────────────────────────
@@ -122,9 +103,7 @@ void STRUCTFArrayAddFArray(const FalconParamEntry *params, int32_t param_count,
                             FalconResultSlot *out, int32_t *oc) {
   auto self  = get_opaque<FArray>(params, param_count, "this");
   auto other = get_opaque<FArray>(params, param_count, "other");
-  pack_farray(std::make_shared<FArray>(
-      *self + std::static_pointer_cast<falcon_core::math::Quantity>(other)),
-              out, oc);
+  pack_farray(*self + other, out, oc);
 }
 
 // Add(this: FArray, other: int) -> (FArray sum_state)
@@ -133,7 +112,8 @@ void STRUCTFArrayAddInt(const FalconParamEntry *params, int32_t param_count,
   auto pm     = unpack_params(params, param_count);
   auto self   = get_opaque<FArray>(params, param_count, "this");
   int64_t val = std::get<int64_t>(pm.at("other"));
-  pack_farray(std::make_shared<FArray>(*self + static_cast<int>(val)), out, oc);
+  pack_farray(
+      *self + static_cast<double>(val), out, oc);
 }
 
 // Add(this: FArray, other: float) -> (FArray sum_state)
@@ -142,7 +122,7 @@ void STRUCTFArrayAddFloat(const FalconParamEntry *params, int32_t param_count,
   auto pm    = unpack_params(params, param_count);
   auto self  = get_opaque<FArray>(params, param_count, "this");
   double val = std::get<double>(pm.at("other"));
-  pack_farray(std::make_shared<FArray>(*self + val), out, oc);
+  pack_farray(*self + val, out, oc);
 }
 
 // ── Arithmetic: Subtract ──────────────────────────────────────────────────────
@@ -153,9 +133,7 @@ void STRUCTFArraySubtractFArray(const FalconParamEntry *params,
                                  int32_t *oc) {
   auto self  = get_opaque<FArray>(params, param_count, "this");
   auto other = get_opaque<FArray>(params, param_count, "other");
-  pack_farray(std::make_shared<FArray>(
-      *self - std::static_pointer_cast<falcon_core::math::Quantity>(other)),
-              out, oc);
+  pack_farray(*self - other, out, oc);
 }
 
 // Subtract(this: FArray, other: int) -> (FArray difference_state)
@@ -165,7 +143,8 @@ void STRUCTFArraySubtractInt(const FalconParamEntry *params,
   auto pm     = unpack_params(params, param_count);
   auto self   = get_opaque<FArray>(params, param_count, "this");
   int64_t val = std::get<int64_t>(pm.at("other"));
-  pack_farray(std::make_shared<FArray>(*self - static_cast<int>(val)), out, oc);
+  pack_farray(
+      *self - static_cast<double>(val), out, oc);
 }
 
 // Subtract(this: FArray, other: float) -> (FArray difference_state)
@@ -175,7 +154,7 @@ void STRUCTFArraySubtractFloat(const FalconParamEntry *params,
   auto pm    = unpack_params(params, param_count);
   auto self  = get_opaque<FArray>(params, param_count, "this");
   double val = std::get<double>(pm.at("other"));
-  pack_farray(std::make_shared<FArray>(*self - val), out, oc);
+  pack_farray(*self - val, out, oc);
 }
 
 // ── Unary ─────────────────────────────────────────────────────────────────────
@@ -184,14 +163,14 @@ void STRUCTFArraySubtractFloat(const FalconParamEntry *params,
 void STRUCTFArrayNegate(const FalconParamEntry *params, int32_t param_count,
                          FalconResultSlot *out, int32_t *oc) {
   auto self = get_opaque<FArray>(params, param_count, "this");
-  pack_farray(std::make_shared<FArray>(-(*self)), out, oc);
+  pack_farray(-(*self), out, oc);
 }
 
 // Abs(this: FArray) -> (FArray absolute_state)
 void STRUCTFArrayAbs(const FalconParamEntry *params, int32_t param_count,
                       FalconResultSlot *out, int32_t *oc) {
   auto self = get_opaque<FArray>(params, param_count, "this");
-  pack_farray(std::make_shared<FArray>(self->abs()), out, oc);
+  pack_farray(self->abs(), out, oc);
 }
 
 // ── JSON ──────────────────────────────────────────────────────────────────────
@@ -209,22 +188,23 @@ void STRUCTFArrayFromJSON(const FalconParamEntry *params, int32_t param_count,
   auto pm   = unpack_params(params, param_count);
   auto json = std::get<std::string>(pm.at("json"));
   auto arr  = FArray::from_json_string<FArray>(json);
-  pack_farray(std::make_shared<FArray>(*arr), out, oc);
+  pack_farray(*arr, out, oc);
 }
 
-// ── Test-only constructor (not exposed in production .fal) ────────────────────
+// ── Test-only constructor ─────────────────────────────────────────────────────
 // NewFromFloats(values: Array<float>) -> (FArray arr)
+// Not exposed in the production .fal — only imported by tests/farray-test-helpers.fal
 void STRUCTFArrayNewFromFloats(const FalconParamEntry *params,
                                 int32_t param_count, FalconResultSlot *out,
                                 int32_t *oc) {
   auto pm             = unpack_params(params, param_count);
-  const auto &arr_val = std::get<ArrayValue>(pm.at("values"));
+  auto arr_val        = std::get<std::shared_ptr<ArrayValue>>(pm.at("values"));
   std::vector<double> vals;
-  vals.reserve(arr_val.elements.size());
-  for (const auto &elem : arr_val.elements) {
+  vals.reserve(arr_val->elements.size());
+  for (const auto &elem : arr_val->elements) {
     vals.push_back(std::get<double>(elem));
   }
-  pack_farray(std::make_shared<FArray>(vals), out, oc);
+  pack_farray(vals, out, oc);
 }
 
 } // extern "C"
