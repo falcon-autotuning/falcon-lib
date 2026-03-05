@@ -4,7 +4,7 @@ import (
 "../../../physics/units/symbolUnit/symbolUnit.fal"
 "../../../math/point/point.fal"
 )
-struct DeviceVoltageState {
+struct DeviceVoltageStates {
     routine New (Array<DeviceVoltageState> conn) -> (DeviceVoltageStates states)
     routine AddState (DeviceVoltageState state) -> ()
     routine FindState (connection::Connection conn) -> (DeviceVoltageState state)
@@ -15,8 +15,8 @@ struct DeviceVoltageState {
     routine Empty () -> (bool isEmpty)
     routine Voltage -> (float voltage)
     routine Contains (connection::Connection conn) -> (bool contains)
-    routine Equal (DeviceVoltageState other) -> (bool equal)
-    routine NotEqual (DeviceVoltageState other) -> (bool notequal)
+    routine Equal (DeviceVoltageStates other) -> (bool equal)
+    routine NotEqual (DeviceVoltageStates other) -> (bool notequal)
     routine Clear () -> ()
     routine FromJSON (string json) -> (DeviceVoltageStates states)
     routine ToJSON () -> (string json)

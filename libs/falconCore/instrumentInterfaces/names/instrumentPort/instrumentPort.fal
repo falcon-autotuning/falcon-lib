@@ -17,8 +17,8 @@ struct InstrumentPort {
     routine InstrumentFacingName -> (string facing_name)
     routine IsKnob -> (bool is_knob)
     routine IsMeter -> (bool is_meter)
-    routine Equal (DeviceVoltageState other) -> (bool equal)
-    routine NotEqual (DeviceVoltageState other) -> (bool notequal)
+    routine Equal (InstrumentPort other) -> (bool equal)
+    routine NotEqual (InstrumentPort other) -> (bool notequal)
     routine FromJSON (string json) -> (InstrumentPort port)
     routine ToJSON () -> (string json)
 }

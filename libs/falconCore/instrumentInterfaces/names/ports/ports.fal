@@ -4,15 +4,15 @@ import (
 "../../../physics/units/symbolUnit/symbolUnit.fal"
 "./instrument.fal"
 )
-struct InstrumentPort {
+struct Ports {
     routine New (Array<instrumentPort::InstrumentPort> ports) -> (Ports ports)
     routine Ports -> (Array<instrumentPort::InstrumentPort> ports)
     routine GetDefaultNames -> (Array<string> names)
     routine GetPsuedoNames -> (Array<connection::Connection> connections)
     routine IsKnobs -> (Array<bool> is_knobs)
     routine IsMeters -> (Array<bool> is_meters)
-    routine Equal (InstrumentPort other) -> (bool equal)
-    routine NotEqual (InstrumentPort other) -> (bool notequal)
+    routine Equal (Ports other) -> (bool equal)
+    routine NotEqual (Ports other) -> (bool notequal)
     routine FromJSON (string json) -> (Ports ports)
     routine ToJSON () -> (string json)
 }
