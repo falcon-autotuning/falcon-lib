@@ -5,7 +5,7 @@ import (
 "../../../math/point/point.fal"
 )
 struct DeviceVoltageState {
-    // TODO: add constructors routine New (Array<DeviceVoltageState> conn) -> (DeviceVoltageStates states)
+    routine New (Array<DeviceVoltageState> conn) -> (DeviceVoltageStates states)
     routine AddState (DeviceVoltageState state) -> ()
     routine FindState (connection::Connection conn) -> (DeviceVoltageState state)
     routine ToPoint () -> (point::Point point) 

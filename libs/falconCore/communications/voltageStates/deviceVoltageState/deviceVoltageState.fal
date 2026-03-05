@@ -4,7 +4,7 @@ import (
 "../../../physics/units/symbolUnit/symbolUnit.fal"
 )
 struct DeviceVoltageState {
-    // TODO: add constructors routine New (connection::Connection conn, float voltage, symbolUnit::SymbolUnit unit) -> (DeviceVoltageState state)
+    routine New (connection::Connection conn, float voltage, symbolUnit::SymbolUnit unit) -> (DeviceVoltageState state)
     routine Connection -> (connection::Connection conn)
     routine Voltage -> (float voltage)
     routine Equal (DeviceVoltageState other) -> (bool equal)
