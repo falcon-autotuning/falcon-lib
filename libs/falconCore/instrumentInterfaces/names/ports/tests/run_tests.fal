@@ -1,11 +1,11 @@
 // Tests for falconCore/instrumentInterfaces/names/ports
 // Run with: falcon-test run_tests.fal
-import "../../../../../../testing/testing.fal";
+import "../../../../../testing/testing.fal";
 import "../ports.fal";
-import "../instrumentPort/instrumentPort.fal";
+import "../../instrumentPort/instrumentPort.fal";
 import "../../../../physics/deviceStructures/connection/connection.fal";
 import "../../../../physics/units/symbolUnit/symbolUnit.fal";
-import "../instrument.fal";
+import "../../instrument/instrument.fal";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
