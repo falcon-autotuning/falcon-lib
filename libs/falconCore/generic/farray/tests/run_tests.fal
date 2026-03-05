@@ -1,6 +1,6 @@
 // Tests for falconCore/generic/farray
 // Run with: falcon-test run_tests.fal
-import "../../../../../../testing/testing.fal";
+import "../../../../testing/testing.fal";
 import "../farray.fal";
 import "./farray-test-helpers.fal";
 
