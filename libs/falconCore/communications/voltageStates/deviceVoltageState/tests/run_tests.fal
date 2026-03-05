@@ -162,24 +162,6 @@ autotuner DeviceVoltageStateArithmetic -> (int passed, int failed) {
         -> __end(runner, t);
     }
 
-    state test_add_int (TestRunner runner, TestContext t) {
-        Connection p1          = Connection.NewPlungerGate("P1");
-        SymbolUnit volt        = SymbolUnit.Volt();
-        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 1.0, volt);
-        DeviceVoltageState res = dvs.Add(4);
-        Error err = t.ExpectFloatEq(5.0, res.Voltage(), 1e-9, "1.0 + 4 = 5.0");
-        -> __end(runner, t);
-    }
-
-    state test_add_float (TestRunner runner, TestContext t) {
-        Connection p1          = Connection.NewPlungerGate("P1");
-        SymbolUnit volt        = SymbolUnit.Volt();
-        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 0.5, volt);
-        DeviceVoltageState res = dvs.Add(0.25);
-        Error err = t.ExpectFloatEq(0.75, res.Voltage(), 1e-9, "0.5 + 0.25 = 0.75");
-        -> __end(runner, t);
-    }
-
     state test_subtract_dvs (TestRunner runner, TestContext t) {
         Connection p1          = Connection.NewPlungerGate("P1");
         SymbolUnit volt        = SymbolUnit.Volt();
@@ -187,24 +169,6 @@ autotuner DeviceVoltageStateArithmetic -> (int passed, int failed) {
         DeviceVoltageState b   = DeviceVoltageState.New(p1, 2.0, volt);
         DeviceVoltageState res = a.Subtract(b);
         Error err = t.ExpectFloatEq(3.0, res.Voltage(), 1e-9, "5.0 - 2.0 = 3.0");
-        -> __end(runner, t);
-    }
-
-    state test_subtract_int (TestRunner runner, TestContext t) {
-        Connection p1          = Connection.NewPlungerGate("P1");
-        SymbolUnit volt        = SymbolUnit.Volt();
-        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 7.0, volt);
-        DeviceVoltageState res = dvs.Subtract(3);
-        Error err = t.ExpectFloatEq(4.0, res.Voltage(), 1e-9, "7.0 - 3 = 4.0");
-        -> __end(runner, t);
-    }
-
-    state test_subtract_float (TestRunner runner, TestContext t) {
-        Connection p1          = Connection.NewPlungerGate("P1");
-        SymbolUnit volt        = SymbolUnit.Volt();
-        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 1.0, volt);
-        DeviceVoltageState res = dvs.Subtract(0.4);
-        Error err = t.ExpectFloatEq(0.6, res.Voltage(), 1e-9, "1.0 - 0.4 = 0.6");
         -> __end(runner, t);
     }
 

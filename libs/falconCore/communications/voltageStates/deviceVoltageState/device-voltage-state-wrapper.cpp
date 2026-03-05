@@ -120,30 +120,24 @@ void STRUCTDeviceVoltageStateConvertToUnit(const FalconParamEntry *params,
 
 // ── Arithmetic: Times ─────────────────────────────────────────────────────────
 
-// Times(this: DVS, factor: float) -> (DeviceVoltageState scaled_state)
-void STRUCTDeviceVoltageStateTimesFloat(const FalconParamEntry *params,
-                                         int32_t param_count,
-                                         FalconResultSlot *out, int32_t *oc) {
-  auto pm     = unpack_params(params, param_count);
-  auto self   = get_opaque<DeviceVoltageState>(params, param_count, "this");
-  double fac  = std::get<double>(pm.at("factor"));
-  auto result = *self * fac;
-  pack_dvs(std::make_shared<DeviceVoltageState>(self->connection(),
-                                                result->value(), self->unit()),
-           out, oc);
-}
-
-// Times(this: DVS, factor: int) -> (DeviceVoltageState scaled_state)
-void STRUCTDeviceVoltageStateTimesInt(const FalconParamEntry *params,
-                                       int32_t param_count,
-                                       FalconResultSlot *out, int32_t *oc) {
-  auto pm     = unpack_params(params, param_count);
-  auto self   = get_opaque<DeviceVoltageState>(params, param_count, "this");
-  int64_t fac = std::get<int64_t>(pm.at("factor"));
-  auto result = *self * static_cast<int>(fac);
-  pack_dvs(std::make_shared<DeviceVoltageState>(self->connection(),
-                                                result->value(), self->unit()),
-           out, oc);
+void STRUCTDeviceVoltageStateTimes(const FalconParamEntry *params,
+                                   int32_t param_count,
+                                   FalconResultSlot *out, int32_t *oc) {
+  auto pm   = unpack_params(params, param_count);
+  auto self = get_opaque<DeviceVoltageState>(params, param_count, "this");
+  std::shared_ptr<DeviceVoltageState> result;
+  if (std::holds_alternative<double>(pm.at("factor"))) {
+    double fac = std::get<double>(pm.at("factor"));
+    auto scaled = *self * fac;
+    result = std::make_shared<DeviceVoltageState>(self->connection(), scaled->value(), self->unit());
+  } else if (std::holds_alternative<int64_t>(pm.at("factor"))) {
+    int fac = static_cast<int>(std::get<int64_t>(pm.at("factor")));
+    auto scaled = *self * fac;
+    result = std::make_shared<DeviceVoltageState>(self->connection(), scaled->value(), self->unit());
+  } else {
+    throw std::runtime_error("factor must be int or float");
+  }
+  pack_dvs(result, out, oc);
 }
 
 // Times(this: DVS, factor: Quantity) -> (DeviceVoltageState scaled_state)
@@ -160,30 +154,24 @@ void STRUCTDeviceVoltageStateTimesQuantity(const FalconParamEntry *params,
 
 // ── Arithmetic: Divides ───────────────────────────────────────────────────────
 
-// Divides(this: DVS, divisor: float) -> (DeviceVoltageState scaled_state)
-void STRUCTDeviceVoltageStateDividesFloat(const FalconParamEntry *params,
-                                           int32_t param_count,
-                                           FalconResultSlot *out, int32_t *oc) {
-  auto pm    = unpack_params(params, param_count);
-  auto self  = get_opaque<DeviceVoltageState>(params, param_count, "this");
-  double div = std::get<double>(pm.at("divisor"));
-  auto result = *self / div;
-  pack_dvs(std::make_shared<DeviceVoltageState>(self->connection(),
-                                                result->value(), self->unit()),
-           out, oc);
-}
-
-// Divides(this: DVS, divisor: int) -> (DeviceVoltageState scaled_state)
-void STRUCTDeviceVoltageStateDividesInt(const FalconParamEntry *params,
-                                         int32_t param_count,
-                                         FalconResultSlot *out, int32_t *oc) {
-  auto pm     = unpack_params(params, param_count);
-  auto self   = get_opaque<DeviceVoltageState>(params, param_count, "this");
-  int64_t div = std::get<int64_t>(pm.at("divisor"));
-  auto result = *self / static_cast<int>(div);
-  pack_dvs(std::make_shared<DeviceVoltageState>(self->connection(),
-                                                result->value(), self->unit()),
-           out, oc);
+void STRUCTDeviceVoltageStateDivides(const FalconParamEntry *params,
+                                     int32_t param_count,
+                                     FalconResultSlot *out, int32_t *oc) {
+  auto pm   = unpack_params(params, param_count);
+  auto self = get_opaque<DeviceVoltageState>(params, param_count, "this");
+  std::shared_ptr<DeviceVoltageState> result;
+  if (std::holds_alternative<double>(pm.at("divisor"))) {
+    double div = std::get<double>(pm.at("divisor"));
+    auto scaled = *self / div;
+    result = std::make_shared<DeviceVoltageState>(self->connection(), scaled->value(), self->unit());
+  } else if (std::holds_alternative<int64_t>(pm.at("divisor"))) {
+    int div = static_cast<int>(std::get<int64_t>(pm.at("divisor")));
+    auto scaled = *self / div;
+    result = std::make_shared<DeviceVoltageState>(self->connection(), scaled->value(), self->unit());
+  } else {
+    throw std::runtime_error("divisor must be int or float");
+  }
+  pack_dvs(result, out, oc);
 }
 
 // Divides(this: DVS, divisor: Quantity) -> (DeviceVoltageState scaled_state)
@@ -216,82 +204,52 @@ void STRUCTDeviceVoltageStatePower(const FalconParamEntry *params,
 
 // ── Arithmetic: Add ───────────────────────────────────────────────────────────
 
-// Add(this: DVS, other: DeviceVoltageState) -> (DeviceVoltageState sum_state)
-void STRUCTDeviceVoltageStateAddDVS(const FalconParamEntry *params,
-                                     int32_t param_count, FalconResultSlot *out,
-                                     int32_t *oc) {
-  auto self   = get_opaque<DeviceVoltageState>(params, param_count, "this");
-  auto other  = get_opaque<DeviceVoltageState>(params, param_count, "other");
-  auto result = *self + std::static_pointer_cast<falcon_core::math::Quantity>(other);
-  pack_dvs(std::make_shared<DeviceVoltageState>(self->connection(),
-                                                result->value(), self->unit()),
-           out, oc);
-}
-
-// Add(this: DVS, other: int) -> (DeviceVoltageState sum_state)
-void STRUCTDeviceVoltageStateAddInt(const FalconParamEntry *params,
-                                     int32_t param_count, FalconResultSlot *out,
-                                     int32_t *oc) {
-  auto pm     = unpack_params(params, param_count);
-  auto self   = get_opaque<DeviceVoltageState>(params, param_count, "this");
-  int64_t val = std::get<int64_t>(pm.at("other"));
-  auto result = *self + static_cast<int>(val);
-  pack_dvs(std::make_shared<DeviceVoltageState>(self->connection(),
-                                                result->value(), self->unit()),
-           out, oc);
-}
-
-// Add(this: DVS, other: float) -> (DeviceVoltageState sum_state)
-void STRUCTDeviceVoltageStateAddFloat(const FalconParamEntry *params,
-                                       int32_t param_count,
-                                       FalconResultSlot *out, int32_t *oc) {
-  auto pm    = unpack_params(params, param_count);
-  auto self  = get_opaque<DeviceVoltageState>(params, param_count, "this");
-  double val = std::get<double>(pm.at("other"));
-  auto result = *self + val;
-  pack_dvs(std::make_shared<DeviceVoltageState>(self->connection(),
-                                                result->value(), self->unit()),
-           out, oc);
+void STRUCTDeviceVoltageStateAdd(const FalconParamEntry *params,
+                                 int32_t param_count,
+                                 FalconResultSlot *out, int32_t *oc) {
+  auto pm   = unpack_params(params, param_count);
+  auto self = get_opaque<DeviceVoltageState>(params, param_count, "this");
+  std::shared_ptr<DeviceVoltageState> result;
+  if (std::holds_alternative<double>(pm.at("other"))) {
+    double val = std::get<double>(pm.at("other"));
+    auto sum = *self + val;
+    result = std::make_shared<DeviceVoltageState>(self->connection(), sum->value(), self->unit());
+  } else if (std::holds_alternative<int64_t>(pm.at("other"))) {
+    int val = static_cast<int>(std::get<int64_t>(pm.at("other")));
+    auto sum = *self + val;
+    result = std::make_shared<DeviceVoltageState>(self->connection(), sum->value(), self->unit());
+  } else if (auto other_dvs = get_opaque<DeviceVoltageState>(params, param_count, "other")) {
+    auto sum = *self + std::static_pointer_cast<falcon_core::math::Quantity>(other_dvs);
+    result = std::make_shared<DeviceVoltageState>(self->connection(), sum->value(), self->unit());
+  } else {
+    throw std::runtime_error("other must be int, float, or DeviceVoltageState");
+  }
+  pack_dvs(result, out, oc);
 }
 
 // ── Arithmetic: Subtract ──────────────────────────────────────────────────────
 
-// Subtract(this: DVS, other: DeviceVoltageState) -> (DeviceVoltageState difference_state)
-void STRUCTDeviceVoltageStateSubtractDVS(const FalconParamEntry *params,
-                                          int32_t param_count,
-                                          FalconResultSlot *out, int32_t *oc) {
-  auto self   = get_opaque<DeviceVoltageState>(params, param_count, "this");
-  auto other  = get_opaque<DeviceVoltageState>(params, param_count, "other");
-  auto result = *self - std::static_pointer_cast<falcon_core::math::Quantity>(other);
-  pack_dvs(std::make_shared<DeviceVoltageState>(self->connection(),
-                                                result->value(), self->unit()),
-           out, oc);
-}
-
-// Subtract(this: DVS, other: int) -> (DeviceVoltageState difference_state)
-void STRUCTDeviceVoltageStateSubtractInt(const FalconParamEntry *params,
-                                          int32_t param_count,
-                                          FalconResultSlot *out, int32_t *oc) {
-  auto pm     = unpack_params(params, param_count);
-  auto self   = get_opaque<DeviceVoltageState>(params, param_count, "this");
-  int64_t val = std::get<int64_t>(pm.at("other"));
-  auto result = *self - static_cast<int>(val);
-  pack_dvs(std::make_shared<DeviceVoltageState>(self->connection(),
-                                                result->value(), self->unit()),
-           out, oc);
-}
-
-// Subtract(this: DVS, other: float) -> (DeviceVoltageState difference_state)
-void STRUCTDeviceVoltageStateSubtractFloat(const FalconParamEntry *params,
-                                            int32_t param_count,
-                                            FalconResultSlot *out, int32_t *oc) {
-  auto pm    = unpack_params(params, param_count);
-  auto self  = get_opaque<DeviceVoltageState>(params, param_count, "this");
-  double val = std::get<double>(pm.at("other"));
-  auto result = *self - val;
-  pack_dvs(std::make_shared<DeviceVoltageState>(self->connection(),
-                                                result->value(), self->unit()),
-           out, oc);
+void STRUCTDeviceVoltageStateSubtract(const FalconParamEntry *params,
+                                      int32_t param_count,
+                                      FalconResultSlot *out, int32_t *oc) {
+  auto pm   = unpack_params(params, param_count);
+  auto self = get_opaque<DeviceVoltageState>(params, param_count, "this");
+  std::shared_ptr<DeviceVoltageState> result;
+  if (std::holds_alternative<double>(pm.at("other"))) {
+    double val = std::get<double>(pm.at("other"));
+    auto diff = *self - val;
+    result = std::make_shared<DeviceVoltageState>(self->connection(), diff->value(), self->unit());
+  } else if (std::holds_alternative<int64_t>(pm.at("other"))) {
+    int val = static_cast<int>(std::get<int64_t>(pm.at("other")));
+    auto diff = *self - val;
+    result = std::make_shared<DeviceVoltageState>(self->connection(), diff->value(), self->unit());
+  } else if (auto other_dvs = get_opaque<DeviceVoltageState>(params, param_count, "other")) {
+    auto diff = *self - std::static_pointer_cast<falcon_core::math::Quantity>(other_dvs);
+    result = std::make_shared<DeviceVoltageState>(self->connection(), diff->value(), self->unit());
+  } else {
+    throw std::runtime_error("other must be int, float, or DeviceVoltageState");
+  }
+  pack_dvs(result, out, oc);
 }
 
 // ── Unary ─────────────────────────────────────────────────────────────────────
