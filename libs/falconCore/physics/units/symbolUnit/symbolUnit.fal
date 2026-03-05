@@ -60,6 +60,6 @@ struct SymbolUnit {
     routine Symbol -> (string symbol)
     routine IsEqual (SymbolUnit other) -> (bool equal)
     routine IsNotEqual (SymbolUnit other) -> (bool notequal)
-    routine FromJSON (string json) -> (InstrumentPort port)
+    routine FromJSON (string json) -> (SymbolUnit port)
     routine ToJSON () -> (string json)
 }
