@@ -1,0 +1,8 @@
+ffimport "instrument-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct Instrument {
+    routine DCVoltageSource -> (string type)
+    routine Amnmeter -> (string type)
+    routine Magnet -> (string type)
+    routine VoltageSource -> (string type)
+    routine Clock -> (string type)
+}

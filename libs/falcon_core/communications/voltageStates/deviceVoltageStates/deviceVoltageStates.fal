@@ -2,11 +2,10 @@ ffimport "device-voltage-states-wrapper.cpp" ("/opt/falcon/include/falcon_core/"
 import (
 "../../../physics/deviceStructures/connection.fal"
 "../../../physics/units/symbolUnit/symbolUnit.fal"
-"../../../math/quantity/quantity.fal"
 "../../../math/point/point.fal"
 )
 struct DeviceVoltageState {
-    routine New (Array<DeviceVoltageState> conn) -> (DeviceVoltageStates states)
+    // TODO: add constructors routine New (Array<DeviceVoltageState> conn) -> (DeviceVoltageStates states)
     routine AddState (DeviceVoltageState state) -> ()
     routine FindState (connection::Connection conn) -> (DeviceVoltageState state)
     routine ToPoint () -> (point::Point point) 
@@ -19,4 +18,6 @@ struct DeviceVoltageState {
     routine Equal (DeviceVoltageState other) -> (bool equal)
     routine NotEqual (DeviceVoltageState other) -> (bool notequal)
     routine Clear () -> ()
+    routine FromJSON (string json) -> (DeviceVoltageStates states)
+    routine ToJSON () -> (string json)
 }
