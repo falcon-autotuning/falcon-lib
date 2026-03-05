@@ -1,9 +1,10 @@
-ffimport "device-voltage-states-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 import (
-"../../../physics/deviceStructures/connection.fal"
+"../../../physics/deviceStructures/connection/connection.fal"
 "../../../physics/units/symbolUnit/symbolUnit.fal"
 "../../../math/point/point.fal"
+"../deviceVoltageState/deviceVoltageState.fal"
 )
+ffimport "device-voltage-states-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct DeviceVoltageStates {
     routine New (Array<DeviceVoltageState> conn) -> (DeviceVoltageStates states)
     routine AddState (DeviceVoltageState state) -> ()

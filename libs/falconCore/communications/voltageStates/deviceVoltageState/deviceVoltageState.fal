@@ -1,10 +1,10 @@
-ffimport "device-voltage-state-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 import (
-"../../../physics/deviceStructures/connection.fal"
+"../../../physics/deviceStructures/connection/connection.fal"
 "../../../physics/units/symbolUnit/symbolUnit.fal"
 )
+ffimport "device-voltage-state-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct DeviceVoltageState {
-    routine New (connection::Connection conn, float voltage, symbolUnit::SymbolUnit unit) -> (DeviceVoltageState state)
+    routine New (connection::Connection conn, float voltage, symbolUnit::SymbolUnit unit) -> (DeviceVoltageState dstate)
     routine Connection -> (connection::Connection conn)
     routine Voltage -> (float voltage)
     routine Equal (DeviceVoltageState other) -> (bool equal)
@@ -13,10 +13,10 @@ struct DeviceVoltageState {
     routine ConvertToUnit (symbolUnit::SymbolUnit new_unit) -> (DeviceVoltageState converted_state)
     routine Times (float factor) -> (DeviceVoltageState scaled_state)
     routine Times (int factor) -> (DeviceVoltageState scaled_state)
-    routine Times (quantity::Quantity factor) -> (DeviceVoltageState scaled_state)
+    // TODO: routine Times (quantity::Quantity factor) -> (DeviceVoltageState scaled_state)
     routine Divides (float divisor) -> (DeviceVoltageState scaled_state)
     routine Divides (int divisor) -> (DeviceVoltageState scaled_state)
-    routine Divides (quantity::Quantity divisor) -> (DeviceVoltageState scaled_state)
+    // TODO: routine Divides (quantity::Quantity divisor) -> (DeviceVoltageState scaled_state)
     routine Power (float exponent) -> (DeviceVoltageState powered_state)
     routine Add (DeviceVoltageState other) -> (DeviceVoltageState sum_state)
     routine Add (int other) -> (DeviceVoltageState sum_state)
@@ -26,6 +26,6 @@ struct DeviceVoltageState {
     routine Subtract (float other) -> (DeviceVoltageState difference_state)
     routine Negate -> (DeviceVoltageState negated_state)
     routine Abs -> (DeviceVoltageState absolute_state)
-    routine FromJSON (string json) -> (DeviceVoltageState state)
+    routine FromJSON (string json) -> (DeviceVoltageState dstate)
     routine ToJSON () -> (string json)
 }

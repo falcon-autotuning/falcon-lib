@@ -1,0 +1,30 @@
+// Tests for falconCore/generic/farray
+// Run with: falcon-test run_tests.fal
+import "../../../../../../testing/testing.fal";
+import "../farray.fal";
+import "./farray-test-helpers.fal";
+
+// Create a test FArray from a float literal list via the test-only helper
+routine FA (Array<float> vals) -> (farray::FArray arr) {
+    arr = FArrayTestHelpers.NewFromFloats(vals);
+}
+
+autotuner FArrayEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        farray::FArray a = FA([1.0, 2.0, 3.0]);
+        farray::FArray b = FA([1.0, 2.0, 3.0]);
+        Error err = t.ExpectTrue(a.Equal(b), "Same arrays are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different (TestRunner runner, TestContext t) {
+        farray::FArray a = FA([1.0, 2.0, 3.0]);
+        farray::FArray b = FA([1.0, 2.0, 4.0]);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different arrays are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_different (Test
