@@ -3,5 +3,9 @@ version: "1.0.0"
 maintainer: "falcon-devs"
 github: ""
 dependencies:
-  - connection
-  - symbolUnit
+  - name: connection
+    version: "1.0.0"
+    local_path: "../../../physics/deviceStructures/connection/"
+  - name: symbolUnit
+    version: "1.0.0"
+    local_path: "../../../physics/units/symbolUnit/"

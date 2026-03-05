@@ -73,8 +73,9 @@ using namespace falcon::atc;
 "||"            { return Parser::make_OR(*loc); }
 "!"             { return Parser::make_NOT(*loc); }
 
-[0-9]+          { return Parser::make_INTEGER(yytext, *loc); }
-[0-9]+\.[0-9]+  { return Parser::make_DOUBLE(yytext, *loc); }
+([0-9]+(\.[0-9]*)?|\.[0-9]+)[eE][+-]?[0-9]+  { return Parser::make_DOUBLE(yytext, *loc); }
+[0-9]+\.[0-9]*|\.[0-9]+                     { return Parser::make_DOUBLE(yytext, *loc); }
+[0-9]+                                      { return Parser::make_INTEGER(yytext, *loc); }
 \"[^\"]*\"      { return Parser::make_STRING(std::string(yytext+1, yyleng-2), *loc); }
 [a-zA-Z_][a-zA-Z0-9_]* { return Parser::make_IDENTIFIER(yytext, *loc); }
 

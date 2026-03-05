@@ -2,16 +2,17 @@
 #include "falcon_core/instrument_interfaces/names/InstrumentPort.hpp"
 #include "falcon_core/physics/device_structures/Connection.hpp"
 #include <falcon-typing/FFIHelpers.hpp>
+#include <vector>
 
 using namespace falcon::typing;
 using namespace falcon::typing::ffi::wrapper;
 
-using Ports           = falcon_core::instrument_interfaces::names::Ports;
-using PortsSP         = std::shared_ptr<Ports>;
-using InstrumentPort  = falcon_core::instrument_interfaces::names::InstrumentPort;
+using Ports            = falcon_core::instrument_interfaces::names::Ports;
+using PortsSP          = std::shared_ptr<Ports>;
+using InstrumentPort   = falcon_core::instrument_interfaces::names::InstrumentPort;
 using InstrumentPortSP = std::shared_ptr<InstrumentPort>;
-using Connection      = falcon_core::physics::device_structures::Connection;
-using ConnectionSP    = std::shared_ptr<Connection>;
+using Connection       = falcon_core::physics::device_structures::Connection;
+using ConnectionSP     = std::shared_ptr<Connection>;
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -41,15 +42,32 @@ static void pack_opaque_port(InstrumentPortSP port, FalconResultSlot *out,
 
 extern "C" {
 
+// ── Constructor ───────────────────────────────────────────────────────────────
+
+// New(ports: Array<InstrumentPort>) -> (Ports ports)
+void STRUCTPortsNew(const FalconParamEntry *params, int32_t param_count,
+                    FalconResultSlot *out, int32_t *oc) {
+  auto pm = unpack_params(params, param_count);
+  // The Array<InstrumentPort> arrives as an ArrayValue in the ParameterMap.
+  // Each element is an opaque InstrumentPort shared_ptr.
+  const auto &arr_val = std::get<ArrayValue>(pm.at("ports"));
+  std::vector<InstrumentPortSP> vec;
+  vec.reserve(arr_val.elements.size());
+  for (const auto &elem : arr_val.elements) {
+    vec.push_back(std::get<InstrumentPortSP>(elem));
+  }
+  auto ports_obj = std::make_shared<Ports>(vec);
+  pack_opaque_ports(std::move(ports_obj), out, oc);
+}
+
 // ── Accessors ─────────────────────────────────────────────────────────────────
 
 // Ports(this: Ports) -> (Array<InstrumentPort> ports)
 void STRUCTPortsPorts(const FalconParamEntry *params, int32_t param_count,
                       FalconResultSlot *out, int32_t *oc) {
-  auto ports_obj = get_opaque<Ports>(params, param_count, "this");
+  auto ports_obj  = get_opaque<Ports>(params, param_count, "this");
   const auto &vec = ports_obj->ports();
-  // Pack as a FalconArray of opaque InstrumentPort handles
-  auto *arr = new FalconArray();
+  auto *arr       = new FalconArray();
   arr->element_type = FALCON_TYPE_OPAQUE;
   arr->count        = static_cast<int32_t>(vec.size());
   arr->elements     = new FalconValue[arr->count];
@@ -60,8 +78,8 @@ void STRUCTPortsPorts(const FalconParamEntry *params, int32_t param_count,
       delete static_cast<InstrumentPortSP *>(p);
     };
   }
-  out[0]       = {};
-  out[0].tag   = FALCON_TYPE_ARRAY;
+  out[0]             = {};
+  out[0].tag         = FALCON_TYPE_ARRAY;
   out[0].value.array = arr;
   *oc = 1;
 }
@@ -79,9 +97,9 @@ void STRUCTPortsGetDefaultNames(const FalconParamEntry *params,
 void STRUCTPortsGetPsuedoNames(const FalconParamEntry *params,
                                 int32_t param_count, FalconResultSlot *out,
                                 int32_t *oc) {
-  auto ports_obj = get_opaque<Ports>(params, param_count, "this");
+  auto ports_obj    = get_opaque<Ports>(params, param_count, "this");
   const auto &conns = ports_obj->pseudo_names();
-  auto *arr = new FalconArray();
+  auto *arr         = new FalconArray();
   arr->element_type = FALCON_TYPE_OPAQUE;
   arr->count        = static_cast<int32_t>(conns.size());
   arr->elements     = new FalconValue[arr->count];

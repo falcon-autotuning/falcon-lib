@@ -1,0 +1,244 @@
+// Tests for falconCore/instrumentInterfaces/names/instrumentPort
+// Run with: falcon-test run_tests.fal
+import "../../../../../../testing/testing.fal";
+import "../instrumentPort.fal";
+import "../../../../physics/deviceStructures/connection/connection.fal";
+import "../../../../physics/units/symbolUnit/symbolUnit.fal";
+import "../instrument.fal";
+
+autotuner InstrumentPortKnobConstruction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_knob_default_name (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort port   = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger gate");
+        Error err = t.ExpectStrEq("P1", port.DefaultName(), "Knob default name is P1");
+        -> __end(runner, t);
+    }
+
+    state test_knob_is_knob (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort port   = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger gate");
+        Error err = t.ExpectTrue(port.IsKnob(), "NewKnob port is a knob");
+        -> __end(runner, t);
+    }
+
+    state test_knob_is_not_meter (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort port   = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger gate");
+        Error err = t.ExpectFalse(port.IsMeter(), "NewKnob port is not a meter");
+        -> __end(runner, t);
+    }
+
+    state test_knob_pseudo_name (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort port   = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger gate");
+        Connection got        = port.PsuedoName();
+        Error err = t.ExpectStrEq("P1", got.Name(), "Knob pseudo-name connection is P1");
+        -> __end(runner, t);
+    }
+
+    state test_knob_units (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort port   = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger gate");
+        SymbolUnit u          = port.Units();
+        Error err = t.ExpectStrEq("V", u.Symbol(), "Knob unit symbol is V");
+        -> __end(runner, t);
+    }
+
+    state test_knob_description (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort port   = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger gate");
+        Error err = t.ExpectStrEq("plunger gate", port.Description(), "Knob description matches");
+        -> __end(runner, t);
+    }
+
+    state test_knob_instrument_type (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort port   = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger gate");
+        string itype          = port.InstrumentType();
+        Error err = t.ExpectStrNe("", itype, "Knob instrument type is non-empty");
+        -> __end(runner, t);
+    }
+}
+
+autotuner InstrumentPortMeterConstruction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_meter_default_name (TestRunner runner, TestContext t) {
+        Connection i1         = Connection.NewOhmic("I1");
+        SymbolUnit amp        = SymbolUnit.Ampere();
+        string amm            = Instrument.Amnmeter();
+        InstrumentPort port   = InstrumentPort.NewMeter("I1", i1, amm, amp, "current meter");
+        Error err = t.ExpectStrEq("I1", port.DefaultName(), "Meter default name is I1");
+        -> __end(runner, t);
+    }
+
+    state test_meter_is_meter (TestRunner runner, TestContext t) {
+        Connection i1         = Connection.NewOhmic("I1");
+        SymbolUnit amp        = SymbolUnit.Ampere();
+        string amm            = Instrument.Amnmeter();
+        InstrumentPort port   = InstrumentPort.NewMeter("I1", i1, amm, amp, "current meter");
+        Error err = t.ExpectTrue(port.IsMeter(), "NewMeter port is a meter");
+        -> __end(runner, t);
+    }
+
+    state test_meter_is_not_knob (TestRunner runner, TestContext t) {
+        Connection i1         = Connection.NewOhmic("I1");
+        SymbolUnit amp        = SymbolUnit.Ampere();
+        string amm            = Instrument.Amnmeter();
+        InstrumentPort port   = InstrumentPort.NewMeter("I1", i1, amm, amp, "current meter");
+        Error err = t.ExpectFalse(port.IsKnob(), "NewMeter port is not a knob");
+        -> __end(runner, t);
+    }
+
+    state test_meter_units (TestRunner runner, TestContext t) {
+        Connection i1         = Connection.NewOhmic("I1");
+        SymbolUnit amp        = SymbolUnit.Ampere();
+        string amm            = Instrument.Amnmeter();
+        InstrumentPort port   = InstrumentPort.NewMeter("I1", i1, amm, amp, "current meter");
+        SymbolUnit u          = port.Units();
+        Error err = t.ExpectStrEq("A", u.Symbol(), "Meter unit symbol is A");
+        -> __end(runner, t);
+    }
+
+    state test_meter_description (TestRunner runner, TestContext t) {
+        Connection i1         = Connection.NewOhmic("I1");
+        SymbolUnit amp        = SymbolUnit.Ampere();
+        string amm            = Instrument.Amnmeter();
+        InstrumentPort port   = InstrumentPort.NewMeter("I1", i1, amm, amp, "current meter");
+        Error err = t.ExpectStrEq("current meter", port.Description(), "Meter description matches");
+        -> __end(runner, t);
+    }
+}
+
+autotuner InstrumentPortSpecialConstructors -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_timer_facing_name_non_empty (TestRunner runner, TestContext t) {
+        InstrumentPort port = InstrumentPort.NewTimer();
+        string name         = port.InstrumentFacingName();
+        Error err = t.ExpectStrNe("", name, "Timer facing name is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_timer_default_name_non_empty (TestRunner runner, TestContext t) {
+        InstrumentPort port = InstrumentPort.NewTimer();
+        Error err = t.ExpectStrNe("", port.DefaultName(), "Timer default name is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_execution_clock_facing_name_non_empty (TestRunner runner, TestContext t) {
+        InstrumentPort port = InstrumentPort.NewExecutionClock();
+        string name         = port.InstrumentFacingName();
+        Error err = t.ExpectStrNe("", name, "ExecutionClock facing name is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_execution_clock_default_name_non_empty (TestRunner runner, TestContext t) {
+        InstrumentPort port = InstrumentPort.NewExecutionClock();
+        Error err = t.ExpectStrNe("", port.DefaultName(), "ExecutionClock default name is non-empty");
+        -> __end(runner, t);
+    }
+}
+
+autotuner InstrumentPortEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort a      = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger");
+        InstrumentPort b      = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger");
+        Error err = t.ExpectTrue(a.Equal(b), "Same knob ports are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_name (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        Connection p2         = Connection.NewPlungerGate("P2");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort a      = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger");
+        InstrumentPort b      = InstrumentPort.NewKnob("P2", p2, dc, volt, "plunger");
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different names are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_knob_not_equal_meter (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort knob   = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger");
+        InstrumentPort meter  = InstrumentPort.NewMeter("P1", p1, dc, volt, "plunger");
+        Error err = t.ExpectTrue(knob.NotEqual(meter), "Knob and meter are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_for_different (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        Connection b1         = Connection.NewBarrierGate("B1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort a      = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger");
+        InstrumentPort b      = InstrumentPort.NewKnob("B1", b1, dc, volt, "barrier");
+        Error err = t.ExpectFalse(a.Equal(b), "Equal is false for different ports");
+        -> __end(runner, t);
+    }
+}
+
+autotuner InstrumentPortJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort port   = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger");
+        string json = port.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort orig   = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger");
+        string json           = orig.ToJSON();
+        InstrumentPort res    = InstrumentPort.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(res), "ToJSON/FromJSON round-trips");
+        -> __end(runner, t);
+    }
+
+    state test_from_json_default_name (TestRunner runner, TestContext t) {
+        Connection p1         = Connection.NewPlungerGate("P1");
+        SymbolUnit volt       = SymbolUnit.Volt();
+        string dc             = Instrument.DCVoltageSource();
+        InstrumentPort orig   = InstrumentPort.NewKnob("P1", p1, dc, volt, "plunger");
+        string json           = orig.ToJSON();
+        InstrumentPort res    = InstrumentPort.FromJSON(json);
+        Error err = t.ExpectStrEq("P1", res.DefaultName(), "FromJSON preserves default name");
+        -> __end(runner, t);
+    }
+}
