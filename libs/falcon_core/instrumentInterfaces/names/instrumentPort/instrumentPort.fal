@@ -1,0 +1,21 @@
+ffimport "instrument-port-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+import (
+"../../../physics/deviceStructures/connection.fal"
+"../../../physics/units/symbolUnit/symbolUnit.fal"
+"./instrument.fal"
+)
+struct InstrumentPort {
+    // TODO: Add constructors matching falcon_core_cpp's InstrumentPort class
+    routine DefaultName -> (string default_name)
+    routine PsuedoName -> (connection::Connection conn)
+    routine InstrumentType -> (instrument::Instrument type)
+    routine Units -> (symbolUnit::SymbolUnit units)
+    routine Description -> (string description)
+    routine InstrumentFacingName -> (string facing_name)
+    routine IsKnob -> (bool is_knob)
+    routine IsMeter -> (bool is_meter)
+    routine Equal (DeviceVoltageState other) -> (bool equal)
+    routine NotEqual (DeviceVoltageState other) -> (bool notequal)
+    routine FromJSON (string json) -> (InstrumentPort port)
+    routine ToJSON () -> (string json)
+}

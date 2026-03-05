@@ -2,10 +2,9 @@ ffimport "device-voltage-state-wrapper.cpp" ("/opt/falcon/include/falcon_core/")
 import (
 "../../../physics/deviceStructures/connection.fal"
 "../../../physics/units/symbolUnit/symbolUnit.fal"
-"../../../math/quantity/quantity.fal"
 )
 struct DeviceVoltageState {
-    routine New (connection::Connection conn, float voltage, symbolUnit::SymbolUnit unit) -> (DeviceVoltageState state)
+    // TODO: add constructors routine New (connection::Connection conn, float voltage, symbolUnit::SymbolUnit unit) -> (DeviceVoltageState state)
     routine Connection -> (connection::Connection conn)
     routine Voltage -> (float voltage)
     routine Equal (DeviceVoltageState other) -> (bool equal)
