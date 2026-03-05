@@ -90,11 +90,11 @@ void STRUCTPortsGetPsuedoNames(const FalconParamEntry *params,
                                 int32_t *oc) {
   auto ports_obj    = get_opaque<Ports>(params, param_count, "this");
   const auto &conns = ports_obj->get_pseudo_names();
-  auto *arr         = new typing::ArrayValue();
+  auto *arr         = new falcon::typing::ArrayValue();
   arr->element_type = FALCON_TYPE_OPAQUE;
   arr->count        = static_cast<int32_t>(conns.size());
-  arr->elements     = new FalconValue[arr->count];
-  for (int32_t i = 0; i < arr->count; ++i) {
+  arr->elements     = new FalconValue[arr->elements.size()];
+  for (int32_t i = 0; i < arr->elements.size(); ++i) {
     arr->elements[i].opaque.type_name = "Connection";
     arr->elements[i].opaque.ptr       = new ConnectionSP(conns[i]);
     arr->elements[i].opaque.deleter   = [](void *p) {
