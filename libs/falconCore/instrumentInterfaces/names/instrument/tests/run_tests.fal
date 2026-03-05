@@ -1,6 +1,6 @@
 // Tests for falconCore/instrumentInterfaces/names/instrument
 // Run with: falcon-test run_tests.fal
-import "../../../../../../testing/testing.fal";
+import "../../../../../testing/testing.fal";
 import "../instrument.fal";
 
 autotuner InstrumentNames -> (int passed, int failed) {
