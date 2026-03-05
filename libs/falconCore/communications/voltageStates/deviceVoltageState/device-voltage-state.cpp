@@ -325,7 +325,7 @@ void STRUCTDeviceVoltageStateToJSON(const FalconParamEntry *params,
                                      int32_t param_count, FalconResultSlot *out,
                                      int32_t *oc) {
   auto dvs = get_opaque<DeviceVoltageState>(params, param_count, "this");
-  pack_results(FunctionResult{dvs->to_json()}, out, 16, oc);
+  pack_results(FunctionResult{dvs->to_json_string()}, out, 16, oc);
 }
 
 // FromJSON(json: string) -> (DeviceVoltageState state)
@@ -334,7 +334,7 @@ void STRUCTDeviceVoltageStateFromJSON(const FalconParamEntry *params,
                                        FalconResultSlot *out, int32_t *oc) {
   auto pm   = unpack_params(params, param_count);
   auto json = std::get<std::string>(pm.at("json"));
-  auto dvs  = DeviceVoltageState::from_json(json);
+  auto dvs  = DeviceVoltageState::from_json_string<DeviceVoltageState>(json);
   pack_dvs(std::make_shared<DeviceVoltageState>(*dvs), out, oc);
 }
 
