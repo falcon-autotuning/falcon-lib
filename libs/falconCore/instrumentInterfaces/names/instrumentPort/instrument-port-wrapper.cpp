@@ -42,8 +42,7 @@ void STRUCTInstrumentPortNewKnob(const FalconParamEntry *params,
   auto type_str    = std::get<std::string>(pm.at("type"));
   auto unit        = get_opaque<SymbolUnit>(params, param_count, "units");
   auto description = std::get<std::string>(pm.at("description"));
-  auto port = std::make_shared<InstrumentPort>(
-      InstrumentPort::knob(default_name, conn, type_str, unit, description));
+  auto port = InstrumentPort::Knob(default_name, conn, type_str, unit, description);
   pack_opaque_port(std::move(port), out, oc);
 }
 
@@ -58,22 +57,21 @@ void STRUCTInstrumentPortNewMeter(const FalconParamEntry *params,
   auto type_str     = std::get<std::string>(pm.at("type"));
   auto unit         = get_opaque<SymbolUnit>(params, param_count, "units");
   auto description  = std::get<std::string>(pm.at("description"));
-  auto port = std::make_shared<InstrumentPort>(
-      InstrumentPort::meter(default_name, conn, type_str, unit, description));
+  auto port = InstrumentPort::Meter(default_name, conn, type_str, unit, description);
   pack_opaque_port(std::move(port), out, oc);
 }
 
 // NewTimer() -> (InstrumentPort port)
 void STRUCTInstrumentPortNewTimer(const FalconParamEntry *, int32_t,
                                    FalconResultSlot *out, int32_t *oc) {
-  auto port = std::make_shared<InstrumentPort>(InstrumentPort::timer());
+  auto port = InstrumentPort::Timer();
   pack_opaque_port(std::move(port), out, oc);
 }
 
 // NewExecutionClock() -> (InstrumentPort port)
 void STRUCTInstrumentPortNewExecutionClock(const FalconParamEntry *, int32_t,
                                             FalconResultSlot *out, int32_t *oc) {
-  auto port = std::make_shared<InstrumentPort>(InstrumentPort::execution_clock());
+  auto port = InstrumentPort::ExecutionClock();
   pack_opaque_port(std::move(port), out, oc);
 }
 
