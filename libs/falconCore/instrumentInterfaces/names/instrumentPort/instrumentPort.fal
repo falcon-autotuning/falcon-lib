@@ -1,9 +1,9 @@
-ffimport "instrument-port-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 import (
-"../../../physics/deviceStructures/connection.fal"
+"../../../physics/deviceStructures/connection/connection.fal"
 "../../../physics/units/symbolUnit/symbolUnit.fal"
-"./instrument.fal"
+"../instrument/instrument.fal"
 )
+ffimport "instrument-port-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct InstrumentPort {
     routine NewKnob (string default_name, connection::Connection conn = nil, instrument::Instrument type, symbolUnit::SymbolUnit units, string description) -> (InstrumentPort port)
     routine NewMeter (string default_name, connection::Connection conn = nil, instrument::Instrument type, symbolUnit::SymbolUnit units, string description) -> (InstrumentPort port)

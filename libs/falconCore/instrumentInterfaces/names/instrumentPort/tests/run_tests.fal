@@ -1,10 +1,10 @@
 // Tests for falconCore/instrumentInterfaces/names/instrumentPort
 // Run with: falcon-test run_tests.fal
-import "../../../../../../testing/testing.fal";
+import "../../../../../testing/testing.fal";
 import "../instrumentPort.fal";
 import "../../../../physics/deviceStructures/connection/connection.fal";
 import "../../../../physics/units/symbolUnit/symbolUnit.fal";
-import "../instrument.fal";
+import "../../instrument/instrument.fal";
 
 autotuner InstrumentPortKnobConstruction -> (int passed, int failed) {
     passed = 0; failed = 0;
