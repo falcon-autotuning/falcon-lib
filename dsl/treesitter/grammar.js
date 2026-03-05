@@ -16,6 +16,7 @@ conflicts: $ => [
     [$.autotuner_var_decl, $.assign_stmt],
     [$.var_decl_stmt, $.assign_stmt],
     [$.type, $.qualified_name],
+    [$.qualified_name, $.qualified_type],
     [$.expr, $.primary_expr],
 ],
 
@@ -164,7 +165,7 @@ conflicts: $ => [
 
     requires_clause: $ => seq(
       'uses',
-      commaSep1($.qualified_name),
+      commaSep1($.qualified_type),
       ';'
     ),
 
@@ -382,7 +383,14 @@ conflicts: $ => [
     qualified_name: $ => seq(
       optional(seq(
         field('module', $.qualified_name),
-        '::'
+        alias('::', $.module_sep),
+      )),
+      field('symbol', $.identifier)
+    ),
+    qualified_type: $ => seq(
+      optional(seq(
+        field('module', $.qualified_type),
+        alias('::', $.module_sep),
       )),
       field('symbol', $.identifier)
     ),
@@ -402,7 +410,7 @@ conflicts: $ => [
     ),
 
     type: $ => seq(
-      $.identifier,
+      $.qualified_type,
       optional(seq(
         alias('<', $.type_args_open),
         commaSep($.type),

@@ -16,4 +16,6 @@ struct Connection {
     routine IsGate -> (bool is)
     routine Equal (Connection other) -> (bool equal)
     routine NotEqual (Connection other) -> (bool notequal)
+    routine FromJSON (string json) -> (DeviceVoltageState state)
+    routine ToJSON () -> (string json)
 }

@@ -1,0 +1,22 @@
+ffimport "device-voltage-states-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+import (
+"../../../physics/deviceStructures/connection.fal"
+"../../../physics/units/symbolUnit/symbolUnit.fal"
+"../../../math/quantity/quantity.fal"
+"../../../math/point/point.fal"
+)
+struct DeviceVoltageState {
+    routine New (Array<DeviceVoltageState> conn) -> (DeviceVoltageStates states)
+    routine AddState (DeviceVoltageState state) -> ()
+    routine FindState (connection::Connection conn) -> (DeviceVoltageState state)
+    routine ToPoint () -> (point::Point point) 
+    routine Connection -> (connection::Connection conn)
+    routine Insert (connection::Connection conn, int location) -> ()
+    routine Size () -> (int size)
+    routine Empty () -> (bool isEmpty)
+    routine Voltage -> (float voltage)
+    routine Contains (connection::Connection conn) -> (bool contains)
+    routine Equal (DeviceVoltageState other) -> (bool equal)
+    routine NotEqual (DeviceVoltageState other) -> (bool notequal)
+    routine Clear () -> ()
+}
