@@ -1,0 +1,22 @@
+// Tests Array assignment.
+// Output: int first, int second, int third
+routine make_array() -> (Array<int> arr) {
+    Array<int> arr;
+    arr.pushback(1);
+    arr.pushback(2);
+    arr.pushback(3);
+}
+autotuner AssignmentTest () -> (int first, int second, int third) {
+    first  = 0;
+    second = 0;
+    third  = 0;
+    start -> run;
+
+    state run {
+        Array<int> arr = make_array();
+        first  = arr[0];
+        second = arr[1];
+        third  = arr[2];
+        terminal;
+    }
+}
