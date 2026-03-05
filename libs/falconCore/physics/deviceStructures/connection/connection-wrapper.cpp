@@ -148,7 +148,7 @@ void STRUCTConnectionEqual(const FalconParamEntry *params, int32_t param_count,
                            FalconResultSlot *out, int32_t *out_count) {
   ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
   ConnectionSP other = get_opaque<Connection>(params, param_count, "other");
-  pack_results(FunctionResult{conn == other}, out, 16, out_count);
+  pack_results(FunctionResult{*conn == *other}, out, 16, out_count);
 }
 
 // NotEqual(this: Connection, other: Connection) -> (bool)
@@ -157,7 +157,23 @@ void STRUCTConnectionNotEqual(const FalconParamEntry *params,
                               int32_t *out_count) {
   ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
   ConnectionSP other = get_opaque<Connection>(params, param_count, "other");
-  pack_results(FunctionResult{conn != other}, out, 16, out_count);
+  pack_results(FunctionResult{*conn != *other}, out, 16, out_count);
 }
 
+// ToJSON(this: Connection) -> (string)
+void STRUCTConnectionToJSON(const FalconParamEntry *params,
+                              int32_t param_count, FalconResultSlot *out,
+                              int32_t *out_count) {
+  ConnectionSP conn = get_opaque<Connection>(params, param_count, "this");
+  pack_results(FunctionResult{conn->to_json_string()}, out, 16, out_count);
+}
+
+// FromJSON(json: string) -> (Connection conn)
+void STRUCTConnectionFromJSON(const FalconParamEntry *params, int32_t param_count,
+                              FalconResultSlot *out, int32_t *out_count) {
+  auto pm = unpack_params(params, param_count);
+  std::string json = std::get<std::string>(pm.at("json"));
+  ConnectionSP conn = Connection::from_json_string<Connection>(json);
+  pack_opaque_connection(std::move(conn), out, out_count);
+}
 } // namespace

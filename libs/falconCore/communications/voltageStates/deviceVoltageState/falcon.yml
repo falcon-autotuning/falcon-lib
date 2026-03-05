@@ -1,0 +1,7 @@
+name: deviceVoltageState
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - connection
+  - symbolUnit
