@@ -5,7 +5,10 @@ import (
 "./instrument.fal"
 )
 struct InstrumentPort {
-    // TODO: Add constructors matching falcon_core_cpp's InstrumentPort class
+    routine NewKnob (string default_name, connection::Connection conn = nil, instrument::Instrument type, symbolUnit::SymbolUnit units, string description) -> (InstrumentPort port)
+    routine NewMeter (string default_name, connection::Connection conn = nil, instrument::Instrument type, symbolUnit::SymbolUnit units, string description) -> (InstrumentPort port)
+    routine NewTimer -> ()
+    routine NewExecutionClock -> ()
     routine DefaultName -> (string default_name)
     routine PsuedoName -> (connection::Connection conn)
     routine InstrumentType -> (instrument::Instrument type)
