@@ -1,0 +1,93 @@
+// Tests for falconCore/instrumentInterfaces/names/instrument
+// Run with: falcon-test run_tests.fal
+import "../../../../../../testing/testing.fal";
+import "../instrument.fal";
+
+autotuner InstrumentNames -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_dc_voltage_source_non_empty (TestRunner runner, TestContext t) {
+        string s = Instrument.DCVoltageSource();
+        Error err = t.ExpectStrNe("", s, "DCVoltageSource returns non-empty string");
+        -> __end(runner, t);
+    }
+
+    state test_ammeter_non_empty (TestRunner runner, TestContext t) {
+        string s = Instrument.Amnmeter();
+        Error err = t.ExpectStrNe("", s, "Amnmeter returns non-empty string");
+        -> __end(runner, t);
+    }
+
+    state test_magnet_non_empty (TestRunner runner, TestContext t) {
+        string s = Instrument.Magnet();
+        Error err = t.ExpectStrNe("", s, "Magnet returns non-empty string");
+        -> __end(runner, t);
+    }
+
+    state test_voltage_source_non_empty (TestRunner runner, TestContext t) {
+        string s = Instrument.VoltageSource();
+        Error err = t.ExpectStrNe("", s, "VoltageSource returns non-empty string");
+        -> __end(runner, t);
+    }
+
+    state test_clock_non_empty (TestRunner runner, TestContext t) {
+        string s = Instrument.Clock();
+        Error err = t.ExpectStrNe("", s, "Clock returns non-empty string");
+        -> __end(runner, t);
+    }
+
+    state test_all_distinct (TestRunner runner, TestContext t) {
+        string dc  = Instrument.DCVoltageSource();
+        string amm = Instrument.Amnmeter();
+        string mag = Instrument.Magnet();
+        string vs  = Instrument.VoltageSource();
+        string clk = Instrument.Clock();
+        Error err = t.ExpectStrNe(dc,  amm, "DCVoltageSource != Amnmeter");
+        err = t.ExpectStrNe(dc,  mag, "DCVoltageSource != Magnet");
+        err = t.ExpectStrNe(dc,  vs,  "DCVoltageSource != VoltageSource");
+        err = t.ExpectStrNe(dc,  clk, "DCVoltageSource != Clock");
+        err = t.ExpectStrNe(amm, mag, "Amnmeter != Magnet");
+        err = t.ExpectStrNe(amm, vs,  "Amnmeter != VoltageSource");
+        err = t.ExpectStrNe(amm, clk, "Amnmeter != Clock");
+        err = t.ExpectStrNe(mag, vs,  "Magnet != VoltageSource");
+        err = t.ExpectStrNe(mag, clk, "Magnet != Clock");
+        err = t.ExpectStrNe(vs,  clk, "VoltageSource != Clock");
+        -> __end(runner, t);
+    }
+
+    state test_dc_voltage_source_stable (TestRunner runner, TestContext t) {
+        string a = Instrument.DCVoltageSource();
+        string b = Instrument.DCVoltageSource();
+        Error err = t.ExpectStrEq(a, b, "DCVoltageSource is stable across calls");
+        -> __end(runner, t);
+    }
+
+    state test_ammeter_stable (TestRunner runner, TestContext t) {
+        string a = Instrument.Amnmeter();
+        string b = Instrument.Amnmeter();
+        Error err = t.ExpectStrEq(a, b, "Amnmeter is stable across calls");
+        -> __end(runner, t);
+    }
+
+    state test_magnet_stable (TestRunner runner, TestContext t) {
+        string a = Instrument.Magnet();
+        string b = Instrument.Magnet();
+        Error err = t.ExpectStrEq(a, b, "Magnet is stable across calls");
+        -> __end(runner, t);
+    }
+
+    state test_voltage_source_stable (TestRunner runner, TestContext t) {
+        string a = Instrument.VoltageSource();
+        string b = Instrument.VoltageSource();
+        Error err = t.ExpectStrEq(a, b, "VoltageSource is stable across calls");
+        -> __end(runner, t);
+    }
+
+    state test_clock_stable (TestRunner runner, TestContext t) {
+        string a = Instrument.Clock();
+        string b = Instrument.Clock();
+        Error err = t.ExpectStrEq(a, b, "Clock is stable across calls");
+        -> __end(runner, t);
+    }
+}
