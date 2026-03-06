@@ -1,0 +1,81 @@
+ffimport "array-wrapper.cpp" ("/opt/falcon/include/") ()
+
+// ---------------------------------------------------------------------------
+// Array<T> — a generic, dynamically-typed ordered list.
+//
+// Type parameter T is the element type (int, float, bool, string, or any
+// struct type).
+//
+// Usage:
+//   import "libs/collections/array/array.fal";
+//
+//   Array<int> arr = Array.New();
+//   arr.PushBack(10);
+//   arr.PushBack(20);
+//   int first = arr.GetIndex(0);
+//   int sz    = arr.Size();
+// ---------------------------------------------------------------------------
+struct Array <T> {
+    // ── Construction ─────────────────────────────────────────────────────────
+
+    // New() -> empty Array<T>
+    routine New () -> (Array<T> arr)
+
+    // NewFrom(T a, T b, T c) — convenience 1–8 element constructors are in
+    // the wrapper; use PushBack for arbitrary-length construction.
+
+    // ── Capacity ─────────────────────────────────────────────────────────────
+
+    // Returns the number of elements currently in the array.
+    routine Size () -> (int size)
+
+    // Returns true if the array contains no elements.
+    routine IsEmpty () -> (bool empty)
+
+    // ── Element access ────────────────────────────────────────────────────────
+
+    // GetIndex(int index) -> (T value)
+    // Returns the element at position `index` (0-based).
+    // Throws a runtime error on out-of-bounds access.
+    routine GetIndex (int index) -> (T value)
+
+    // SetIndex(int index, T value) -> ()
+    // Replaces the element at position `index` with `value`.
+    // Throws a runtime error on out-of-bounds access.
+    routine SetIndex (int index, T value) -> ()
+
+    // ── Mutation ──────────────────────────────────────────────────────────────
+
+    // PushBack(T value) -> ()
+    // Appends `value` to the end of the array.
+    routine PushBack (T value) -> ()
+
+    // PopBack() -> (T value)
+    // Removes and returns the last element.
+    // Throws a runtime error if the array is empty.
+    routine PopBack () -> (T value)
+
+    // Insert(int index, T value) -> ()
+    // Inserts `value` before the element at `index`.
+    // index == Size() is valid (appends to the end).
+    routine Insert (int index, T value) -> ()
+
+    // Erase(int index) -> ()
+    // Removes the element at `index`.
+    routine Erase (int index) -> ()
+
+    // Clear() -> ()
+    // Removes all elements from the array.
+    routine Clear () -> ()
+
+    // ── Search ────────────────────────────────────────────────────────────────
+
+    // Contains(T value) -> (bool found)
+    // Returns true if any element equals `value`.
+    routine Contains (T value) -> (bool found)
+
+    // IndexOf(T value) -> (int index)
+    // Returns the 0-based index of the first occurrence of `value`,
+    // or -1 if not found.
+    routine IndexOf (T value) -> (int index)
+}

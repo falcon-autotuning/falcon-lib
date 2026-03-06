@@ -1,0 +1,8 @@
+name: map
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: array
+    version: "1.0.0"
+    local_path: "../../array/"

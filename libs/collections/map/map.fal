@@ -1,0 +1,70 @@
+ffimport "map-wrapper.cpp" ("/opt/falcon/include/") ()
+
+// ---------------------------------------------------------------------------
+// Map<K, V> — a generic key-value store (hash map).
+//
+// Type parameters:
+//   K — key type   (int, float, bool, string)
+//   V — value type (any primitive or struct)
+//
+// Usage:
+//   import "libs/collections/map/map.fal";
+//
+//   Map<string, int> scores = Map.New();
+//   scores.Set("alice", 100);
+//   int a = scores.Get("alice");
+//   bool has = scores.Contains("alice");
+// ---------------------------------------------------------------------------
+struct Map <K, V> {
+    // ── Construction ─────────────────────────────────────────────────────────
+
+    // New() -> empty Map<K,V>
+    routine New () -> (Map<K, V> m)
+
+    // ── Capacity ─────────────────────────────────────────────────────────────
+
+    // Returns the number of key-value pairs.
+    routine Size () -> (int size)
+
+    // Returns true if the map has no entries.
+    routine IsEmpty () -> (bool empty)
+
+    // ── Access ────────────────────────────────────────────────────────────────
+
+    // Get(K key) -> (V value)
+    // Returns the value associated with `key`.
+    // Throws a runtime error if `key` is not present.
+    routine Get (K key) -> (V value)
+
+    // GetOr(K key, V default_value) -> (V value)
+    // Returns the value for `key`, or `default_value` if not present.
+    routine GetOr (K key, V default_value) -> (V value)
+
+    // ── Mutation ──────────────────────────────────────────────────────────────
+
+    // Set(K key, V value) -> ()
+    // Inserts or overwrites the entry for `key`.
+    routine Set (K key, V value) -> ()
+
+    // Remove(K key) -> (bool removed)
+    // Removes the entry for `key`.  Returns true if the key was present.
+    routine Remove (K key) -> (bool removed)
+
+    // Clear() -> ()
+    // Removes all entries.
+    routine Clear () -> ()
+
+    // ── Query ─────────────────────────────────────────────────────────────────
+
+    // Contains(K key) -> (bool found)
+    // Returns true if the map contains an entry for `key`.
+    routine Contains (K key) -> (bool found)
+
+    // Keys() -> (Array<K> keys)
+    // Returns an Array of all keys in unspecified order.
+    routine Keys () -> (Array<K> keys)
+
+    // Values() -> (Array<V> values)
+    // Returns an Array of all values in unspecified order.
+    routine Values () -> (Array<V> values)
+}

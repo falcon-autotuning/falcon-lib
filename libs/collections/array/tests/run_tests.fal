@@ -1,0 +1,238 @@
+// Tests for the falcon/collections/array library.
+// Run with:  falcon-test libs/collections/array/tests/run_tests.fal
+import "../../../testing/testing.fal";
+import "../array.fal";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 1: Construction and basic capacity
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner ConstructionTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_is_empty (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        bool empty = arr.IsEmpty();
+        Error err  = t.ExpectTrue(empty, "New array is empty");
+        -> __end(runner, t);
+    }
+
+    state test_new_size_zero (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        int sz    = arr.Size();
+        Error err = t.ExpectIntEq(sz, 0, "New array has size 0");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 2: PushBack, Size, GetIndex
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner PushBackTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_pushback_size (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(10);
+        arr.PushBack(20);
+        arr.PushBack(30);
+        int sz    = arr.Size();
+        Error err = t.ExpectIntEq(sz, 3, "Size is 3 after 3 PushBacks");
+        -> __end(runner, t);
+    }
+
+    state test_pushback_get_index_0 (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(42);
+        int v     = arr.GetIndex(0);
+        Error err = t.ExpectIntEq(v, 42, "GetIndex(0) returns first element");
+        -> __end(runner, t);
+    }
+
+    state test_pushback_get_index_order (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(1);
+        arr.PushBack(2);
+        arr.PushBack(3);
+        int a     = arr.GetIndex(0);
+        int b     = arr.GetIndex(1);
+        int c     = arr.GetIndex(2);
+        Error err = t.ExpectIntEq(a, 1, "element 0 == 1");
+        err       = t.ExpectIntEq(b, 2, "element 1 == 2");
+        err       = t.ExpectIntEq(c, 3, "element 2 == 3");
+        -> __end(runner, t);
+    }
+
+    state test_not_empty_after_push (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(99);
+        bool empty = arr.IsEmpty();
+        Error err  = t.ExpectFalse(empty, "Array is not empty after PushBack");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 3: SetIndex
+// ───��─────────────────────────────────────────────────────────────────────────
+autotuner SetIndexTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_set_index_replaces (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(1);
+        arr.SetIndex(0, 99);
+        int v     = arr.GetIndex(0);
+        Error err = t.ExpectIntEq(v, 99, "SetIndex(0, 99) replaces element");
+        -> __end(runner, t);
+    }
+
+    state test_set_index_size_unchanged (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(10);
+        arr.PushBack(20);
+        arr.SetIndex(1, 200);
+        int sz    = arr.Size();
+        Error err = t.ExpectIntEq(sz, 2, "Size unchanged after SetIndex");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 4: PopBack, Insert, Erase, Clear
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner MutationTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_popback_returns_last (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(1);
+        arr.PushBack(2);
+        arr.PushBack(3);
+        int last  = arr.PopBack();
+        Error err = t.ExpectIntEq(last, 3, "PopBack returns last element");
+        -> __end(runner, t);
+    }
+
+    state test_popback_shrinks (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(1);
+        arr.PushBack(2);
+        int last  = arr.PopBack();
+        int sz    = arr.Size();
+        Error err = t.ExpectIntEq(sz, 1, "Size shrinks after PopBack");
+        -> __end(runner, t);
+    }
+
+    state test_insert_middle (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(10);
+        arr.PushBack(30);
+        arr.Insert(1, 20);   // [10, 20, 30]
+        int mid   = arr.GetIndex(1);
+        int sz    = arr.Size();
+        Error err = t.ExpectIntEq(mid, 20, "Insert(1, 20) places element at index 1");
+        err       = t.ExpectIntEq(sz,  3,  "Size is 3 after Insert");
+        -> __end(runner, t);
+    }
+
+    state test_erase_element (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(10);
+        arr.PushBack(20);
+        arr.PushBack(30);
+        arr.Erase(1);        // removes 20 → [10, 30]
+        int v     = arr.GetIndex(1);
+        int sz    = arr.Size();
+        Error err = t.ExpectIntEq(v,  30, "After Erase(1), index 1 is 30");
+        err       = t.ExpectIntEq(sz, 2,  "Size is 2 after Erase");
+        -> __end(runner, t);
+    }
+
+    state test_clear_empties (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(1);
+        arr.PushBack(2);
+        arr.Clear();
+        bool empty = arr.IsEmpty();
+        Error err  = t.ExpectTrue(empty, "Array is empty after Clear");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 5: Contains, IndexOf
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner SearchTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_contains_present (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(10);
+        arr.PushBack(20);
+        arr.PushBack(30);
+        bool found = arr.Contains(20);
+        Error err  = t.ExpectTrue(found, "Contains: 20 is in array");
+        -> __end(runner, t);
+    }
+
+    state test_contains_absent (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(10);
+        arr.PushBack(20);
+        bool found = arr.Contains(99);
+        Error err  = t.ExpectFalse(found, "Contains: 99 is not in array");
+        -> __end(runner, t);
+    }
+
+    state test_index_of_found (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(10);
+        arr.PushBack(20);
+        arr.PushBack(30);
+        int pos   = arr.IndexOf(20);
+        Error err = t.ExpectIntEq(pos, 1, "IndexOf(20) == 1");
+        -> __end(runner, t);
+    }
+
+    state test_index_of_not_found (TestRunner runner, TestContext t) {
+        Array<int> arr = Array.New();
+        arr.PushBack(10);
+        arr.PushBack(20);
+        int pos   = arr.IndexOf(99);
+        Error err = t.ExpectIntEq(pos, -1, "IndexOf(99) == -1 when absent");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 6: String element type
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner StringElementTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_string_push_get (TestRunner runner, TestContext t) {
+        Array<string> arr = Array.New();
+        arr.PushBack("hello");
+        arr.PushBack("world");
+        string a  = arr.GetIndex(0);
+        string b  = arr.GetIndex(1);
+        Error err = t.ExpectStrEq(a, "hello", "element 0 == hello");
+        err       = t.ExpectStrEq(b, "world", "element 1 == world");
+        -> __end(runner, t);
+    }
+
+    state test_string_contains (TestRunner runner, TestContext t) {
+        Array<string> arr = Array.New();
+        arr.PushBack("falcon");
+        arr.PushBack("hawk");
+        bool has  = arr.Contains("falcon");
+        Error err = t.ExpectTrue(has, "Contains 'falcon'");
+        -> __end(runner, t);
+    }
+}

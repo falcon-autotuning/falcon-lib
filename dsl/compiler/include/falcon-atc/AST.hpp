@@ -1154,9 +1154,6 @@ struct AutotunerDecl {
   std::vector<std::unique_ptr<ParamDecl>>
       output_params; // Read/write (can refine multiple times)
 
-  // Dependencies (other autotuners that can be called)
-  std::vector<std::string> required_autotuners;
-
   // Persistent variables (autotuner scope - available to all states)
   std::vector<std::unique_ptr<Stmt>> autotuner_variables;
 
@@ -1170,13 +1167,11 @@ struct AutotunerDecl {
 
   AutotunerDecl(std::string n, std::vector<std::unique_ptr<ParamDecl>> inputs,
                 std::vector<std::unique_ptr<ParamDecl>> outputs,
-                std::vector<std::string> required_ats,
                 std::vector<std::unique_ptr<Stmt>> vars, std::string entry,
                 std::vector<std::unique_ptr<Expr>> entry_params,
                 std::vector<StateDecl> sts)
       : name(std::move(n)), input_params(std::move(inputs)),
         output_params(std::move(outputs)),
-        required_autotuners(std::move(required_ats)),
         autotuner_variables(std::move(vars)), entry_state(std::move(entry)),
         entry_parameters(std::move(entry_params)), states(std::move(sts)) {}
 

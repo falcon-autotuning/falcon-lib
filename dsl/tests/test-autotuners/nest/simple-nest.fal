@@ -1,5 +1,4 @@
 autotuner ErrorViewer -> (bool outer_completed, bool inner_completed) {
-  uses DoNothing, FatalOtherError;
 
   outer_completed = false;
   inner_completed = false;

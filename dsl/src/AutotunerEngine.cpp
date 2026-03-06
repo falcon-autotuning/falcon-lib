@@ -142,15 +142,6 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
     for (auto &autotuner : program->autotuners) {
       autotuner.module_name = program->module_name;
       log::info("  - Autotuner: " + autotuner.name);
-      for (const auto &req : autotuner.required_autotuners) {
-        log::debug("    requires: " + req);
-        // Strip qualifier for dependency check — "Adder::adder" → "adder"
-        auto bare = strip_module(req);
-        if (!has_autotuner(bare) && !function_registry_->has_function(bare)) {
-          log::warn("    Required '" + bare +
-                    "' not yet loaded (must be loaded before running)");
-        }
-      }
       std::string qname = autotuner.module_name.empty()
                               ? autotuner.name
                               : autotuner.module_name + "::" + autotuner.name;
@@ -371,19 +362,6 @@ AutotunerEngine::run_autotuner(const std::string &autotuner_name,
   }
 
   const auto &autotuner = it->second;
-  for (const auto &required : autotuner.required_autotuners) {
-    // The `uses` clause stores qualified names like "Adder::adder".
-    // Routines are registered under their bare name ("adder"), so strip
-    // the module prefix before checking.
-    auto bare = strip_module(required);
-    if (!function_registry_->has_function(bare) &&
-        !function_registry_->has_function(required)) {
-      throw std::runtime_error("Required dependency '" + required +
-                               "' not loaded for autotuner '" + autotuner_name +
-                               "'");
-    }
-  }
-
   std::ostringstream oss;
   oss << "Running autotuner: " << autotuner_name;
   log::info(oss.str());
