@@ -1,0 +1,49 @@
+import (
+"../../communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
+"../point/point.fal"
+"../../math/quantity/quantity.fal"
+"../../../physics/deviceStructures/connection/connection.fal"
+"../../../physics/units/symbolUnit/symbolUnit.fal"
+)
+ffimport "vector-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct Vector {
+    routine NewFromStart (point::Point start) -> (Vector v)
+    routine New (point::Point start, point::Point end) -> (Vector v)
+    routine EndPoint () -> (point::Point p)
+    routine StartPoint () -> (point::Point p)
+    routine Connections () -> (array::Array<connection::Connection> conns)
+    routine Unit () -> (symbolUnit::SymbolUnit unit)
+    routine PrincipleConnection () -> (connection::Connection conn)
+    routine Magnitude () -> (float m)
+    routine Times (float factor) -> (Vector scaled_state)
+    routine Times (int factor) -> (Vector scaled_state)
+    routine Divides (float divisor) -> (Vector scaled_state)
+    routine Divides (int divisor) -> (Vector scaled_state)
+    routine Add (Vector other) -> (Vector sum_state)
+    routine Subtract (Vector other) -> (Vector diff)
+    routine Negate -> (Vector negated_state)
+    routine Equal (Vector other) -> (bool equal)
+    routine NotEqual (Vector other) -> (bool notequal)
+    routine FromJSON (string json) -> (Vector dstate)
+    routine ToJSON () -> (string json)
+    routine UpdateStartFromStates (deviceVoltageStates::DeviceVoltageStates states) -> (vector::Vector v)
+    routine Translate (Point point) -> (vector::Vector v)
+    routine TranslateToOrigin () -> (vector::Vector v)
+    routine Extend (float extension) -> (vector::Vector v)
+    routine Extend (int extension) -> (vector::Vector v)
+    routine Shrink (float extension) -> (vector::Vector v)
+    routine Shrink (int extension) -> (vector::Vector v)
+    routine UnitVector () -> (vector::Vector v)
+    routine Normalize () -> (vector::Vector v)
+    routine Project (vector::Vector other) -> (vector::Vector v)
+    routine UpdateUnit (symbolUnit::SymbolUnit unit) -> ()
+    routine Size () -> (int size) {
+        size = this.Coordinates().Size();
+    }
+    routine IsEmpty () -> (bool empty) {
+        empty = this.Coordinates().IsEmpty();
+    }
+    routine Contains (connection::Connection key) -> (bool found) {
+        found = this.Coordinates().Contains(key);
+    }
+}
