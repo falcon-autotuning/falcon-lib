@@ -27,30 +27,25 @@ A domain-specific language and runtime for defining and executing **quantum devi
 The Falcon DSL library (`falcon-dsl`) lets you define complex quantum device control workflows as declarative state machines in `.fal` files, then execute them at runtime with hardware measurement functions written in C++.
 
 ```fal
-autotuner ChargeStability {
-  params {
-    float gate_voltage = 0.0;
-    int   sweep_steps  = 50;
-  }
+autotuner ChargeStability (float gate_voltage, int sweep_steps) -> (bool stable) {
+    stable = false;
+    start -> initialize;
 
-  start -> initialize;
+    state initialize {
+        bool ok = device_init();
+        if (ok == true) { -> sweep; }
+        else            { -> error; }
+    }
 
-  state initialize {
-    temp { bool ok; }
-    measurement: device_init();
-    if (ok == true) -> sweep;
-    else            -> error;
-  }
+    state sweep {
+        float current = measure_current(gate_voltage, sweep_steps);
+        stable = current > 0.0;
+        if (stable == true) { -> done; }
+        else                { -> error; }
+    }
 
-  state sweep {
-    temp { float current; bool stable; }
-    measurement: measure_current(gate_voltage, sweep_steps);
-    if (stable == true) -> done;
-    else                -> error;
-  }
-
-  state done  { terminal; }
-  state error { terminal; }
+    state done  { terminal; }
+    state error { terminal; }
 }
 ```
 
@@ -114,19 +109,16 @@ make install INSTALL_PREFIX=/usr/local
 
 ```fal
 // hello.fal
-autotuner Hello {
-  params {
-    bool greeted = false;
-  }
+autotuner Hello -> (bool greeted) {
+    greeted = false;
+    start -> greet;
 
-  start -> greet;
+    state greet {
+        greeted = true;
+        -> done;
+    }
 
-  state greet {
-    greeted = true;
-    -> done;
-  }
-
-  state done { terminal; }
+    state done { terminal; }
 }
 ```
 
@@ -155,7 +147,7 @@ int main() {
 
     falcon::typing::ParameterMap inputs;
     auto results = engine.run_autotuner("Hello", inputs);
-    // results[0] == true (the 'greeted' param)
+    // results[0] == true  (the 'greeted' output)
     return 0;
 }
 ```
@@ -172,25 +164,26 @@ int main() {
 // Optional imports
 import "other_module.fal";
 
-// Optional struct definitions
-struct DeviceConfig {
-  float bias     = 0.0;
-  float gain     = 1.0;
+// Optional struct definitions — may be generic
+struct SweepConfig {
+    float start = 0.0;
+    float stop  = 1.0;
+}
+
+struct Box <T> {
+    T value;
+    routine New (T v) -> (Box<T> b) { b.value = v; }
+    routine Get      -> (T out)     { out = this.value; }
 }
 
 // One or more autotuner declarations
-autotuner MyAutotuner {
-  uses  [OtherAutotuner];          // optional: cross-autotuner dependencies
-  params {
-    int   iteration = 0;
-    float voltage   = 0.0;
-  }
+autotuner MyAutotuner (int iteration, float voltage) -> (float result) {
+    result = 0.0;
+    start -> init;
 
-  start -> init;
-
-  state init { ... }
-  state run  { ... }
-  state done { terminal; }
+    state init { ... }
+    state run  { ... }
+    state done { terminal; }
 }
 ```
 
@@ -203,27 +196,50 @@ autotuner MyAutotuner {
 | `bool` | Boolean | `true`, `false` |
 | `string` | String literal | `"hello"`, `"dev_0"` |
 
+### Generic structs
+
+Structs can be parameterised with type variables using angle-bracket syntax:
+
+```fal
+struct Accumulator <T> {
+    T total;
+
+    routine New (T init) -> (Accumulator<T> acc) {
+        acc.total = init;
+    }
+
+    routine Add (T delta) -> (T new_total) {
+        total     = total + delta;
+        new_total = total;
+    }
+}
+
+autotuner Example (int start, int delta) -> (int result) {
+    result = 0;
+    start -> run;
+    state run {
+        Accumulator<int> acc = Accumulator.New(start);
+        result = acc.Add(delta);
+        terminal;
+    }
+}
+```
+
+The interpreter resolves concrete types on demand — no manual template instantiation or separate compilation step is required.
+
 ### State anatomy
 
 ```fal
-state sweep_point {
-  // Received from the previous transition
-  params {
-    float voltage;
-  }
+state sweep_point (float voltage) {
+    // Received from the previous transition as a parameter
 
-  // Scratch variables, live only in this state
-  temp {
-    float current;
-    bool  valid;
-  }
+    // Scratch variables, local to this state
+    float current = measure_iv(voltage);
+    bool  valid   = current > 0.0;
 
-  // Calls a C++ function; output keys populate temp/params
-  measurement: measure_iv(voltage);
-
-  // Conditional transitions
-  if (valid == true && current > 0.0) -> record[current, voltage];
-  else                                -> error;
+    // Conditional transitions
+    if (valid == true) { -> record(current, voltage); }
+    else               { -> error; }
 }
 ```
 
@@ -233,9 +249,8 @@ state sweep_point {
 |--------|---------|
 | `-> next_state;` | Unconditional jump |
 | `if (cond) -> s1; else -> s2;` | Conditional branch |
-| `-> next[var];` | Transfer `var` by name |
-| `-> next[a: b];` | Transfer `a`, bind as `b` in target |
-| `-> Other::state;` | Cross-autotuner jump |
+| `-> next(val);` | Transfer value to state parameter |
+| `-> Other::state;` | Cross-module jump |
 
 ### Routines
 
@@ -243,22 +258,16 @@ Pure `.fal` helper functions (no measurement, no state machine):
 
 ```fal
 routine clamp (float val, float lo, float hi) -> (float out) {
-  if (val < lo) { out = lo; }
-  elif (val > hi) { out = hi; }
-  else { out = val; }
+    if (val < lo) { out = lo; }
+    elif (val > hi) { out = hi; }
+    else { out = val; }
 }
 ```
 
-### Structs
-
-Composite types usable as parameter types:
+Cross-module routines are called by qualified name — no `uses` declaration is needed:
 
 ```fal
-struct SweepConfig {
-  float start  = 0.0;
-  float stop   = 1.0;
-  int   points = 100;
-}
+float safe = math_utils::clamp(input, 0.0, 1.0);
 ```
 
 ### Imports
@@ -269,19 +278,19 @@ import "shared/types.fal";
 
 // Multi-path
 import (
-  "shared/types.fal"
-  "shared/routines.fal"
+    "shared/types.fal"
+    "shared/routines.fal"
 )
 ```
 
 ### FFI (Foreign Function Interface)
 
-Bind a C++ shared library wrapper to `.fal` symbols:
+Bind a C++ shared library wrapper to `.fal` symbols. The engine compiles it automatically at load time via the C ABI — no separate build step is needed:
 
 ```fal
 ffimport "hardware_wrapper.cpp"
-  ("-I/opt/mydevice/include")
-  ("-lmydevice")
+    ("-I/opt/mydevice/include")
+    ("-lmydevice")
 ```
 
 ---
@@ -295,15 +304,8 @@ ffimport "hardware_wrapper.cpp"
 
 falcon::dsl::AutotunerEngine engine;
 
-// Load one or more .fal files (imports resolved automatically)
+// Load one or more .fal files (imports and ffimport wrappers resolved automatically)
 engine.load_fal_file("sweep.fal");
-
-// Optionally bind external C++ routines
-engine.load_routine_library({
-    .name         = "measure_iv",
-    .library_path = "libhardware.so",
-    .name_space   = "VoltageSweep",
-});
 
 // Build inputs
 falcon::typing::ParameterMap inputs;
@@ -322,8 +324,7 @@ for (auto &name : engine.get_loaded_autotuners())
 
 | Method | Description |
 |--------|-------------|
-| `load_fal_file(path)` | Parse and load a `.fal` file; recursively resolves imports |
-| `load_routine_library(config)` | Bind a `.so` containing C++ measurement implementations |
+| `load_fal_file(path)` | Parse and load a `.fal` file; recursively resolves imports and compiles `ffimport` wrappers |
 | `run_autotuner(name, inputs)` | Execute a named autotuner, returns `FunctionResult` |
 | `run_routine(name, inputs)` | Execute a standalone routine |
 | `get_loaded_autotuners()` | List all loaded autotuner names |
@@ -375,9 +376,7 @@ falcon-run --list my_autotuners.fal
 falcon-run MyAutotuner file.fal --log-level debug
 ```
 
-### Inline measurement functions
-
-If your autotuner's measurement functions are implemented as `.fal` routines (no C++), `falcon-run` works immediately. For autotuners that call external C++ measurement libraries, use `ffimport` in the `.fal` file so the engine can compile and link them automatically.
+If your autotuner uses `ffimport`, the engine compiles the C++ wrapper automatically — no extra build step is required.
 
 See [docs/CLI.md](docs/CLI.md) for the full CLI reference.
 
@@ -393,7 +392,7 @@ See [docs/CLI.md](docs/CLI.md) for the full CLI reference.
 
 1. Scans the body for `state test_*` declarations to build the test list.
 2. Detects optional `state setup` and `state teardown` declarations.
-3. Generates and injects five harness states (`__init`, `__loop`, `__begin`, `__dispatch`, `__end`, `__finish`) that manage the test loop, registration, and output.
+3. Generates and injects harness states (`__init`, `__loop`, `__begin`, `__dispatch`, `__end`, `__finish`) that manage the test loop and output.
 4. Writes the expanded source next to the original file so all `import` paths continue to resolve correctly.
 5. Loads and runs each suite through `AutotunerEngine`.
 
@@ -426,7 +425,7 @@ autotuner MySuite -> (int passed, int failed) {
 }
 ```
 
-All `import` statements, structs, routines, and other autotuners defined in the same file are available to test bodies as normal.
+All `import` statements, structs (including generic ones), routines, and other autotuners defined in the same file are available to test bodies as normal.
 
 ### Usage
 
@@ -458,7 +457,7 @@ falcon-test <file.fal> [file2.fal ...] [options]
 falcon-test my_tests.fal
 
 # Run multiple files — all suites run, combined exit code
-falcon-test unit_tests.fal integration_tests.fal hardware_tests.fal
+falcon-test unit_tests.fal integration_tests.fal
 
 # Inspect the generated harness source without running
 falcon-test my_tests.fal --dump
@@ -476,7 +475,6 @@ falcon-test: my_tests.fal
 [==========] Running 3 test(s) from MySuite
 [----------] Global test environment set-up.
 [ RUN      ] MySuite.test_addition
-[ INFO     ] test_addition: teardown: cleanup done
 [       OK ] MySuite.test_addition
 [ RUN      ] MySuite.test_bad_math
              ✗ 1 != 2 — mismatch (expected=1 actual=2)
@@ -485,52 +483,9 @@ falcon-test: my_tests.fal
 [       OK ] MySuite.test_strings
 
 [==========] 3 test(s) from MySuite
-[----------] Global test environment tear-down.
-[  PASSED  ] test_addition
-[  FAILED  ] test_bad_math
-             ✗ 1 != 2 — mismatch (expected=1 actual=2)
-[  PASSED  ] test_strings
-[----------]
 [  PASSED  ] 2 test(s)
 [  FAILED  ] 1 test(s)
 [==========] 3 test(s) ran.
-```
-
-### Multi-step tests
-
-A test can pass its `TestContext` through multiple intermediate states. Name continuation states without the `test_` prefix so they are not independently registered:
-
-```fal
-    state test_sequence (TestRunner runner, TestContext t) {
-        Error err = t.Log("phase 1");
-        err = t.ExpectIntEq(1, 1, "phase 1 ok");
-        -> test_sequence_phase2(runner, t);   // continuation
-    }
-    state test_sequence_phase2 (TestRunner runner, TestContext t) {
-        Error err = t.Log("phase 2");
-        err = t.ExpectStrEq("ok", "ok", "phase 2 ok");
-        -> teardown(runner, t);
-    }
-```
-
-`falcon-test` recognises `test_sequence_phase2` as a transition target of another `test_*` state and skips it during registration.
-
-### Multiple suites per file
-
-Any number of suite autotuners can live in one file. Each gets its own header/summary block:
-
-```fal
-autotuner UnitTests -> (int passed, int failed) {
-    passed = 0; failed = 0;
-    start -> __init;
-    // ...
-}
-
-autotuner IntegrationTests -> (int passed, int failed) {
-    passed = 0; failed = 0;
-    start -> __init;
-    // ...
-}
 ```
 
 See [libs/testing/README.md](../libs/testing/README.md) for the full testing library reference.
@@ -580,8 +535,8 @@ See [docs/PACKAGE_MANAGER.md](docs/PACKAGE_MANAGER.md) for the full guide.
 ### Features
 
 - Syntax error diagnostics
-- Completion for state names, parameters, and keywords
-- Go-to-definition for states and routines
+- Completion for state names, parameters, keywords, and generic type parameters
+- Go-to-definition for states, routines, and struct types
 - Hover documentation
 - Rename refactoring
 
@@ -599,7 +554,6 @@ make install-lsp
 **Neovim (nvim-lspconfig)**:
 
 ```lua
--- In your init.lua
 local lspconfig = require('lspconfig')
 lspconfig.falcon_lsp.setup {
   cmd = { '/opt/falcon/lib/falcon-lsp' },

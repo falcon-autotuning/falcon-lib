@@ -6,3 +6,15 @@ dependencies:
   - name: deviceVoltageState
     version: "1.0.0"
     local_path: "../deviceVoltageState/"
+  - name: array
+    version: "1.0.0"
+    local_path: "../../../../collections/array/"
+  - name: connection
+    version: "1.0.0"
+    local_path: "../../../physics/deviceStructures/connection/"
+  - name: symbolUnit
+    version: "1.0.0"
+    local_path: "../../../physics/units/symbolUnit/"
+  - name: point 
+    version: "1.0.0"
+    local_path: "../../../math/point/"

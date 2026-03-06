@@ -1,6 +1,4 @@
-import "log";
 autotuner ConditionalNest (int a, int b) -> (int out, Error err) {
-  uses Adder, Multiplier;
 
   err = nil;
   out = 0;
@@ -32,7 +30,6 @@ autotuner ConditionalNest (int a, int b) -> (int out, Error err) {
       terminal;
   }
   state error_processing (Error error) {
-      log::Info("We got an error with {}", error);
       terminal;
   }
 }

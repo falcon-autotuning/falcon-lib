@@ -9,3 +9,6 @@ dependencies:
   - name: instrumentPort 
     version: "1.0.0"
     local_path: "../../../instrumentInterfaces/names/instrumentPort"
+  - name: array
+    version: "1.0.0"
+    local_path: "../../../../collections/array/"

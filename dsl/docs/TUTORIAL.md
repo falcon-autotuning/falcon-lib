@@ -2,308 +2,277 @@
 
 ## Introduction
 
-This tutorial will guide you through creating your first autotuner from scratch.
+This tutorial will guide you through creating your first autotuner from scratch using the current Falcon DSL. By the end you will have a working voltage-sweep autotuner backed by a real C++ hardware wrapper, running entirely through `falcon-run` — no CMake, no manual compilation.
 
 ## Prerequisites
 
-- C++17 compiler
-- CMake 3.20+
-- Falcon Autotuner library installed
+- Falcon DSL installed (`cd dsl && make install`)
 - Basic understanding of state machines
+
+---
 
 ## Tutorial: Voltage Sweep Autotuner
 
-We'll build an autotuner that sweeps voltage and measures current.
+We'll build an autotuner that sweeps a voltage range and measures current at each step.
+
+---
 
 ### Step 1: Define the State Machine
 
 Create `voltage_sweep.fal`:
 
 ```fal
-autotuner VoltageSweep {
-  requires: [];
-  
-  params {
-    float min_voltage = 0.0;
-    float max_voltage = 1.0;
-    float step = 0.1;
-    float current_voltage = 0.0;
-    int measurement_count = 0;
-  }
-  
-  start -> initialize;
-  
-  state initialize {
-    temp {
-      bool init_success;
-      string error_msg;
+// voltage_sweep.fal
+//
+// Sweeps voltage from min_voltage to max_voltage in steps of 'step',
+// measuring current at each point.  Saves results and reports the count.
+
+ffimport "voltage_sweep_impl.cpp" () ()
+
+autotuner VoltageSweep (float min_voltage, float max_voltage, float step) -> (int measurement_count) {
+    float current_voltage = min_voltage;
+    measurement_count = 0;
+    start -> initialize;
+
+    state initialize {
+        bool init_success = initialize_device();
+        if (init_success == true) { -> measure_point; }
+        else                      { -> error_state;   }
     }
-    
-    measurement: initialize_device();
-    
-    if (init_success == true) -> start_sweep;
-    else -> error_state[error_msg: error];
-  }
-  
-  state start_sweep {
-    measurement: prepare_sweep();
-    
-    current_voltage = min_voltage;
-    
-    -> measure_point;
-  }
-  
-  state measure_point {
-    temp {
-      float measured_current;
-      bool valid;
-    }
-    
-    measurement: measure_iv(current_voltage);
-    
-    if (valid == true) {
-      measurement_count = measurement_count + 1;
-      
-      if (current_voltage + step < max_voltage) {
+
+    state measure_point {
+        float measured_current = measure_iv(current_voltage);
+        measurement_count = measurement_count + 1;
+
         current_voltage = current_voltage + step;
-        -> measure_point;
-      }
-      else -> finalize;
+        if (current_voltage <= max_voltage) { -> measure_point; }
+        else                               { -> finalize;       }
     }
-    else -> error_state;
-  }
-  
-  state finalize {
-    temp {
-      bool save_success;
+
+    state finalize {
+        bool save_success = save_data(measurement_count);
+        if (save_success == true) { -> complete;    }
+        else                      { -> error_state; }
     }
-    
-    measurement: save_data(measurement_count);
-    
-    if (save_success == true) -> complete;
-    else -> error_state;
-  }
-  
-  state complete {
-    terminal;
-  }
-  
-  state error_state {
-    params {
-      string error = "Unknown error";
-    }
-    terminal;
-  }
+
+    state complete    { terminal; }
+    state error_state { terminal; }
 }
 ```
 
+Key points:
+- The `ffimport` line at the top tells the engine to compile `voltage_sweep_impl.cpp` automatically — no separate build step is needed.
+- The `uses` keyword is not part of the language. Cross-module calls simply use the `Module::symbol` qualified form.
+- Inputs and outputs are declared directly in the autotuner signature.
+- There are no `params {}` or `temp {}` blocks — variables are declared inline.
+
 ---
 
-## Step 2: Implement Measurements in C++
+### Step 2: Implement Measurements in C++
 
-Create ==voltage_sweep_impl.cpp==:
+Create `voltage_sweep_impl.cpp` **in the same directory** as the `.fal` file:
 
 ```cpp
-#include "falcon-autotuner/MeasurementRoutine.hpp"
+// voltage_sweep_impl.cpp
+//
+// Falcon C ABI wrapper for the voltage sweep measurement routines.
+// The engine compiles this file automatically via ffimport.
+
+#include <falcon-typing/falcon_ffi.h>
+#include <falcon-typing/FFIHelpers.hpp>
 #include <iostream>
 #include <fstream>
 #include <vector>
 
-// Mock hardware interface
+// ── Mock hardware ─────────────────────────────────────────────────────────────
+
 class MockDevice {
 public:
-    bool initialize() { return true; }
-    void set_voltage(float v) { voltage_ = v; }
-    float measure_current() { return voltage_ * 1e-6f; }  // Ohm's law
+    bool  initialize()           { return true; }
+    void  set_voltage(double v)  { voltage_ = v; }
+    double measure_current()     { return voltage_ * 1e-6; }  // Ohm's law mock
 private:
-    float voltage_ = 0.0f;
+    double voltage_ = 0.0;
 };
 
 static MockDevice g_device;
-static std::vector<std::pair<float, float>> g_measurements;
+static std::vector<std::pair<double, double>> g_measurements;
 
-namespace VoltageSweep {
+// ── Falcon C ABI wrappers ─────────────────────────────────────────────────────
 
-using namespace falcon::dsl;
-
-ParameterMap initialize_device(const ParameterMap& params) {
-    ParameterMap result;
-    
+extern "C" void initialize_device(
+    const FalconParamEntry* /*in*/,  int32_t /*in_count*/,
+    FalconResultSlot*        out,    int32_t* out_count)
+{
     std::cout << "Initializing device...\n";
-    
-    bool success = g_device.initialize();
     g_measurements.clear();
-    
-    result.set("init_success", success);
-    result.set("error_msg", success ? std::string("") : std::string("Init failed"));
-    
-    return result;
+    bool ok = g_device.initialize();
+    falcon::typing::ffi::engine::set_result(out, out_count, 0, ok);
 }
 
-ParameterMap prepare_sweep(const ParameterMap& params) {
-    ParameterMap result;
-    
-    float min_v = params.get<float>("min_voltage");
-    float max_v = params.get<float>("max_voltage");
-    
-    std::cout << "Preparing sweep: " << min_v << " to " << max_v << " V\n";
-    
-    return result;  // No output params needed
-}
+extern "C" void measure_iv(
+    const FalconParamEntry* in,  int32_t in_count,
+    FalconResultSlot*       out, int32_t* out_count)
+{
+    auto params   = falcon::typing::ffi::engine::unpack_params(in, in_count);
+    double voltage = std::get<double>(params.at("current_voltage"));
 
-ParameterMap measure_iv(const ParameterMap& params) {
-    ParameterMap result;
-    
-    float voltage = params.get<float>("current_voltage");
-    
-    std::cout << "Measuring at " << voltage << " V... ";
-    
     g_device.set_voltage(voltage);
-    float current = g_device.measure_current();
-    
-    std::cout << current << " A\n";
-    
+    double current = g_device.measure_current();
+
+    std::cout << "  V=" << voltage << "  I=" << current << "\n";
     g_measurements.push_back({voltage, current});
-    
-    result.set("measured_current", current);
-    result.set("valid", true);
-    
-    return result;
+
+    falcon::typing::ffi::engine::set_result(out, out_count, 0, current);
 }
 
-ParameterMap save_data(const ParameterMap& params) {
-    ParameterMap result;
-    
-    int count = params.get<int>("measurement_count");
-    
-    std::cout << "Saving " << count << " measurements...\n";
-    
-    std::ofstream file("iv_curve.csv");
-    file << "Voltage (V),Current (A)\n";
-    for (const auto& [v, i] : g_measurements) {
-        file << v << "," << i << "\n";
-    }
-    file.close();
-    
+extern "C" void save_data(
+    const FalconParamEntry* in,  int32_t in_count,
+    FalconResultSlot*       out, int32_t* out_count)
+{
+    auto params = falcon::typing::ffi::engine::unpack_params(in, in_count);
+    int64_t count = std::get<int64_t>(params.at("measurement_count"));
+
+    std::cout << "Saving " << count << " measurement(s)...\n";
+
+    std::ofstream f("iv_curve.csv");
+    f << "Voltage (V),Current (A)\n";
+    for (auto& [v, i] : g_measurements)
+        f << v << "," << i << "\n";
+    f.close();
+
     std::cout << "Saved to iv_curve.csv\n";
-    
-    result.set("save_success", true);
-    
-    return result;
+    falcon::typing::ffi::engine::set_result(out, out_count, 0, true);
 }
+```
 
-} // namespace VoltageSweep
+The engine discovers and compiles this file when `voltage_sweep.fal` is loaded. There is nothing else to build.
+
+---
+
+### Step 3: Run
+
+```bash
+falcon-run VoltageSweep voltage_sweep.fal \
+    --param min_voltage=0.0 \
+    --param max_voltage=1.0 \
+    --param step=0.1
+```
+
+Expected output:
+
+```
+Initializing device...
+  V=0    I=0
+  V=0.1  I=1e-07
+  V=0.2  I=2e-07
+  V=0.3  I=3e-07
+  V=0.4  I=4e-07
+  V=0.5  I=5e-07
+  V=0.6  I=6e-07
+  V=0.7  I=7e-07
+  V=0.8  I=8e-07
+  V=0.9  I=9e-07
+  V=1    I=1e-06
+Saving 11 measurement(s)...
+Saved to iv_curve.csv
+
+Autotuner 'VoltageSweep' completed.
+Results (1):
+  [0] 11
 ```
 
 ---
 
-## Step 3: Compile to Shared Library
+### Step 4: Add a Snapshot (Optional)
 
-Create ==CMakeLists.txt==:
-
-```cpp
-cmake_minimum_required(VERSION 3.20)
-project(voltage_sweep_autotuner)
-
-set(CMAKE_CXX_STANDARD 17)
-
-find_package(falcon-autotuner REQUIRED)
-
-# Compile .fal file
-add_custom_command(
-    OUTPUT 
-        ${CMAKE_CURRENT_BINARY_DIR}/GeneratedAutotuners.hpp
-        ${CMAKE_CURRENT_BINARY_DIR}/GeneratedAutotuners.cpp
-    COMMAND falc ${CMAKE_CURRENT_SOURCE_DIR}/voltage_sweep.fal 
-            -o ${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS voltage_sweep.fal
-    COMMENT "Compiling voltage_sweep.fal"
-)
-
-# Build shared library
-add_library(voltage_sweep_autotuner SHARED
-    voltage_sweep_impl.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/GeneratedAutotuners.cpp
-)
-
-target_include_directories(voltage_sweep_autotuner
-    PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
-)
-
-target_link_libraries(voltage_sweep_autotuner
-    PRIVATE falcon::autotuner-core
-)
-```
-
----
-
-## Step 4: Create Snapshot File
-
-Create ==snapshot.json==:
+If you want to pre-seed parameters from a JSON snapshot instead of passing `--param` flags, create `snapshot.json` next to the `.fal` file:
 
 ```json
 {
   "min_voltage": 0.0,
   "max_voltage": 1.0,
-  "step": 0.1,
-  "current_voltage": 0.0,
-  "measurement_count": 0
+  "step": 0.1
 }
 ```
 
----
-
-## Step 5: Build
+Then run:
 
 ```bash
-mkdir build
-cd build
-cmake ..
-make
+falcon-run VoltageSweep voltage_sweep.fal --snapshot snapshot.json
 ```
 
 ---
-This produces: ==libvoltage_sweep_autotuner.so==
 
-## Step 6: Run
+### Step 5: Embed in C++
 
-```bash
-falcon-runtime libvoltage_sweep_autotuner.so \
-    --entry VoltageSweep \
-    --snapshot snapshot.json
+If you need to call the autotuner from a C++ application:
+
+```cpp
+#include <falcon-dsl/AutotunerEngine.hpp>
+
+int main() {
+    falcon::dsl::AutotunerEngine engine;
+    engine.load_fal_file("voltage_sweep.fal");   // ffimport compiled here
+
+    falcon::typing::ParameterMap inputs;
+    inputs["min_voltage"] = 0.0;
+    inputs["max_voltage"] = 1.0;
+    inputs["step"]        = 0.1;
+
+    auto results = engine.run_autotuner("VoltageSweep", inputs);
+    int64_t count = std::get<int64_t>(results[0]);
+    std::cout << "Measured " << count << " point(s).\n";
+    return 0;
+}
 ```
 
-Output:
+No `cmake`, no custom build step, no shared library to produce by hand — `load_fal_file` handles everything.
 
-```Code
-Loading library: libvoltage_sweep_autotuner.so
-Entry autotuner: VoltageSweep
+---
 
-=== Running Autotuner ===
+## Step 6: Write a Test
 
-Initializing device...
-Preparing sweep: 0.0 to 1.0 V
-Measuring at 0.0 V... 0.0 A
-Measuring at 0.1 V... 1e-07 A
-Measuring at 0.2 V... 2e-07 A
-...
-Measuring at 1.0 V... 1e-06 A
-Saving 11 measurements...
-Saved to iv_curve.csv
+Use `falcon-test` to regression-test the autotuner:
 
-=== Results ===
-✓ Success!
-Final state: VoltageSweep::complete
-Transitions: 14
+```fal
+// voltage_sweep_tests.fal
+import "/opt/falcon/libs/testing/testing.fal";
+
+// The implementation under test
+ffimport "voltage_sweep_impl.cpp" () ()
+
+autotuner VoltageSweepTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_basic_sweep (TestRunner runner, TestContext t) {
+        // 0.0, 0.5, 1.0 → 3 points
+        int count = VoltageSweep(0.0, 1.0, 0.5);
+        Error err = t.ExpectIntEq(count, 3, "3 measurements for 0→1 step 0.5");
+        -> __end(runner, t);
+    }
+
+    state test_single_point (TestRunner runner, TestContext t) {
+        int count = VoltageSweep(0.5, 0.5, 0.1);
+        Error err = t.ExpectIntEq(count, 1, "single point when begin == end");
+        -> __end(runner, t);
+    }
+}
+```
+
+```bash
+falcon-test voltage_sweep_tests.fal
 ```
 
 ---
 
 ## Next Steps
 
-- Add error handling states
-- Implement cross-autotuner transitions
-- Use database integration for snapshots
-- Build more complex state machines
+- Add error handling states and retry logic
+- Use [generic structs](LANGUAGE_REFERENCE.md#generic-structs) to build reusable data structures (e.g. `Accumulator<float>` for running statistics)
+- Use [cross-module imports](LANGUAGE_REFERENCE.md#imports-and-modules) to share routines across multiple autotuners
+- Use `falcon-test` with fixture `setup`/`teardown` for hardware-in-the-loop tests
+- See [libs/testing/README.md](../libs/testing/README.md) for the full testing library reference
 
-See EXAMPLES.md for more examples.
+See [LANGUAGE_REFERENCE.md](LANGUAGE_REFERENCE.md) for the complete language specification.
