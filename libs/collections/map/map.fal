@@ -36,7 +36,8 @@ struct Map <K, V> {
 
     // Returns true if the map has no entries.
     routine IsEmpty () -> (bool empty) {
-        empty = (keys_.Size() > 0);
+        int size = keys_.Size();
+        empty = (size > 0);
     }
 
     // ── Access ────────────────────────────────────────────────────────────────
