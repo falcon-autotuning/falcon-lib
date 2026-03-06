@@ -1,0 +1,24 @@
+import "../../../../collections/array/array.fal";
+import "../labelledDomain/labelledDomain.fal";
+import "../../../instrumentInterfaces/names/ports/ports.fal";
+import "../../../instrumentInterfaces/names/instrumentPort/instrumentPort.fal";
+ffimport "coupled-labelled-domain-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct CoupledLabelledDomain {
+    routine New (Array<LabelledDomain> conns) -> (CoupledLabelledDomain c)
+    routine Equal (CoupledLabelledDomain other) -> (bool equal)
+    routine NotEqual (CoupledLabelledDomain other) -> (bool notequal)
+    routine FromJSON (string json) -> (CoupledLabelledDomain conn)
+    routine ToJSON () -> (string json)
+    routine Size () -> (int size)
+    routine IsEmpty () -> (bool empty)
+    routine GetIndex (int index) -> (T value)
+    routine PushBack (T value) -> ()
+    routine Insert (int index, T value) -> ()
+    routine Contains (T value) -> (bool found)
+    routine Index (T value) -> (int index)
+    routine Domains () -> (Array<CoupledLabelledDomain> items)
+    routine Labels () -> (ports::Ports labels)
+    routine GetDomain (instrumentPort::InstrumentPort search) -> (LabelledDomain out)
+    routine Clear () -> ()
+    routine Erase (int index) -> ()
+}
