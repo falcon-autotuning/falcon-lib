@@ -188,50 +188,38 @@ extern "C" {
 // ── IOCapture
 // ─────────────────────────────────────────────────────────────────
 
-void STRUCTIOCaptureNew(const FalconParamEntry *p, int32_t pc,
-                        FalconResultSlot *out, int32_t *oc) {
-  (void)p;
-  (void)pc;
-  out[0] = {};
-  out[0].tag = FALCON_TYPE_OPAQUE;
-  out[0].value.opaque.type_name = "IOCapture";
-  out[0].value.opaque.ptr = nullptr;
-  out[0].value.opaque.deleter = [](void *) {};
-  *oc = 1;
-}
-
-void STRUCTIOCaptureBeginStdout(const FalconParamEntry *p, int32_t pc,
+void BeginStdout(const FalconParamEntry *p, int32_t pc,
                                 FalconResultSlot *out, int32_t *oc) {
   get_global_capture()->begin_stdout();
   pack_nil(out, oc);
 }
 
-void STRUCTIOCaptureBeginStderr(const FalconParamEntry *p, int32_t pc,
+void BeginStderr(const FalconParamEntry *p, int32_t pc,
                                 FalconResultSlot *out, int32_t *oc) {
   get_global_capture()->begin_stderr();
   pack_nil(out, oc);
 }
 
-void STRUCTIOCaptureEnd(const FalconParamEntry *p, int32_t pc,
+void End(const FalconParamEntry *p, int32_t pc,
                         FalconResultSlot *out, int32_t *oc) {
   std::string result = get_global_capture()->end_capture();
   pack_results(FunctionResult{result}, out, 16, oc);
 }
 
-void STRUCTIOCapturePeek(const FalconParamEntry *p, int32_t pc,
+void Peek(const FalconParamEntry *p, int32_t pc,
                          FalconResultSlot *out, int32_t *oc) {
   std::string result = get_global_capture()->peek();
   pack_results(FunctionResult{result}, out, 16, oc);
 }
 
-void STRUCTIOCaptureIsActive(const FalconParamEntry *p, int32_t pc,
+void IsActive(const FalconParamEntry *p, int32_t pc,
                              FalconResultSlot *out, int32_t *oc) {
   auto cap = get_global_capture();
   pack_results(FunctionResult{cap->capturing_stdout || cap->capturing_stderr},
                out, 16, oc);
 }
 
-void STRUCTIOCaptureWriteStdout(const FalconParamEntry *p, int32_t pc,
+void WriteStdout(const FalconParamEntry *p, int32_t pc,
                                 FalconResultSlot *out, int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto msg = std::get<std::string>(pm.at("msg"));
@@ -239,7 +227,7 @@ void STRUCTIOCaptureWriteStdout(const FalconParamEntry *p, int32_t pc,
   pack_nil(out, oc);
 }
 
-void STRUCTIOCaptureWriteStderr(const FalconParamEntry *p, int32_t pc,
+void WriteStderr(const FalconParamEntry *p, int32_t pc,
                                 FalconResultSlot *out, int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto msg = std::get<std::string>(pm.at("msg"));
@@ -250,19 +238,7 @@ void STRUCTIOCaptureWriteStderr(const FalconParamEntry *p, int32_t pc,
 // ── IO
 // ────────────────────────────────────────────────────────────────────────
 
-void STRUCTIONew(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
-                 int32_t *oc) {
-  (void)p;
-  (void)pc;
-  out[0] = {};
-  out[0].tag = FALCON_TYPE_OPAQUE;
-  out[0].value.opaque.type_name = "IO";
-  out[0].value.opaque.ptr = nullptr;
-  out[0].value.opaque.deleter = [](void *) {};
-  *oc = 1;
-}
-
-void STRUCTIOPrintln(const FalconParamEntry *p, int32_t pc,
+void Println(const FalconParamEntry *p, int32_t pc,
                      FalconResultSlot *out, int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto msg = std::get<std::string>(pm.at("msg"));
@@ -271,7 +247,7 @@ void STRUCTIOPrintln(const FalconParamEntry *p, int32_t pc,
   pack_nil(out, oc);
 }
 
-void STRUCTIOPrint(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
+void Print(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
                    int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto msg = std::get<std::string>(pm.at("msg"));
@@ -280,7 +256,7 @@ void STRUCTIOPrint(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
   pack_nil(out, oc);
 }
 
-void STRUCTIOEprintln(const FalconParamEntry *p, int32_t pc,
+void Eprintln(const FalconParamEntry *p, int32_t pc,
                       FalconResultSlot *out, int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto msg = std::get<std::string>(pm.at("msg"));
@@ -289,7 +265,7 @@ void STRUCTIOEprintln(const FalconParamEntry *p, int32_t pc,
   pack_nil(out, oc);
 }
 
-void STRUCTIOEprint(const FalconParamEntry *p, int32_t pc,
+void Eprint(const FalconParamEntry *p, int32_t pc,
                     FalconResultSlot *out, int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto msg = std::get<std::string>(pm.at("msg"));
