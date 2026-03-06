@@ -1,0 +1,34 @@
+import (
+"../../../generic/farray/farray.fal"
+"../increasingAlignment/increasingAlignment.fal"
+)
+ffimport "measured-array-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct MeasuredArray {
+    routine New (FArray arr) -> (MeasuredArray carray)
+    routine Add (MeasuredArray other) -> (MeasuredArray carray)
+    routine Add (FArray other) -> (MeasuredArray carray)
+    routine Add (int other) -> (MeasuredArray carray)
+    routine Add (float other) -> (MeasuredArray carray)
+    routine Minus (MeasuredArray other) -> (MeasuredArray carray)
+    routine Minus (FArray other) -> (MeasuredArray carray)
+    routine Minus (int other) -> (MeasuredArray carray)
+    routine Minus (float other) -> (MeasuredArray carray)
+    routine Negate -> (MeasuredArray carray)
+    routine Times (float factor) -> (MeasuredArray carray)
+    routine Times (int factor) -> (MeasuredArray carray)
+    routine Divides (float factor) -> (MeasuredArray carray)
+    routine Divides (int factor) -> (MeasuredArray carray)
+    routine Power (float exponent) -> (MeasuredArray carray)
+    routine Abs -> (MeasuredArray carray)
+    routine Min -> (float min)
+    // TODO: arraywise min and max
+    routine Max -> (float max)
+    routine Reshape (Array<int> shape) -> (MeasuredArray carray)
+    routine Flip (int axis) -> (MeasuredArray carray)
+    routine Gradient (int axis) -> (farray::FArray gradient)
+    routine FullGradient -> (Array<farray::FArray> gradients)
+    routine Equal (FArray other) -> (bool equal)
+    routine NotEqual (FArray other) -> (bool notequal)
+    routine FromJSON (string json) -> (FArray farray)
+    routine ToJSON () -> (string json)
+}
