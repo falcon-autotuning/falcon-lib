@@ -2,6 +2,7 @@ import (
 "../../../physics/deviceStructures/connection/connection.fal"
 "../../../physics/units/symbolUnit/symbolUnit.fal"
 "../../../math/point/point.fal"
+"../../../../collections/array/array.fal"
 "../deviceVoltageState/deviceVoltageState.fal"
 )
 ffimport "device-voltage-states-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")

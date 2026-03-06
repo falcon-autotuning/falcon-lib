@@ -15,11 +15,12 @@
 11. [Expressions](#expressions)
 12. [Routines](#routines)
 13. [Structs](#structs)
-14. [Imports and Modules](#imports-and-modules)
-15. [FFI (Foreign Function Interface)](#ffi-foreign-function-interface)
-16. [Complete Examples](#complete-examples)
-17. [Common Mistakes](#common-mistakes)
-18. [Grammar Summary](#grammar-summary)
+14. [Generic Structs](#generic-structs)
+15. [Imports and Modules](#imports-and-modules)
+16. [FFI (Foreign Function Interface)](#ffi-foreign-function-interface)
+17. [Complete Examples](#complete-examples)
+18. [Common Mistakes](#common-mistakes)
+19. [Grammar Summary](#grammar-summary)
 
 ---
 
@@ -32,6 +33,7 @@ Key design principles:
 - **Typed inputs and outputs** — autotuners and routines declare explicit typed signatures
 - **State machine control flow** — execution is a sequence of named states; transitions are explicit
 - **Composability** — routines and structs can be defined in separate files and imported
+- **Generic structs** — structs can be parameterised by type, enabling reusable data structures
 - **FFI** — C++ hardware routines can be bound and called directly from `.fal` code
 
 ---
@@ -51,9 +53,15 @@ import "shared/types.fal";
 // 2. FFI bindings (optional)
 ffimport "hardware.cpp" ("-I/opt/hw/include") ("-lhardware")
 
-// 3. Struct definitions
+// 3. Struct definitions (may be generic)
 struct Config {
     float threshold = 0.5;
+}
+
+struct Box <T> {
+    T value;
+    routine New (T v) -> (Box<T> b) { b.value = v; }
+    routine Get  -> (T out)         { out = this.value; }
 }
 
 // 4. Routine definitions
@@ -83,8 +91,10 @@ autotuner MyAutotuner (float input) -> (float result) {
 
 ### Case sensitivity
 
-- Keywords are lowercase: `autotuner`, `routine`, `struct`, `state`, `uses`, `start`, `terminal`, `if`, `elif`, `else`, `import`, `ffimport`, `this`, `nil`
+- Keywords are lowercase: `autotuner`, `routine`, `struct`, `state`, `start`, `terminal`, `if`, `elif`, `else`, `import`, `ffimport`, `this`, `nil`
 - Identifiers are case-sensitive: `myState ≠ MyState`
+
+> **Note:** `uses` is **no longer a keyword** and must not appear in `.fal` source. Cross-module routines are called directly with their qualified name — no declaration is needed.
 
 ### Naming conventions
 
@@ -95,12 +105,14 @@ autotuner MyAutotuner (float input) -> (float result) {
 | Variable/param names | snake_case | `min_voltage`, `step_count` |
 | Routine names | PascalCase or snake_case | `Clamp`, `area_square` |
 | Struct names | PascalCase | `SweepConfig`, `DeviceState` |
+| Generic type params | single uppercase letter or short PascalCase | `T`, `K`, `V`, `Elem` |
 
 ### Delimiters
 
 - Statements end with `;`
 - Blocks use `{ }`
 - Parameter lists use `( )`
+- Generic type argument lists use `< >`
 - Transition argument lists use `( )`
 
 ### Comments
@@ -127,7 +139,9 @@ float x = 0.0;  // inline comment
 
 ### Struct types
 
-Any declared struct name is a valid type (see [Structs](#structs)). Struct types from imported modules are referenced as `ModuleName::StructName` or just `StructName` if unambiguous.
+Any declared struct name is a valid type (see [Structs](#structs) and [Generic Structs](#generic-structs)). Generic structs must be instantiated with concrete type arguments: `Box<int>`, `Pair<string, float>`.
+
+Struct types from imported modules are referenced as `ModuleName::StructName` or just `StructName` if unambiguous.
 
 ### Nil
 
@@ -143,17 +157,14 @@ An autotuner is the top-level execution unit — a named state machine with type
 
 ```fal
 autotuner Name (input_type input_name, ...) -> (output_type output_name, ...) {
-    // 1. Optional uses clause
-    uses RoutineOrAutotunerName, ...;
-
-    // 2. Variable declarations and initialisation (the "body" before start)
+    // 1. Variable declarations and initialisation (the "body" before start)
     output_name = default_value;
     type local_var = value;
 
-    // 3. Entry state declaration
+    // 2. Entry state declaration
     start -> first_state_name;
 
-    // 4. State definitions
+    // 3. State definitions
     state first_state_name { ... }
     state another_state   { ... }
 }
@@ -187,27 +198,9 @@ autotuner NoInput -> (string result) {
 }
 ```
 
-### `uses` clause
-
-Lists routines or autotuner names from imported modules that this autotuner depends on. This is required when calling cross-module routines by their qualified name.
-
-```fal
-autotuner Example (int x) -> (int y) {
-    uses Adder::adder, Multiplier::multiplier;
-    y = 0;
-    start -> run;
-    state run {
-        y = Adder::adder(x, 1);
-        terminal;
-    }
-}
-```
-
-`uses` accepts plain names or `Module::symbol` qualified names, comma-separated.
-
 ### Variable declarations in the autotuner body
 
-Variables declared between `uses` and `start` are **autotuner-scoped** — available in all states:
+Variables declared before `start` are **autotuner-scoped** — available in all states:
 
 ```fal
 autotuner Counter -> (int count) {
@@ -237,6 +230,7 @@ int counter = 0;          // declared and initialised
 float voltage = 0.0;
 bool enabled = true;
 string label = "sweep";
+Box<int> b = Box.New(42); // generic struct instance
 ```
 
 **Redeclaration is an error.** You cannot declare the same name twice in the same scope.
@@ -249,6 +243,7 @@ string label = "sweep";
 | Input params | Autotuner signature `(...)` | All states — read-only |
 | State-local | Inside a state body | That state only |
 | State input params | State signature `state Name (...)` | That state — read-only |
+| Struct field | Inside `struct` body | All routines of that struct — via bare name or `this.field` |
 
 ---
 
@@ -286,7 +281,7 @@ Transitions to a parametrised state must pass matching expressions:
 
 ### Terminal state
 
-`terminal;` ends the autotuner's execution. It can appear anywhere in a state body — it does not need to be the only statement:
+`terminal;` ends the autotuner's execution. It can appear anywhere in a state body:
 
 ```fal
 state done {
@@ -313,6 +308,7 @@ Inside a state (or routine) body, the following statements are valid:
 int x;
 float y = 3.14;
 MyStruct obj = MyStruct.New(args);
+Box<int> b = Box.New(99);
 ```
 
 ### Assignment
@@ -417,21 +413,6 @@ else {
 }
 ```
 
-Branches can contain any statements, including transitions, assignments, and nested ifs:
-
-```fal
-state classify {
-    if (voltage > threshold) {
-        result = "high";
-        -> report(result);
-    }
-    else {
-        result = "low";
-        -> report(result);
-    }
-}
-```
-
 ### Looping via self-transition
 
 The language has no explicit loop construct. Looping is expressed as a self-transition:
@@ -501,13 +482,13 @@ a || b    // OR
 add(a, b)                  // plain call
 math_utils::add(a, b)      // module-qualified call
 obj.Value()                // method call
-Struct.Constructor(args)   // static-style constructor
+Struct.Constructor(args)   // static-style constructor call
 ```
 
-Call arguments may be positional or named (`name = value`):
+Call arguments are positional:
 
 ```fal
-clamp(val, lo = 0.0, hi = 1.0)
+clamp(val, 0.0, 1.0)
 ```
 
 ### Member access and indexing
@@ -561,7 +542,7 @@ routine Adder (int a, int b) -> (int add) {
 **No input params** (empty `()` or omitted):
 
 ```fal
-routine get_version() -> (string ver) {
+routine get_version -> (string ver) {
     ver = "1.0.0";
 }
 ```
@@ -596,13 +577,13 @@ float safe = clamp(input, 0.0, 1.0);
 
 Multi-output routines: the language currently supports capturing the first output via assignment. Use struct returns or state parameters for multiple values.
 
-### Routines used from imports
+### Routines from imported modules
 
-When a routine lives in an imported module, it is called with the module name as a namespace prefix:
+Cross-module routines are called directly with their qualified name — no declaration is required:
 
 ```fal
-int sum = math_utils::add(a, b);
-float area = geometry::area_square(5.0);
+int sum  = math_utils::add(a, b);
+float ar = geometry::area_square(5.0);
 ```
 
 ---
@@ -637,18 +618,18 @@ struct SweepConfig {
 }
 ```
 
-Fields without defaults must be initialised before use.
+Fields without defaults must be initialised before use (typically in a `New` constructor routine).
 
 ### Member routines
 
-Struct routines follow the same `routine` syntax. Inside a struct routine, fields can be accessed as bare names **or** via `this.field`:
+Struct routines follow the same `routine` syntax. Inside a struct routine, fields can be accessed as bare names **or** via `this.field`. Both forms are equivalent:
 
 ```fal
 struct Quantity {
     int value;
 
     routine New (int v) -> (Quantity q) {
-        q.value = v;       // assign field on return value
+        q.value = v;       // assign field on the returned instance
     }
 
     routine Get -> (int out) {
@@ -680,37 +661,117 @@ int d = q.Double();
 
 ### Struct field assignment
 
+From outside the struct:
+
 ```fal
 q.value = 10;
 config.step = 0.05;
 ```
 
-### Full struct example
+From inside a struct routine:
 
 ```fal
-struct Quantity {
-    int a;
+this.value = 10;   // explicit
+value = 10;        // bare name — identical
+```
 
-    routine New (int a) -> (Quantity q) {
-        q.a = a;
+---
+
+## Generic Structs
+
+Structs can be parameterised with one or more type parameters. The type parameters are listed in angle brackets after the struct name in the definition, and replaced with concrete types at the use site.
+
+### Definition syntax
+
+```fal
+struct Name <T> {
+    T field;
+    routine New (T v) -> (Name<T> out) { out.field = v; }
+    routine Get -> (T out)             { out = field; }
+}
+```
+
+Multiple type parameters:
+
+```fal
+struct Pair <K, V> {
+    K key;
+    V value;
+    routine New (K k, V v) -> (Pair<K,V> p) {
+        p.key   = k;
+        p.value = v;
+    }
+}
+```
+
+### Instantiation
+
+Replace the type parameters with concrete types at the use site:
+
+```fal
+Box<int>         b = Box.New(42);
+Box<float>       f = Box.New(3.14);
+Pair<string,int> p = Pair.New("x", 10);
+```
+
+The interpreter resolves the concrete type at runtime (monomorphisation-on-demand). Each distinct instantiation is a separate type at runtime.
+
+### Using generic types as parameters and return types
+
+Generic struct types can appear anywhere a type is valid — in routine signatures, state parameters, autotuner inputs/outputs, and field declarations:
+
+```fal
+struct Accumulator <T> {
+    T total;
+
+    routine New (T init) -> (Accumulator<T> acc) {
+        acc.total = init;
     }
 
-    routine Value -> (int value) {
-        value = this.a;
+    routine Add (T delta) -> (T new_total) {
+        total = total + delta;   // bare field name inside routine
+        new_total = total;
+    }
+
+    routine Value -> (T v) {
+        v = this.total;
     }
 }
 
-autotuner QuantityStruct (int a, int b) -> (int sum) {
-    sum = 0;
-    start -> calculate;
-
-    state calculate {
-        Quantity q = Quantity.New(a);
-        sum = q.Value() + b;
-        -> done;
+autotuner GenericMath (int start_val, int add_val) -> (int result) {
+    result = 0;
+    start -> run;
+    state run {
+        Accumulator<int> acc = Accumulator.New(start_val);
+        result = acc.Add(add_val);
+        terminal;
     }
+}
+```
 
-    state done { terminal; }
+### Arity checking
+
+Passing the wrong number of type arguments is a parse-time error:
+
+```fal
+// WRONG — Box expects 1 type argument, not 2
+Box<int, float> b = Box.New(x);
+// ERROR: Struct 'Box' expects 1 type argument(s) but got 2
+```
+
+### Generic structs in struct fields
+
+A generic struct may have fields whose type is one of its own type parameters, or another concrete/generic struct:
+
+```fal
+struct Wrapper <T> {
+    T inner;
+    Box<T> boxed;
+
+    routine New (T v) -> (Wrapper<T> w) {
+        w.inner = v;
+        w.boxed = Box.New(v);
+    }
 }
 ```
 
@@ -740,11 +801,6 @@ Paths are relative to the importing file. Imports must appear at the very top of
 
 When a file is imported, its filename (without `.fal`) becomes its module name. All routines, structs, and autotuners from that file are accessible via `ModuleName::symbol`:
 
-```
-// geometry.fal defines:  routine area_square(...) -> (...)
-// math_utils.fal defines: routine add(...) -> (...)
-```
-
 ```fal
 import "geometry.fal";
 // now geometry::area_square is accessible
@@ -755,6 +811,8 @@ import "math_utils.fal";
 
 ### Qualified calls
 
+Cross-module routines are called directly with their qualified name; no prior declaration is required:
+
 ```fal
 float a = geometry::area_square(5.0);
 int   s = math_utils::add(x, y);
@@ -764,7 +822,7 @@ Transitive imports work — if `geometry.fal` imports `math_utils.fal`, then `ma
 
 ### Importing structs
 
-Structs from an imported file are usable as types once imported. Reference them with the module prefix when instantiating via factory routines:
+Structs from an imported file are usable as types once imported:
 
 ```fal
 import "./Quantity.fal";
@@ -776,30 +834,10 @@ autotuner MultipleStruct (int a, int b) -> (int sum, string name) {
     start -> calculate;
 
     state calculate {
-        quantity   q = Quantity::quantity.New(a);
-        connection c = Connection::connection.New("test");
+        Quantity   q = Quantity::quantity.New(a);
+        Connection c = Connection::connection.New("test");
         sum  = q.Value() + b;
         name = c.Name();
-        -> done;
-    }
-
-    state done { terminal; }
-}
-```
-
-### Declaring uses for imported routines
-
-When using cross-module routines inside an autotuner, declare them in a `uses` clause:
-
-```fal
-autotuner Example (int a, int b) -> (int out) {
-    uses Adder::adder, Multiplier::multiplier;
-    out = 0;
-    start -> run;
-
-    state run {
-        int add = Adder::adder(a, b);
-        out = Multiplier::multiplier(add, b);
         -> done;
     }
 
@@ -811,7 +849,7 @@ autotuner Example (int a, int b) -> (int out) {
 
 ## FFI (Foreign Function Interface)
 
-`ffimport` binds a C++ source file to `.fal` symbols. The engine compiles the wrapper on first use and caches the resulting `.so`.
+`ffimport` binds a C++ source file to `.fal` symbols. The engine compiles the wrapper on first use via the C ABI and caches the resulting `.so` — **no manual CMake step is required**.
 
 ### Syntax
 
@@ -837,13 +875,15 @@ extern "C" void measure_iv(
     const FalconParamEntry* in,  int32_t in_count,
     FalconResultSlot*       out, int32_t* out_count)
 {
-    auto params  = falcon::typing::ffi::engine::unpack_params(in, in_count);
+    auto params    = falcon::typing::ffi::engine::unpack_params(in, in_count);
     double voltage = std::get<double>(params.at("voltage"));
 
     double current = MyHardware::measure(voltage);
     falcon::typing::ffi::engine::set_result(out, out_count, 0, current);
 }
 ```
+
+The engine compiles the `.cpp` automatically when the `.fal` file is loaded. You do **not** need to write a CMakeLists.txt, run `cmake`, or link manually.
 
 Struct methods use the `STRUCTTypeName` prefix convention:
 
@@ -884,39 +924,21 @@ autotuner HardwareSweep (float start_v, float stop_v) -> (float peak) {
 
 ### Example 1: Simple sequential autotuner
 
-From `sequential-test.fal`:
-
 ```fal
 autotuner SequentialTest -> (int step) {
     step = 0;
     start -> state1;
 
-    state state1 {
-        step = 1;
-        -> state2;
-    }
-
-    state state2 {
-        step = 2;
-        -> state3;
-    }
-
-    state state3 {
-        step = 3;
-        -> done;
-    }
-
-    state done { terminal; }
+    state state1 { step = 1; -> state2; }
+    state state2 { step = 2; -> state3; }
+    state state3 { step = 3; -> done;   }
+    state done   { terminal; }
 }
 ```
-
-**Explanation:** No inputs. Output `step` starts at 0. Execution flows unconditionally through each state, updating `step` at each one.
 
 ---
 
 ### Example 2: Iteration (looping via self-transition)
-
-From `iteration-test.fal`:
 
 ```fal
 autotuner IterationTest (int max_iterations) -> (int counter) {
@@ -933,13 +955,9 @@ autotuner IterationTest (int max_iterations) -> (int counter) {
 }
 ```
 
-**Explanation:** `loop` transitions back to itself until `counter` reaches `max_iterations`. The self-transition is the looping mechanism.
-
 ---
 
 ### Example 3: Conditional chain with elif
-
-From `conditional-chain.fal`:
 
 ```fal
 autotuner ConditionalChain (int value) -> (string category) {
@@ -947,11 +965,11 @@ autotuner ConditionalChain (int value) -> (string category) {
     start -> classify;
 
     state classify {
-        if (value < 0)   { -> negative; }
-        elif (value == 0) { -> zero;    }
-        elif (value < 10) { -> small;   }
-        elif (value < 100){ -> medium;  }
-        else              { -> large;   }
+        if (value < 0)    { -> negative; }
+        elif (value == 0) { -> zero;     }
+        elif (value < 10) { -> small;    }
+        elif (value < 100){ -> medium;   }
+        else              { -> large;    }
     }
 
     state negative { category = "negative"; terminal; }
@@ -962,13 +980,9 @@ autotuner ConditionalChain (int value) -> (string category) {
 }
 ```
 
-**Explanation:** `elif` chains classify the input into one of five ranges. Each terminal state assigns the result before ending.
-
 ---
 
 ### Example 4: Sweep with float parameters
-
-From `simple-sweep.fal`:
 
 ```fal
 autotuner SimpleSweep (float begin, float end, float step) -> (int count, float final_value) {
@@ -994,82 +1008,26 @@ autotuner SimpleSweep (float begin, float end, float step) -> (int count, float 
 }
 ```
 
-**Explanation:** `current` is an autotuner-scoped variable that persists across state visits. The sweep increments it each loop until the end is reached.
-
 ---
 
 ### Example 5: State input parameters (passing values between states)
-
-From `simple-routine.fal`:
 
 ```fal
 routine Adder      (int a, int b) -> (int add)  { add  = a + b; }
 routine Multiplier (int a, int b) -> (int mult) { mult = a * b; }
 
 autotuner ConditionalNest (int a, int b) -> (int out) {
-    uses Adder, Multiplier;
     out = 0;
     start -> init;
 
     state init {
-        int add = 0;
-        add = Adder(a, b);
-        -> multiplication(add);       // pass 'add' to next state
-    }
-
-    state multiplication (int c) {   // receives 'add' as 'c'
-        int multiplication = 0;
-        multiplication = Multiplier(c, b);
-        -> done(multiplication);
-    }
-
-    state done (int out_inside) {    // receives result
-        out = out_inside;
-        terminal;
-    }
-}
-```
-
-**Explanation:** Values are passed between states via transition arguments. State `multiplication` receives `int c` from the transition `-> multiplication(add)`. This is how data flows between states.
-
----
-
-### Example 6: Routines and module imports
-
-From `local_import/simple-routine.fal`:
-
-```fal
-// Adder.fal
-routine adder (int a, int b) -> (int add) {
-    add = a + b;
-}
-
-// Multiplier.fal
-routine multiplier (int a, int b) -> (int mult) {
-    mult = a * b;
-}
-
-// main.fal
-import (
-    "./Adder.fal"
-    "./Multiplier.fal"
-)
-
-autotuner ConditionalNest (int a, int b) -> (int out) {
-    uses Adder::adder, Multiplier::multiplier;
-    out = 0;
-    start -> init;
-
-    state init {
-        int add = 0;
-        add = Adder::adder(a, b);
+        int add = Adder(a, b);
         -> multiplication(add);
     }
 
     state multiplication (int c) {
-        int multiplication = 0;
-        multiplication = Multiplier::multiplier(c, b);
-        -> done(multiplication);
+        int result = Multiplier(c, b);
+        -> done(result);
     }
 
     state done (int out_inside) {
@@ -1079,13 +1037,49 @@ autotuner ConditionalNest (int a, int b) -> (int out) {
 }
 ```
 
-**Explanation:** Routines from other files are called with `Module::routine_name(...)` syntax. The `uses` clause declares which cross-module symbols this autotuner depends on.
+---
+
+### Example 6: Routines and module imports
+
+```fal
+// Adder.fal
+routine adder (int a, int b) -> (int add) { add = a + b; }
+
+// Multiplier.fal
+routine multiplier (int a, int b) -> (int mult) { mult = a * b; }
+
+// main.fal
+import (
+    "./Adder.fal"
+    "./Multiplier.fal"
+)
+
+autotuner ConditionalNest (int a, int b) -> (int out) {
+    out = 0;
+    start -> init;
+
+    state init {
+        int add = Adder::adder(a, b);       // qualified cross-module call
+        -> multiplication(add);
+    }
+
+    state multiplication (int c) {
+        int result = Multiplier::multiplier(c, b);
+        -> done(result);
+    }
+
+    state done (int out_inside) {
+        out = out_inside;
+        terminal;
+    }
+}
+```
+
+**Note:** No `uses` clause is required. Cross-module calls work directly via the `Module::symbol` qualified syntax.
 
 ---
 
-### Example 7: Structs with methods
-
-From `structs/quantity-struct.fal`:
+### Example 7: Non-generic struct with methods
 
 ```fal
 struct Quantity {
@@ -1105,8 +1099,8 @@ autotuner QuantityStruct (int a, int b) -> (int sum) {
     start -> calculate;
 
     state calculate {
-        Quantity q = Quantity.New(a);   // construct via factory routine
-        sum = q.Value() + b;            // call method
+        Quantity q = Quantity.New(a);
+        sum = q.Value() + b;
         -> done;
     }
 
@@ -1114,109 +1108,145 @@ autotuner QuantityStruct (int a, int b) -> (int sum) {
 }
 ```
 
-**Explanation:** `Quantity.New(a)` calls the `New` factory routine, returning a `Quantity`. `q.Value()` calls the instance method. Fields are accessible as bare names inside the struct's routines.
-
 ---
 
-### Example 8: Multiple structs
-
-From `structs/struct-with-defaults.fal`:
+### Example 8: Generic struct — Accumulator
 
 ```fal
-struct Quantity {
-    int a_;
-    int b_ = 0;   // field with default value
+struct Accumulator <T> {
+    T total;
 
-    routine New (int a) -> (Quantity q) {
-        q.a_ = a;
+    routine New (T init) -> (Accumulator<T> acc) {
+        acc.total = init;
     }
 
-    routine NewWithB (int a, int b) -> (Quantity q) {
-        q.a_ = a;
-        q.b_ = b;
+    routine Add (T delta) -> (T new_total) {
+        total     = total + delta;   // bare field — updates the struct's own state
+        new_total = total;
     }
 
-    routine Value -> (int value) {
-        value = this.a_;
-    }
-
-    routine ValueWithB -> (int value) {
-        value = this.a_ + this.b_;
+    routine Value -> (T v) {
+        v = this.total;
     }
 }
 
-autotuner QuantityStruct (int a, int b) -> (int sum, int other_sum) {
-    sum = 0;
-    other_sum = 0;
-    start -> calculate;
-
-    state calculate {
-        Quantity q       = Quantity.New(a);
-        sum              = q.Value() + b;
-
-        Quantity q_with_b = Quantity.NewWithB(a, b);
-        other_sum         = q_with_b.ValueWithB();
-        -> done;
+autotuner GenericMath (int start_val, int add_val) -> (int result) {
+    result = 0;
+    start -> run;
+    state run {
+        Accumulator<int> acc = Accumulator.New(start_val);
+        result = acc.Add(add_val);
+        terminal;
     }
-
-    state done { terminal; }
 }
 ```
 
 ---
 
-### Example 9: Cross-module namespacing and transitive imports
+### Example 9: Generic struct — two type parameters
 
-From `namespacing/main.fal` + `geometry.fal` + `math_utils.fal`:
+```fal
+struct Pair <K, V> {
+    K key;
+    V value;
+
+    routine New (K k, V v) -> (Pair<K,V> p) {
+        p.key   = k;
+        p.value = v;
+    }
+
+    routine GetKey   -> (K out) { out = key; }
+    routine GetValue -> (V out) { out = value; }
+}
+
+autotuner PairDemo (string label, int data) -> (string k, int v) {
+    k = ""; v = 0;
+    start -> run;
+    state run {
+        Pair<string,int> p = Pair.New(label, data);
+        k = p.GetKey();
+        v = p.GetValue();
+        terminal;
+    }
+}
+```
+
+---
+
+### Example 10: Cross-module namespacing and transitive imports
 
 ```fal
 // math_utils.fal
-struct Vector3 {
-    float x; float y; float z;
-    routine length() -> (float res) { res = 1.0; }
-}
 routine add (int a, int b) -> (int sum) { sum = a + b; }
-routine get_version() -> (string ver)   { ver = "1.0.0"; }
+routine get_version -> (string ver)     { ver = "1.0.0"; }
 
 // geometry.fal
 import "math_utils.fal";
-
 routine area_square (float side) -> (float res) { res = side * side; }
-routine call_math_add_scoped (int x, int y) -> (int sum) {
-    sum = math_utils::add(x, y);   // qualified cross-module call
-}
 
 // main.fal
 import "geometry.fal";
 
 autotuner NamespacingTest (int a, int b) -> (int sum, float area, string version) {
     start -> run;
-
     state run {
-        sum     = geometry::call_math_add_scoped(a, b);
+        sum     = math_utils::add(a, b);           // transitive: geometry imports math_utils
         area    = geometry::area_square(5.0);
-        version = math_utils::get_version();   // transitive: geometry imports math_utils
+        version = math_utils::get_version();
         terminal;
     }
 }
 ```
 
-**Explanation:** Importing `geometry.fal` makes its routines available as `geometry::*`. Because `geometry.fal` imports `math_utils.fal`, `math_utils::*` is also transitively available.
-
 ---
 
 ## Common Mistakes
 
-### 1. Using old `params {}` / `temp {}` block syntax
+### 1. Using the removed `uses` clause
 
-The old block syntax does not exist in the language.
+`uses` is no longer a keyword and will cause a parse error.
+
+```fal
+// WRONG — uses is not a valid keyword
+autotuner Bad (int x) -> (int y) {
+    uses Adder::adder;
+    ...
+}
+
+// CORRECT — call cross-module routines directly by qualified name
+autotuner Good (int x) -> (int y) {
+    y = 0;
+    start -> run;
+    state run {
+        y = Adder::adder(x, 1);
+        terminal;
+    }
+}
+```
+
+### 2. Using old `requires:` syntax
+
+```fal
+// WRONG — requires: was never part of the language
+autotuner Bad {
+    requires: [OtherAutotuner];
+    ...
+}
+
+// CORRECT — no declaration needed; call cross-module symbols directly
+autotuner Good (int x) -> (int y) {
+    y = 0;
+    start -> run;
+    state run { y = x + 1; terminal; }
+}
+```
+
+### 3. Using old `params {}` / `temp {}` block syntax
 
 ```fal
 // WRONG — there is no params {} block
 autotuner Bad {
-    params {
-        int x = 0;
-    }
+    params { int x = 0; }
 }
 
 // CORRECT — declare outputs in the signature, vars inline before start
@@ -1227,17 +1257,18 @@ autotuner Good -> (int x) {
 }
 ```
 
-### 2. Using `requires:` instead of `uses`
+### 4. Wrong number of generic type arguments
 
 ```fal
-// WRONG
-requires: [OtherAutotuner];
+// WRONG — Box expects 1 type argument
+Box<int, float> b = Box.New(x);
+// ERROR: Struct 'Box' expects 1 type argument(s) but got 2
 
 // CORRECT
-uses OtherAutotuner;
+Box<int> b = Box.New(x);
 ```
 
-### 3. Using bracket `[var]` transition syntax
+### 5. Using bracket `[var]` transition syntax
 
 ```fal
 // WRONG — brackets are not used for transitions
@@ -1251,12 +1282,11 @@ And the receiving state must declare the parameter:
 
 ```fal
 state next_state (float voltage) {
-    // voltage is available here
     terminal;
 }
 ```
 
-### 4. Using `else if` instead of `elif`
+### 6. Using `else if` instead of `elif`
 
 ```fal
 // WRONG
@@ -1268,7 +1298,7 @@ if (x < 0) { -> neg; }
 elif (x == 0) { -> zero; }
 ```
 
-### 5. Omitting braces from if/else
+### 7. Omitting braces from if/else
 
 Every `if`, `elif`, and `else` branch **must** use braces:
 
@@ -1280,7 +1310,7 @@ if (x < 0) -> neg;
 if (x < 0) { -> neg; }
 ```
 
-### 6. Assigning to a read-only input parameter
+### 8. Assigning to a read-only input parameter
 
 ```fal
 autotuner Bad (int input) -> (int out) {
@@ -1289,7 +1319,7 @@ autotuner Bad (int input) -> (int out) {
 }
 ```
 
-### 7. Using a variable before it is declared
+### 9. Using a variable before it is declared
 
 ```fal
 state check {
@@ -1298,17 +1328,17 @@ state check {
 }
 ```
 
-### 8. Using `measurement:` keyword
+### 10. Using `measurement:` keyword
 
-There is no `measurement:` keyword. Just call the function as a statement or in an expression:
+There is no `measurement:` keyword. Call functions directly as statements or in expressions:
 
 ```fal
 // WRONG
 measurement: do_work(arg);
 
 // CORRECT
-do_work(arg);               // call as statement
-int r = do_work(arg);       // capture return value
+do_work(arg);
+int r = do_work(arg);
 ```
 
 ---
@@ -1332,10 +1362,10 @@ program_item     := struct_decl
                   | autotuner_decl
                   | ffimport_decl
 
-struct_decl      := "struct" IDENTIFIER "{"
-                    struct_field*
-                    routine_decl*
-                  "}"
+struct_decl      := "struct" IDENTIFIER "{" struct_field* routine_decl* "}"
+                  | "struct" IDENTIFIER "<" generic_param_list ">" "{" struct_field* routine_decl* "}"
+
+generic_param_list := IDENTIFIER ("," IDENTIFIER)*
 
 struct_field     := type_spec IDENTIFIER ";"
                   | type_spec IDENTIFIER "=" expr ";"
@@ -1346,7 +1376,6 @@ routine_body     := "{" stmt* "}"
                   | %empty            // empty body = FFI stub
 
 autotuner_decl   := "autotuner" IDENTIFIER input_params? "->" output_params "{"
-                      uses_clause?
                       stmt*           // variable decls and initialisations
                       entry_state
                       state_decl+
@@ -1359,8 +1388,6 @@ param_list       := param_decl ("," param_decl)*
 
 param_decl       := type_spec IDENTIFIER
                   | type_spec IDENTIFIER "=" expr
-
-uses_clause      := "uses" qualified_name ("," qualified_name)* ";"
 
 entry_state      := "start" "->" IDENTIFIER ";"
 
@@ -1385,15 +1412,17 @@ elif_chain       := %empty
 var_decl_stmt    := type_spec IDENTIFIER ";"
                   | type_spec IDENTIFIER "=" expr ";"
 
-assign_target    := IDENTIFIER
+type_spec        := "int" | "float" | "bool" | "string"
+                  | qualified_name
+                  | qualified_name "<" type_arg_list ">"
 
-type_spec        := "int" | "float" | "bool" | "string" | qualified_name
+type_arg_list    := type_spec ("," type_spec)*
 
 qualified_name   := IDENTIFIER "::" IDENTIFIER  |  IDENTIFIER
 
 expr             := literal
                   | IDENTIFIER
-                  | qualified_name        // Module::symbol
+                  | qualified_name
                   | "this"
                   | "nil"
                   | expr "+" expr  | expr "-" expr
@@ -1407,10 +1436,10 @@ expr             := literal
                   | expr "." IDENTIFIER                       // member access
                   | expr "." IDENTIFIER "(" call_arg_list ")" // method call
                   | expr "[" expr "]"                         // index
-                  | IDENTIFIER "(" call_arg_list ")"           // function call
-                  | qualified_name "(" call_arg_list ")"       // qualified call
+                  | IDENTIFIER "(" call_arg_list ")"          // function call
+                  | qualified_name "(" call_arg_list ")"      // qualified call
 
-call_arg         := expr  |  IDENTIFIER "=" expr
+call_arg         := expr
 
 literal          := INTEGER | DOUBLE | STRING | "true" | "false" | "nil"
 ```
@@ -1419,6 +1448,7 @@ literal          := INTEGER | DOUBLE | STRING | "true" | "false" | "nil"
 
 ## See Also
 
-- [CLI.md](CLI.md) — `falcon-run` command-line reference
+- [CLI.md](CLI.md) — `falcon-run` and `falcon-test` command-line reference
 - [LSP.md](LSP.md) — Editor integration
 - [PACKAGE_MANAGER.md](PACKAGE_MANAGER.md) — Package management
+- [../libs/testing/README.md](../libs/testing/README.md) — Testing library reference

@@ -88,16 +88,13 @@ inline PackedParams pack_params(const ParameterMap &params) {
               };
             } else if constexpr (std::is_same_v<SP, std::shared_ptr<StructInstance>>) {
               if (val && val->is_native()) {
-                // FIX: store a shared_ptr<void>* (alias cast) so that
-                // get_opaque<T> can static_pointer_cast back to T correctly.
-                // The old code stored val->native_handle->get() (raw void*)
-                // which broke static_pointer_cast in the wrapper.
+                // Native FFI struct: forward the native_handle as a
+                // shared_ptr<void>* so the wrapper can static_pointer_cast
+                // it back to the concrete type.
                 auto *svp = new std::shared_ptr<void>(
                     std::static_pointer_cast<void>(
-                        // re-wrap: native_handle IS the shared_ptr<void>
-                        // (already an alias), just copy it
                         val->native_handle.value()));
-                delete heap_sp;  // don't need the shared_ptr<StructInstance>* wrapper
+                delete heap_sp;
                 e.value.opaque.ptr = svp;
                 e.value.opaque.type_name = val->type_name.c_str();
                 e.value.opaque.deleter = [](void *p) {
@@ -173,27 +170,16 @@ inline FunctionResult unpack_results(FalconResultSlot *slots, int32_t count) {
         rv = **static_cast<SP *>(ptr);
         if (del != nullptr) del(ptr);
       } else {
-        // Unknown user opaque (e.g. "InstrumentPort", "Ports", etc.)
+        // Unknown user opaque (e.g. "InstrumentPort", "Ports", "Array", etc.)
         //
-        // Convention: the wrapper stored
-        //   ptr = new shared_ptr<T>(the_native_object)   ← heap-allocated SP<T>
-        //   del = [](void*p){ delete (shared_ptr<T>*)p; }
-        //
-        // shared_ptr<T> and shared_ptr<void> are layout-compatible:
-        // both are { T* managed_ptr, ControlBlock* cb }.
-        // Reinterpreting ptr as shared_ptr<void>* gives a shared_ptr<void>
-        // whose .get() == T* and whose control block is shared with the
-        // original heap SP<T>.  inner_sp therefore correctly ref-counts T.
-        //
-        // We then call del(ptr) to destroy the *outer* heap SP<T> wrapper
-        // (dropping its refcount), while inner_sp keeps T alive.
-        //
-        // static_pointer_cast<InstrumentPort>(native_handle.value()) in the
-        // wrapper will then correctly follow the shared ownership of T.
+        // ptr = new shared_ptr<void>*(the_native_object) — heap-allocated.
+        // Reinterpret as shared_ptr<void>* to recover shared ownership,
+        // then store as StructInstance with native_handle so the interpreter
+        // can pass it back into subsequent wrapper calls.
         auto inner_sp = *reinterpret_cast<std::shared_ptr<void> *>(ptr);
         auto inst = std::make_shared<StructInstance>(tn);
-        inst->native_handle = inner_sp;  // shared_ptr<void> → T, correctly owned
-        if (del) del(ptr);               // delete outer heap shared_ptr<T>* wrapper
+        inst->native_handle = inner_sp;
+        if (del) del(ptr);
         rv = std::move(inst);
       }
       result.push_back(std::move(rv));
@@ -252,7 +238,26 @@ inline ParameterMap unpack_params(const FalconParamEntry *entries,
         using SP = std::shared_ptr<ErrorObject>;
         result[key] = **static_cast<SP *>(ptr);
       } else {
-        result[key] = nullptr;
+        // ── FIX: user-defined native struct (e.g. "InstrumentPort",
+        // "Connection", "Array", …) ──────────────────────────────────────────
+        //
+        // engine::pack_params sends these as:
+        //   ptr = new shared_ptr<void>*(val->native_handle.value())
+        //   type_name = val->type_name   (e.g. "InstrumentPort")
+        //
+        // We must reconstruct the StructInstance so downstream code (e.g.
+        // STRUCTArrayPushBack storing it in arr->elements, then
+        // STRUCTPortsNew reading it back) gets a proper StructInstance with
+        // native_handle rather than nullptr.
+        //
+        // Previously this branch stored nullptr, causing any wrapper that
+        // called unpack_params and then stored the result (like
+        // STRUCTArrayPushBack does for the "value" param) to silently lose
+        // the object and record nullptr in the array instead.
+        auto inner_sp = *reinterpret_cast<std::shared_ptr<void> *>(ptr);
+        auto inst = std::make_shared<StructInstance>(tn);
+        inst->native_handle = inner_sp;
+        result[key] = std::move(inst);
       }
       break;
     }
@@ -267,8 +272,8 @@ inline ParameterMap unpack_params(const FalconParamEntry *entries,
 /**
  * Extract an opaque (user-defined) shared_ptr from a FalconParamEntry array.
  *
- * Convention: ptr is a heap-allocated shared_ptr<void>* (alias to T).
- * We static_pointer_cast back to T.
+ * Convention: for native structs, ptr is a heap-allocated shared_ptr<void>*
+ * aliasing T.  We static_pointer_cast back to T.
  */
 template <typename T>
 inline std::shared_ptr<T> get_opaque(const FalconParamEntry *entries,
@@ -276,9 +281,9 @@ inline std::shared_ptr<T> get_opaque(const FalconParamEntry *entries,
   for (int32_t i = 0; i < count; ++i) {
     if (std::strcmp(entries[i].key, key) == 0 &&
         entries[i].tag == FALCON_TYPE_OPAQUE) {
-      using SP = std::shared_ptr<T>;
-      // ptr = heap-allocated shared_ptr<T>* (from engine::pack_params)
-      return *static_cast<SP *>(entries[i].value.opaque.ptr);
+      // ptr is a heap-allocated shared_ptr<void>* (alias to T).
+      auto sv = *static_cast<std::shared_ptr<void> *>(entries[i].value.opaque.ptr);
+      return std::static_pointer_cast<T>(sv);
     }
   }
   throw std::runtime_error(std::string("FFI: opaque param not found: ") + key);
@@ -332,6 +337,19 @@ inline void pack_results(const FunctionResult &result, FalconResultSlot *slots,
             } else if constexpr (std::is_same_v<SP, std::shared_ptr<ArrayValue>>) {
               s.value.opaque.type_name = "ArrayValue";
             } else if constexpr (std::is_same_v<SP, std::shared_ptr<StructInstance>>) {
+              if (val && val->is_native()) {
+                // Native FFI struct: pack native_handle as shared_ptr<void>*
+                // so unpack_results on the engine side can recover it.
+                auto *svp = new std::shared_ptr<void>(
+                    std::static_pointer_cast<void>(val->native_handle.value()));
+                delete heap_sp;
+                s.value.opaque.ptr = svp;
+                s.value.opaque.type_name = val->type_name.c_str();
+                s.value.opaque.deleter = [](void *p) {
+                  delete static_cast<std::shared_ptr<void> *>(p);
+                };
+                return; // deleter already set, skip the generic one below
+              }
               s.value.opaque.type_name = "StructInstance";
             } else {
               s.value.opaque.type_name = "unknown_opaque";

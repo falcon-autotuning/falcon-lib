@@ -1,6 +1,7 @@
 // Tests for falconCore/instrumentInterfaces/names/ports
 // Run with: falcon-test run_tests.fal
 import "../../../../../testing/testing.fal";
+import "../../../../../../libs/collections/array/array.fal";
 import "../ports.fal";
 import "../../instrumentPort/instrumentPort.fal";
 import "../../../../physics/deviceStructures/connection/connection.fal";
@@ -25,45 +26,47 @@ routine MakeMeter (string name) -> (InstrumentPort port) {
     port          = InstrumentPort.NewMeter(name, c, amm, a, name);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite: PortsConstruction
+// ─────────────────────────────────────────────────────────────────────────────
 autotuner PortsConstruction -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
 
     state test_new_empty (TestRunner runner, TestContext t) {
-        Array<InstrumentPort> arr;
+        Array<InstrumentPort> arr = Array.New();
         Ports p = Ports.New(arr);
         Array<string> names = p.GetDefaultNames();
-        Error err = t.ExpectIntEq(0, names.size(), "Empty Ports has 0 names");
+        Error err = t.ExpectIntEq(0, names.Size(), "Empty Ports has 0 names");
         -> __end(runner, t);
     }
 
     state test_new_single_knob (TestRunner runner, TestContext t) {
         InstrumentPort knob   = MakeKnob("P1");
-        Array<InstrumentPort> arr;
-        arr.pushback(knob);
-        InstrumentPort k1 = arr[0];
-        // IO printer = IO.New();
-        // printer.Println(strings::Concat("The name is " , k1.Description()));
-
+        Array<InstrumentPort> arr = Array.New();
+        arr.PushBack(knob);
         Ports p               = Ports.New(arr);
         Array<string> names   = p.GetDefaultNames();
-        Error err = t.ExpectIntEq(1, names.size(), "Single-entry Ports has 1 name");
+        Error err = t.ExpectIntEq(1, names.Size(), "Single-entry Ports has 1 name");
         -> __end(runner, t);
     }
 
     state test_new_two_ports (TestRunner runner, TestContext t) {
         InstrumentPort k = MakeKnob("P1");
         InstrumentPort m = MakeMeter("I1");
-        Array<InstrumentPort> arr;
-        arr.pushback(k);
-        arr.pushback(m);
+        Array<InstrumentPort> arr = Array.New();
+        arr.PushBack(k);
+        arr.PushBack(m);
         Ports p           = Ports.New(arr);
         Array<string> names = p.GetDefaultNames();
-        Error err = t.ExpectIntEq(2, names.size(), "Two-entry Ports has 2 names");
+        Error err = t.ExpectIntEq(2, names.Size(), "Two-entry Ports has 2 names");
         -> __end(runner, t);
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite: PortsBulkAccessors
+// ─────────────────────────────────────────────────────────────────────────────
 autotuner PortsBulkAccessors -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
@@ -71,35 +74,35 @@ autotuner PortsBulkAccessors -> (int passed, int failed) {
     state test_default_names_values (TestRunner runner, TestContext t) {
         InstrumentPort k = MakeKnob("P1");
         InstrumentPort m = MakeMeter("I1");
-        Array<InstrumentPort> arr;
-        arr.pushback(k);
-        arr.pushback(m);
+        Array<InstrumentPort> arr = Array.New();
+        arr.PushBack(k);
+        arr.PushBack(m);
         Ports p           = Ports.New(arr);
         Array<string> ns  = p.GetDefaultNames();
-        Error err = t.ExpectStrEq("P1", ns[0], "First name is P1");
-        err = t.ExpectStrEq("I1", ns[1], "Second name is I1");
+        Error err = t.ExpectStrEq("P1", ns.GetIndex(0), "First name is P1");
+        err = t.ExpectStrEq("I1", ns.GetIndex(1), "Second name is I1");
         -> __end(runner, t);
     }
 
     state test_pseudo_names_length (TestRunner runner, TestContext t) {
         InstrumentPort k = MakeKnob("P1");
         InstrumentPort m = MakeMeter("I1");
-        Array<InstrumentPort> arr;
-        arr.pushback(k);
-        arr.pushback(m);
+        Array<InstrumentPort> arr = Array.New();
+        arr.PushBack(k);
+        arr.PushBack(m);
         Ports p           = Ports.New(arr);
         Array<connection::Connection> cs = p.GetPsuedoNames();
-        Error err = t.ExpectIntEq(2, cs.size(), "GetPsuedoNames length is 2");
+        Error err = t.ExpectIntEq(2, cs.Size(), "GetPsuedoNames length is 2");
         -> __end(runner, t);
     }
 
     state test_pseudo_names_first (TestRunner runner, TestContext t) {
         InstrumentPort k = MakeKnob("P1");
-        Array<InstrumentPort> arr;
-        arr.pushback(k);
+        Array<InstrumentPort> arr = Array.New();
+        arr.PushBack(k);
         Ports p           = Ports.New(arr);
         Array<connection::Connection> cs = p.GetPsuedoNames();
-        connection::Connection c0 = cs[0];
+        connection::Connection c0 = cs.GetIndex(0);
         Error err = t.ExpectStrEq("P1", c0.Name(), "First pseudo-name is P1");
         -> __end(runner, t);
     }
@@ -107,51 +110,60 @@ autotuner PortsBulkAccessors -> (int passed, int failed) {
     state test_is_knobs_values (TestRunner runner, TestContext t) {
         InstrumentPort k = MakeKnob("P1");
         InstrumentPort m = MakeMeter("I1");
-        Array<InstrumentPort> arr;
-        arr.pushback(k);
-        arr.pushback(m);
-        Ports p           = Ports.New(arr);
-        Array<bool> ks    = p.IsKnobs();
-        Error err = t.ExpectFalse(ks,  "There is a knob and a meter");
+        Array<InstrumentPort> arr = Array.New();
+        arr.PushBack(k);
+        arr.PushBack(m);
+        Ports p        = Ports.New(arr);
+        Array<bool> ks = p.IsKnobs();
+        bool k0 = ks.GetIndex(0);
+        bool k1 = ks.GetIndex(1);
+        Error err = t.ExpectTrue(k0,   "P1 is a knob");
+        err       = t.ExpectFalse(k1,  "I1 is not a knob");
         -> __end(runner, t);
     }
 
     state test_is_meters_values (TestRunner runner, TestContext t) {
         InstrumentPort k = MakeKnob("P1");
         InstrumentPort m = MakeMeter("I1");
-        Array<InstrumentPort> arr;
-        arr.pushback(k);
-        arr.pushback(m);
-        Ports p           = Ports.New(arr);
-        Array<bool> ms    = p.IsMeters();
-        Error err = t.ExpectFalse(ms, "There is a knob and a meter");
+        Array<InstrumentPort> arr = Array.New();
+        arr.PushBack(k);
+        arr.PushBack(m);
+        Ports p        = Ports.New(arr);
+        Array<bool> ms = p.IsMeters();
+        bool m0 = ms.GetIndex(0);
+        bool m1 = ms.GetIndex(1);
+        Error err = t.ExpectFalse(m0, "P1 is not a meter");
+        err       = t.ExpectTrue(m1,  "I1 is a meter");
         -> __end(runner, t);
     }
 
     state test_ports_array_length (TestRunner runner, TestContext t) {
         InstrumentPort k = MakeKnob("P1");
         InstrumentPort m = MakeMeter("I1");
-        Array<InstrumentPort> arr;
-        arr.pushback(k);
-        arr.pushback(m);
+        Array<InstrumentPort> arr = Array.New();
+        arr.PushBack(k);
+        arr.PushBack(m);
         Ports p           = Ports.New(arr);
         Array<instrumentPort::InstrumentPort> ps = p.Ports();
-        Error err = t.ExpectIntEq(2, ps.size(), "Ports() returns 2 entries");
+        Error err = t.ExpectIntEq(2, ps.Size(), "Ports() returns 2 entries");
         -> __end(runner, t);
     }
 
     state test_ports_array_first_default_name (TestRunner runner, TestContext t) {
         InstrumentPort k = MakeKnob("P1");
-        Array<InstrumentPort> arr;
-        arr.pushback(k);
+        Array<InstrumentPort> arr = Array.New();
+        arr.PushBack(k);
         Ports p           = Ports.New(arr);
         Array<instrumentPort::InstrumentPort> ps = p.Ports();
-        instrumentPort::InstrumentPort p0 = ps[0];
+        instrumentPort::InstrumentPort p0 = ps.GetIndex(0);
         Error err = t.ExpectStrEq("P1", p0.DefaultName(), "First port default name is P1");
         -> __end(runner, t);
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite: PortsEquality
+// ─────────────────────────────────────────────────────────────────────────────
 autotuner PortsEquality -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
@@ -159,9 +171,9 @@ autotuner PortsEquality -> (int passed, int failed) {
     state test_equal_same_ports (TestRunner runner, TestContext t) {
         InstrumentPort k = MakeKnob("P1");
         InstrumentPort m = MakeMeter("I1");
-        Array<InstrumentPort> arr;
-        arr.pushback(k);
-        arr.pushback(m);
+        Array<InstrumentPort> arr = Array.New();
+        arr.PushBack(k);
+        arr.PushBack(m);
         Ports a = Ports.New(arr);
         Ports b = Ports.New(arr);
         Error err = t.ExpectTrue(a.Equal(b), "Same port list gives equal Ports");
@@ -171,10 +183,10 @@ autotuner PortsEquality -> (int passed, int failed) {
     state test_not_equal_different_ports (TestRunner runner, TestContext t) {
         InstrumentPort k1 = MakeKnob("P1");
         InstrumentPort k2 = MakeKnob("P2");
-        Array<InstrumentPort> arr1;
-        arr1.pushback(k1);
-        Array<InstrumentPort> arr2;
-        arr2.pushback(k2);
+        Array<InstrumentPort> arr1 = Array.New();
+        arr1.PushBack(k1);
+        Array<InstrumentPort> arr2 = Array.New();
+        arr2.PushBack(k2);
         Ports a = Ports.New(arr1);
         Ports b = Ports.New(arr2);
         Error err = t.ExpectTrue(a.NotEqual(b), "Different port lists are not equal");
@@ -184,10 +196,10 @@ autotuner PortsEquality -> (int passed, int failed) {
     state test_equal_false_for_different (TestRunner runner, TestContext t) {
         InstrumentPort k1 = MakeKnob("P1");
         InstrumentPort k2 = MakeKnob("P2");
-        Array<InstrumentPort> arr1;
-        arr1.pushback(k1);
-        Array<InstrumentPort> arr2;
-        arr2.pushback(k2);
+        Array<InstrumentPort> arr1 = Array.New();
+        arr1.PushBack(k1);
+        Array<InstrumentPort> arr2 = Array.New();
+        arr2.PushBack(k2);
         Ports a = Ports.New(arr1);
         Ports b = Ports.New(arr2);
         Error err = t.ExpectFalse(a.Equal(b), "Equal is false for different Ports");
@@ -195,14 +207,17 @@ autotuner PortsEquality -> (int passed, int failed) {
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite: PortsJSON
+// ─────────────────────────────────────────────────────────────────────────────
 autotuner PortsJSON -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
 
     state test_to_json_non_empty (TestRunner runner, TestContext t) {
         InstrumentPort k = MakeKnob("P1");
-        Array<InstrumentPort> arr;
-        arr.pushback(k);
+        Array<InstrumentPort> arr = Array.New();
+        arr.PushBack(k);
         Ports p   = Ports.New(arr);
         string j  = p.ToJSON();
         Error err = t.ExpectStrNe("", j, "ToJSON is non-empty");
@@ -212,9 +227,9 @@ autotuner PortsJSON -> (int passed, int failed) {
     state test_roundtrip (TestRunner runner, TestContext t) {
         InstrumentPort k = MakeKnob("P1");
         InstrumentPort m = MakeMeter("I1");
-        Array<InstrumentPort> arr;
-        arr.pushback(k);
-        arr.pushback(m);
+        Array<InstrumentPort> arr = Array.New();
+        arr.PushBack(k);
+        arr.PushBack(m);
         Ports orig     = Ports.New(arr);
         string json    = orig.ToJSON();
         Ports restored = Ports.FromJSON(json);
