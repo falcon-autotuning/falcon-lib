@@ -8,7 +8,163 @@
 
 namespace falcon::dsl {
 using fmt::format;
+// ---------------------------------------------------------------------------
+// Helper: substitute generic type params in a TypeDescriptor.
+// subst maps param name (e.g. "T") → concrete TypeDescriptor.
+// ---------------------------------------------------------------------------
+static atc::TypeDescriptor
+substitute_type(const atc::TypeDescriptor &td,
+                const std::map<std::string, atc::TypeDescriptor> &subst) {
+  if (td.is_struct()) {
+    // If the struct_name is a known generic param, replace it.
+    auto it = subst.find(td.struct_name);
+    if (it != subst.end()) return it->second;
+    // Otherwise keep as-is (plain struct or already-monomorphized name).
+    return td;
+  }
+  if (td.is_array()) {
+    if (td.element_type) {
+      auto new_elem = substitute_type(*td.element_type, subst);
+      return atc::TypeDescriptor::make_array(std::move(new_elem));
+    }
+  }
+  // For primitive types (Int, Float, Bool, String) — no substitution needed.
+  return td;
+}
 
+// ---------------------------------------------------------------------------
+// Helper: build (or retrieve cached) monomorphized StructDecl.
+//
+// Given base_decl for "Box<T>" and type_args = [TypeDescriptor(Int)],
+// creates a new StructDecl named "Box<int>" where every field / param
+// whose type was "T" has been rewritten to "int".
+//
+// The result is registered in types_ so subsequent lookups find the cache.
+// ---------------------------------------------------------------------------
+static const atc::StructDecl *
+monomorphize_struct(const atc::StructDecl &base_decl,
+                    const std::vector<atc::TypeDescriptor> &type_args,
+                    std::shared_ptr<falcon::dsl::TypeRegistry> types) {
+  // Build monomorphized name, e.g. "Box<int>"
+  std::string mono_name = base_decl.name + "<";
+  for (size_t i = 0; i < type_args.size(); ++i) {
+    if (i > 0) mono_name += ",";
+    mono_name += type_args[i].to_string();
+  }
+  mono_name += ">";
+
+  // Cache hit?
+  if (types->has_monomorphized(mono_name)) {
+    return types->lookup_struct(mono_name);
+  }
+
+  // Build substitution map: generic_params[i] → type_args[i]
+  if (base_decl.generic_params.size() != type_args.size()) {
+    throw falcon::dsl::EvaluationError(
+        "Generic struct '" + base_decl.name + "' expects " +
+        std::to_string(base_decl.generic_params.size()) +
+        " type argument(s) but got " + std::to_string(type_args.size()));
+  }
+  std::map<std::string, atc::TypeDescriptor> subst;
+  for (size_t i = 0; i < base_decl.generic_params.size(); ++i) {
+    subst.emplace(base_decl.generic_params[i], type_args[i]);
+  }
+
+  // Clone fields with substituted types (no initializer cloning needed here;
+  // initializers are re-evaluated at construction time anyway).
+  std::vector<atc::VarDeclStmt> new_fields;
+  for (const auto &f : base_decl.fields) {
+    auto new_type = substitute_type(f.type, subst);
+    // Clone initializer if present
+    std::optional<std::unique_ptr<atc::Expr>> new_init = std::nullopt;
+    if (f.initializer.has_value()) {
+      new_init = f.initializer.value()->clone();
+    }
+    auto new_f = std::make_unique<atc::VarDeclStmt>(
+        std::move(new_type), f.name, std::move(new_init));
+    new_f->decl_scope = atc::VarDeclStmt::DeclScope::StructField;
+    new_fields.push_back(std::move(*new_f));
+  }
+
+  // Clone routines with substituted param types.
+  // (Bodies reference field names, not types, so they work as-is.)
+  std::vector<atc::RoutineDecl> new_routines;
+  for (const auto &r : base_decl.routines) {
+    std::vector<std::unique_ptr<atc::ParamDecl>> new_ins, new_outs;
+    for (const auto &p : r.input_params) {
+      auto new_type = substitute_type(p->type, subst);
+      new_ins.push_back(std::make_unique<atc::ParamDecl>(
+          std::move(new_type), p->name));
+    }
+    for (const auto &p : r.output_params) {
+      auto new_type = substitute_type(p->type, subst);
+
+      if (new_type.is_struct()) {
+        // Case 1: plain self-reference, e.g. output type is "Box" (no params).
+        if (new_type.struct_name == base_decl.name) {
+          new_type.struct_name = mono_name;
+        }
+        // Case 2: compound self-reference still containing generic param names,
+        // e.g. output type is "Box<T>" or "Accumulator<T>".
+        // substitute_type only replaces exact param-name keys (e.g. "T"),
+        // so "Accumulator<T>" stays untouched. We detect this by checking
+        // whether the struct_name starts with the base name followed by '<'.
+        else if (new_type.struct_name.rfind(base_decl.name + "<", 0) == 0) {
+          // Rebuild the full monomorphized name by substituting param names
+          // inside the angle-bracket portion.
+          // e.g. "Accumulator<T>" with subst {T→int} → "Accumulator<int>"
+          std::string rebuilt = base_decl.name + "<";
+          // Extract the comma-separated args inside the brackets.
+          auto inner_start = new_type.struct_name.find('<') + 1;
+          auto inner_end   = new_type.struct_name.rfind('>');
+          std::string inner = new_type.struct_name.substr(
+              inner_start, inner_end - inner_start);
+          // Split on commas and substitute each token.
+          std::vector<std::string> tokens;
+          {
+            std::string tok;
+            for (char c : inner) {
+              if (c == ',') { tokens.push_back(tok); tok.clear(); }
+              else tok += c;
+            }
+            tokens.push_back(tok);
+          }
+          for (size_t ti = 0; ti < tokens.size(); ++ti) {
+            if (ti > 0) rebuilt += ",";
+            // Trim whitespace.
+            auto &t = tokens[ti];
+            t.erase(0, t.find_first_not_of(' '));
+            t.erase(t.find_last_not_of(' ') + 1);
+            auto sit = subst.find(t);
+            if (sit != subst.end())
+              rebuilt += sit->second.to_string();
+            else
+              rebuilt += t;
+          }
+          rebuilt += ">";
+          new_type.struct_name = rebuilt;
+        }
+      }
+
+      new_outs.push_back(std::make_unique<atc::ParamDecl>(
+          std::move(new_type), p->name));
+    }
+    // Clone body stmts unchanged (field names stay the same)
+    std::vector<std::unique_ptr<atc::Stmt>> new_body;
+    for (const auto &s : r.body) new_body.push_back(s->clone());
+    new_routines.push_back(atc::RoutineDecl(
+        r.name, std::move(new_ins), std::move(new_outs), std::move(new_body)));
+  }
+
+  auto mono = std::make_unique<atc::StructDecl>(
+      mono_name, std::vector<atc::VarDeclStmt>(std::move(new_fields)),
+      std::vector<atc::RoutineDecl>(std::move(new_routines)));
+  // No generic_params on the monomorphized copy.
+
+  const atc::StructDecl *raw = mono.get();
+  types->register_monomorphized_struct(mono_name, std::move(mono));
+  return raw;
+}
 // ---------------------------------------------------------------------------
 // Helper: strip the "Module::" prefix from a qualified name.
 //   "Adder::adder"       → "adder"
@@ -158,6 +314,16 @@ typing::FunctionResult ExprEvaluator::exec_struct_routine(
   if (routine.body.empty()) {
     const typing::TypeMethod *ffi_method =
         types_->lookup_ffi_method(struct_decl.name, routine.name);
+    // For monomorphized generic structs (e.g. "Box<int>"), the FFI methods
+    // are registered under the base name ("Box").  Fall back to the base name
+    // by stripping any "<...>" suffix.
+    if (ffi_method == nullptr) {
+      auto angle = struct_decl.name.find('<');
+      if (angle != std::string::npos) {
+        std::string base_name = struct_decl.name.substr(0, angle);
+        ffi_method = types_->lookup_ffi_method(base_name, routine.name);
+      }
+    }
 
     if (ffi_method != nullptr) {
       typing::ParameterMap ffi_params;
@@ -305,6 +471,19 @@ typing::FunctionResult ExprEvaluator::exec_struct_routine(
   // ---- Execute the routine body -----------------------------------------
   StmtExecutor sub_exec(routine_env, functions_, types_);
   sub_exec.execute_block(routine.body);
+  // ---- Sync field variables FROM receiver_instance BACK INTO routine_env --
+  // StructFieldAssignStmt mutations (e.g. "total = total + delta" inside a
+  // struct routine) write directly to receiver_instance->fields via the "this"
+  // pointer, bypassing routine_env entirely.  We must re-sync routine_env from
+  // the instance BEFORE reading output params — otherwise output params that
+  // read field values (e.g. "new_total = total") will see the stale pre-call
+  // value, and the subsequent write-back will also clobber the mutations.
+  for (const auto &field : struct_decl.fields) {
+    auto field_it = receiver_instance->fields->find(field.name);
+    if (field_it != receiver_instance->fields->end()) {
+      routine_env[field.name] = field_it->second;
+    }
+  }
 
   // ---- Write flattened field variables back into receiver_instance -------
   for (const auto &field : struct_decl.fields) {
@@ -342,12 +521,30 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
   if (const auto *type_var =
           dynamic_cast<const atc::VarExpr *>(expr.object.get())) {
 
-    // Try the name as-is first, then strip any module prefix.
-    const atc::StructDecl *struct_decl = types_->lookup_struct(type_var->name);
+    // Try the name as-is first (may already be "Box<int>"), then strip prefix.
+    // Also try the base name extracted from inferred_type (set by exec_var_decl
+    // when the LHS type is a generic instantiation, e.g. Box<int>).
+    std::string lookup_name = type_var->name;
+
+    // If a concrete mono name was injected via inferred_type, prefer it.
+    // This handles:  Box<int> b = Box.New(x);
+    //   → exec_var_decl sets inferred_type = TypeDescriptor for "Box<int>"
+    //   → we look up "Box" to get the generic template, then monomorphize.
+    std::vector<atc::TypeDescriptor> injected_type_args;
+    if (expr.inferred_type.has_value() &&
+        expr.inferred_type->is_generic_struct()) {
+      // inferred_type.struct_name is e.g. "Box<int>" — extract base name.
+      const std::string &mono = expr.inferred_type->struct_name;
+      auto angle = mono.find('<');
+      if (angle != std::string::npos)
+        lookup_name = mono.substr(0, angle);
+      injected_type_args = expr.inferred_type->type_args;
+    }
+
+    const atc::StructDecl *struct_decl = types_->lookup_struct(lookup_name);
     if (struct_decl == nullptr &&
-        type_var->name.find("::") != std::string::npos) {
-      // e.g. "Quantity::Quantity" → try bare "Quantity"
-      struct_decl = types_->lookup_struct(strip_module_prefix(type_var->name));
+          lookup_name.find("::") != std::string::npos) {
+      struct_decl = types_->lookup_struct(strip_module_prefix(lookup_name));
     }
 
     if (struct_decl != nullptr &&
@@ -355,6 +552,19 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
         variables_.find(strip_module_prefix(type_var->name)) ==
             variables_.end()) {
       // It IS a struct type name used as a static receiver.
+
+      // If this is a generic struct and we have injected type args, monomorphize
+      // now so that constructor output params get the correct concrete type.
+      if (struct_decl->is_generic() && !injected_type_args.empty()) {
+        struct_decl = monomorphize_struct(*struct_decl, injected_type_args, types_);
+      } else if (struct_decl->is_generic() && injected_type_args.empty()) {
+        // Generic struct called without type args — this is a programmer error,
+        // but we let it fall through; the routine will likely fail at output
+        // param init time when it can't resolve the type param name.
+        log::debug("WARN: generic struct '" + struct_decl->name +
+                   "' used as constructor without type args in inferred_type");
+      }
+
       const atc::RoutineDecl *routine =
           struct_decl->find_routine(expr.method_name);
       if (!routine) {
@@ -362,9 +572,8 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
                               "' on type '" + struct_decl->name + "'");
       }
 
-      // Build a fresh receiver instance (the constructor will populate it).
-      auto receiver =
-          std::make_shared<typing::StructInstance>(struct_decl->name);
+      // Build a fresh receiver instance using the (possibly monomorphized) name.
+      auto receiver = std::make_shared<typing::StructInstance>(struct_decl->name);
       for (const auto &field : struct_decl->fields) {
         typing::RuntimeValue fval;
         if (field.initializer.has_value()) {

@@ -101,7 +101,14 @@ ControlFlow StmtExecutor::exec_var_decl(const atc::VarDeclStmt &stmt) {
   typing::RuntimeValue initial_value;
 
   if (stmt.initializer.has_value()) {
-    // Evaluate initializer
+    // For generic struct declarations:
+    //   Box<int> b = Box.New(x);
+    // The LHS type is TypeDescriptor with type_args populated.
+    // We tag the RHS expression's inferred_type so that eval_method_call
+    // knows which monomorphized struct to use for the constructor.
+    if (stmt.type.is_struct() && stmt.type.is_generic_struct()) {
+      stmt.initializer.value()->inferred_type = stmt.type;
+    }
     initial_value = evaluator_.evaluate(*stmt.initializer.value());
   } else {
     // Default initialization based on type
@@ -121,17 +128,26 @@ ControlFlow StmtExecutor::exec_var_decl(const atc::VarDeclStmt &stmt) {
     case atc::ParamType::Error:
       initial_value = nullptr; // nil
       break;
-    case atc::ParamType::Array: {
+    case atc::ParamType::Array: { 
       std::string elem_type_name =
           stmt.type.element_type ? stmt.type.element_type->to_string() : "";
       initial_value =
           std::make_shared<typing::ArrayValue>(std::move(elem_type_name));
       break;
     }
+    case atc::ParamType::Struct:
+      // Default-initialise a struct variable to a fresh (unset) StructInstance.
+      // This covers both plain  MyStruct s;  and generic  Box<int> s;
+      // The struct name carried in type.struct_name is already the
+      // monomorphized name (e.g. "Box<int>") from the parser.
+      initial_value =
+          std::make_shared<typing::StructInstance>(stmt.type.struct_name);
+      break;
     default:
-      // Other types don't have default values
-      throw EvaluationError("Type requires explicit initialization: " +
-                            stmt.name);
+      // All other types require an explicit initializer.
+      throw EvaluationError(
+          "Type '" + stmt.type.to_string() +
+          "' requires explicit initialization for variable: " + stmt.name);
     }
   }
 
