@@ -114,11 +114,8 @@ autotuner PortsBulkAccessors -> (int passed, int failed) {
         arr.PushBack(k);
         arr.PushBack(m);
         Ports p        = Ports.New(arr);
-        Array<bool> ks = p.IsKnobs();
-        bool k0 = ks.GetIndex(0);
-        bool k1 = ks.GetIndex(1);
-        Error err = t.ExpectTrue(k0,   "P1 is a knob");
-        err       = t.ExpectFalse(k1,  "I1 is not a knob");
+        bool ks = p.IsKnobs();
+        Error err       = t.ExpectFalse(ks,  "Is knobs and meters");
         -> __end(runner, t);
     }
 
@@ -129,11 +126,8 @@ autotuner PortsBulkAccessors -> (int passed, int failed) {
         arr.PushBack(k);
         arr.PushBack(m);
         Ports p        = Ports.New(arr);
-        Array<bool> ms = p.IsMeters();
-        bool m0 = ms.GetIndex(0);
-        bool m1 = ms.GetIndex(1);
-        Error err = t.ExpectFalse(m0, "P1 is not a meter");
-        err       = t.ExpectTrue(m1,  "I1 is a meter");
+        bool ms = p.IsMeters();
+        Error err       = t.ExpectFalse(ms,  "Is knobs and meters");
         -> __end(runner, t);
     }
 
