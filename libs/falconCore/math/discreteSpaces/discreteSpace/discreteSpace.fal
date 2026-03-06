@@ -1,0 +1,16 @@
+import (
+"../../../../collections/map/map.fal"
+"../../../instrumentInterfaces/names/instrumentPort/instrumentPort.fal"
+"../../../instrumentInterfaces/names/ports/ports.fal"
+"../../../math/unitSpace/unitSpace.fal"
+"../../../math/arrays/labelledControlArray/labelledControlArray.fal"
+"../../../math/domains/coupledLabelledDomain/coupledLabelledDomain.fal"
+)
+ffimport "discrete-space-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct DiscreteSpace {
+    // TODO: Write this wrapper since the math arrays and unit space don't exist
+    routine Equal (DiscreteSpace other) -> (bool equal)
+    routine NotEqual (DiscreteSpace other) -> (bool notequal)
+    routine FromJSON (string json) -> (DiscreteSpace dstate)
+    routine ToJSON () -> (string json)
+}
