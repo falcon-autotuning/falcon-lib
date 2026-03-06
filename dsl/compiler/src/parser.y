@@ -441,7 +441,7 @@ struct_routine_stmt[result]
             std::move($val));
         set_stmt_location($result.get(), @THIS);
       }
-    | IF LPAREN expr[cond] RPAREN LBRACE routine_body[then_b] RBRACE elif_chain[else_b]
+    | IF LPAREN expr[cond] RPAREN routine_body[then_b] elif_chain[else_b]
       {
         $result = std::make_unique<IfStmt>(
             std::move($cond),
