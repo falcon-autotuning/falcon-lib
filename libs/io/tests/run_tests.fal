@@ -14,11 +14,9 @@ autotuner WriteRoutineTests -> (int passed, int failed) {
     // beyond the capture confirming the text appeared on stdout.
 
     state test_println_appears_on_stdout (TestRunner runner, TestContext t) {
-        IO io_obj     = IO.New();
-        IOCapture cap = IOCapture.New();
-        Error err     = cap.BeginStdout();
-        err           = io_obj.Println("hello-println");
-        string out    = cap.End();
+        Error err     = io::BeginStdout();
+        err           = io::Println("hello-println");
+        string out    = io::End();
         string plain  = StripAnsi(out);
         bool   ok     = Contains(plain, "hello-println");
         err           = t.ExpectTrue(ok, "Println: text reaches stdout");
@@ -26,11 +24,9 @@ autotuner WriteRoutineTests -> (int passed, int failed) {
     }
 
     state test_print_no_newline (TestRunner runner, TestContext t) {
-        IO io_obj     = IO.New();
-        IOCapture cap = IOCapture.New();
-        Error err     = cap.BeginStdout();
-        err           = io_obj.Print("no-newline");
-        string out    = cap.End();
+        Error err     = io::BeginStdout();
+        err           = io::Print("no-newline");
+        string out    = io::End();
         string plain  = StripAnsi(out);
         bool   has    = Contains(plain, "no-newline");
         err           = t.ExpectTrue(has, "Print: text captured without forced newline");
@@ -38,11 +34,9 @@ autotuner WriteRoutineTests -> (int passed, int failed) {
     }
 
     state test_eprintln_appears_on_stderr (TestRunner runner, TestContext t) {
-        IO io_obj     = IO.New();
-        IOCapture cap = IOCapture.New();
-        Error err     = cap.BeginStderr();
-        err           = io_obj.Eprintln("hello-stderr");
-        string out    = cap.End();
+        Error err     = io::BeginStderr();
+        err           = io::Eprintln("hello-stderr");
+        string out    = io::End();
         string plain  = StripAnsi(out);
         bool   ok     = Contains(plain, "hello-stderr");
         err           = t.ExpectTrue(ok, "Eprintln: text reaches stderr");
@@ -58,27 +52,23 @@ autotuner CaptureLifecycleTests -> (int passed, int failed) {
     start -> __init;
 
     state test_is_active_false_initially (TestRunner runner, TestContext t) {
-        IOCapture cap = IOCapture.New();
-        bool active   = cap.IsActive();
+        bool active   = io::IsActive();
         Error err     = t.ExpectFalse(active, "IsActive is false before Begin");
         -> __end(runner, t);
     }
 
     state test_is_active_true_during_capture (TestRunner runner, TestContext t) {
-        IOCapture cap = IOCapture.New();
-        Error err     = cap.BeginStdout();
-        bool active   = cap.IsActive();
+        Error err     = io::BeginStdout();
+        bool active   = io::IsActive();
         err           = t.ExpectTrue(active, "IsActive is true after BeginStdout");
-        string _discard = cap.End();
+        string _discard = io::End();
         -> __end(runner, t);
     }
 
     state test_captured_string_contains_output (TestRunner runner, TestContext t) {
-        IO io_obj     = IO.New();
-        IOCapture cap = IOCapture.New();
-        Error err     = cap.BeginStdout();
-        err           = io_obj.Println("capture-marker-42");
-        string out    = cap.End();
+        Error err     = io::BeginStdout();
+        err           = io::Println("capture-marker-42");
+        string out    = io::End();
         string plain  = StripAnsi(out);
         bool   ok     = Contains(plain, "capture-marker-42");
         err           = t.ExpectTrue(ok, "Captured string contains written text");
@@ -86,13 +76,11 @@ autotuner CaptureLifecycleTests -> (int passed, int failed) {
     }
 
     state test_multiple_writes_all_captured (TestRunner runner, TestContext t) {
-        IO io_obj     = IO.New();
-        IOCapture cap = IOCapture.New();
-        Error err     = cap.BeginStdout();
-        err           = io_obj.Println("line-a");
-        err           = io_obj.Println("line-b");
-        err           = io_obj.Println("line-c");
-        string out    = cap.End();
+        Error err     = io::BeginStdout();
+        err           = io::Println("line-a");
+        err           = io::Println("line-b");
+        err           = io::Println("line-c");
+        string out    = io::End();
         string plain  = StripAnsi(out);
         bool has_a    = Contains(plain, "line-a");
         bool has_b    = Contains(plain, "line-b");
@@ -104,9 +92,8 @@ autotuner CaptureLifecycleTests -> (int passed, int failed) {
     }
 
     state test_empty_capture (TestRunner runner, TestContext t) {
-        IOCapture cap = IOCapture.New();
-        Error err     = cap.BeginStdout();
-        string out    = cap.End();
+        Error err     = io::BeginStdout();
+        string out    = io::End();
         string plain  = StripAnsi(out);
         bool   empty  = IsEmpty(plain);
         err           = t.ExpectTrue(empty, "End with no writes yields empty string");
@@ -114,10 +101,9 @@ autotuner CaptureLifecycleTests -> (int passed, int failed) {
     }
 
     state test_write_stdout_bypasses_capture (TestRunner runner, TestContext t) {
-        IOCapture cap    = IOCapture.New();
-        Error err        = cap.BeginStdout();
-        err              = cap.WriteStdout("bypass-text\n");
-        string captured  = cap.End();
+        Error err        = io::BeginStdout();
+        err              = io::WriteStdout("bypass-text\n");
+        string captured  = io::End();
         string plain     = StripAnsi(captured);
         // bypass text went to the real fd, not through the pipe
         bool in_capture  = Contains(plain, "bypass-text");
@@ -134,26 +120,22 @@ autotuner PeekTests -> (int passed, int failed) {
     start -> __init;
 
     state test_peek_partial (TestRunner runner, TestContext t) {
-        IO io_obj      = IO.New();
-        IOCapture cap  = IOCapture.New();
-        Error err      = cap.BeginStdout();
-        err            = io_obj.Println("peek-line");
-        string peeked  = cap.Peek();
+        Error err      = io::BeginStdout();
+        err            = io::Println("peek-line");
+        string peeked  = io::Peek();
         string plain   = StripAnsi(peeked);
         bool   ok      = Contains(plain, "peek-line");
         err            = t.ExpectTrue(ok, "Peek: sees text before End is called");
-        string _discard = cap.End();
+        string _discard = io::End();
         -> __end(runner, t);
     }
 
     state test_peek_then_more_writes (TestRunner runner, TestContext t) {
-        IO io_obj       = IO.New();
-        IOCapture cap   = IOCapture.New();
-        Error err       = cap.BeginStdout();
-        err             = io_obj.Println("before-peek");
-        string _peek    = cap.Peek();
-        err             = io_obj.Println("after-peek");
-        string final    = cap.End();
+        Error err       = io::BeginStdout();
+        err             = io::Println("before-peek");
+        string _peek    = io::Peek();
+        err             = io::Println("after-peek");
+        string final    = io::End();
         string plain    = StripAnsi(final);
         bool has_before = Contains(plain, "before-peek");
         bool has_after  = Contains(plain, "after-peek");
