@@ -121,3 +121,17 @@ TEST_F(StructsTest, GenericWrongArityRejected) {
   EXPECT_FALSE(loaded)
       << "Expected load to fail due to wrong generic arity, but it succeeded";
 }
+
+TEST_F(StructsTest, AccumulatorInt) {
+  ParameterMap params;
+  params["start_val"] = static_cast<int64_t>(10);
+  params["add_val"]   = static_cast<int64_t>(5);
+  SingleCompileEnvironment cenv{
+      std::filesystem::path("test-autotuners/structs/math.fal"),
+      "Math", params, true};
+  auto [success, outputs] = compile_and_run(cenv);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(outputs.size(), 1u);
+  // Accumulator.New(10), then .Add(5) → returns 15
+  EXPECT_EQ(std::get<int64_t>(outputs[0]), 15);
+}
