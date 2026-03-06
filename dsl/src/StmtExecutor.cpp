@@ -264,7 +264,25 @@ StmtExecutor::exec_struct_field_assign(const atc::StructFieldAssignStmt &stmt) {
     throw EvaluationError("Struct variable '" + var_expr->name +
                           "' is nullptr");
   }
-  structPtr->set_field(stmt.field, std::move(val));
+  // Write into the struct instance's field map.
+  structPtr->set_field(stmt.field, val);
+
+  // If we are inside a struct routine body, struct fields are also flattened
+  // into variables_ as bare names (e.g. "total" as well as "this.total").
+  // Keep the flat entry in sync so that subsequent reads of the bare field
+  // name within the same routine body see the updated value immediately.
+  //
+  // Example: inside  routine Add(T delta) -> (T new_total):
+  //   total = total + delta;   ← StructFieldAssignStmt(this, "total", ...)
+  //                               updates receiver_instance->fields["total"]
+  //                               AND now also routine_env["total"]
+  //   new_total = total;       ← AssignStmt reads routine_env["total"]
+  //                               and gets the updated value ✓
+  auto flat_it = variables_.find(stmt.field);
+  if (flat_it != variables_.end()) {
+    flat_it->second = val;
+  }
+
   return ControlFlow::none();
 }
 
