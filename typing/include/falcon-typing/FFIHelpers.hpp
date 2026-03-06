@@ -26,21 +26,10 @@ namespace falcon::typing::ffi {
 // ============================================================================
 namespace engine {
 
-/**
- * Pack a ParameterMap into a flat array of FalconParamEntry.
- * The returned vector + all its string/key storage is valid as long as
- * the original ParameterMap is alive AND the returned `key_storage` /
- * `str_storage` vectors are alive.  Call this immediately before the
- * FFI call and discard afterwards.
- */
 struct PackedParams {
   std::vector<FalconParamEntry> entries;
-  // Keep string data alive for the duration of the FFI call
   std::vector<std::string> key_storage;
   std::vector<std::string> str_storage;
-  // Keep shared_ptr heap allocations alive until engine reads results
-  // (actually the shared_ptr heap nodes are owned by opaque.ptr — their
-  //  lifetime is managed by the deleter registered in the entry)
 };
 
 inline PackedParams pack_params(const ParameterMap &params) {
@@ -74,7 +63,6 @@ inline PackedParams pack_params(const ParameterMap &params) {
           } else if constexpr (std::is_same_v<T, std::nullptr_t>) {
             e.tag = FALCON_TYPE_NIL;
           } else if constexpr (std::is_same_v<T, ErrorObject>) {
-            // Treat ErrorObject as opaque to preserve is_fatal
             using SP = std::shared_ptr<ErrorObject>;
             auto *heap_sp = new SP(std::make_shared<ErrorObject>(val));
             e.tag = FALCON_TYPE_OPAQUE;
@@ -84,40 +72,43 @@ inline PackedParams pack_params(const ParameterMap &params) {
               delete static_cast<SP *>(ptr);
             };
           } else {
-            // Opaque type: heap-allocate a copy of the shared_ptr so the
-            // raw pointer survives past the ParameterMap scope if needed.
-            // The deleter just does `delete static_cast<decltype(&val)>(ptr)`.
             using SP = T;
             auto *heap_sp = new SP(val);
             e.tag = FALCON_TYPE_OPAQUE;
             e.value.opaque.ptr = heap_sp;
-            // Use mangled-free type_name convention (readable strings)
             if constexpr (std::is_same_v<SP, std::shared_ptr<TupleValue>>) {
               e.value.opaque.type_name = "TupleValue";
               e.value.opaque.deleter = [](void *p) {
                 delete static_cast<SP *>(p);
               };
-            } else if constexpr (std::is_same_v<
-                                     SP, std::shared_ptr<ArrayValue>>) {
+            } else if constexpr (std::is_same_v<SP, std::shared_ptr<ArrayValue>>) {
               e.value.opaque.type_name = "ArrayValue";
               e.value.opaque.deleter = [](void *p) {
                 delete static_cast<SP *>(p);
               };
-            } else if constexpr (std::is_same_v<
-                                     SP, std::shared_ptr<StructInstance>>) {
+            } else if constexpr (std::is_same_v<SP, std::shared_ptr<StructInstance>>) {
               if (val && val->is_native()) {
-                e.value.opaque.ptr = val->native_handle->get();
+                // FIX: store a shared_ptr<void>* (alias cast) so that
+                // get_opaque<T> can static_pointer_cast back to T correctly.
+                // The old code stored val->native_handle->get() (raw void*)
+                // which broke static_pointer_cast in the wrapper.
+                auto *svp = new std::shared_ptr<void>(
+                    std::static_pointer_cast<void>(
+                        // re-wrap: native_handle IS the shared_ptr<void>
+                        // (already an alias), just copy it
+                        val->native_handle.value()));
+                delete heap_sp;  // don't need the shared_ptr<StructInstance>* wrapper
+                e.value.opaque.ptr = svp;
                 e.value.opaque.type_name = val->type_name.c_str();
-                e.value.opaque.deleter =
-                    nullptr;    // engine still owns via native_handle
-                delete heap_sp; // delete the shared_ptr wrapper we made here
+                e.value.opaque.deleter = [](void *p) {
+                  delete static_cast<std::shared_ptr<void> *>(p);
+                };
               } else {
                 // Plain FAL struct — pass as StructInstance opaque
                 e.value.opaque.type_name = "StructInstance";
-                e.value.opaque.deleter =
-                    [](void *p) { // ← deleter only in this branch
-                      delete static_cast<SP *>(p);
-                    };
+                e.value.opaque.deleter = [](void *p) {
+                  delete static_cast<SP *>(p);
+                };
               }
             } else {
               e.value.opaque.type_name = "unknown_opaque";
@@ -134,14 +125,6 @@ inline PackedParams pack_params(const ParameterMap &params) {
   return packed;
 }
 
-/**
- * Unpack FalconResultSlot[] into FunctionResult.
- * Frees string/opaque memory allocated by the wrapper.
- *
- * For opaque types: the wrapper heap-allocates a shared_ptr<T> and passes
- * its address. The engine reconstructs the RuntimeValue by reading the
- * shared_ptr via the known type_name, then calls the deleter.
- */
 inline FunctionResult unpack_results(FalconResultSlot *slots, int32_t count) {
   FunctionResult result;
   result.reserve((size_t)count);
@@ -176,31 +159,41 @@ inline FunctionResult unpack_results(FalconResultSlot *slots, int32_t count) {
       if (tn == "TupleValue") {
         using SP = std::shared_ptr<TupleValue>;
         rv = *static_cast<SP *>(ptr);
-        if (del != nullptr) {
-          del(ptr);
-        }
+        if (del != nullptr) del(ptr);
       } else if (tn == "ArrayValue") {
         using SP = std::shared_ptr<ArrayValue>;
         rv = *static_cast<SP *>(ptr);
-        if (del != nullptr) {
-          del(ptr);
-        }
+        if (del != nullptr) del(ptr);
       } else if (tn == "StructInstance") {
         using SP = std::shared_ptr<StructInstance>;
         rv = *static_cast<SP *>(ptr);
-        if (del != nullptr) {
-          del(ptr);
-        }
+        if (del != nullptr) del(ptr);
       } else if (tn == "ErrorObject") {
         using SP = std::shared_ptr<ErrorObject>;
         rv = **static_cast<SP *>(ptr);
-        if (del != nullptr) {
-          del(ptr);
-        }
+        if (del != nullptr) del(ptr);
       } else {
-        // Unknown user opaque — wrap into StructInstance with native_handle
+        // Unknown user opaque (e.g. "InstrumentPort", "Ports", etc.)
+        //
+        // Convention: the wrapper stored
+        //   ptr = new shared_ptr<T>(the_native_object)   ← heap-allocated SP<T>
+        //   del = [](void*p){ delete (shared_ptr<T>*)p; }
+        //
+        // shared_ptr<T> and shared_ptr<void> are layout-compatible:
+        // both are { T* managed_ptr, ControlBlock* cb }.
+        // Reinterpreting ptr as shared_ptr<void>* gives a shared_ptr<void>
+        // whose .get() == T* and whose control block is shared with the
+        // original heap SP<T>.  inner_sp therefore correctly ref-counts T.
+        //
+        // We then call del(ptr) to destroy the *outer* heap SP<T> wrapper
+        // (dropping its refcount), while inner_sp keeps T alive.
+        //
+        // static_pointer_cast<InstrumentPort>(native_handle.value()) in the
+        // wrapper will then correctly follow the shared ownership of T.
+        auto inner_sp = *reinterpret_cast<std::shared_ptr<void> *>(ptr);
         auto inst = std::make_shared<StructInstance>(tn);
-        inst->native_handle = std::shared_ptr<void>(ptr, del);
+        inst->native_handle = inner_sp;  // shared_ptr<void> → T, correctly owned
+        if (del) del(ptr);               // delete outer heap shared_ptr<T>* wrapper
         rv = std::move(inst);
       }
       result.push_back(std::move(rv));
@@ -218,18 +211,9 @@ inline FunctionResult unpack_results(FalconResultSlot *slots, int32_t count) {
 
 // ============================================================================
 // Helpers used by the WRAPPER side (unpacking params, packing results)
-// These are included by wrapper .cpp files.
 // ============================================================================
 namespace wrapper {
 
-/**
- * Reconstruct a ParameterMap from the flat C array.
- * For opaque entries, this re-wraps the heap shared_ptr WITHOUT taking
- * ownership (the engine's deleter will still fire after we return).
- *
- * NOTE: For user-defined struct types (not known to the engine's variant),
- * you must use get_opaque<T>(params, "key") instead (see below).
- */
 inline ParameterMap unpack_params(const FalconParamEntry *entries,
                                   int32_t count) {
   ParameterMap result;
@@ -282,11 +266,9 @@ inline ParameterMap unpack_params(const FalconParamEntry *entries,
 
 /**
  * Extract an opaque (user-defined) shared_ptr from a FalconParamEntry array.
- * Use this when the struct type is not known to the engine's RuntimeValue
- * variant (e.g. a local `struct Quantity`).
  *
- * The engine heap-allocated a shared_ptr<T>* and put its address in
- * entry.value.opaque.ptr.  We dereference to get the shared_ptr<T>.
+ * Convention: ptr is a heap-allocated shared_ptr<void>* (alias to T).
+ * We static_pointer_cast back to T.
  */
 template <typename T>
 inline std::shared_ptr<T> get_opaque(const FalconParamEntry *entries,
@@ -295,18 +277,13 @@ inline std::shared_ptr<T> get_opaque(const FalconParamEntry *entries,
     if (std::strcmp(entries[i].key, key) == 0 &&
         entries[i].tag == FALCON_TYPE_OPAQUE) {
       using SP = std::shared_ptr<T>;
+      // ptr = heap-allocated shared_ptr<T>* (from engine::pack_params)
       return *static_cast<SP *>(entries[i].value.opaque.ptr);
     }
   }
   throw std::runtime_error(std::string("FFI: opaque param not found: ") + key);
 }
 
-/**
- * Pack a FunctionResult into pre-allocated FalconResultSlot[].
- * Strings are heap-allocated via malloc (engine will free() them).
- * Opaque shared_ptrs are heap-allocated via new SP(...) with a matching
- * deleter (engine will call it).
- */
 inline void pack_results(const FunctionResult &result, FalconResultSlot *slots,
                          int32_t capacity, int32_t *out_count) {
   int32_t n = (int32_t)result.size();
@@ -315,7 +292,7 @@ inline void pack_results(const FunctionResult &result, FalconResultSlot *slots,
 
   for (int32_t i = 0; i < n; ++i) {
     FalconResultSlot &s = slots[i];
-    s = {}; // zero-initialize
+    s = {};
 
     std::visit(
         [&](auto &&val) {
@@ -346,18 +323,15 @@ inline void pack_results(const FunctionResult &result, FalconResultSlot *slots,
               delete static_cast<SP *>(ptr);
             };
           } else {
-            // Opaque shared_ptr type
             using SP = T;
             auto *heap_sp = new SP(val);
             s.tag = FALCON_TYPE_OPAQUE;
             s.value.opaque.ptr = heap_sp;
             if constexpr (std::is_same_v<SP, std::shared_ptr<TupleValue>>) {
               s.value.opaque.type_name = "TupleValue";
-            } else if constexpr (std::is_same_v<
-                                     SP, std::shared_ptr<ArrayValue>>) {
+            } else if constexpr (std::is_same_v<SP, std::shared_ptr<ArrayValue>>) {
               s.value.opaque.type_name = "ArrayValue";
-            } else if constexpr (std::is_same_v<
-                                     SP, std::shared_ptr<StructInstance>>) {
+            } else if constexpr (std::is_same_v<SP, std::shared_ptr<StructInstance>>) {
               s.value.opaque.type_name = "StructInstance";
             } else {
               s.value.opaque.type_name = "unknown_opaque";
@@ -371,9 +345,6 @@ inline void pack_results(const FunctionResult &result, FalconResultSlot *slots,
   }
 }
 
-/**
- * Convenience: pack a single-value result.
- */
 inline void pack_single(RuntimeValue val, FalconResultSlot *slots,
                         int32_t *out_count) {
   pack_results(FunctionResult{std::move(val)}, slots, 1, out_count);
