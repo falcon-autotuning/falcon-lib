@@ -1,0 +1,41 @@
+import (
+"../../../generic/farray/farray.fal"
+"../increasingAlignment/increasingAlignment.fal"
+"../../../autotunerInterfaces/acquisitionContext/acquisitionContext.fal"
+)
+ffimport "labelled-control-array-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct LabelledControlArray {
+    routine New (farray::FArray arr) -> (LabelledControlArray carray)
+    routine Add (ControlArray other) -> (LabelledControlArray carray)
+    routine Add (farray::FArray other) -> (LabelledControlArray carray)
+    routine Add (int other) -> (LabelledControlArray carray)
+    routine Add (float other) -> (LabelledControlArray carray)
+    routine Minus (LabelledControlArray other) -> (LabelledControlArray carray)
+    routine Minus (farray::FArray other) -> (LabelledControlArray carray)
+    routine Minus (int other) -> (LabelledControlArray carray)
+    routine Minus (float other) -> (LabelledControlArray carray)
+    routine Negate -> (LabelledControlArray carray)
+    routine Times (float factor) -> (LabelledControlArray carray)
+    routine Times (int factor) -> (LabelledControlArray carray)
+    routine Divides (float factor) -> (LabelledControlArray carray)
+    routine Divides (int factor) -> (LabelledControlArray carray)
+    routine Power (float exponent) -> (LabelledControlArray carray)
+    routine Abs -> (LabelledControlArray carray)
+    routine Min -> (float min)
+    routine PrincipleDimension -> (int dim)
+    routine Alignment -> (increasingAlignment::increasingAlignment alignment)
+    routine Label -> (acquisitionContext::AcquisitionContext ac)
+    routine Connection -> (connection::Connection conn)
+    routine InstrumentType -> (instrument::Instrument it)
+    routine Units -> (symbolUnit::SymbolUnit unit)
+    // TODO: arraywise min and max
+    routine Max -> (float max)
+    routine Reshape (Array<int> shape) -> (LabelledControlArray carray)
+    routine Flip (int axis) -> (LabelledControlArray carray)
+    routine Gradient (int axis) -> (farray::FArray gradient)
+    routine FullGradient -> (Array<farray::FArray> gradients)
+    routine Equal (LabelledControlArray other) -> (bool equal)
+    routine NotEqual (LabelledControlArray other) -> (bool notequal)
+    routine FromJSON (string json) -> (LabelledControlArray carray)
+    routine ToJSON () -> (string json)
+}
