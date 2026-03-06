@@ -2,6 +2,7 @@ import {
 "../../../instrumentInterfaces/names/instrument/instrument.fal"
 "../../../instrumentInterfaces/names/instrumentPort/instrumentPort.fal"
 "../../../physics/deviceStructures/connection/connection.fal"
+"../../../physics/units/symbolUnit/symbolUnit.fal"
 }
 ffimport "measurement-context-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct AcquisitionContext {

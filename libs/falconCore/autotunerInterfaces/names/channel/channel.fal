@@ -1,0 +1,9 @@
+ffimport "channel-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct Channel {
+    routine New (string name) -> (Channel channel)
+    routine Name -> (string name)
+    routine Equal (Channel other) -> (bool equal)
+    routine NotEqual (Channel other) -> (bool notequal)
+    routine FromJSON (string json) -> (Channel channel)
+    routine ToJSON () -> (string json)
+}
