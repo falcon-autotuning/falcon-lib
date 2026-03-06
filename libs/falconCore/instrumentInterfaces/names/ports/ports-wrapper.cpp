@@ -51,13 +51,15 @@ extern "C" {
 void STRUCTPortsNew(const FalconParamEntry *params, int32_t param_count,
                     FalconResultSlot *out, int32_t *oc) {
   auto pm      = unpack_params(params, param_count);
-  auto arr_val = std::get<std::shared_ptr<ArrayValue>>(pm.at("ports"));
+  std::shared_ptr<ArrayValue> arr_val = get_opaque<ArrayValue>(params, param_count, "ports");
   std::vector<InstrumentPortSP> vec;
   vec.reserve(arr_val->elements.size());
-  for (const auto &elem : arr_val->elements) {
-    auto inst = std::get<std::shared_ptr<StructInstance>>(elem);
-    auto port = std::static_pointer_cast<InstrumentPort>(
+  auto elems = arr_val->elements;
+  for (const auto &elem : elems) {
+    std::shared_ptr<StructInstance> inst = std::get<std::shared_ptr<StructInstance>>(elem);
+    std::shared_ptr<InstrumentPort> port = std::static_pointer_cast<InstrumentPort>(
         inst->native_handle.value());
+    if (!port) throw std::runtime_error("InstrumentPort native_handle is null");
     vec.push_back(std::move(port));
   }
   pack_opaque_ports(std::make_shared<Ports>(vec), out, oc);
@@ -70,7 +72,8 @@ void STRUCTPortsPorts(const FalconParamEntry *params, int32_t param_count,
                       FalconResultSlot *out, int32_t *oc) {
   auto ports_obj = get_opaque<Ports>(params, param_count, "this");
   std::vector<RuntimeValue> elements;
-  for (const auto &port : *ports_obj->ports()) {
+  auto ports = *ports_obj->ports();
+  for (const auto &port : ports) {
     elements.push_back(wrap_port_as_struct(port));
   }
   auto arr_val = std::make_shared<ArrayValue>("InstrumentPort",
@@ -90,7 +93,7 @@ void STRUCTPortsGetDefaultNames(const FalconParamEntry *params,
   auto name_list = ports_obj->get_default_names(); // shared_ptr — NO copy
   std::vector<RuntimeValue> elements;
   for (const auto &name : *name_list) {            // dereference in range expr
-    elements.push_back(std::string(name));
+    elements.push_back(name);
   }
   auto arr_val = std::make_shared<ArrayValue>("string", std::move(elements));
   pack_results(FunctionResult{arr_val}, out, 16, oc);

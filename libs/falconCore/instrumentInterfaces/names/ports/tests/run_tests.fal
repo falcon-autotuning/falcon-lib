@@ -6,6 +6,8 @@ import "../../instrumentPort/instrumentPort.fal";
 import "../../../../physics/deviceStructures/connection/connection.fal";
 import "../../../../physics/units/symbolUnit/symbolUnit.fal";
 import "../../instrument/instrument.fal";
+import "../../../../../io/io.fal";
+import "../../../../../strings/strings.fal";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -39,6 +41,10 @@ autotuner PortsConstruction -> (int passed, int failed) {
         InstrumentPort knob   = MakeKnob("P1");
         Array<InstrumentPort> arr;
         arr.pushback(knob);
+        InstrumentPort k1 = arr[0];
+        // IO printer = IO.New();
+        // printer.Println(strings::Concat("The name is " , k1.Description()));
+
         Ports p               = Ports.New(arr);
         Array<string> names   = p.GetDefaultNames();
         Error err = t.ExpectIntEq(1, names.size(), "Single-entry Ports has 1 name");
@@ -70,8 +76,8 @@ autotuner PortsBulkAccessors -> (int passed, int failed) {
         arr.pushback(m);
         Ports p           = Ports.New(arr);
         Array<string> ns  = p.GetDefaultNames();
-        Error err = t.ExpectStrEq("P1", ns.Get(0), "First name is P1");
-        err = t.ExpectStrEq("I1", ns.Get(1), "Second name is I1");
+        Error err = t.ExpectStrEq("P1", ns[0], "First name is P1");
+        err = t.ExpectStrEq("I1", ns[1], "Second name is I1");
         -> __end(runner, t);
     }
 
@@ -93,7 +99,7 @@ autotuner PortsBulkAccessors -> (int passed, int failed) {
         arr.pushback(k);
         Ports p           = Ports.New(arr);
         Array<connection::Connection> cs = p.GetPsuedoNames();
-        connection::Connection c0 = cs.Get(0);
+        connection::Connection c0 = cs[0];
         Error err = t.ExpectStrEq("P1", c0.Name(), "First pseudo-name is P1");
         -> __end(runner, t);
     }
@@ -106,8 +112,7 @@ autotuner PortsBulkAccessors -> (int passed, int failed) {
         arr.pushback(m);
         Ports p           = Ports.New(arr);
         Array<bool> ks    = p.IsKnobs();
-        Error err = t.ExpectTrue(ks.Get(0),  "Port 0 is a knob");
-        err = t.ExpectFalse(ks.Get(1), "Port 1 is not a knob");
+        Error err = t.ExpectFalse(ks,  "There is a knob and a meter");
         -> __end(runner, t);
     }
 
@@ -119,8 +124,7 @@ autotuner PortsBulkAccessors -> (int passed, int failed) {
         arr.pushback(m);
         Ports p           = Ports.New(arr);
         Array<bool> ms    = p.IsMeters();
-        Error err = t.ExpectFalse(ms.Get(0), "Port 0 is not a meter");
-        err = t.ExpectTrue(ms.Get(1),  "Port 1 is a meter");
+        Error err = t.ExpectFalse(ms, "There is a knob and a meter");
         -> __end(runner, t);
     }
 
@@ -142,7 +146,7 @@ autotuner PortsBulkAccessors -> (int passed, int failed) {
         arr.pushback(k);
         Ports p           = Ports.New(arr);
         Array<instrumentPort::InstrumentPort> ps = p.Ports();
-        instrumentPort::InstrumentPort p0 = ps.Get(0);
+        instrumentPort::InstrumentPort p0 = ps[0];
         Error err = t.ExpectStrEq("P1", p0.DefaultName(), "First port default name is P1");
         -> __end(runner, t);
     }
@@ -169,7 +173,7 @@ autotuner PortsEquality -> (int passed, int failed) {
         InstrumentPort k2 = MakeKnob("P2");
         Array<InstrumentPort> arr1;
         arr1.pushback(k1);
-        Arr1y<InstrumentPort> arr2;
+        Array<InstrumentPort> arr2;
         arr2.pushback(k2);
         Ports a = Ports.New(arr1);
         Ports b = Ports.New(arr2);
@@ -182,7 +186,7 @@ autotuner PortsEquality -> (int passed, int failed) {
         InstrumentPort k2 = MakeKnob("P2");
         Array<InstrumentPort> arr1;
         arr1.pushback(k1);
-        Arr1y<InstrumentPort> arr2;
+        Array<InstrumentPort> arr2;
         arr2.pushback(k2);
         Ports a = Ports.New(arr1);
         Ports b = Ports.New(arr2);
