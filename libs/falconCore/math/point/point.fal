@@ -1,0 +1,39 @@
+import (
+"../../../collections/array/array.fal"
+"../../../collections/map/map.fal"
+"../../math/quantity/quantity.fal"
+"../../../physics/deviceStructures/connection/connection.fal"
+"../../../physics/units/symbolUnit/symbolUnit.fal"
+)
+ffimport "point-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct Point {
+    routine NewFromRaw (map::Map<connection::Connection, float> init, symbolUnit::SymbolUnit unit) -> (Quantity q)
+    routine NewFromQuantity (map::Map<connection::Connection, quantity::Quantity> init) -> (Quantity q)
+    routine InsertOrAssign (connection::Connection key, quantity::Quantity value) -> ()
+    routine Insert (connection::Connection key, quantity::Quantity value) -> ()
+    routine Unit () -> (symbolUnit::SymbolUnit unit)
+    routine Coordinates () -> (map::Map<connection::Connection, quantity::Quantity> map)
+    routine Connections () -> (array::Array<connection::Connection> conns)
+    routine Times (float factor) -> (Point scaled_state)
+    routine Divides (float divisor) -> (Point scaled_state)
+    routine Add (Point other) -> (Point sum_state)
+    routine Subtract (Point other) -> (Point difference_state)
+    routine Negate -> (Point negated_state)
+    routine SetUnit (symbolUnit::SymbolUnit unit) -> ()
+    routine Equal (Point other) -> (bool equal)
+    routine NotEqual (Point other) -> (bool notequal)
+    routine FromJSON (string json) -> (Point dstate)
+    routine ToJSON () -> (string json)
+    routine Size () -> (int size) {
+        size = this.Coordinates().Size();
+    }
+    routine IsEmpty () -> (bool empty) {
+        empty = this.Coordinates().IsEmpty();
+    }
+    routine Get (connection::Connection key) -> (float value) {
+        value = this.Coordinates().Get(key);
+    }
+    routine GetOr (connection::Connection key, quantity::Quantity defaultValue) -> (quantity::Quantity value) {
+        value = this.Coordinates().GetOr(key, defaultValue);
+    }
+}
