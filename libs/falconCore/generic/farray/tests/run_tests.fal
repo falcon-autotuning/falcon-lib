@@ -10,42 +10,51 @@ routine FA (Array<float> vals) -> (farray::FArray arr) {
 }
 
 // ── Equality ──────────────────────────────────────────────────────────────────
-
 autotuner FArrayEquality -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
 
     state test_equal_same (TestRunner runner, TestContext t) {
-        farray::FArray a = FA([1.0, 2.0, 3.0]);
-        farray::FArray b = FA([1.0, 2.0, 3.0]);
+        Array<float> arr_a; arr_a.pushback(1.0); arr_a.pushback(2.0); arr_a.pushback(3.0);
+        Array<float> arr_b; arr_b.pushback(1.0); arr_b.pushback(2.0); arr_b.pushback(3.0);
+        farray::FArray a = FA(arr_a);
+        farray::FArray b = FA(arr_b);
         Error err = t.ExpectTrue(a.Equal(b), "Identical arrays are equal");
         -> __end(runner, t);
     }
 
     state test_not_equal_different (TestRunner runner, TestContext t) {
-        farray::FArray a = FA([1.0, 2.0, 3.0]);
-        farray::FArray b = FA([1.0, 2.0, 4.0]);
+        Array<float> arr_a; arr_a.pushback(1.0); arr_a.pushback(2.0); arr_a.pushback(3.0);
+        Array<float> arr_b; arr_b.pushback(1.0); arr_b.pushback(2.0); arr_b.pushback(4.0);
+        farray::FArray a = FA(arr_a);
+        farray::FArray b = FA(arr_b);
         Error err = t.ExpectTrue(a.NotEqual(b), "Different arrays are not equal");
         -> __end(runner, t);
     }
 
     state test_equal_false_for_different (TestRunner runner, TestContext t) {
-        farray::FArray a = FA([1.0, 2.0]);
-        farray::FArray b = FA([1.0, 3.0]);
+        Array<float> arr_a; arr_a.pushback(1.0); arr_a.pushback(2.0);
+        Array<float> arr_b; arr_b.pushback(1.0); arr_b.pushback(3.0);
+        farray::FArray a = FA(arr_a);
+        farray::FArray b = FA(arr_b);
         Error err = t.ExpectFalse(a.Equal(b), "Equal is false for different arrays");
         -> __end(runner, t);
     }
 
     state test_not_equal_false_for_same (TestRunner runner, TestContext t) {
-        farray::FArray a = FA([5.0, 5.0]);
-        farray::FArray b = FA([5.0, 5.0]);
+        Array<float> arr_a; arr_a.pushback(5.0); arr_a.pushback(5.0);
+        Array<float> arr_b; arr_b.pushback(5.0); arr_b.pushback(5.0);
+        farray::FArray a = FA(arr_a);
+        farray::FArray b = FA(arr_b);
         Error err = t.ExpectFalse(a.NotEqual(b), "NotEqual is false for identical arrays");
         -> __end(runner, t);
     }
 
     state test_single_element_equal (TestRunner runner, TestContext t) {
-        farray::FArray a = FA([42.0]);
-        farray::FArray b = FA([42.0]);
+        Array<float> arr_a; arr_a.pushback(42.0);
+        Array<float> arr_b; arr_b.pushback(42.0);
+        farray::FArray a = FA(arr_a);
+        farray::FArray b = FA(arr_b);
         Error err = t.ExpectTrue(a.Equal(b), "Single-element arrays are equal");
         -> __end(runner, t);
     }
@@ -58,32 +67,39 @@ autotuner FArrayTimes -> (int passed, int failed) {
     start -> __init;
 
     state test_times_float (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([2.0, 4.0]);
+        Array<float> arr_a; arr_a.pushback(2.0); arr_a.pushback(4.0);
+        Array<float> arr_exp; arr_exp.pushback(6.0); arr_exp.pushback(12.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Times(3.0);
-        farray::FArray exp = FA([6.0, 12.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Times(float): [2,4]*3 = [6,12]");
         -> __end(runner, t);
     }
 
     state test_times_int (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([1.0, 5.0]);
+        Array<float> arr_a; arr_a.pushback(1.0); arr_a.pushback(5.0);
+        Array<float> arr_exp; arr_exp.pushback(2.0); arr_exp.pushback(10.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Times(2);
-        farray::FArray exp = FA([2.0, 10.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Times(int): [1,5]*2 = [2,10]");
         -> __end(runner, t);
     }
 
     state test_times_one (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([3.0, 7.0]);
+        Array<float> arr_a; arr_a.pushback(3.0); arr_a.pushback(7.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Times(1.0);
         Error err = t.ExpectTrue(res.Equal(a), "Times(1.0) is identity");
         -> __end(runner, t);
     }
 
     state test_times_zero (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([3.0, 7.0]);
+        Array<float> arr_a; arr_a.pushback(3.0); arr_a.pushback(7.0);
+        Array<float> arr_exp; arr_exp.pushback(0.0); arr_exp.pushback(0.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Times(0.0);
-        farray::FArray exp = FA([0.0, 0.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Times(0.0) produces zeros");
         -> __end(runner, t);
     }
@@ -96,23 +112,28 @@ autotuner FArrayDivides -> (int passed, int failed) {
     start -> __init;
 
     state test_divides_float (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([6.0, 12.0]);
+        Array<float> arr_a; arr_a.pushback(6.0); arr_a.pushback(12.0);
+        Array<float> arr_exp; arr_exp.pushback(3.0); arr_exp.pushback(6.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Divides(2.0);
-        farray::FArray exp = FA([3.0, 6.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Divides(float): [6,12]/2 = [3,6]");
         -> __end(runner, t);
     }
 
     state test_divides_int (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([9.0, 3.0]);
+        Array<float> arr_a; arr_a.pushback(9.0); arr_a.pushback(3.0);
+        Array<float> arr_exp; arr_exp.pushback(3.0); arr_exp.pushback(1.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Divides(3);
-        farray::FArray exp = FA([3.0, 1.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Divides(int): [9,3]/3 = [3,1]");
         -> __end(runner, t);
     }
 
     state test_divides_one (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([4.0, 8.0]);
+        Array<float> arr_a; arr_a.pushback(4.0); arr_a.pushback(8.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Divides(1.0);
         Error err = t.ExpectTrue(res.Equal(a), "Divides(1.0) is identity");
         -> __end(runner, t);
@@ -120,68 +141,79 @@ autotuner FArrayDivides -> (int passed, int failed) {
 }
 
 // ── Power ─────────────────────────────────────────────────────────────────────
-
 autotuner FArrayPower -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
 
     state test_power_two (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([2.0, 3.0]);
+        Array<float> arr_a; arr_a.pushback(2.0); arr_a.pushback(3.0);
+        Array<float> arr_exp; arr_exp.pushback(4.0); arr_exp.pushback(9.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Power(2);
-        farray::FArray exp = FA([4.0, 9.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Power(2): [2,3]^2 = [4,9]");
         -> __end(runner, t);
     }
 
     state test_power_one (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([5.0, 7.0]);
+        Array<float> arr_a; arr_a.pushback(5.0); arr_a.pushback(7.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Power(1);
         Error err = t.ExpectTrue(res.Equal(a), "Power(1) is identity");
         -> __end(runner, t);
     }
 
     state test_power_three (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([2.0, 1.0]);
+        Array<float> arr_a; arr_a.pushback(2.0); arr_a.pushback(1.0);
+        Array<float> arr_exp; arr_exp.pushback(8.0); arr_exp.pushback(1.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Power(3);
-        farray::FArray exp = FA([8.0, 1.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Power(3): [2,1]^3 = [8,1]");
         -> __end(runner, t);
     }
 }
 
 // ── Add ───────────────────────────────────────────────────────────────────────
-
 autotuner FArrayAdd -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
 
     state test_add_farray (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([1.0, 2.0]);
-        farray::FArray b   = FA([3.0, 4.0]);
+        Array<float> arr_a; arr_a.pushback(1.0); arr_a.pushback(2.0);
+        Array<float> arr_b; arr_b.pushback(3.0); arr_b.pushback(4.0);
+        Array<float> arr_exp; arr_exp.pushback(4.0); arr_exp.pushback(6.0);
+        farray::FArray a   = FA(arr_a);
+        farray::FArray b   = FA(arr_b);
         farray::FArray res = a.Add(b);
-        farray::FArray exp = FA([4.0, 6.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Add(FArray): [1,2]+[3,4]=[4,6]");
         -> __end(runner, t);
     }
 
     state test_add_int (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([1.0, 2.0]);
+        Array<float> arr_a; arr_a.pushback(1.0); arr_a.pushback(2.0);
+        Array<float> arr_exp; arr_exp.pushback(6.0); arr_exp.pushback(7.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Add(5);
-        farray::FArray exp = FA([6.0, 7.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Add(int): [1,2]+5=[6,7]");
         -> __end(runner, t);
     }
 
     state test_add_float (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([1.0, 2.0]);
+        Array<float> arr_a; arr_a.pushback(1.0); arr_a.pushback(2.0);
+        Array<float> arr_exp; arr_exp.pushback(1.5); arr_exp.pushback(2.5);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Add(0.5);
-        farray::FArray exp = FA([1.5, 2.5]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Add(float): [1,2]+0.5=[1.5,2.5]");
         -> __end(runner, t);
     }
 
     state test_add_zero (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([3.0, 4.0]);
+        Array<float> arr_a; arr_a.pushback(3.0); arr_a.pushback(4.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Add(0);
         Error err = t.ExpectTrue(res.Equal(a), "Add(0) is identity");
         -> __end(runner, t);
@@ -195,34 +227,43 @@ autotuner FArraySubtract -> (int passed, int failed) {
     start -> __init;
 
     state test_subtract_farray (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([5.0, 7.0]);
-        farray::FArray b   = FA([2.0, 3.0]);
+        Array<float> arr_a; arr_a.pushback(5.0); arr_a.pushback(7.0);
+        Array<float> arr_b; arr_b.pushback(2.0); arr_b.pushback(3.0);
+        Array<float> arr_exp; arr_exp.pushback(3.0); arr_exp.pushback(4.0);
+        farray::FArray a   = FA(arr_a);
+        farray::FArray b   = FA(arr_b);
         farray::FArray res = a.Subtract(b);
-        farray::FArray exp = FA([3.0, 4.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Subtract(FArray): [5,7]-[2,3]=[3,4]");
         -> __end(runner, t);
     }
 
     state test_subtract_int (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([10.0, 6.0]);
+        Array<float> arr_a; arr_a.pushback(10.0); arr_a.pushback(6.0);
+        Array<float> arr_exp; arr_exp.pushback(6.0); arr_exp.pushback(2.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Subtract(4);
-        farray::FArray exp = FA([6.0, 2.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Subtract(int): [10,6]-4=[6,2]");
         -> __end(runner, t);
     }
 
     state test_subtract_float (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([2.0, 3.0]);
+        Array<float> arr_a; arr_a.pushback(2.0); arr_a.pushback(3.0);
+        Array<float> arr_exp; arr_exp.pushback(1.5); arr_exp.pushback(2.5);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Subtract(0.5);
-        farray::FArray exp = FA([1.5, 2.5]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Subtract(float): [2,3]-0.5=[1.5,2.5]");
         -> __end(runner, t);
     }
 
     state test_subtract_self (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([3.0, 5.0]);
+        Array<float> arr_a; arr_a.pushback(3.0); arr_a.pushback(5.0);
+        Array<float> arr_exp; arr_exp.pushback(0.0); arr_exp.pushback(0.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Subtract(a);
-        farray::FArray exp = FA([0.0, 0.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Subtract self gives zeros");
         -> __end(runner, t);
     }
@@ -235,47 +276,57 @@ autotuner FArrayUnary -> (int passed, int failed) {
     start -> __init;
 
     state test_negate_positive (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([1.0, 2.0]);
+        Array<float> arr_a; arr_a.pushback(1.0); arr_a.pushback(2.0);
+        Array<float> arr_exp; arr_exp.pushback(-1.0); arr_exp.pushback(-2.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Negate();
-        farray::FArray exp = FA([-1.0, -2.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Negate([1,2]) = [-1,-2]");
         -> __end(runner, t);
     }
 
     state test_negate_negative (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([-3.0, -4.0]);
+        Array<float> arr_a; arr_a.pushback(-3.0); arr_a.pushback(-4.0);
+        Array<float> arr_exp; arr_exp.pushback(3.0); arr_exp.pushback(4.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Negate();
-        farray::FArray exp = FA([3.0, 4.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Negate([-3,-4]) = [3,4]");
         -> __end(runner, t);
     }
 
     state test_negate_double_negation (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([5.0, 6.0]);
+        Array<float> arr_a; arr_a.pushback(5.0); arr_a.pushback(6.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Negate().Negate();
         Error err = t.ExpectTrue(res.Equal(a), "Double negate is identity");
         -> __end(runner, t);
     }
 
     state test_abs_negative (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([-3.0, -4.0]);
+        Array<float> arr_a; arr_a.pushback(-3.0); arr_a.pushback(-4.0);
+        Array<float> arr_exp; arr_exp.pushback(3.0); arr_exp.pushback(4.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Abs();
-        farray::FArray exp = FA([3.0, 4.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Abs([-3,-4]) = [3,4]");
         -> __end(runner, t);
     }
 
     state test_abs_positive (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([3.0, 4.0]);
+        Array<float> arr_a; arr_a.pushback(3.0); arr_a.pushback(4.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Abs();
         Error err = t.ExpectTrue(res.Equal(a), "Abs of positive array is identity");
         -> __end(runner, t);
     }
 
     state test_abs_mixed (TestRunner runner, TestContext t) {
-        farray::FArray a   = FA([-1.0, 2.0, -3.0]);
+        Array<float> arr_a; arr_a.pushback(-1.0); arr_a.pushback(2.0); arr_a.pushback(-3.0);
+        Array<float> arr_exp; arr_exp.pushback(1.0); arr_exp.pushback(2.0); arr_exp.pushback(3.0);
+        farray::FArray a   = FA(arr_a);
         farray::FArray res = a.Abs();
-        farray::FArray exp = FA([1.0, 2.0, 3.0]);
+        farray::FArray exp = FA(arr_exp);
         Error err = t.ExpectTrue(res.Equal(exp), "Abs([-1,2,-3]) = [1,2,3]");
         -> __end(runner, t);
     }
@@ -288,14 +339,16 @@ autotuner FArrayJSON -> (int passed, int failed) {
     start -> __init;
 
     state test_to_json_non_empty (TestRunner runner, TestContext t) {
-        farray::FArray a = FA([1.0, 2.0, 3.0]);
+        Array<float> arr_a; arr_a.pushback(1.0); arr_a.pushback(2.0); arr_a.pushback(3.0);
+        farray::FArray a = FA(arr_a);
         string json = a.ToJSON();
         Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
         -> __end(runner, t);
     }
 
     state test_roundtrip (TestRunner runner, TestContext t) {
-        farray::FArray orig = FA([1.0, 2.0, 3.0]);
+        Array<float> arr_orig; arr_orig.pushback(1.0); arr_orig.pushback(2.0); arr_orig.pushback(3.0);
+        farray::FArray orig = FA(arr_orig);
         string json         = orig.ToJSON();
         farray::FArray res  = farray::FArray.FromJSON(json);
         Error err = t.ExpectTrue(orig.Equal(res), "FromJSON(ToJSON(a)) round-trips");
@@ -303,7 +356,8 @@ autotuner FArrayJSON -> (int passed, int failed) {
     }
 
     state test_roundtrip_negative (TestRunner runner, TestContext t) {
-        farray::FArray orig = FA([-1.0, 0.0, 1.0]);
+        Array<float> arr_orig; arr_orig.pushback(-1.0); arr_orig.pushback(0.0); arr_orig.pushback(1.0);
+        farray::FArray orig = FA(arr_orig);
         string json         = orig.ToJSON();
         farray::FArray res  = farray::FArray.FromJSON(json);
         Error err = t.ExpectTrue(orig.Equal(res), "Negative values round-trip via JSON");
@@ -311,7 +365,8 @@ autotuner FArrayJSON -> (int passed, int failed) {
     }
 
     state test_roundtrip_single (TestRunner runner, TestContext t) {
-        farray::FArray orig = FA([42.0]);
+        Array<float> arr_orig; arr_orig.pushback(42.0);
+        farray::FArray orig = FA(arr_orig);
         string json         = orig.ToJSON();
         farray::FArray res  = farray::FArray.FromJSON(json);
         Error err = t.ExpectTrue(orig.Equal(res), "Single-element round-trips");
