@@ -4,6 +4,28 @@
  * The backing store is falcon::typing::ArrayValue (a std::vector<RuntimeValue>
  * wrapped in a shared_ptr).  The StructInstance for "Array<T>" carries it in
  * native_handle as a shared_ptr<void> aliasing a shared_ptr<ArrayValue>.
+ *
+ * Pointer convention used throughout this file
+ * ────────────────────────────────────────────
+ * pack_array emits:
+ *   type_name = "Array"
+ *   ptr       = new shared_ptr<void>*  (aliasing the ArrayValue)
+ *   deleter   = delete (shared_ptr<void>*)p
+ *
+ * get_array (via get_opaque<ArrayValue>) reads it back as:
+ *   auto sv = *static_cast<shared_ptr<void>*>(ptr)
+ *   return static_pointer_cast<ArrayValue>(sv)
+ *
+ * This is the same convention that engine::unpack_results uses for all
+ * unknown opaques, and that engine::pack_params uses when forwarding a
+ * native StructInstance to a wrapper.  Keeping one consistent convention
+ * means the Array can round-trip through the engine without corruption.
+ *
+ * IMPORTANT: do NOT use  new shared_ptr<ArrayValue>(arr)  here.
+ * get_opaque<T> now calls  *static_cast<shared_ptr<void>*>(ptr)  which
+ * would reinterpret_cast a shared_ptr<ArrayValue>* as shared_ptr<void>*
+ * — those two types have different internal layouts when T != void, giving
+ * undefined behaviour.  Always go through shared_ptr<void>.
  */
 #include <falcon-typing/FFIHelpers.hpp>
 #include <stdexcept>
@@ -18,21 +40,26 @@ using namespace falcon::typing::ffi::wrapper;
 
 static std::shared_ptr<ArrayValue>
 get_array(const FalconParamEntry *p, int32_t pc, const char *key = "this") {
-  // The engine packed the StructInstance's native_handle as a shared_ptr<void>*
-  // pointing to the underlying ArrayValue shared control block.
-  // get_opaque<ArrayValue> casts it back.
+  // get_opaque<ArrayValue> reads ptr as shared_ptr<void>* and
+  // static_pointer_cast<ArrayValue> back — see pack_array below.
   return get_opaque<ArrayValue>(p, pc, key);
 }
 
+// Pack an ArrayValue result using shared_ptr<void>* so that:
+//   (a) engine::unpack_results' else-branch can reinterpret it correctly, and
+//   (b) get_opaque<ArrayValue> can static_pointer_cast it back safely.
 static void pack_array(std::shared_ptr<ArrayValue> arr,
                        FalconResultSlot *out, int32_t *oc) {
   out[0] = {};
   out[0].tag = FALCON_TYPE_OPAQUE;
   out[0].value.opaque.type_name = "Array";
+  // Store as shared_ptr<void>* — the aliasing constructor preserves the
+  // ArrayValue* inside the control block so static_pointer_cast<ArrayValue>
+  // in get_opaque recovers the correct pointer without UB.
   out[0].value.opaque.ptr =
-      new std::shared_ptr<ArrayValue>(std::move(arr));
+      new std::shared_ptr<void>(std::static_pointer_cast<void>(arr));
   out[0].value.opaque.deleter = [](void *p) {
-    delete static_cast<std::shared_ptr<ArrayValue> *>(p);
+    delete static_cast<std::shared_ptr<void> *>(p);
   };
   *oc = 1;
 }
