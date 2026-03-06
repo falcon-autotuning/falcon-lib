@@ -193,8 +193,17 @@ protected:
         falcon::dsl::AutotunerEngine engine;
         // Load all DSL files
         for (const auto &file : cenv.dsl_files) {
-          EXPECT_TRUE(engine.load_fal_file(file.string()))
-              << "Failed to load: " << file;
+         bool loaded = engine.load_fal_file(file.string());
+         if (cenv.expect_success) {
+           EXPECT_TRUE(loaded) << "Failed to load: " << file;
+         }
+         if (!loaded && !cenv.expect_success) {
+           // Parse/load failure is the expected outcome — stop loading and
+           // let the test verify the false result without trying to run.
+           autotuner_result = false;
+           client_done = true;
+           return;
+         }
         }
 
         // Load routine libraries

@@ -41,14 +41,6 @@ enum class ParamType : std::uint8_t {
           // TypeDescriptor::struct_name
   Array,  // Generic array type; element type stored in
           // TypeDescriptor::element_type
-  Connection,
-  Connections,
-  Quantity,
-  Gname,
-  DeviceCharacteristic,
-  DeviceCharacteristicQuery,
-  Config,
-  Configs
 };
 
 inline std::string to_string(ParamType type) {
@@ -73,22 +65,6 @@ inline std::string to_string(ParamType type) {
     return "struct";
   case ParamType::Array:
     return "Array";
-  case ParamType::Connection:
-    return "Connection";
-  case ParamType::Connections:
-    return "Connections";
-  case ParamType::Quantity:
-    return "Quantity";
-  case ParamType::Gname:
-    return "Gname";
-  case ParamType::DeviceCharacteristic:
-    return "DeviceCharacteristic";
-  case ParamType::DeviceCharacteristicQuery:
-    return "DeviceCharacteristicQuery";
-  case ParamType::Config:
-    return "Config";
-  case ParamType::Configs:
-    return "Configs";
   default:
     return "<unknown>";
   }
@@ -110,54 +86,69 @@ inline std::string to_string(ParamType type) {
 struct TypeDescriptor {
   ParamType base_type;
 
-  // For tuple types: ordered list of element types
-  // Example: (int, Error) -> [TypeDescriptor(Int), TypeDescriptor(Error)]
   std::vector<TypeDescriptor> tuple_elements;
-
-  // For error types: specific error variant (Error, FatalError, etc.)
-  // All variants have base_type = ParamType::Error
   std::string error_variant;
-  std::vector<TypeDescriptor> union_types; // For union types
+  std::vector<TypeDescriptor> union_types;
+
   // For struct types: the name of the user-defined struct
   std::string struct_name;
-  // For array types: the element type (e.g. int for Array[int])
+
+  // These are concrete TypeDescriptors, one per generic parameter.
+  std::vector<TypeDescriptor> type_args;
+
+  // For array types: the element type (e.g. int for Array<int>)
   std::shared_ptr<TypeDescriptor> element_type;
 
-  // Simple type constructor
   explicit TypeDescriptor(ParamType t) : base_type(t) {}
 
-  // Tuple type constructor
   explicit TypeDescriptor(std::vector<TypeDescriptor> elements)
       : base_type(ParamType::Tuple), tuple_elements(std::move(elements)) {}
 
-  // Error type constructor
   TypeDescriptor(ParamType t, std::string variant)
       : base_type(t), error_variant(std::move(variant)) {
-    // Validate that only Error type can have variants
     if (!variant.empty() && t != ParamType::Error) {
       throw std::logic_error("Only Error type can have variants");
     }
   }
-  // Struct type constructor — use for user-defined struct types
+
+  // Plain struct (no generics)
   static TypeDescriptor make_struct(std::string name) {
     TypeDescriptor desc(ParamType::Struct);
     desc.struct_name = std::move(name);
     return desc;
   }
 
-  // Array type constructor — use for generic array types (e.g. Array[int])
+  // Builds the monomorphized name "Box<int>" automatically.
+  static TypeDescriptor make_generic_struct(std::string base_name,
+                                            std::vector<TypeDescriptor> args) {
+    TypeDescriptor desc(ParamType::Struct);
+    desc.type_args = args;
+    // Build canonical monomorphized name: "Box<int,float>"
+    std::string mono = base_name + "<";
+    for (size_t i = 0; i < args.size(); ++i) {
+      if (i > 0) mono += ",";
+      mono += args[i].to_string();
+    }
+    mono += ">";
+    desc.struct_name = std::move(mono);
+    return desc;
+  }
+
   static TypeDescriptor make_array(TypeDescriptor elem) {
     TypeDescriptor desc(ParamType::Array);
     desc.element_type = std::make_shared<TypeDescriptor>(std::move(elem));
     return desc;
   }
 
-  [[nodiscard]] bool is_struct() const {
-    return base_type == ParamType::Struct;
+  [[nodiscard]] bool is_struct() const { return base_type == ParamType::Struct; }
+  [[nodiscard]] bool is_array()  const { return base_type == ParamType::Array; }
+  [[nodiscard]] bool is_generic_struct() const {
+    return is_struct() && !type_args.empty();
   }
-  [[nodiscard]] bool is_array() const { return base_type == ParamType::Array; }
+
   TypeDescriptor(const TypeDescriptor &) = default;
   TypeDescriptor &operator=(const TypeDescriptor &) = default;
+
   static TypeDescriptor make_union(std::vector<TypeDescriptor> types) {
     TypeDescriptor desc(ParamType::Union);
     desc.union_types = std::move(types);
@@ -166,20 +157,17 @@ struct TypeDescriptor {
 
   [[nodiscard]] bool is_tuple() const { return base_type == ParamType::Tuple; }
   [[nodiscard]] bool is_error() const { return base_type == ParamType::Error; }
-  [[nodiscard]] bool is_nil() const { return base_type == ParamType::Nil; }
-  [[nodiscard]] bool is_void() const { return base_type == ParamType::Void; }
+  [[nodiscard]] bool is_nil()   const { return base_type == ParamType::Nil; }
+  [[nodiscard]] bool is_void()  const { return base_type == ParamType::Void; }
   [[nodiscard]] bool is_union() const { return base_type == ParamType::Union; }
 
-  // Get tuple arity (number of elements)
   [[nodiscard]] size_t tuple_size() const { return tuple_elements.size(); }
 
   [[nodiscard]] std::string to_string() const {
     if (is_union()) {
       std::string result = "(";
       for (size_t i = 0; i < union_types.size(); ++i) {
-        if (i > 0) {
-          result += " | ";
-        }
+        if (i > 0) result += " | ";
         result += union_types[i].to_string();
       }
       result += ")";
@@ -188,68 +176,46 @@ struct TypeDescriptor {
     if (is_tuple()) {
       std::string result = "(";
       for (size_t i = 0; i < tuple_elements.size(); ++i) {
-        if (i > 0) {
-          result += ", ";
-        }
+        if (i > 0) result += ", ";
         result += tuple_elements[i].to_string();
       }
       result += ")";
       return result;
     }
-    if (is_error() && !error_variant.empty()) {
-      return error_variant;
-    }
-    if (is_struct()) {
-      return struct_name;
-    }
+    if (is_error() && !error_variant.empty()) return error_variant;
+    if (is_struct()) return struct_name;
     if (is_array()) {
-      return "Array[" +
-             (element_type ? element_type->to_string() : "?") + "]";
+      return "Array<" + (element_type ? element_type->to_string() : "?") + ">";
     }
     return falcon::atc::to_string(base_type);
   }
 
-  // Type equality checking
   bool operator==(const TypeDescriptor &other) const {
-    if (base_type != other.base_type)
-      return false;
-    if (is_struct()) {
-      return struct_name == other.struct_name;
-    }
+    if (base_type != other.base_type) return false;
+    if (is_struct()) return struct_name == other.struct_name;
     if (is_union()) {
-      if (union_types.size() != other.union_types.size())
-        return false;
+      if (union_types.size() != other.union_types.size()) return false;
       for (size_t i = 0; i < union_types.size(); ++i) {
-        if (union_types[i] != other.union_types[i])
-          return false;
+        if (union_types[i] != other.union_types[i]) return false;
       }
       return true;
     }
     if (is_tuple()) {
-      if (tuple_elements.size() != other.tuple_elements.size()) {
-        return false;
-      }
+      if (tuple_elements.size() != other.tuple_elements.size()) return false;
       for (size_t i = 0; i < tuple_elements.size(); ++i) {
-        if (!(tuple_elements[i] == other.tuple_elements[i])) {
-          return false;
-        }
+        if (!(tuple_elements[i] == other.tuple_elements[i])) return false;
       }
       return true;
     }
     if (is_array()) {
-      if (!element_type || !other.element_type) {
+      if (!element_type || !other.element_type)
         return element_type == other.element_type;
-      }
       return *element_type == *other.element_type;
     }
-    // Error variants are considered compatible (Error == FatalError for type
-    // checking) Specific variant checking happens at runtime
     return true;
   }
 
-  bool operator!=(const TypeDescriptor &other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const TypeDescriptor &other) const { return !(*this == other); }
 };
 
 // ============================================================================
@@ -1290,65 +1256,72 @@ struct RoutineDecl {
 };
 
 /**
- * @brief Complete struct declaration.
+ * A struct declaration, optionally parameterised by type variables.
  *
- * Fields are stored as VarDeclStmt with decl_scope == DeclScope::StructField.
- * This lets the interpreter reuse all existing default-value and type
- * handling already written for VarDeclStmt.
- *
- * Example:
- *   struct Quantity {
- *       int a_;
- *       int b_ = 0;
- *       routine New (int a) -> (Quantity q) { ... }
- *       routine Value -> (int value) { value = a_; }
+ *   struct Box <T> {
+ *       T value;
+ *       routine New (T v) -> (Box<T> b) { b.value = v; }
+ *       routine Get  -> (T v)           { v = this.value; }
  *   }
+ *
+ * `generic_params` holds the declared parameter names in order: ["T"].
+ * Non-generic structs have an empty `generic_params` vector (backward
+ * compatible — all existing code continues to work unchanged).
+ *
+ * Monomorphization strategy (interpreter-level, NOT compile-time):
+ *   When the interpreter sees  Box<int> x = Box.New(42);  it:
+ *     1. Resolves the base struct declaration for "Box".
+ *     2. Builds a substitution map  { "T" -> TypeDescriptor(Int) }.
+ *     3. Looks up (or creates on demand) a monomorphized StructDecl stored
+ *        under the key "Box<int>" in the TypeRegistry.
+ *     4. The monomorphized decl has all field/param types substituted.
  */
 struct StructDecl {
-  std::string name;        // The type name, e.g. "Quantity"
+  std::string name;        // The type name, e.g. "Box"
   std::string module_name; // Set after parsing
 
-  // Fields stored as VarDeclStmt (decl_scope = StructField).
-  // Reuses VarDeclStmt's type, name, and optional initializer directly.
-  std::vector<VarDeclStmt> fields;
+  // Empty for non-generic structs (fully backward compatible).
+  std::vector<std::string> generic_params;
 
+  // Fields stored as VarDeclStmt (decl_scope = StructField).
+  std::vector<VarDeclStmt> fields;
   std::vector<RoutineDecl> routines;
 
+  // Plain constructor (non-generic, or used internally for monomorphized copies)
   StructDecl(std::string n, std::vector<VarDeclStmt> fs,
              std::vector<RoutineDecl> rs)
       : name(std::move(n)), fields(std::move(fs)), routines(std::move(rs)) {}
+
+  // ── NEW: constructor that also takes generic params
+  StructDecl(std::string n, std::vector<std::string> gp,
+             std::vector<VarDeclStmt> fs, std::vector<RoutineDecl> rs)
+      : name(std::move(n)), generic_params(std::move(gp)),
+        fields(std::move(fs)), routines(std::move(rs)) {}
 
   StructDecl(StructDecl &&) noexcept = default;
   StructDecl &operator=(StructDecl &&) noexcept = default;
   StructDecl(const StructDecl &) = delete;
   StructDecl &operator=(const StructDecl &) = delete;
 
-  // Look up a field by name; returns nullptr if not found.
+  [[nodiscard]] bool is_generic() const { return !generic_params.empty(); }
+
   [[nodiscard]] const VarDeclStmt *find_field(const std::string &n) const {
     for (const auto &f : fields) {
-      if (f.name == n) {
-        return &f;
-      }
+      if (f.name == n) return &f;
     }
     return nullptr;
   }
 
-  // Look up a routine by name; returns nullptr if not found.
   [[nodiscard]] const RoutineDecl *find_routine(const std::string &n) const {
     for (const auto &r : routines) {
-      if (r.name == n) {
-        return &r;
-      }
+      if (r.name == n) return &r;
     }
     return nullptr;
   }
 
-  // Find the routine (if any) that overloads a given operator symbol.
   [[nodiscard]] const RoutineDecl *find_operator(const std::string &op) const {
     for (const auto &r : routines) {
-      if (r.operator_symbol() == op) {
-        return &r;
-      }
+      if (r.operator_symbol() == op) return &r;
     }
     return nullptr;
   }

@@ -62,7 +62,17 @@
   std::set<std::string> module_known_types;
 
   // struct_field_scope tracks field names inside the struct being parsed.
-  std::set<std::string> struct_field_scope;
+  std::set<std::string> struct_field_scope;  
+
+// While parsing a struct body, this map holds the generic param names.
+  // e.g. for  struct Box<T>  →  current_generic_params = {"T"}
+  // This lets type_spec accept "T" (and other generic names) as valid types
+  // inside the struct body without them being in struct_known_types.
+  std::set<std::string> current_generic_params;
+
+  // Mapping from base struct name → its generic param names.
+  // Used when resolving  Box<int>  in type_spec to validate arg count.
+  std::map<std::string, std::vector<std::string>> struct_generic_params_map;
 
   // True while parsing a routine body that belongs to a struct.
   bool in_struct_routine = false;
@@ -137,6 +147,7 @@
 %type <std::unique_ptr<TypeDescriptor>> type_spec
 %type <std::unique_ptr<FFImportDecl>> ffimport_decl
 %type <std::vector<std::string>> requires_clause identifier_list import_list import_stmt import_string_list ffimport_string_list
+%type <std::vector<std::string>> generic_param_decl_list
 %type <std::vector<std::unique_ptr<Stmt>>> autotuner_var_decls routine_body routine_body_stmts 
 %type <std::unique_ptr<VarDeclStmt>> var_decl_stmt struct_field_decl
 %type <std::string> entry_state qualified_name
@@ -156,6 +167,7 @@
 %type <std::vector<RoutineDecl>> struct_routine_list
 %type <std::vector<AssignTarget>>      assign_target_list
 %type <std::unique_ptr<AssignTarget>> assign_target
+%type <std::vector<std::unique_ptr<TypeDescriptor>>> type_arg_list
 %type <std::vector<std::variant<
     std::unique_ptr<StructDecl>,
     std::unique_ptr<RoutineDecl>,
@@ -245,6 +257,21 @@ qualified_name[result]
 // ============================================================================
 // STRUCT DECLARATIONS
 // ============================================================================
+generic_param_decl_list[result]
+    : %empty
+      { $result = std::vector<std::string>(); }
+    | LL IDENTIFIER[first] GG
+      {
+        $result = std::vector<std::string>();
+        $result.push_back(std::move($first));
+      }
+    | LL IDENTIFIER[first] COMMA identifier_list[rest] GG
+      {
+        $result = std::vector<std::string>();
+        $result.push_back(std::move($first));
+        for (auto& id : $rest) $result.push_back(std::move(id));
+      }
+    ;
 
 struct_decl_list[result]
     : %empty
@@ -257,16 +284,24 @@ struct_decl_list[result]
     ;
 
 struct_decl[result]
-    : STRUCT IDENTIFIER[name] LBRACE
+    : STRUCT IDENTIFIER[name] generic_param_decl_list[gparams] LBRACE
       {
         struct_field_scope.clear();
+        // Register the bare name so we can look up its generic params later.
         struct_known_types.insert($name);
+        // Save generic param names so type_spec can accept them inside the body.
+        current_generic_params.clear();
+        for (const auto& gp : $gparams) current_generic_params.insert(gp);
+        // Record generic param names for future instantiation validation.
+        struct_generic_params_map[$name] = $gparams;
       }
       struct_field_list[fields] struct_routine_list[routines] RBRACE
       {
+        current_generic_params.clear();
         struct_field_scope.clear();
         $result = std::make_unique<StructDecl>(
             std::move($name),
+            std::move($gparams),
             std::move($fields),
             std::move($routines));
       }
@@ -571,32 +606,76 @@ param_decl[result]
 // TYPES
 // ============================================================================
 
+type_arg_list[result]
+    : type_spec[first]
+      {
+        $result = std::vector<std::unique_ptr<TypeDescriptor>>();
+        $result.push_back(std::move($first));
+      }
+    | type_arg_list[existing] COMMA type_spec[next]
+      {
+        $result = std::move($existing);
+        $result.push_back(std::move($next));
+      }
+    ;
+
 type_spec[result]
-    : INT_KW           
+    : INT_KW
       { $result = std::make_unique<TypeDescriptor>(ParamType::Int); }
-    | FLOAT_KW         
+    | FLOAT_KW
       { $result = std::make_unique<TypeDescriptor>(ParamType::Float); }
-    | BOOL_KW          
+    | BOOL_KW
       { $result = std::make_unique<TypeDescriptor>(ParamType::Bool); }
-    | STRING_KW        
+    | STRING_KW
       { $result = std::make_unique<TypeDescriptor>(ParamType::String); }
-    | ERROR_KW         
+    | ERROR_KW
       { $result = std::make_unique<TypeDescriptor>(ParamType::Error, "Error"); }
-    | ARRAY_KW LL type_spec[elem] GG 
+    | ARRAY_KW LL type_spec[elem] GG
       { $result = std::make_unique<TypeDescriptor>(TypeDescriptor::make_array(std::move(*$elem))); }
+    | qualified_name[name] LL type_arg_list[args] GG
+      {
+        // The base name must be a known generic struct.
+        std::string base = $name;
+        if (struct_known_types.count(base) == 0 &&
+            module_known_types.count(base) == 0) {
+          error(@name, "Unknown struct type '" + base + "'");
+          YYABORT;
+        }
+        // Validate arity if we have param info.
+        auto it = struct_generic_params_map.find(base);
+        if (it != struct_generic_params_map.end()) {
+          size_t expected = it->second.size();
+          if ($args.size() != expected) {
+            error(@name, "Struct '" + base + "' expects " +
+                  std::to_string(expected) + " type argument(s) but got " +
+                  std::to_string($args.size()));
+            YYABORT;
+          }
+        }
+        std::vector<TypeDescriptor> arg_descs;
+        for (auto& a : $args) arg_descs.push_back(std::move(*a));
+        $result = std::make_unique<TypeDescriptor>(
+            TypeDescriptor::make_generic_struct(std::move(base), std::move(arg_descs)));
+      }
+    // ── Plain identifier: either a non-generic struct or a generic type param
+    //    used inside the struct body itself (e.g. T, U).
     | qualified_name[name]
       {
-        // Allow plain struct names OR module-registered struct names.
-        // struct_known_types holds names that the compiler was "hinted" with
-        // (from imports) or that were defined earlier in this file.
-        if (struct_known_types.count($name) == 0 &&
-            module_known_types.count($name) == 0) {
+        // Accept generic type parameter names (T, U, ...) used inside a struct body.
+        if (current_generic_params.count($name) > 0) {
+          // This is a generic placeholder. We represent it as a Struct type
+          // with the param name so the evaluator can substitute it at runtime.
+          $result = std::make_unique<TypeDescriptor>(
+              TypeDescriptor::make_struct($name));
+        } else if (struct_known_types.count($name) > 0 ||
+                   module_known_types.count($name) > 0) {
+          $result = std::make_unique<TypeDescriptor>(
+              TypeDescriptor::make_struct($name));
+        } else {
           error(@name, "Unknown type '" + $name + "' — "
                 "did you forget to declare a struct with this name before use?");
           YYABORT;
         }
-        $result = std::make_unique<TypeDescriptor>(
-            TypeDescriptor::make_struct($name));
       }
     ;
 
