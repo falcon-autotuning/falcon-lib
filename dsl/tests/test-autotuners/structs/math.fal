@@ -1,0 +1,24 @@
+
+struct Accumulator {
+    int total;
+    routine New (int init) -> (Accumulator acc) {
+        acc.total = init;
+    }
+    routine Add (int delta) -> (int new_total) {
+        total = total + delta;
+        new_total = total;
+    }
+    routine Value -> (int v) {
+        v = this.total;
+    }
+}
+
+autotuner Math (int start_val, int add_val) -> (int result) {
+    result = 0;
+    start -> run;
+    state run {
+        Accumulator acc = Accumulator.New(start_val);
+        result = acc.Add(add_val);
+        terminal;
+    }
+}
