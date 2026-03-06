@@ -1,0 +1,9 @@
+ffimport "interpretation-context-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct InterpretationContext {
+    routine New (string name) -> (InterpretationContext context)
+    routine Name -> (string name)
+    routine Equal (InterpretationContext other) -> (bool equal)
+    routine NotEqual (InterpretationContext other) -> (bool notequal)
+    routine FromJSON (string json) -> (InterpretationContext context)
+    routine ToJSON () -> (string json)
+}

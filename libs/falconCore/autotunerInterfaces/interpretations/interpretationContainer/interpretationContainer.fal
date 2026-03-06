@@ -1,0 +1,19 @@
+import (
+"../../../../collections/map/map.fal"
+"../interpretationContext/interpretationContext.fal"
+"../../contexts/measurementContext/measurementContext.fal"
+)
+ffimport "interpretation-container-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct InterpretationContainer <T> {
+    routine New (map::Map<interpretationContext::InterpretationContext, T> map) -> (InterpretationContainer container)
+    routine Unit -> (symbolUnit::SymbolUnit unit)
+    routine SelectByConnection (connection::Connection conn) -> (array::Array<InterpretationContext> contexts)
+    routine SelectByConnections (connection::Connection conn) -> (array::Array<InterpretationContext> contexts)
+    routine SelectByIndependentConnection (connection::Connection conn) -> (array::Array<interpretationContext::InterpretationContext> contexts)
+    routine SelectByDependentConnection (connection::Connection conn) -> (array::Array<interpretationContext::InterpretationContext> contexts)
+    routine SelectContexts (array::Array<connection::Connection> independentConnections, array::Array<connection::Connectioin> dependentConnections) -> (array::Array<interpretationContext::InterpretationConext> contexts)
+    routine Equal (InterpretationContainer other) -> (bool equal)
+    routine NotEqual (InterpretationContainer other) -> (bool notequal)
+    routine FromJSON (string json) -> (InterpretationContainer cont)
+    routine ToJSON () -> (string json)
+}
