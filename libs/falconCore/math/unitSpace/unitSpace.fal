@@ -1,0 +1,24 @@
+import (
+"../axes/axes.fal"
+"../arrays/controlArray1D/controlArray1D.fal"
+"../discreteSpaces/discretizer/discretizer.fal"
+)
+ffimport "unit-space-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct UnitSpace {
+    routine New (axes::Axes<discretizer::Discretizer> axes, domain::Domain domain) -> (UnitSpace space)
+    routine RaySpace (float dr, float dtheta, domain::Domain domain) -> (UnitSpace space)
+    routine CartesianSpace (axes::Axes<float> deltas, domain::Domain domain) -> (UnitSpace space)
+    routine Cartesian1DSpace (float delta, domain::Domain domain) -> (UnitSpace space)
+    routine Cartesian2DSpace (axes::Axes<float> deltas, domain::Domain domain) -> (UnitSpace space)
+    routine Axes -> (axes::Axes<discretizer::Discretizer> axes)
+    routine Domain -> (domain::Domain domain)
+    routine Space -> (farray::FArray space)
+    routine Shape -> (array::Array<int> shape)
+    routine Dimension -> (int size)
+    routine Compile -> ()
+    routine CreateArray (axes::Axes<int> axes) -> (axes::Axes<controlArray::ControlArray> arrays)
+    routine Equal (UnitSpace other) -> (bool equal)
+    routine NotEqual (UnitSpace other) -> (bool notequal)
+    routine FromJSON (string json) -> (UnitSpace space)
+    routine ToJSON () -> (string json)
+}
