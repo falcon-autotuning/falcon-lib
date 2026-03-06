@@ -1,4 +1,5 @@
 #include "falcon_core/generic/FArray.hpp"
+#include <xtensor/xadapt.hpp>
 #include <falcon-typing/FFIHelpers.hpp>
 #include <vector>
 
@@ -44,45 +45,38 @@ void STRUCTFArrayNotEqual(const FalconParamEntry *params, int32_t param_count,
 }
 
 // ── Arithmetic: Times ─────────────────────────────────────────────────────────
-
-// Times(this: FArray, factor: float) -> (FArray scaled_state)
-void STRUCTFArrayTimesFloat(const FalconParamEntry *params, int32_t param_count,
-                             FalconResultSlot *out, int32_t *oc) {
-  auto pm    = unpack_params(params, param_count);
-  auto self  = get_opaque<FArray>(params, param_count, "this");
-  double fac = std::get<double>(pm.at("factor"));
+// Times(this: FArray, factor: int|float) -> (FArray scaled_state)
+void STRUCTFArrayTimes(const FalconParamEntry *params, int32_t param_count,
+                       FalconResultSlot *out, int32_t *oc) {
+  auto pm   = unpack_params(params, param_count);
+  auto self = get_opaque<FArray>(params, param_count, "this");
+  double fac;
+  if (std::holds_alternative<double>(pm.at("factor"))) {
+    fac = std::get<double>(pm.at("factor"));
+  } else if (std::holds_alternative<int64_t>(pm.at("factor"))) {
+    fac = static_cast<double>(std::get<int64_t>(pm.at("factor")));
+  } else {
+    throw std::runtime_error("factor must be int or float");
+  }
   pack_farray(*self * fac, out, oc);
 }
 
-// Times(this: FArray, factor: int) -> (FArray scaled_state)
-void STRUCTFArrayTimesInt(const FalconParamEntry *params, int32_t param_count,
-                           FalconResultSlot *out, int32_t *oc) {
-  auto pm     = unpack_params(params, param_count);
-  auto self   = get_opaque<FArray>(params, param_count, "this");
-  int64_t fac = std::get<int64_t>(pm.at("factor"));
-  pack_farray(*self * static_cast<double>(fac), out,
-              oc);
-}
-
 // ── Arithmetic: Divides ───────────────────────────────────────────────────────
-
-// Divides(this: FArray, divisor: float) -> (FArray scaled_state)
-void STRUCTFArrayDividesFloat(const FalconParamEntry *params,
-                               int32_t param_count, FalconResultSlot *out,
-                               int32_t *oc) {
+// Divides(this: FArray, divisor: int|float) -> (FArray scaled_state)
+void STRUCTFArrayDivides(const FalconParamEntry *params,
+                         int32_t param_count, FalconResultSlot *out,
+                         int32_t *oc) {
   auto pm    = unpack_params(params, param_count);
   auto self  = get_opaque<FArray>(params, param_count, "this");
-  double div = std::get<double>(pm.at("divisor"));
+  double div;
+  if (std::holds_alternative<double>(pm.at("divisor"))) {
+    div = std::get<double>(pm.at("divisor"));
+  } else if (std::holds_alternative<int64_t>(pm.at("divisor"))) {
+    div = static_cast<double>(std::get<int64_t>(pm.at("divisor")));
+  } else {
+    throw std::runtime_error("divisor must be int or float");
+  }
   pack_farray(*self / div, out, oc);
-}
-
-// Divides(this: FArray, divisor: int) -> (FArray scaled_state)
-void STRUCTFArrayDividesInt(const FalconParamEntry *params, int32_t param_count,
-                             FalconResultSlot *out, int32_t *oc) {
-  auto pm     = unpack_params(params, param_count);
-  auto self   = get_opaque<FArray>(params, param_count, "this");
-  int64_t div = std::get<int64_t>(pm.at("divisor"));
-  pack_farray(*self / static_cast<double>(div), out, oc);
 }
 
 // ── Arithmetic: Power ─────────────────────────────────────────────────────────
@@ -97,64 +91,42 @@ void STRUCTFArrayPower(const FalconParamEntry *params, int32_t param_count,
 }
 
 // ── Arithmetic: Add ───────────────────────────────────────────────────────────
-
-// Add(this: FArray, other: FArray) -> (FArray sum_state)
-void STRUCTFArrayAddFArray(const FalconParamEntry *params, int32_t param_count,
-                            FalconResultSlot *out, int32_t *oc) {
-  auto self  = get_opaque<FArray>(params, param_count, "this");
-  auto other = get_opaque<FArray>(params, param_count, "other");
-  pack_farray(*self + other, out, oc);
-}
-
-// Add(this: FArray, other: int) -> (FArray sum_state)
-void STRUCTFArrayAddInt(const FalconParamEntry *params, int32_t param_count,
-                         FalconResultSlot *out, int32_t *oc) {
-  auto pm     = unpack_params(params, param_count);
-  auto self   = get_opaque<FArray>(params, param_count, "this");
-  int64_t val = std::get<int64_t>(pm.at("other"));
-  pack_farray(
-      *self + static_cast<double>(val), out, oc);
-}
-
-// Add(this: FArray, other: float) -> (FArray sum_state)
-void STRUCTFArrayAddFloat(const FalconParamEntry *params, int32_t param_count,
-                           FalconResultSlot *out, int32_t *oc) {
-  auto pm    = unpack_params(params, param_count);
-  auto self  = get_opaque<FArray>(params, param_count, "this");
-  double val = std::get<double>(pm.at("other"));
-  pack_farray(*self + val, out, oc);
+// Add(this: FArray, other: FArray|int|float) -> (FArray sum_state)
+void STRUCTFArrayAdd(const FalconParamEntry *params, int32_t param_count,
+                     FalconResultSlot *out, int32_t *oc) {
+  auto pm   = unpack_params(params, param_count);
+  auto self = get_opaque<FArray>(params, param_count, "this");
+  if (std::holds_alternative<double>(pm.at("other"))) {
+    double val = std::get<double>(pm.at("other"));
+    pack_farray(*self + val, out, oc);
+  } else if (std::holds_alternative<int64_t>(pm.at("other"))) {
+    int64_t val = std::get<int64_t>(pm.at("other"));
+    pack_farray(*self + static_cast<double>(val), out, oc);
+  } else if (auto other = get_opaque<FArray>(params, param_count, "other")) {
+    pack_farray(*self + other, out, oc);
+  } else {
+    throw std::runtime_error("other must be FArray, int, or float");
+  }
 }
 
 // ── Arithmetic: Subtract ──────────────────────────────────────────────────────
-
-// Subtract(this: FArray, other: FArray) -> (FArray difference_state)
-void STRUCTFArraySubtractFArray(const FalconParamEntry *params,
-                                 int32_t param_count, FalconResultSlot *out,
-                                 int32_t *oc) {
-  auto self  = get_opaque<FArray>(params, param_count, "this");
-  auto other = get_opaque<FArray>(params, param_count, "other");
-  pack_farray(*self - other, out, oc);
-}
-
-// Subtract(this: FArray, other: int) -> (FArray difference_state)
-void STRUCTFArraySubtractInt(const FalconParamEntry *params,
-                              int32_t param_count, FalconResultSlot *out,
-                              int32_t *oc) {
-  auto pm     = unpack_params(params, param_count);
-  auto self   = get_opaque<FArray>(params, param_count, "this");
-  int64_t val = std::get<int64_t>(pm.at("other"));
-  pack_farray(
-      *self - static_cast<double>(val), out, oc);
-}
-
-// Subtract(this: FArray, other: float) -> (FArray difference_state)
-void STRUCTFArraySubtractFloat(const FalconParamEntry *params,
-                                int32_t param_count, FalconResultSlot *out,
-                                int32_t *oc) {
-  auto pm    = unpack_params(params, param_count);
-  auto self  = get_opaque<FArray>(params, param_count, "this");
-  double val = std::get<double>(pm.at("other"));
-  pack_farray(*self - val, out, oc);
+// Subtract(this: FArray, other: FArray|int|float) -> (FArray difference_state)
+void STRUCTFArraySubtract(const FalconParamEntry *params,
+                         int32_t param_count, FalconResultSlot *out,
+                         int32_t *oc) {
+  auto pm   = unpack_params(params, param_count);
+  auto self = get_opaque<FArray>(params, param_count, "this");
+  if (std::holds_alternative<double>(pm.at("other"))) {
+    double val = std::get<double>(pm.at("other"));
+    pack_farray(*self - val, out, oc);
+  } else if (std::holds_alternative<int64_t>(pm.at("other"))) {
+    int64_t val = std::get<int64_t>(pm.at("other"));
+    pack_farray(*self - static_cast<double>(val), out, oc);
+  } else if (auto other = get_opaque<FArray>(params, param_count, "other")) {
+    pack_farray(*self - other, out, oc);
+  } else {
+    throw std::runtime_error("other must be FArray, int, or float");
+  }
 }
 
 // ── Unary ─────────────────────────────────────────────────────────────────────
@@ -188,13 +160,13 @@ void STRUCTFArrayFromJSON(const FalconParamEntry *params, int32_t param_count,
   auto pm   = unpack_params(params, param_count);
   auto json = std::get<std::string>(pm.at("json"));
   auto arr  = FArray::from_json_string<FArray>(json);
-  pack_farray(*arr, out, oc);
+  pack_farray(arr, out, oc);
 }
 
 // ── Test-only constructor ─────────────────────────────────────────────────────
 // NewFromFloats(values: Array<float>) -> (FArray arr)
 // Not exposed in the production .fal — only imported by tests/farray-test-helpers.fal
-void STRUCTFArrayNewFromFloats(const FalconParamEntry *params,
+void STRUCTFArrayTestHelpersNewFromFloats(const FalconParamEntry *params,
                                 int32_t param_count, FalconResultSlot *out,
                                 int32_t *oc) {
   auto pm             = unpack_params(params, param_count);
@@ -204,7 +176,7 @@ void STRUCTFArrayNewFromFloats(const FalconParamEntry *params,
   for (const auto &elem : arr_val->elements) {
     vals.push_back(std::get<double>(elem));
   }
-  pack_farray(vals, out, oc);
+  pack_farray(std::make_shared<FArray>(xt::adapt(vals)), out, oc);
 }
 
 } // extern "C"
