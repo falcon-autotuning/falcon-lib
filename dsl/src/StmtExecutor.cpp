@@ -128,11 +128,15 @@ ControlFlow StmtExecutor::exec_var_decl(const atc::VarDeclStmt &stmt) {
     case atc::ParamType::Error:
       initial_value = nullptr; // nil
       break;
-    case atc::ParamType::Array: { 
-      std::string elem_type_name =
-          stmt.type.element_type ? stmt.type.element_type->to_string() : "";
-      initial_value =
-          std::make_shared<typing::ArrayValue>(std::move(elem_type_name));
+    case atc::ParamType::Array: {
+      // Array<T> is now a StructInstance backed by the array FFI library.
+      // Default-initialize to a fresh empty StructInstance; the library's
+      // New() constructor should be used to create a properly initialized array.
+      std::string struct_name = "Array";
+      if (stmt.type.element_type) {
+        struct_name += "<" + stmt.type.element_type->to_string() + ">";
+      }
+      initial_value = std::make_shared<typing::StructInstance>(struct_name);
       break;
     }
     case atc::ParamType::Struct:

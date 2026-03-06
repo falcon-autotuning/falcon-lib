@@ -8,13 +8,24 @@
 #include <string>
 #include <variant>
 #include <vector>
+
 namespace falcon::typing {
 
-// Forward declarations
+// ---------------------------------------------------------------------------
+// Forward declarations for types that appear only via shared_ptr<T> inside
+// RuntimeValue.  shared_ptr<T> only requires T to be complete at the point
+// of destruction / make_shared, NOT at the point of the variant definition,
+// so forward declarations are sufficient here.
+// ---------------------------------------------------------------------------
 struct TupleValue;
 struct StructInstance;
 struct ArrayValue;
 
+// ---------------------------------------------------------------------------
+// ErrorObject — appears BY VALUE in RuntimeValue, so it must be FULLY DEFINED
+// before the using RuntimeValue = std::variant<...> line.
+// std::variant requires all member types to be complete at instantiation time.
+// ---------------------------------------------------------------------------
 struct ErrorObject {
   std::string message;
   bool is_fatal = false;
@@ -29,20 +40,35 @@ struct ErrorObject {
   bool operator!=(const ErrorObject &other) const { return !(*this == other); }
 };
 
-/**
- * @brief Runtime value that can hold any parameter value.
- */
+// ---------------------------------------------------------------------------
+// RuntimeValue — the central tagged union for all FAL runtime values.
+//
+// Types held by value (ErrorObject) must be complete above.
+// Types held via shared_ptr (TupleValue, StructInstance, ArrayValue) only
+// need forward declarations above — their full definitions follow below.
+//
+// ArrayValue remains in the variant for ABI compatibility with existing
+// falconCore FFI wrappers.  At the FAL language level, arrays are
+// StructInstance values of type "Array<T>".
+// ---------------------------------------------------------------------------
 using RuntimeValue =
     std::variant<int64_t, double, bool, std::string, std::nullptr_t,
-                 ErrorObject, std::shared_ptr<TupleValue>,
+                 ErrorObject,
+                 std::shared_ptr<TupleValue>,
                  std::shared_ptr<StructInstance>,
                  std::shared_ptr<ArrayValue>>;
 
+// ---------------------------------------------------------------------------
+// TupleValue — a fixed-length ordered tuple of RuntimeValues.
+// Defined after RuntimeValue because its fields use RuntimeValue.
+// ---------------------------------------------------------------------------
 struct TupleValue {
   std::vector<RuntimeValue> values;
+
   TupleValue() = default;
   explicit TupleValue(std::vector<RuntimeValue> vals)
       : values(std::move(vals)) {}
+
   bool operator==(const TupleValue &other) const {
     return values == other.values;
   }
@@ -52,20 +78,51 @@ struct TupleValue {
   const RuntimeValue &operator[](size_t idx) const { return values[idx]; }
 };
 
-/**
- * @brief A live instance of a user-defined struct type.
- *
- * For pure-FAL structs: fields holds all field values, native_handle is empty.
- *
- * For FFI-bound structs (e.g. a C++ Quantity wrapping falcon_core):
- *   - native_handle holds a shared_ptr<void> that owns the real C++ object.
- *   - fields may be empty — the FFI dispatch functions receive the
- *     native_handle as params["this"] and cast it back to the concrete type.
- *   - type_name still identifies which struct type this is, so method
- *     dispatch still works correctly.
- */
+// ---------------------------------------------------------------------------
+// ArrayValue — internal/FFI-only storage for ordered lists of RuntimeValues.
+//
+// At the FAL *language* level, arrays are StructInstance values of type
+// "Array<T>" whose FFI routines delegate to an ArrayValue stored in
+// native_handle.  Direct use of ArrayValue in new user-facing code is
+// discouraged; use the Array<T> FAL struct library instead.
+//
+// Kept in RuntimeValue solely to preserve the ABI for existing falconCore
+// wrapper code that constructs/passes ArrayValues across the C FFI boundary.
+// ---------------------------------------------------------------------------
+struct ArrayValue {
+  std::string element_type_name; // e.g. "int", "float", "string"
+  std::vector<RuntimeValue> elements;
+
+  ArrayValue() = default;
+  explicit ArrayValue(std::string elem_type)
+      : element_type_name(std::move(elem_type)) {}
+  ArrayValue(std::string elem_type, std::vector<RuntimeValue> elems)
+      : element_type_name(std::move(elem_type)), elements(std::move(elems)) {}
+
+  bool operator==(const ArrayValue &other) const {
+    return element_type_name == other.element_type_name &&
+           elements == other.elements;
+  }
+  bool operator!=(const ArrayValue &other) const { return !(*this == other); }
+  [[nodiscard]] size_t size() const { return elements.size(); }
+  RuntimeValue &operator[](size_t idx) { return elements[idx]; }
+  const RuntimeValue &operator[](size_t idx) const { return elements[idx]; }
+};
+
+// ---------------------------------------------------------------------------
+// StructInstance — a live instance of a user-defined or FFI struct type.
+//
+// For pure-FAL structs: fields holds all field values, native_handle is empty.
+//
+// For FFI-bound structs (e.g. a C++ Quantity wrapping falcon_core):
+//   - native_handle holds a shared_ptr<void> that owns the real C++ object.
+//   - fields may be empty — the FFI dispatch functions receive the
+//     native_handle as params["this"] and cast it back to the concrete type.
+//   - type_name still identifies which struct type this is, so method
+//     dispatch still works correctly.
+// ---------------------------------------------------------------------------
 struct StructInstance {
-  std::string type_name; // e.g. "Quantity"
+  std::string type_name; // e.g. "Quantity", "Array<int>"
 
   std::shared_ptr<std::map<std::string, RuntimeValue>> fields =
       std::make_shared<std::map<std::string, RuntimeValue>>();
@@ -104,36 +161,11 @@ struct StructInstance {
   }
 };
 
+// ---------------------------------------------------------------------------
+// Convenience type aliases
+// ---------------------------------------------------------------------------
 using ParameterMap = std::map<std::string, RuntimeValue>;
 using FunctionResult = std::vector<RuntimeValue>;
-
-/**
- * @brief A generic, dynamically-typed array of RuntimeValues.
- *
- * Array is the first "generic" type: you can have an Array of int,
- * Array of float, Array of string, etc. The element_type_name field
- * records the declared element type (e.g. "int", "float") for
- * serialization and type-checking purposes.
- */
-struct ArrayValue {
-  std::string element_type_name; // e.g. "int", "float", "string"
-  std::vector<RuntimeValue> elements;
-
-  ArrayValue() = default;
-  explicit ArrayValue(std::string elem_type)
-      : element_type_name(std::move(elem_type)) {}
-  ArrayValue(std::string elem_type, std::vector<RuntimeValue> elems)
-      : element_type_name(std::move(elem_type)), elements(std::move(elems)) {}
-
-  bool operator==(const ArrayValue &other) const {
-    return element_type_name == other.element_type_name &&
-           elements == other.elements;
-  }
-  bool operator!=(const ArrayValue &other) const { return !(*this == other); }
-  [[nodiscard]] size_t size() const { return elements.size(); }
-  RuntimeValue &operator[](size_t idx) { return elements[idx]; }
-  const RuntimeValue &operator[](size_t idx) const { return elements[idx]; }
-};
 
 /**
  * @brief Signature for FFI struct instance methods.

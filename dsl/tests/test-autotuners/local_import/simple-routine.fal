@@ -3,7 +3,6 @@ import (
 "./Multiplier.fal"
 )
 autotuner ConditionalNest (int a, int b) -> (int out) {
-  uses Adder::adder, Multiplier::multiplier;
   out = 0;
 
   start -> init;

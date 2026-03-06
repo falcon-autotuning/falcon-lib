@@ -1,0 +1,239 @@
+// Tests for the falcon/collections/map library.
+// Run with:  falcon-test libs/collections/map/tests/run_tests.fal
+import "../../../testing/testing.fal";
+import "../../array/array.fal";
+import "../map.fal";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 1: Construction and capacity
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner ConstructionTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_is_empty (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        bool empty = m.IsEmpty();
+        Error err  = t.ExpectTrue(empty, "New map is empty");
+        -> __end(runner, t);
+    }
+
+    state test_new_size_zero (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        int sz    = m.Size();
+        Error err = t.ExpectIntEq(sz, 0, "New map has size 0");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 2: Set, Get, Size
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner SetGetTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_set_and_get (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("alice", 100);
+        int v     = m.Get("alice");
+        Error err = t.ExpectIntEq(v, 100, "Get returns value set by Set");
+        -> __end(runner, t);
+    }
+
+    state test_set_increases_size (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("a", 1);
+        m.Set("b", 2);
+        int sz    = m.Size();
+        Error err = t.ExpectIntEq(sz, 2, "Size is 2 after two Set calls");
+        -> __end(runner, t);
+    }
+
+    state test_set_overwrites (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("k", 1);
+        m.Set("k", 2);
+        int v     = m.Get("k");
+        int sz    = m.Size();
+        Error err = t.ExpectIntEq(v,  2, "Overwrite: Get returns new value");
+        err       = t.ExpectIntEq(sz, 1, "Overwrite: Size stays 1");
+        -> __end(runner, t);
+    }
+
+    state test_multiple_keys (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("x", 10);
+        m.Set("y", 20);
+        m.Set("z", 30);
+        int vx    = m.Get("x");
+        int vy    = m.Get("y");
+        int vz    = m.Get("z");
+        Error err = t.ExpectIntEq(vx, 10, "Get x");
+        err       = t.ExpectIntEq(vy, 20, "Get y");
+        err       = t.ExpectIntEq(vz, 30, "Get z");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 3: GetOr
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner GetOrTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_getor_present (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("k", 42);
+        int v     = m.GetOr("k", 0);
+        Error err = t.ExpectIntEq(v, 42, "GetOr returns stored value when key present");
+        -> __end(runner, t);
+    }
+
+    state test_getor_absent (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        int v     = m.GetOr("missing", 99);
+        Error err = t.ExpectIntEq(v, 99, "GetOr returns default when key absent");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 4: Contains
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner ContainsTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_contains_present (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("key", 1);
+        bool has  = m.Contains("key");
+        Error err = t.ExpectTrue(has, "Contains: key is present");
+        -> __end(runner, t);
+    }
+
+    state test_contains_absent (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        bool has  = m.Contains("nope");
+        Error err = t.ExpectFalse(has, "Contains: key is absent");
+        -> __end(runner, t);
+    }
+
+    state test_not_empty_after_set (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("k", 1);
+        bool empty = m.IsEmpty();
+        Error err  = t.ExpectFalse(empty, "Map is not empty after Set");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 5: Remove, Clear
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner MutationTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_remove_present (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("k", 1);
+        bool removed = m.Remove("k");
+        Error err    = t.ExpectTrue(removed, "Remove returns true when key existed");
+        -> __end(runner, t);
+    }
+
+    state test_remove_absent (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        bool removed = m.Remove("nope");
+        Error err    = t.ExpectFalse(removed, "Remove returns false when key absent");
+        -> __end(runner, t);
+    }
+
+    state test_remove_shrinks (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("a", 1);
+        m.Set("b", 2);
+        bool removed = m.Remove("a");
+        int sz       = m.Size();
+        Error err    = t.ExpectIntEq(sz, 1, "Size decreases after Remove");
+        -> __end(runner, t);
+    }
+
+    state test_remove_gone (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("k", 1);
+        bool removed = m.Remove("k");
+        bool still   = m.Contains("k");
+        Error err    = t.ExpectFalse(still, "Key no longer present after Remove");
+        -> __end(runner, t);
+    }
+
+    state test_clear_empties (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("a", 1);
+        m.Set("b", 2);
+        m.Clear();
+        bool empty = m.IsEmpty();
+        Error err  = t.ExpectTrue(empty, "Map is empty after Clear");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 6: Keys and Values
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner KeysValuesTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_keys_size (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("a", 1);
+        m.Set("b", 2);
+        m.Set("c", 3);
+        Array<string> ks = m.Keys();
+        int sz    = ks.Size();
+        Error err = t.ExpectIntEq(sz, 3, "Keys() returns array with 3 elements");
+        -> __end(runner, t);
+    }
+
+    state test_values_size (TestRunner runner, TestContext t) {
+        Map<string, int> m = Map.New();
+        m.Set("x", 10);
+        m.Set("y", 20);
+        Array<int> vs = m.Values();
+        int sz    = vs.Size();
+        Error err = t.ExpectIntEq(sz, 2, "Values() returns array with 2 elements");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 7: Integer keys
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner IntKeyTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_int_key_set_get (TestRunner runner, TestContext t) {
+        Map<int, int> m = Map.New();
+        m.Set(1, 100);
+        m.Set(2, 200);
+        int v1    = m.Get(1);
+        int v2    = m.Get(2);
+        Error err = t.ExpectIntEq(v1, 100, "int key 1 -> 100");
+        err       = t.ExpectIntEq(v2, 200, "int key 2 -> 200");
+        -> __end(runner, t);
+    }
+
+    state test_int_key_contains (TestRunner runner, TestContext t) {
+        Map<int, int> m = Map.New();
+        m.Set(42, 1);
+        bool has  = m.Contains(42);
+        Error err = t.ExpectTrue(has, "Contains int key 42");
+        -> __end(runner, t);
+    }
+}

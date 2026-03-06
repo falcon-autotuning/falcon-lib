@@ -130,7 +130,7 @@
 // TOKEN DECLARATIONS
 // ============================================================================
 
-%token AUTOTUNER ROUTINE STATE IMPORT FFIMPORT START USES TERMINAL
+%token AUTOTUNER ROUTINE STATE IMPORT FFIMPORT START TERMINAL
 %token IF ELIF ELSE STRUCT THIS
 %token <std::string> IDENTIFIER STRING INTEGER DOUBLE
 %token INT_KW FLOAT_KW BOOL_KW STRING_KW ERROR_KW ARRAY_KW
@@ -146,7 +146,7 @@
 %type <std::unique_ptr<ParamDecl>> param_decl
 %type <std::unique_ptr<TypeDescriptor>> type_spec
 %type <std::unique_ptr<FFImportDecl>> ffimport_decl
-%type <std::vector<std::string>> requires_clause identifier_list import_list import_stmt import_string_list ffimport_string_list
+%type <std::vector<std::string>> identifier_list import_list import_stmt import_string_list ffimport_string_list
 %type <std::vector<std::string>> generic_param_decl_list
 %type <std::vector<std::unique_ptr<Stmt>>> autotuner_var_decls routine_body routine_body_stmts 
 %type <std::unique_ptr<VarDeclStmt>> var_decl_stmt struct_field_decl
@@ -527,7 +527,6 @@ autotuner_decl[result]
       ARROW
       output_params[outputs]
       LBRACE
-        requires_clause[uses]
         autotuner_var_decls[vars]
         entry_state[entry] entry_params[params] SEMICOLON
         state_list[states]
@@ -537,7 +536,6 @@ autotuner_decl[result]
           std::move($name),
           std::move($inputs),
           std::move($outputs),
-          std::move($uses),
           std::move($vars),
           std::move($entry),
           std::move($params),
@@ -682,13 +680,6 @@ type_spec[result]
 // ============================================================================
 // AUTOTUNER COMPONENTS
 // ============================================================================
-
-requires_clause[result]
-    : USES identifier_list[required_deps] SEMICOLON
-      { $result = std::move($required_deps); }
-    | %empty
-      { $result = std::vector<std::string>(); }
-    ;
 
 // identifier_list now supports both plain names and Module::symbol qualifiers
 identifier_list[result]

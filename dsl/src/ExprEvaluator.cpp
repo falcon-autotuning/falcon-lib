@@ -683,10 +683,15 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
 
   // ------------------------------------------------------------------
   // Existing falcon-core built-in type method dispatch.
-  // For Array methods we forward positional arguments by their
-  // canonical parameter names so the registered lambdas can find them.
+  // Array methods are now fully handled by the Array<T> FFI library
+  // (libs/collections/array) as regular StructInstance method calls.
+  // The legacy ArrayValue dispatch below is retained only for
+  // falconCore wrappers that pass raw ArrayValue objects through the FFI.
   // ------------------------------------------------------------------
   std::string type_name = get_runtime_type_name(object);
+
+  // Legacy ArrayValue method dispatch (falconCore internal use only).
+  // New code should use Array<T> StructInstance methods instead.
   auto *method = types_->lookup_method(type_name, expr.method_name);
   if (method == nullptr) {
     throw EvaluationError("Unknown method '" + expr.method_name +
@@ -700,30 +705,13 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
     arg_values.push_back(evaluate(*arg));
   }
 
-  // Map positional arguments to canonical parameter names for Array methods.
+  // Map positional arguments to parameter names (position-based for legacy).
   typing::ParameterMap params;
-  if (type_name == "Array" ||
-      (type_name.size() > 6 && type_name.substr(0, 6) == "Array[")) {
-    // TODO: Type checking for "value" arguments to ensure they match the
-    // array's generic type. erase(index)
-    if (expr.method_name == "erase" && arg_values.size() == 1) {
-      params["index"] = arg_values[0];
-    }
-    // insert(index, value)
-    else if (expr.method_name == "insert" && arg_values.size() == 2) {
-      params["index"] = arg_values[0];
-      params["value"] = arg_values[1];
-      // TODO: Check that params["value"] matches the array element type.
-    }
-    // pushback(value)
-    else if (expr.method_name == "pushback" && arg_values.size() == 1) {
-      params["value"] = arg_values[0];
-      // TODO: Check that params["value"] matches the array element type.
-    }
+  for (size_t i = 0; i < arg_values.size(); ++i) {
+    params["arg" + std::to_string(i)] = arg_values[i];
   }
 
   auto result = (*method)(object, params);
-  // Methods that return nothing (erase, insert, pushback) return an empty map.
   if (result.empty()) {
     return nullptr;
   }
@@ -740,8 +728,60 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
 
 typing::RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
   auto object = evaluate(*expr.object);
-  auto index = evaluate(*expr.index);
+  auto index  = evaluate(*expr.index);
 
+  // ---------------------------------------------------------------------------
+  // Array indexing: arr[i]  →  arr.GetIndex(i)
+  //
+  // Array<T> is now an FFI-backed StructInstance.  We route arr[i] through the
+  // normal struct method-call path by synthesising a GetIndex call.  This
+  // keeps the AST IndexExpr node (for parser compatibility) while delegating
+  // all logic to the library-defined GetIndex routine.
+  // ---------------------------------------------------------------------------
+  if (std::holds_alternative<std::shared_ptr<typing::StructInstance>>(object)) {
+    const auto &instPtr =
+        std::get<std::shared_ptr<typing::StructInstance>>(object);
+    if (!instPtr) {
+      throw EvaluationError("Cannot index into a nil struct");
+    }
+    // Look up GetIndex on the struct's type.
+    const atc::StructDecl *struct_decl =
+        types_->lookup_struct(instPtr->type_name);
+    if (struct_decl) {
+      const atc::RoutineDecl *get_index = struct_decl->find_routine("GetIndex");
+      if (get_index) {
+        typing::FunctionResult outputs =
+            exec_struct_routine(instPtr, *struct_decl, *get_index, {index});
+        if (outputs.empty()) return nullptr;
+        if (outputs.size() == 1) return outputs[0];
+        return std::make_shared<typing::TupleValue>(outputs);
+      }
+    }
+    // Also try lookup via FFI method (for monomorphized names like "Array<int>")
+    const typing::TypeMethod *ffi_method =
+        types_->lookup_ffi_method(instPtr->type_name, "GetIndex");
+    if (ffi_method == nullptr) {
+      // Try base name (strip "<...>")
+      auto angle = instPtr->type_name.find('<');
+      if (angle != std::string::npos) {
+        std::string base = instPtr->type_name.substr(0, angle);
+        ffi_method = types_->lookup_ffi_method(base, "GetIndex");
+      }
+    }
+    if (ffi_method != nullptr) {
+      typing::ParameterMap params;
+      params["this"]  = object;
+      params["index"] = index;
+      auto result = (*ffi_method)(object, params);
+      if (result.empty()) return nullptr;
+      if (result.size() == 1) return result[0];
+      return std::make_shared<typing::TupleValue>(result);
+    }
+    throw EvaluationError("Type '" + instPtr->type_name +
+                          "' does not support indexing (no GetIndex routine)");
+  }
+
+  // Legacy: direct ArrayValue indexing (for falconCore internal use).
   if (std::holds_alternative<std::shared_ptr<typing::ArrayValue>>(object)) {
     const auto &arrPtr = std::get<std::shared_ptr<typing::ArrayValue>>(object);
     if (!arrPtr) {
@@ -764,7 +804,6 @@ typing::RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
     return (*arrPtr)[static_cast<size_t>(idx)];
   }
 
-  // TODO: Implement indexing for other collection types (Connections, etc.)
   throw EvaluationError("Indexing not supported for type: " +
                         get_runtime_type_name(object));
 }

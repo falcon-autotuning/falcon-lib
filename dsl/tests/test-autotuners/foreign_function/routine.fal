@@ -3,7 +3,6 @@ routine Adder (int a, int b) -> (int add)
 routine Multiplier (int a, int b) -> (int mult)
 
 autotuner ConditionalNest (int a, int b) -> (int out) {
-  uses Adder, Multiplier;
   out = 0;
 
   start -> init;

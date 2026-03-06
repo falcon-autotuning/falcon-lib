@@ -29,7 +29,6 @@ using namespace falcon::atc;
 "import"        { return Parser::make_IMPORT(*loc); }
 "ffimport"      { return Parser::make_FFIMPORT(*loc); }
 "start"         { return Parser::make_START(*loc); }
-"uses"          { return Parser::make_USES(*loc); }
 "terminal"      { return Parser::make_TERMINAL(*loc); }
 "if"            { return Parser::make_IF(*loc); }
 "elif"          { return Parser::make_ELIF(*loc); }
@@ -45,7 +44,6 @@ using namespace falcon::atc;
 "bool"          { return Parser::make_BOOL_KW(*loc); }
 "string"        { return Parser::make_STRING_KW(*loc); }
 "Error"         { return Parser::make_ERROR_KW(*loc); }
-"Array"         { return Parser::make_ARRAY_KW(*loc); }
 
 "->"            { return Parser::make_ARROW(*loc); }
 "["             { return Parser::make_LBRACKET(*loc); }
