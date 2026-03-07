@@ -1,0 +1,11 @@
+name: voltageStatesResponse
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: deviceVoltageStates
+    version: "1.0.0"
+    local_path: "../../voltageStates/deviceVoltageStates/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"
