@@ -1,0 +1,87 @@
+import "../../../../../testing/testing.fal";
+import "../gname.fal";
+
+autotuner GnameConstructors -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_from_string (TestRunner runner, TestContext t) {
+        Gname g   = Gname.New("group1");
+        Error err = t.ExpectStrEq("group1", g.gname(), "Gname.New(string) stores name");
+        -> __end(runner, t);
+    }
+
+    state test_new_from_int (TestRunner runner, TestContext t) {
+        Gname g   = Gname.New(3);
+        Error err = t.ExpectStrNe("", g.gname(), "Gname.New(int) produces non-empty name");
+        -> __end(runner, t);
+    }
+}
+
+autotuner GnameEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same_string (TestRunner runner, TestContext t) {
+        Gname a = Gname.New("g1");
+        Gname b = Gname.New("g1");
+        Error err = t.ExpectTrue(a.Equal(b), "Same string Gnames are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_strings (TestRunner runner, TestContext t) {
+        Gname a = Gname.New("g1");
+        Gname b = Gname.New("g2");
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different string Gnames are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_same_int (TestRunner runner, TestContext t) {
+        Gname a = Gname.New(5);
+        Gname b = Gname.New(5);
+        Error err = t.ExpectTrue(a.Equal(b), "Same integer Gnames are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_ints (TestRunner runner, TestContext t) {
+        Gname a = Gname.New(1);
+        Gname b = Gname.New(2);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different integer Gnames are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_for_different (TestRunner runner, TestContext t) {
+        Gname a = Gname.New("alpha");
+        Gname b = Gname.New("beta");
+        Error err = t.ExpectFalse(a.Equal(b), "Equal returns false for different Gnames");
+        -> __end(runner, t);
+    }
+}
+
+autotuner GnameJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Gname  g    = Gname.New("group1");
+        string json = g.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_string (TestRunner runner, TestContext t) {
+        Gname  orig     = Gname.New("group1");
+        string json     = orig.ToJSON();
+        Gname  restored = Gname.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "Gname string roundtrip preserves equality");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_int (TestRunner runner, TestContext t) {
+        Gname  orig     = Gname.New(7);
+        string json     = orig.ToJSON();
+        Gname  restored = Gname.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "Gname int roundtrip preserves equality");
+        -> __end(runner, t);
+    }
+}
