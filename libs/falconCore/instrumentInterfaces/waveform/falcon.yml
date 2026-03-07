@@ -1,0 +1,17 @@
+name: waveform
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: portTransforms
+    version: "1.0.0"
+    local_path: "../portTransforms/portTransforms/"
+  - name: discreteSpace
+    version: "1.0.0"
+    local_path: "../../math/discreteSpaces/discreteSpace/"
+  - name: coupledLabelledDomain
+    version: "1.0.0"
+    local_path: "../../math/domains/coupledLabelledDomain/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../testing/"
