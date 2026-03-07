@@ -1,0 +1,52 @@
+// Tests for falconCore/math/discreteSpaces/discreteSpace
+import "../../../../../testing/testing.fal";
+import "../discreteSpace.fal";
+import "./discrete-space-test-helpers.fal";
+
+autotuner DiscreteSpaceConstruction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_1d (TestRunner runner, TestContext t) {
+        DiscreteSpace ds = DiscreteSpaceTestHelpers.New1D();
+        Error err = t.ExpectTrue(ds.Equal(ds), "New1D creates a valid DiscreteSpace");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DiscreteSpaceEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        DiscreteSpace ds = DiscreteSpaceTestHelpers.New1D();
+        Error err = t.ExpectTrue(ds.Equal(ds), "DiscreteSpace equals itself");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_false_for_same (TestRunner runner, TestContext t) {
+        DiscreteSpace ds = DiscreteSpaceTestHelpers.New1D();
+        Error err = t.ExpectFalse(ds.NotEqual(ds), "NotEqual is false for same object");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DiscreteSpaceJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        DiscreteSpace ds = DiscreteSpaceTestHelpers.New1D();
+        string json = ds.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON returns non-empty string");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        DiscreteSpace orig = DiscreteSpaceTestHelpers.New1D();
+        string json = orig.ToJSON();
+        DiscreteSpace rt = DiscreteSpace.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(rt), "JSON round-trip preserves equality");
+        -> __end(runner, t);
+    }
+}

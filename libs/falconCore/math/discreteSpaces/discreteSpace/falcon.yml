@@ -1,0 +1,14 @@
+name: discreteSpace
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: unitSpace
+    version: "1.0.0"
+    local_path: "../../unitSpace/"
+  - name: coupledLabelledDomain
+    version: "1.0.0"
+    local_path: "../../domains/coupledLabelledDomain/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"

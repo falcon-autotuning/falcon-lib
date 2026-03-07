@@ -1,0 +1,273 @@
+// Tests for falcon_core/math/Quantity
+// Run with: falcon-test run_tests.fal
+import "../../../../testing/testing.fal";
+import "../quantity.fal";
+import "../../../../physics/units/symbolUnit/symbolUnit.fal";
+
+autotuner QuantityConstructor -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_value (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(1.0, volt);
+        Error err = t.ExpectFloatEq(1.0, q.Value(), 1.0e-9, "Value is 1.0");
+        -> __end(runner, t);
+    }
+
+    state test_value_negative (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(-3.5, volt);
+        Error err = t.ExpectFloatEq(-3.5, q.Value(), 1.0e-9, "Value is -3.5");
+        -> __end(runner, t);
+    }
+
+    state test_value_zero (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(0.0, volt);
+        Error err = t.ExpectFloatEq(0.0, q.Value(), 1.0e-9, "Value is 0.0");
+        -> __end(runner, t);
+    }
+}
+
+autotuner QuantityUnit -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_unit_symbol_volt (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(1.0, volt);
+        SymbolUnit got  = q.Unit();
+        Error err = t.ExpectStrEq("V", got.Symbol(), "Unit symbol is V");
+        -> __end(runner, t);
+    }
+
+    state test_unit_name_volt (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(1.0, volt);
+        SymbolUnit got  = q.Unit();
+        Error err = t.ExpectStrNe("", got.Name(), "Unit name is non-empty");
+        -> __end(runner, t);
+    }
+}
+
+autotuner QuantityEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same_value (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   a    = Quantity.New(2.0, volt);
+        Quantity   b    = Quantity.New(2.0, volt);
+        Error err = t.ExpectTrue(a.Equal(b), "Same value and unit are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_value (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   a    = Quantity.New(1.0, volt);
+        Quantity   b    = Quantity.New(2.0, volt);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different values are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_reflexive (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(5.0, volt);
+        Error err = t.ExpectTrue(q.Equal(q), "Quantity equals itself");
+        -> __end(runner, t);
+    }
+}
+
+autotuner QuantityTimes -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_times_float (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(2.0, volt);
+        Quantity   r    = q.Times(3.0);
+        Error err = t.ExpectFloatEq(6.0, r.Value(), 1.0e-9, "2.0 * 3.0 = 6.0");
+        -> __end(runner, t);
+    }
+
+    state test_times_int (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(4.0, volt);
+        Quantity   r    = q.Times(2);
+        Error err = t.ExpectFloatEq(8.0, r.Value(), 1.0e-9, "4.0 * 2 = 8.0");
+        -> __end(runner, t);
+    }
+
+    state test_times_quantity (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   a    = Quantity.New(3.0, volt);
+        Quantity   b    = Quantity.New(2.0, volt);
+        Quantity   r    = a.Times(b);
+        Error err = t.ExpectFloatEq(6.0, r.Value(), 1.0e-9, "3.0 * 2.0 = 6.0");
+        -> __end(runner, t);
+    }
+}
+
+autotuner QuantityDivides -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_divides_float (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(6.0, volt);
+        Quantity   r    = q.Divides(2.0);
+        Error err = t.ExpectFloatEq(3.0, r.Value(), 1.0e-9, "6.0 / 2.0 = 3.0");
+        -> __end(runner, t);
+    }
+
+    state test_divides_int (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(9.0, volt);
+        Quantity   r    = q.Divides(3);
+        Error err = t.ExpectFloatEq(3.0, r.Value(), 1.0e-9, "9.0 / 3 = 3.0");
+        -> __end(runner, t);
+    }
+
+    state test_divides_quantity (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   a    = Quantity.New(8.0, volt);
+        Quantity   b    = Quantity.New(4.0, volt);
+        Quantity   r    = a.Divides(b);
+        Error err = t.ExpectFloatEq(2.0, r.Value(), 1.0e-9, "8.0 / 4.0 = 2.0");
+        -> __end(runner, t);
+    }
+}
+
+autotuner QuantityPower -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_power_two (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(3.0, volt);
+        Quantity   r    = q.Power(2.0);
+        Error err = t.ExpectFloatEq(9.0, r.Value(), 1.0e-9, "3.0 ^ 2 = 9.0");
+        -> __end(runner, t);
+    }
+
+    state test_power_one (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(5.0, volt);
+        Quantity   r    = q.Power(1.0);
+        Error err = t.ExpectFloatEq(5.0, r.Value(), 1.0e-9, "5.0 ^ 1 = 5.0");
+        -> __end(runner, t);
+    }
+}
+
+autotuner QuantityAddSubtract -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_add (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   a    = Quantity.New(2.0, volt);
+        Quantity   b    = Quantity.New(3.0, volt);
+        Quantity   r    = a.Add(b);
+        Error err = t.ExpectFloatEq(5.0, r.Value(), 1.0e-9, "2.0 + 3.0 = 5.0");
+        -> __end(runner, t);
+    }
+
+    state test_subtract (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   a    = Quantity.New(5.0, volt);
+        Quantity   b    = Quantity.New(2.0, volt);
+        Quantity   r    = a.Subtract(b);
+        Error err = t.ExpectFloatEq(3.0, r.Value(), 1.0e-9, "5.0 - 2.0 = 3.0");
+        -> __end(runner, t);
+    }
+}
+
+autotuner QuantityUnary -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_negate (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(4.0, volt);
+        Quantity   r    = q.Negate();
+        Error err = t.ExpectFloatEq(-4.0, r.Value(), 1.0e-9, "Negate 4.0 = -4.0");
+        -> __end(runner, t);
+    }
+
+    state test_negate_negative (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(-2.5, volt);
+        Quantity   r    = q.Negate();
+        Error err = t.ExpectFloatEq(2.5, r.Value(), 1.0e-9, "Negate -2.5 = 2.5");
+        -> __end(runner, t);
+    }
+
+    state test_abs_positive (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(3.0, volt);
+        Quantity   r    = q.Abs();
+        Error err = t.ExpectFloatEq(3.0, r.Value(), 1.0e-9, "Abs(3.0) = 3.0");
+        -> __end(runner, t);
+    }
+
+    state test_abs_negative (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(-7.0, volt);
+        Quantity   r    = q.Abs();
+        Error err = t.ExpectFloatEq(7.0, r.Value(), 1.0e-9, "Abs(-7.0) = 7.0");
+        -> __end(runner, t);
+    }
+}
+
+autotuner QuantityConvertToUnit -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_convert_to_same_unit (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(1.0, volt);
+        Quantity   r    = q.ConvertToUnit(volt);
+        Error err = t.ExpectFloatEq(1.0, r.Value(), 1.0e-9, "Convert Volt to Volt keeps value");
+        -> __end(runner, t);
+    }
+
+    state test_original_unchanged (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(2.0, volt);
+        Quantity   r    = q.ConvertToUnit(volt);
+        Error err = t.ExpectFloatEq(2.0, q.Value(), 1.0e-9, "Original value unchanged after convert");
+        -> __end(runner, t);
+    }
+}
+
+autotuner QuantityJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Quantity   q    = Quantity.New(1.0, volt);
+        string     json = q.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_value (TestRunner runner, TestContext t) {
+        SymbolUnit volt     = SymbolUnit.Volt();
+        Quantity   orig     = Quantity.New(3.14, volt);
+        string     json     = orig.ToJSON();
+        Quantity   restored = Quantity.FromJSON(json);
+        Error err = t.ExpectFloatEq(3.14, restored.Value(), 1.0e-6, "JSON round-trip value");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_equal (TestRunner runner, TestContext t) {
+        SymbolUnit volt     = SymbolUnit.Volt();
+        Quantity   orig     = Quantity.New(2.5, volt);
+        string     json     = orig.ToJSON();
+        Quantity   restored = Quantity.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "JSON round-trip equality");
+        -> __end(runner, t);
+    }
+}

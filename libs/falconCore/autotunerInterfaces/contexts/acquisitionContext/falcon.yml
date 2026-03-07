@@ -1,0 +1,23 @@
+name: acquisitionContext
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: connection
+    version: "1.0.0"
+    local_path: "../../../physics/deviceStructures/connection/"
+  - name: instrument
+    version: "1.0.0"
+    local_path: "../../../instrumentInterfaces/names/instrument/"
+  - name: instrumentPort
+    version: "1.0.0"
+    local_path: "../../../instrumentInterfaces/names/instrumentPort/"
+  - name: symbolUnit
+    version: "1.0.0"
+    local_path: "../../../physics/units/symbolUnit/"
+  - name: measurementContext
+    version: "1.0.0"
+    local_path: "../measurementContext/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"

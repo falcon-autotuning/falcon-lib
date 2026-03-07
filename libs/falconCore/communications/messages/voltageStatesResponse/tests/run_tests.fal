@@ -1,0 +1,166 @@
+// Tests for falconCore/communications/messages/voltageStatesResponse
+// Run with: falcon-test run_tests.fal
+import "../../../../../testing/testing.fal";
+import "../voltageStatesResponse.fal";
+import "../../../voltageStates/deviceVoltageStates/deviceVoltageStates.fal";
+import "../../../voltageStates/deviceVoltageState/deviceVoltageState.fal";
+import "../../../../physics/deviceStructures/connection/connection.fal";
+import "../../../../physics/units/symbolUnit/symbolUnit.fal";
+
+routine MakeDVS (string name, float voltage) -> (DeviceVoltageState dvs) {
+    Connection c  = Connection.NewPlungerGate(name);
+    SymbolUnit v  = SymbolUnit.Volt();
+    dvs           = DeviceVoltageState.New(c, voltage, v);
+}
+
+routine MakeStates (string name, float voltage) -> (DeviceVoltageStates states) {
+    DeviceVoltageState dvs    = MakeDVS(name, voltage);
+    Array<DeviceVoltageState> arr = [dvs];
+    states = DeviceVoltageStates.New(arr);
+}
+
+autotuner VoltageStatesResponseConstructor -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_message (TestRunner runner, TestContext t) {
+        DeviceVoltageStates states = MakeStates("P1", 1.0);
+        VoltageStatesResponse resp = VoltageStatesResponse.New("ok", states);
+        Error err = t.ExpectStrEq("ok", resp.Message(), "New stores message");
+        -> __end(runner, t);
+    }
+
+    state test_new_empty_message (TestRunner runner, TestContext t) {
+        DeviceVoltageStates states = MakeStates("P1", 1.0);
+        VoltageStatesResponse resp = VoltageStatesResponse.New("", states);
+        Error err = t.ExpectStrEq("", resp.Message(), "New stores empty message");
+        -> __end(runner, t);
+    }
+
+    state test_new_states_non_empty (TestRunner runner, TestContext t) {
+        DeviceVoltageStates states = MakeStates("P1", 1.0);
+        VoltageStatesResponse resp = VoltageStatesResponse.New("ok", states);
+        DeviceVoltageStates got    = resp.States();
+        Error err = t.ExpectFalse(got.Empty(), "States are non-empty after New");
+        -> __end(runner, t);
+    }
+}
+
+autotuner VoltageStatesResponseAccessors -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_message_roundtrip (TestRunner runner, TestContext t) {
+        DeviceVoltageStates states = MakeStates("P1", 0.5);
+        VoltageStatesResponse resp = VoltageStatesResponse.New("test-msg", states);
+        Error err = t.ExpectStrEq("test-msg", resp.Message(), "Message returns stored value");
+        -> __end(runner, t);
+    }
+
+    state test_states_size (TestRunner runner, TestContext t) {
+        DeviceVoltageState d1      = MakeDVS("P1", 1.0);
+        DeviceVoltageState d2      = MakeDVS("P2", 2.0);
+        Array<DeviceVoltageState> arr = [d1, d2];
+        DeviceVoltageStates states = DeviceVoltageStates.New(arr);
+        VoltageStatesResponse resp = VoltageStatesResponse.New("ok", states);
+        DeviceVoltageStates got    = resp.States();
+        Error err = t.ExpectIntEq(2, got.Size(), "States returns two-element collection");
+        -> __end(runner, t);
+    }
+
+    state test_states_empty_collection (TestRunner runner, TestContext t) {
+        Array<DeviceVoltageState> arr = [];
+        DeviceVoltageStates states = DeviceVoltageStates.New(arr);
+        VoltageStatesResponse resp = VoltageStatesResponse.New("empty", states);
+        DeviceVoltageStates got    = resp.States();
+        Error err = t.ExpectTrue(got.Empty(), "States returns empty collection");
+        -> __end(runner, t);
+    }
+}
+
+autotuner VoltageStatesResponseEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        DeviceVoltageStates states = MakeStates("P1", 1.0);
+        VoltageStatesResponse a    = VoltageStatesResponse.New("ok", states);
+        VoltageStatesResponse b    = VoltageStatesResponse.New("ok", states);
+        Error err = t.ExpectTrue(a.Equal(b), "Same message+states are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_message (TestRunner runner, TestContext t) {
+        DeviceVoltageStates states = MakeStates("P1", 1.0);
+        VoltageStatesResponse a    = VoltageStatesResponse.New("ok", states);
+        VoltageStatesResponse b    = VoltageStatesResponse.New("error", states);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different messages are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_states (TestRunner runner, TestContext t) {
+        DeviceVoltageStates s1 = MakeStates("P1", 1.0);
+        DeviceVoltageStates s2 = MakeStates("P1", 2.0);
+        VoltageStatesResponse a = VoltageStatesResponse.New("ok", s1);
+        VoltageStatesResponse b = VoltageStatesResponse.New("ok", s2);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different states are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_different_message (TestRunner runner, TestContext t) {
+        DeviceVoltageStates states = MakeStates("P1", 1.0);
+        VoltageStatesResponse a    = VoltageStatesResponse.New("foo", states);
+        VoltageStatesResponse b    = VoltageStatesResponse.New("bar", states);
+        Error err = t.ExpectFalse(a.Equal(b), "Equal is false for different messages");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_false_for_same (TestRunner runner, TestContext t) {
+        DeviceVoltageStates states = MakeStates("P1", 1.0);
+        VoltageStatesResponse a    = VoltageStatesResponse.New("same", states);
+        VoltageStatesResponse b    = VoltageStatesResponse.New("same", states);
+        Error err = t.ExpectFalse(a.NotEqual(b), "NotEqual is false for same message+states");
+        -> __end(runner, t);
+    }
+}
+
+autotuner VoltageStatesResponseJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        DeviceVoltageStates states = MakeStates("P1", 1.0);
+        VoltageStatesResponse resp = VoltageStatesResponse.New("ok", states);
+        string json                = resp.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_equality (TestRunner runner, TestContext t) {
+        DeviceVoltageStates states = MakeStates("P1", 1.5);
+        VoltageStatesResponse orig = VoltageStatesResponse.New("ok", states);
+        string json                = orig.ToJSON();
+        VoltageStatesResponse res  = VoltageStatesResponse.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(res), "ToJSON/FromJSON round-trip preserves equality");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_message (TestRunner runner, TestContext t) {
+        DeviceVoltageStates states = MakeStates("P1", 1.0);
+        VoltageStatesResponse orig = VoltageStatesResponse.New("payload", states);
+        string json                = orig.ToJSON();
+        VoltageStatesResponse res  = VoltageStatesResponse.FromJSON(json);
+        Error err = t.ExpectStrEq("payload", res.Message(), "Roundtrip preserves message");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_empty_states (TestRunner runner, TestContext t) {
+        Array<DeviceVoltageState> arr = [];
+        DeviceVoltageStates states = DeviceVoltageStates.New(arr);
+        VoltageStatesResponse orig = VoltageStatesResponse.New("empty", states);
+        string json                = orig.ToJSON();
+        VoltageStatesResponse res  = VoltageStatesResponse.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(res), "Empty states round-trips via JSON");
+        -> __end(runner, t);
+    }
+}

@@ -1,0 +1,220 @@
+// Tests for falconCore/autotunerInterfaces/interpretations/interpretationContext
+// Run with: falcon-test run_tests.fal
+import "../../../../../testing/testing.fal";
+import "../interpretationContext.fal";
+import "../../contexts/measurementContext/measurementContext.fal";
+import "../../../../physics/units/symbolUnit/symbolUnit.fal";
+import "../../../../physics/deviceStructures/connection/connection.fal";
+import "../../../../instrumentInterfaces/names/instrument/instrument.fal";
+import "../../../../math/axes/axes.fal";
+import "../../../../../collections/array/array.fal";
+
+routine MakeMC (string connName, string instType) -> (MeasurementContext mc) {
+    Connection conn = Connection.NewPlungerGate(connName);
+    mc = MeasurementContext.New(conn, instType);
+}
+
+autotuner InterpretationContextConstructor -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_one_indep_one_dep (TestRunner runner, TestContext t) {
+        MeasurementContext indep = MakeMC("P1", Instrument.DCVoltageSource());
+        MeasurementContext dep   = MakeMC("S1", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        Axes<MeasurementContext> axes = Axes<MeasurementContext>.New();
+        axes.PushBack(indep);
+        Array<MeasurementContext> deps = [dep];
+        InterpretationContext ic = InterpretationContext.New(axes, deps, volt);
+        Error err = t.ExpectIntEq(1, ic.Dimension(), "Dimension is 1");
+        -> __end(runner, t);
+    }
+
+    state test_new_two_indep (TestRunner runner, TestContext t) {
+        MeasurementContext p1    = MakeMC("P1", Instrument.DCVoltageSource());
+        MeasurementContext p2    = MakeMC("P2", Instrument.DCVoltageSource());
+        MeasurementContext dep   = MakeMC("S1", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        Axes<MeasurementContext> axes = Axes<MeasurementContext>.New();
+        axes.PushBack(p1);
+        axes.PushBack(p2);
+        Array<MeasurementContext> deps = [dep];
+        InterpretationContext ic = InterpretationContext.New(axes, deps, volt);
+        Error err = t.ExpectIntEq(2, ic.Dimension(), "Two-axis dimension is 2");
+        -> __end(runner, t);
+    }
+
+    state test_new_unit_symbol (TestRunner runner, TestContext t) {
+        MeasurementContext indep = MakeMC("P1", Instrument.DCVoltageSource());
+        MeasurementContext dep   = MakeMC("S1", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        Axes<MeasurementContext> axes = Axes<MeasurementContext>.New();
+        axes.PushBack(indep);
+        Array<MeasurementContext> deps = [dep];
+        InterpretationContext ic = InterpretationContext.New(axes, deps, volt);
+        SymbolUnit u             = ic.Unit();
+        Error err = t.ExpectStrEq("V", u.Symbol(), "Unit symbol is V");
+        -> __end(runner, t);
+    }
+}
+
+autotuner InterpretationContextAccessors -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_get_independent_variable (TestRunner runner, TestContext t) {
+        MeasurementContext indep = MakeMC("P1", Instrument.DCVoltageSource());
+        MeasurementContext dep   = MakeMC("S1", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        Axes<MeasurementContext> axes = Axes<MeasurementContext>.New();
+        axes.PushBack(indep);
+        Array<MeasurementContext> deps = [dep];
+        InterpretationContext ic = InterpretationContext.New(axes, deps, volt);
+        MeasurementContext got   = ic.GetIndependentVariable(0);
+        Connection c             = got.Connection();
+        Error err = t.ExpectStrEq("P1", c.Name(), "GetIndependentVariable(0) connection name is P1");
+        -> __end(runner, t);
+    }
+
+    state test_dimension_zero_indep (TestRunner runner, TestContext t) {
+        MeasurementContext dep   = MakeMC("S1", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        Axes<MeasurementContext> axes = Axes<MeasurementContext>.New();
+        Array<MeasurementContext> deps = [dep];
+        InterpretationContext ic = InterpretationContext.New(axes, deps, volt);
+        Error err = t.ExpectIntEq(0, ic.Dimension(), "Empty axes gives dimension 0");
+        -> __end(runner, t);
+    }
+
+    state test_with_unit (TestRunner runner, TestContext t) {
+        MeasurementContext indep = MakeMC("P1", Instrument.DCVoltageSource());
+        MeasurementContext dep   = MakeMC("S1", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        SymbolUnit amp           = SymbolUnit.Ampere();
+        Axes<MeasurementContext> axes = Axes<MeasurementContext>.New();
+        axes.PushBack(indep);
+        Array<MeasurementContext> deps = [dep];
+        InterpretationContext ic  = InterpretationContext.New(axes, deps, volt);
+        InterpretationContext ic2 = ic.WithUnit(amp);
+        SymbolUnit u              = ic2.Unit();
+        Error err = t.ExpectStrEq("A", u.Symbol(), "WithUnit produces context with Ampere unit");
+        -> __end(runner, t);
+    }
+}
+
+autotuner InterpretationContextMutation -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_add_dependent_variable (TestRunner runner, TestContext t) {
+        MeasurementContext indep = MakeMC("P1", Instrument.DCVoltageSource());
+        MeasurementContext dep1  = MakeMC("S1", Instrument.Amnmeter());
+        MeasurementContext dep2  = MakeMC("S2", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        Axes<MeasurementContext> axes = Axes<MeasurementContext>.New();
+        axes.PushBack(indep);
+        Array<MeasurementContext> deps = [dep1];
+        InterpretationContext ic = InterpretationContext.New(axes, deps, volt);
+        ic.AddDependentVariable(dep2);
+        Array<MeasurementContext> got = ic.DependentVariables();
+        Error err = t.ExpectIntEq(2, got.Size(), "AddDependentVariable increases size to 2");
+        -> __end(runner, t);
+    }
+
+    state test_replace_dependent_variable (TestRunner runner, TestContext t) {
+        MeasurementContext indep = MakeMC("P1", Instrument.DCVoltageSource());
+        MeasurementContext dep1  = MakeMC("S1", Instrument.Amnmeter());
+        MeasurementContext dep2  = MakeMC("S2", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        Axes<MeasurementContext> axes = Axes<MeasurementContext>.New();
+        axes.PushBack(indep);
+        Array<MeasurementContext> deps = [dep1];
+        InterpretationContext ic = InterpretationContext.New(axes, deps, volt);
+        ic.ReplaceDependantVariable(0, dep2);
+        Array<MeasurementContext> got = ic.DependentVariables();
+        MeasurementContext first = got.GetIndex(0);
+        Connection c             = first.Connection();
+        Error err = t.ExpectStrEq("S2", c.Name(), "ReplaceDependantVariable replaces at index 0");
+        -> __end(runner, t);
+    }
+}
+
+autotuner InterpretationContextEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        MeasurementContext indep = MakeMC("P1", Instrument.DCVoltageSource());
+        MeasurementContext dep   = MakeMC("S1", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        Axes<MeasurementContext> axes = Axes<MeasurementContext>.New();
+        axes.PushBack(indep);
+        Array<MeasurementContext> deps = [dep];
+        InterpretationContext a  = InterpretationContext.New(axes, deps, volt);
+        InterpretationContext b  = InterpretationContext.New(axes, deps, volt);
+        Error err = t.ExpectTrue(a.Equal(b), "Same contexts are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_unit (TestRunner runner, TestContext t) {
+        MeasurementContext indep = MakeMC("P1", Instrument.DCVoltageSource());
+        MeasurementContext dep   = MakeMC("S1", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        SymbolUnit amp           = SymbolUnit.Ampere();
+        Axes<MeasurementContext> axes = Axes<MeasurementContext>.New();
+        axes.PushBack(indep);
+        Array<MeasurementContext> deps = [dep];
+        InterpretationContext a  = InterpretationContext.New(axes, deps, volt);
+        InterpretationContext b  = InterpretationContext.New(axes, deps, amp);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different units are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_different (TestRunner runner, TestContext t) {
+        MeasurementContext p1    = MakeMC("P1", Instrument.DCVoltageSource());
+        MeasurementContext p2    = MakeMC("P2", Instrument.DCVoltageSource());
+        MeasurementContext dep   = MakeMC("S1", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        Axes<MeasurementContext> axes1 = Axes<MeasurementContext>.New();
+        axes1.PushBack(p1);
+        Axes<MeasurementContext> axes2 = Axes<MeasurementContext>.New();
+        axes2.PushBack(p2);
+        Array<MeasurementContext> deps = [dep];
+        InterpretationContext a  = InterpretationContext.New(axes1, deps, volt);
+        InterpretationContext b  = InterpretationContext.New(axes2, deps, volt);
+        Error err = t.ExpectFalse(a.Equal(b), "Equal is false for different indep vars");
+        -> __end(runner, t);
+    }
+}
+
+autotuner InterpretationContextJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        MeasurementContext indep = MakeMC("P1", Instrument.DCVoltageSource());
+        MeasurementContext dep   = MakeMC("S1", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        Axes<MeasurementContext> axes = Axes<MeasurementContext>.New();
+        axes.PushBack(indep);
+        Array<MeasurementContext> deps = [dep];
+        InterpretationContext ic = InterpretationContext.New(axes, deps, volt);
+        string json              = ic.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        MeasurementContext indep = MakeMC("P1", Instrument.DCVoltageSource());
+        MeasurementContext dep   = MakeMC("S1", Instrument.Amnmeter());
+        SymbolUnit volt          = SymbolUnit.Volt();
+        Axes<MeasurementContext> axes = Axes<MeasurementContext>.New();
+        axes.PushBack(indep);
+        Array<MeasurementContext> deps = [dep];
+        InterpretationContext orig = InterpretationContext.New(axes, deps, volt);
+        string json               = orig.ToJSON();
+        InterpretationContext res  = InterpretationContext.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(res), "ToJSON/FromJSON round-trip preserves equality");
+        -> __end(runner, t);
+    }
+}

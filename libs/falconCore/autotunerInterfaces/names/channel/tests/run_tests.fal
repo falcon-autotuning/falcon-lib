@@ -1,0 +1,80 @@
+import "../../../../../testing/testing.fal";
+import "../channel.fal";
+
+autotuner ChannelConstructor -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_name (TestRunner runner, TestContext t) {
+        Channel c = Channel.New("ch1");
+        Error err = t.ExpectStrEq("ch1", c.Name(), "Channel.New stores name");
+        -> __end(runner, t);
+    }
+
+    state test_new_different_name (TestRunner runner, TestContext t) {
+        Channel c = Channel.New("readout");
+        Error err = t.ExpectStrEq("readout", c.Name(), "Channel.New stores readout name");
+        -> __end(runner, t);
+    }
+}
+
+autotuner ChannelEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same_name (TestRunner runner, TestContext t) {
+        Channel a = Channel.New("ch1");
+        Channel b = Channel.New("ch1");
+        Error err = t.ExpectTrue(a.Equal(b), "Same-name channels are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_names (TestRunner runner, TestContext t) {
+        Channel a = Channel.New("ch1");
+        Channel b = Channel.New("ch2");
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different-name channels are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_for_different (TestRunner runner, TestContext t) {
+        Channel a = Channel.New("alpha");
+        Channel b = Channel.New("beta");
+        Error err = t.ExpectFalse(a.Equal(b), "Equal returns false for different names");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_false_for_same (TestRunner runner, TestContext t) {
+        Channel a = Channel.New("x");
+        Channel b = Channel.New("x");
+        Error err = t.ExpectFalse(a.NotEqual(b), "NotEqual returns false for same names");
+        -> __end(runner, t);
+    }
+}
+
+autotuner ChannelJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Channel c    = Channel.New("ch1");
+        string  json = c.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        Channel orig     = Channel.New("ch1");
+        string  json     = orig.ToJSON();
+        Channel restored = Channel.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "Channel JSON roundtrip preserves equality");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_name (TestRunner runner, TestContext t) {
+        Channel orig     = Channel.New("readout");
+        string  json     = orig.ToJSON();
+        Channel restored = Channel.FromJSON(json);
+        Error err = t.ExpectStrEq(orig.Name(), restored.Name(), "Roundtrip preserves name");
+        -> __end(runner, t);
+    }
+}

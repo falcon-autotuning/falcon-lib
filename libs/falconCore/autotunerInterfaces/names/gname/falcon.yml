@@ -1,0 +1,8 @@
+name: gname
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"

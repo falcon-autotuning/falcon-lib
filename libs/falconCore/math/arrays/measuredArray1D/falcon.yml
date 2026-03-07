@@ -1,0 +1,11 @@
+name: measuredArray1D
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: measuredArray
+    version: "1.0.0"
+    local_path: "../measuredArray/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"

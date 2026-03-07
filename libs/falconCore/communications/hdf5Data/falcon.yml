@@ -1,0 +1,17 @@
+name: hdf5Data
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: measurementRequest
+    version: "1.0.0"
+    local_path: "../messages/measurementRequest/"
+  - name: measurementResponse
+    version: "1.0.0"
+    local_path: "../messages/measurementResponse/"
+  - name: deviceVoltageStates
+    version: "1.0.0"
+    local_path: "../voltageStates/deviceVoltageStates/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../testing/"

@@ -1,0 +1,87 @@
+// Tests for falconCore/math/point
+import "../../../../testing/testing.fal";
+import "../point.fal";
+import "../../../physics/deviceStructures/connection/connection.fal";
+import "../../../physics/units/symbolUnit/symbolUnit.fal";
+import "../../quantity/quantity.fal";
+
+autotuner PointConstruction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_from_quantity_empty (TestRunner runner, TestContext t) {
+        Point p = Point.NewFromQuantity(Map.New());
+        Error err = t.ExpectTrue(p.IsEmpty(), "NewFromQuantity creates empty point");
+        -> __end(runner, t);
+    }
+
+    state test_new_from_raw_empty (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Point p = Point.NewFromRaw(Map.New(), volt);
+        Error err = t.ExpectTrue(p.IsEmpty(), "NewFromRaw creates empty point");
+        -> __end(runner, t);
+    }
+}
+
+autotuner PointInsert -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_insert_or_assign_increases_size (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Point p = Point.NewFromRaw(Map.New(), volt);
+        Connection p1 = Connection.NewPlungerGate("P1");
+        Quantity q = Quantity.New(0.5, volt);
+        p.InsertOrAssign(p1, q);
+        Error err = t.ExpectIntEq(1, p.Size(), "Size is 1 after InsertOrAssign");
+        -> __end(runner, t);
+    }
+
+    state test_insert_not_empty (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Point p = Point.NewFromRaw(Map.New(), volt);
+        Connection b1 = Connection.NewBarrierGate("B1");
+        Quantity q = Quantity.New(0.1, volt);
+        p.Insert(b1, q);
+        Error err = t.ExpectFalse(p.IsEmpty(), "Point not empty after Insert");
+        -> __end(runner, t);
+    }
+}
+
+autotuner PointEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_empty_points (TestRunner runner, TestContext t) {
+        Point a = Point.NewFromQuantity(Map.New());
+        Point b = Point.NewFromQuantity(Map.New());
+        Error err = t.ExpectTrue(a.Equal(b), "Two empty points are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_false_for_same (TestRunner runner, TestContext t) {
+        Point a = Point.NewFromQuantity(Map.New());
+        Error err = t.ExpectFalse(a.NotEqual(a), "NotEqual is false for same object");
+        -> __end(runner, t);
+    }
+}
+
+autotuner PointJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Point p = Point.NewFromQuantity(Map.New());
+        string json = p.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON returns non-empty string");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        Point orig = Point.NewFromQuantity(Map.New());
+        string json = orig.ToJSON();
+        Point rt = Point.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(rt), "JSON round-trip preserves equality");
+        -> __end(runner, t);
+    }
+}

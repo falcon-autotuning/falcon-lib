@@ -1,0 +1,218 @@
+// Tests for falconCore/autotunerInterfaces/contexts/acquisitionContext
+// Run with: falcon-test run_tests.fal
+import "../../../../../testing/testing.fal";
+import "../acquisitionContext.fal";
+import "../../measurementContext/measurementContext.fal";
+import "../../../../physics/deviceStructures/connection/connection.fal";
+import "../../../../instrumentInterfaces/names/instrument/instrument.fal";
+import "../../../../physics/units/symbolUnit/symbolUnit.fal";
+
+autotuner AcquisitionContextConstructor -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_basic (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        AcquisitionContext ac   = AcquisitionContext.New(conn, inst, volt);
+        string itype            = ac.Instrument();
+        Error err = t.ExpectStrNe("", itype, "Instrument type is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_new_from_context (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        MeasurementContext mc   = MeasurementContext.New(conn, inst);
+        AcquisitionContext ac   = AcquisitionContext.NewFromContext(mc, volt);
+        string itype            = ac.Instrument();
+        Error err = t.ExpectStrNe("", itype, "NewFromContext instrument type is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_new_ammeter (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewOhmic("S1");
+        string inst             = Instrument.Amnmeter();
+        SymbolUnit amp          = SymbolUnit.Ampere();
+        AcquisitionContext ac   = AcquisitionContext.New(conn, inst, amp);
+        string itype            = ac.Instrument();
+        Error err = t.ExpectStrNe("", itype, "Ammeter instrument type is non-empty");
+        -> __end(runner, t);
+    }
+}
+
+autotuner AcquisitionContextAccessors -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_connection_name (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        AcquisitionContext ac   = AcquisitionContext.New(conn, inst, volt);
+        Connection got          = ac.Connection();
+        Error err = t.ExpectStrEq("P1", got.Name(), "Connection name is P1");
+        -> __end(runner, t);
+    }
+
+    state test_instrument_roundtrip (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewBarrierGate("B1");
+        string inst             = Instrument.Amnmeter();
+        SymbolUnit amp          = SymbolUnit.Ampere();
+        AcquisitionContext ac   = AcquisitionContext.New(conn, inst, amp);
+        string got              = ac.Instrument();
+        Error err = t.ExpectStrEq(inst, got, "Instrument type round-trips");
+        -> __end(runner, t);
+    }
+
+    state test_units_symbol (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        AcquisitionContext ac   = AcquisitionContext.New(conn, inst, volt);
+        SymbolUnit got          = ac.Units();
+        Error err = t.ExpectStrEq("V", got.Symbol(), "Units symbol is V");
+        -> __end(runner, t);
+    }
+
+    state test_new_from_context_connection (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewBarrierGate("B2");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        MeasurementContext mc   = MeasurementContext.New(conn, inst);
+        AcquisitionContext ac   = AcquisitionContext.NewFromContext(mc, volt);
+        Connection got          = ac.Connection();
+        Error err = t.ExpectStrEq("B2", got.Name(), "NewFromContext preserves connection name");
+        -> __end(runner, t);
+    }
+}
+
+autotuner AcquisitionContextPredicates -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_match_connection_true (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        AcquisitionContext ac   = AcquisitionContext.New(conn, inst, volt);
+        Error err = t.ExpectTrue(ac.MatchConnection(conn), "MatchConnection true for own conn");
+        -> __end(runner, t);
+    }
+
+    state test_match_connection_false (TestRunner runner, TestContext t) {
+        Connection c1           = Connection.NewPlungerGate("P1");
+        Connection c2           = Connection.NewPlungerGate("P2");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        AcquisitionContext ac   = AcquisitionContext.New(c1, inst, volt);
+        Error err = t.ExpectFalse(ac.MatchConnection(c2), "MatchConnection false for different conn");
+        -> __end(runner, t);
+    }
+
+    state test_match_instrument_true (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        AcquisitionContext ac   = AcquisitionContext.New(conn, inst, volt);
+        Error err = t.ExpectTrue(ac.MatchInstrumentType(inst), "MatchInstrumentType true for own type");
+        -> __end(runner, t);
+    }
+
+    state test_match_instrument_false (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string dc               = Instrument.DCVoltageSource();
+        string amm              = Instrument.Amnmeter();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        AcquisitionContext ac   = AcquisitionContext.New(conn, dc, volt);
+        Error err = t.ExpectFalse(ac.MatchInstrumentType(amm), "MatchInstrumentType false for different type");
+        -> __end(runner, t);
+    }
+}
+
+autotuner AcquisitionContextEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        AcquisitionContext a    = AcquisitionContext.New(conn, inst, volt);
+        AcquisitionContext b    = AcquisitionContext.New(conn, inst, volt);
+        Error err = t.ExpectTrue(a.Equal(b), "Same contexts are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_conn (TestRunner runner, TestContext t) {
+        Connection c1           = Connection.NewPlungerGate("P1");
+        Connection c2           = Connection.NewPlungerGate("P2");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        AcquisitionContext a    = AcquisitionContext.New(c1, inst, volt);
+        AcquisitionContext b    = AcquisitionContext.New(c2, inst, volt);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different connections are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_unit (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        SymbolUnit amp          = SymbolUnit.Ampere();
+        AcquisitionContext a    = AcquisitionContext.New(conn, inst, volt);
+        AcquisitionContext b    = AcquisitionContext.New(conn, inst, amp);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different units are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_different (TestRunner runner, TestContext t) {
+        Connection c1           = Connection.NewPlungerGate("P1");
+        Connection c2           = Connection.NewBarrierGate("B1");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        AcquisitionContext a    = AcquisitionContext.New(c1, inst, volt);
+        AcquisitionContext b    = AcquisitionContext.New(c2, inst, volt);
+        Error err = t.ExpectFalse(a.Equal(b), "Equal is false for different connections");
+        -> __end(runner, t);
+    }
+}
+
+autotuner AcquisitionContextJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        AcquisitionContext ac   = AcquisitionContext.New(conn, inst, volt);
+        string json             = ac.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        SymbolUnit volt         = SymbolUnit.Volt();
+        AcquisitionContext orig = AcquisitionContext.New(conn, inst, volt);
+        string json             = orig.ToJSON();
+        AcquisitionContext res  = AcquisitionContext.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(res), "ToJSON/FromJSON round-trip preserves equality");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_ammeter (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewOhmic("S1");
+        string inst             = Instrument.Amnmeter();
+        SymbolUnit amp          = SymbolUnit.Ampere();
+        AcquisitionContext orig = AcquisitionContext.New(conn, inst, amp);
+        string json             = orig.ToJSON();
+        AcquisitionContext res  = AcquisitionContext.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(res), "Ammeter round-trip preserves equality");
+        -> __end(runner, t);
+    }
+}

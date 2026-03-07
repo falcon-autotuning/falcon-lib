@@ -1,0 +1,11 @@
+name: quantity
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: symbolUnit
+    version: "1.0.0"
+    local_path: "../../physics/units/symbolUnit/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../testing/"

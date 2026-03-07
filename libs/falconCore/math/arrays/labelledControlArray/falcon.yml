@@ -1,0 +1,17 @@
+name: labelledControlArray
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: farray
+    version: "1.0.0"
+    local_path: "../../../generic/farray/"
+  - name: increasingAlignment
+    version: "1.0.0"
+    local_path: "../increasingAlignment/"
+  - name: acquisitionContext
+    version: "1.0.0"
+    local_path: "../../../autotunerInterfaces/acquisitionContext/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"

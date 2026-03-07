@@ -1,0 +1,192 @@
+// Tests for falconCore/instrumentInterfaces/portTransforms/portTransform
+// Run with: falcon-test run_tests.fal
+import "../../../../testing/testing.fal";
+import "../portTransform.fal";
+import "../../names/instrumentPort/instrumentPort.fal";
+import "../../../math/analyticFunction/analyticFunction.fal";
+import "../../../physics/deviceStructures/connection/connection.fal";
+import "../../names/instrument/instrument.fal";
+import "../../../physics/units/symbolUnit/symbolUnit.fal";
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+routine MakePort (string name) -> (InstrumentPort port) {
+    Connection c  = Connection.NewPlungerGate(name);
+    Instrument inst = Instrument.DCVoltageSource();
+    SymbolUnit volts = SymbolUnit.Volt();
+    port = InstrumentPort.NewKnob(name, c, inst, volts, "test port");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite: PortTransformConstructors
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner PortTransformConstructors -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_with_port_and_function (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        AnalyticFunction f    = AnalyticFunction.Identity();
+        PortTransform pt      = PortTransform.New(port, f);
+        string json           = pt.ToJSON();
+        Error err = t.ExpectStrNe("", json, "New(port, func) produces a valid transform");
+        -> __end(runner, t);
+    }
+
+    state test_constant_transform (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform pt      = PortTransform.ConstantTransform(port, 1.5);
+        string json           = pt.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ConstantTransform produces a valid transform");
+        -> __end(runner, t);
+    }
+
+    state test_identity_transform (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform pt      = PortTransform.IdentityTranform(port);
+        string json           = pt.ToJSON();
+        Error err = t.ExpectStrNe("", json, "IdentityTranform produces a valid transform");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite: PortTransformPort
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner PortTransformPort -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_port_accessor_default_name (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform pt      = PortTransform.IdentityTranform(port);
+        InstrumentPort got    = pt.Port();
+        Error err = t.ExpectStrEq("P1", got.DefaultName(), "Port() returns port with correct default name");
+        -> __end(runner, t);
+    }
+
+    state test_port_accessor_is_knob (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform pt      = PortTransform.IdentityTranform(port);
+        InstrumentPort got    = pt.Port();
+        Error err = t.ExpectTrue(got.IsKnob(), "Port() returns a knob port");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite: PortTransformLabels
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner PortTransformLabels -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_constant_transform_labels (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform pt      = PortTransform.ConstantTransform(port, 0.0);
+        Array<string> labels  = pt.Labels();
+        Error err = t.ExpectIntEq(0, labels.Size(), "ConstantTransform has 0 labels");
+        -> __end(runner, t);
+    }
+
+    state test_identity_transform_labels (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform pt      = PortTransform.IdentityTranform(port);
+        Array<string> labels  = pt.Labels();
+        Error err = t.ExpectIntEq(1, labels.Size(), "IdentityTranform has 1 label");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite: PortTransformEquality
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner PortTransformEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same_transform (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform a       = PortTransform.ConstantTransform(port, 1.0);
+        PortTransform b       = PortTransform.ConstantTransform(port, 1.0);
+        Error err = t.ExpectTrue(a.Equal(b), "Same constant transforms are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_value (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform a       = PortTransform.ConstantTransform(port, 1.0);
+        PortTransform b       = PortTransform.ConstantTransform(port, 2.0);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different constant values are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_for_different (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform a       = PortTransform.ConstantTransform(port, 1.0);
+        PortTransform b       = PortTransform.ConstantTransform(port, 2.0);
+        Error err = t.ExpectFalse(a.Equal(b), "Equal is false for different transforms");
+        -> __end(runner, t);
+    }
+
+    state test_identity_equal_to_itself (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform a       = PortTransform.IdentityTranform(port);
+        PortTransform b       = PortTransform.IdentityTranform(port);
+        Error err = t.ExpectTrue(a.Equal(b), "Identity transforms on same port are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_ports (TestRunner runner, TestContext t) {
+        InstrumentPort p1     = MakePort("P1");
+        InstrumentPort p2     = MakePort("P2");
+        PortTransform a       = PortTransform.ConstantTransform(p1, 1.0);
+        PortTransform b       = PortTransform.ConstantTransform(p2, 1.0);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Transforms on different ports are not equal");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite: PortTransformJSON
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner PortTransformJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform pt      = PortTransform.ConstantTransform(port, 1.0);
+        string json           = pt.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_constant (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform orig    = PortTransform.ConstantTransform(port, 3.14);
+        string json           = orig.ToJSON();
+        PortTransform res     = PortTransform.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(res), "ToJSON/FromJSON round-trips ConstantTransform");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_identity (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform orig    = PortTransform.IdentityTranform(port);
+        string json           = orig.ToJSON();
+        PortTransform res     = PortTransform.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(res), "ToJSON/FromJSON round-trips IdentityTranform");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_preserves_port_name (TestRunner runner, TestContext t) {
+        InstrumentPort port   = MakePort("P1");
+        PortTransform orig    = PortTransform.ConstantTransform(port, 0.0);
+        string json           = orig.ToJSON();
+        PortTransform res     = PortTransform.FromJSON(json);
+        InstrumentPort rport  = res.Port();
+        Error err = t.ExpectStrEq("P1", rport.DefaultName(), "FromJSON preserves port default name");
+        -> __end(runner, t);
+    }
+}
