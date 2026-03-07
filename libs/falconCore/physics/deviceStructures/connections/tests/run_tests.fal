@@ -1,24 +1,28 @@
 // Tests for falcon_core/physics/deviceStructures/connections
 // Run with: falcon-test run_tests.fal
 import "../../../../../testing/testing.fal";
-import "../connection/connection.fal";
-import "../connections/connections.fal";
+import "../../connection/connection.fal";
+import "../connections.fal";
 
 autotuner ConnectionsConstructor -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
 
     state test_new_empty (TestRunner runner, TestContext t) {
-        Connections c = Connections.New([]);
-        Error err = t.ExpectTrue(c.IsEmpty(), "New([]) creates empty Connections");
+        Array<Connection> arr = Array.New();
+        Connections c = Connections.New(arr);
+        Error err = t.ExpectTrue(c.IsEmpty(), "New() creates empty Connections");
         -> __end(runner, t);
     }
 
     state test_new_with_elements (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections c = Connections.New([p1, b1]);
-        Error err = t.ExpectEq(2, c.Size(), "New with two elements has size 2");
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        arr.PushBack(b1);
+        Connections c = Connections.New(arr);
+        Error err = t.ExpectIntEq(2, c.Size(), "New with two elements has size 2");
         -> __end(runner, t);
     }
 }
@@ -30,7 +34,10 @@ autotuner ConnectionsPredicates -> (int passed, int failed) {
     state test_is_gates_all_gates (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections c = Connections.New([p1, b1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        arr.PushBack(b1);
+        Connections c = Connections.New(arr);
         Error err = t.ExpectTrue(c.IsGates(), "All-gate Connections.IsGates is true");
         -> __end(runner, t);
     }
@@ -38,7 +45,10 @@ autotuner ConnectionsPredicates -> (int passed, int failed) {
     state test_is_gates_with_ohmic (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection s1 = Connection.NewOhmic("S1");
-        Connections c = Connections.New([p1, s1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        arr.PushBack(s1);
+        Connections c = Connections.New(arr);
         Error err = t.ExpectFalse(c.IsGates(), "Mixed Connections.IsGates is false");
         -> __end(runner, t);
     }
@@ -46,7 +56,10 @@ autotuner ConnectionsPredicates -> (int passed, int failed) {
     state test_is_ohmics (TestRunner runner, TestContext t) {
         Connection s1 = Connection.NewOhmic("S1");
         Connection s2 = Connection.NewOhmic("S2");
-        Connections c = Connections.New([s1, s2]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(s1);
+        arr.PushBack(s2);
+        Connections c = Connections.New(arr);
         Error err = t.ExpectTrue(c.IsOhmics(), "All-ohmic Connections.IsOhmics is true");
         -> __end(runner, t);
     }
@@ -54,7 +67,10 @@ autotuner ConnectionsPredicates -> (int passed, int failed) {
     state test_is_plunger_gates (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection p2 = Connection.NewPlungerGate("P2");
-        Connections c = Connections.New([p1, p2]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        arr.PushBack(p2);
+        Connections c = Connections.New(arr);
         Error err = t.ExpectTrue(c.IsPlungerGates(), "All-plunger Connections.IsPlungerGates is true");
         -> __end(runner, t);
     }
@@ -62,21 +78,28 @@ autotuner ConnectionsPredicates -> (int passed, int failed) {
     state test_is_barrier_gates (TestRunner runner, TestContext t) {
         Connection b1 = Connection.NewBarrierGate("B1");
         Connection b2 = Connection.NewBarrierGate("B2");
-        Connections c = Connections.New([b1, b2]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(b1);
+        arr.PushBack(b2);
+        Connections c = Connections.New(arr);
         Error err = t.ExpectTrue(c.IsBarrierGates(), "All-barrier Connections.IsBarrierGates is true");
         -> __end(runner, t);
     }
 
     state test_is_reservoir_gates (TestRunner runner, TestContext t) {
         Connection r1 = Connection.NewReservoirGate("R1");
-        Connections c = Connections.New([r1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(r1);
+        Connections c = Connections.New(arr);
         Error err = t.ExpectTrue(c.IsReservoirGates(), "Reservoir Connections.IsReservoirGates is true");
         -> __end(runner, t);
     }
 
     state test_is_screening_gates (TestRunner runner, TestContext t) {
         Connection sc1 = Connection.NewScreeningGate("SC1");
-        Connections c = Connections.New([sc1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(sc1);
+        Connections c = Connections.New(arr);
         Error err = t.ExpectTrue(c.IsScreeningGates(), "Screening Connections.IsScreeningGates is true");
         -> __end(runner, t);
     }
@@ -84,7 +107,10 @@ autotuner ConnectionsPredicates -> (int passed, int failed) {
     state test_is_dot_gates (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections c = Connections.New([p1, b1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        arr.PushBack(b1);
+        Connections c = Connections.New(arr);
         Error err = t.ExpectTrue(c.IsDotGates(), "Plunger+barrier Connections.IsDotGates is true");
         -> __end(runner, t);
     }
@@ -96,16 +122,20 @@ autotuner ConnectionsListOps -> (int passed, int failed) {
 
     state test_push_back_size (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
-        Connections c = Connections.New([]);
+        Array<Connection> arr = Array.New();
+        Connections c = Connections.New(arr);
         c.PushBack(p1);
-        Error err = t.ExpectEq(1, c.Size(), "PushBack increases size");
+        Error err = t.ExpectIntEq(1, c.Size(), "PushBack increases size");
         -> __end(runner, t);
     }
 
     state test_get_index (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections c = Connections.New([p1, b1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        arr.PushBack(b1);
+        Connections c = Connections.New(arr);
         Connection got = c.GetIndex(0);
         Error err = t.ExpectTrue(p1.Equal(got), "GetIndex(0) returns first element");
         -> __end(runner, t);
@@ -114,7 +144,9 @@ autotuner ConnectionsListOps -> (int passed, int failed) {
     state test_contains (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections c = Connections.New([p1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        Connections c = Connections.New(arr);
         Error err = t.ExpectTrue(c.Contains(p1), "Contains returns true for present element");
         -> __end(runner, t);
     }
@@ -122,7 +154,9 @@ autotuner ConnectionsListOps -> (int passed, int failed) {
     state test_not_contains (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections c = Connections.New([p1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        Connections c = Connections.New(arr);
         Error err = t.ExpectFalse(c.Contains(b1), "Contains returns false for absent element");
         -> __end(runner, t);
     }
@@ -130,23 +164,31 @@ autotuner ConnectionsListOps -> (int passed, int failed) {
     state test_index_of (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections c = Connections.New([p1, b1]);
-        Error err = t.ExpectEq(1, c.Index(b1), "Index returns correct position");
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        arr.PushBack(b1);
+        Connections c = Connections.New(arr);
+        Error err = t.ExpectIntEq(1, c.Index(b1), "Index returns correct position");
         -> __end(runner, t);
     }
 
     state test_erase (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections c = Connections.New([p1, b1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        arr.PushBack(b1);
+        Connections c = Connections.New(arr);
         c.Erase(0);
-        Error err = t.ExpectEq(1, c.Size(), "Erase reduces size by one");
+        Error err = t.ExpectIntEq(1, c.Size(), "Erase reduces size by one");
         -> __end(runner, t);
     }
 
     state test_clear (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
-        Connections c = Connections.New([p1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        Connections c = Connections.New(arr);
         c.Clear();
         Error err = t.ExpectTrue(c.IsEmpty(), "Clear empties the collection");
         -> __end(runner, t);
@@ -155,9 +197,12 @@ autotuner ConnectionsListOps -> (int passed, int failed) {
     state test_items_length (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections c = Connections.New([p1, b1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        arr.PushBack(b1);
+        Connections c = Connections.New(arr);
         Array<Connection> items = c.Items();
-        Error err = t.ExpectEq(2, items.Size(), "Items returns array of correct length");
+        Error err = t.ExpectIntEq(2, items.Size(), "Items returns array of correct length");
         -> __end(runner, t);
     }
 }
@@ -169,18 +214,27 @@ autotuner ConnectionsIntersection -> (int passed, int failed) {
     state test_intersection_common (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections a = Connections.New([p1, b1]);
-        Connections b = Connections.New([p1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        arr.PushBack(b1);
+        Connections a = Connections.New(arr);
+        Array<Connection> arr1 = Array.New();
+        arr1.PushBack(p1);
+        Connections b = Connections.New(arr1);
         Connections inter = a.Intersection(b);
-        Error err = t.ExpectEq(1, inter.Size(), "Intersection has one common element");
+        Error err = t.ExpectIntEq(1, inter.Size(), "Intersection has one common element");
         -> __end(runner, t);
     }
 
     state test_intersection_empty (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections a = Connections.New([p1]);
-        Connections b = Connections.New([b1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        Connections a = Connections.New(arr);
+        Array<Connection> arr1 = Array.New();
+        arr.PushBack(b1);
+        Connections b = Connections.New(arr1);
         Connections inter = a.Intersection(b);
         Error err = t.ExpectTrue(inter.IsEmpty(), "Intersection of disjoint sets is empty");
         -> __end(runner, t);
@@ -193,8 +247,12 @@ autotuner ConnectionsEquality -> (int passed, int failed) {
 
     state test_equal_same_contents (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
-        Connections a = Connections.New([p1]);
-        Connections b = Connections.New([p1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        Connections a = Connections.New(arr);
+        Array<Connection> arr1 = Array.New();
+        arr1.PushBack(p1);
+        Connections b = Connections.New(arr1);
         Error err = t.ExpectTrue(a.Equal(b), "Connections with same contents are equal");
         -> __end(runner, t);
     }
@@ -202,8 +260,12 @@ autotuner ConnectionsEquality -> (int passed, int failed) {
     state test_not_equal_different_contents (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections a = Connections.New([p1]);
-        Connections b = Connections.New([b1]);
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        Connections a = Connections.New(arr);
+        Array<Connection> arr1 = Array.New();
+        arr.PushBack(b1);
+        Connections b = Connections.New(arr1);
         Error err = t.ExpectTrue(a.NotEqual(b), "Connections with different contents are not equal");
         -> __end(runner, t);
     }
@@ -215,8 +277,10 @@ autotuner ConnectionsJSON -> (int passed, int failed) {
 
     state test_to_json_non_empty (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
-        Connections c = Connections.New([p1]);
-        string json   = c.ToJSON();
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        Connections a = Connections.New(arr);
+        string json   = a.ToJSON();
         Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
         -> __end(runner, t);
     }
@@ -224,10 +288,13 @@ autotuner ConnectionsJSON -> (int passed, int failed) {
     state test_roundtrip (TestRunner runner, TestContext t) {
         Connection p1 = Connection.NewPlungerGate("P1");
         Connection b1 = Connection.NewBarrierGate("B1");
-        Connections orig     = Connections.New([p1, b1]);
-        string json          = orig.ToJSON();
+        Array<Connection> arr = Array.New();
+        arr.PushBack(p1);
+        arr.PushBack(b1);
+        Connections a = Connections.New(arr);
+        string json          = a.ToJSON();
         Connections restored = Connections.FromJSON(json);
-        Error err = t.ExpectTrue(orig.Equal(restored), "Connections JSON roundtrip preserves equality");
+        Error err = t.ExpectTrue(a.Equal(restored), "Connections JSON roundtrip preserves equality");
         -> __end(runner, t);
     }
 }

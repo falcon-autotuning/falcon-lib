@@ -1,4 +1,7 @@
-import "../../../../collections/array/array.fal";
+import (
+"../../../../collections/array/array.fal"
+"../connection/connection.fal"
+)
 ffimport "connections-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct Connections {
     routine New (Array<Connection> conns) -> (Connections c)
@@ -16,11 +19,11 @@ struct Connections {
     routine ToJSON () -> (string json)
     routine Size () -> (int size)
     routine IsEmpty () -> (bool empty)
-    routine GetIndex (int index) -> (T value)
-    routine PushBack (T value) -> ()
-    routine Insert (int index, T value) -> ()
-    routine Contains (T value) -> (bool found)
-    routine Index (T value) -> (int index)
+    routine GetIndex (int index) -> (Connection value)
+    routine PushBack (Connection value) -> ()
+    routine Insert (int index, Connection value) -> ()
+    routine Contains (Connection value) -> (bool found)
+    routine Index (Connection value) -> (int index)
     routine Items () -> (Array<Connection> items)
     routine Clear () -> ()
     routine Erase (int index) -> ()

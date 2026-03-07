@@ -98,7 +98,7 @@ TEST(DeviceConstruction, LoadsFromYamlFile) {
     falcon::qarray::Device dev(config_path);
     EXPECT_EQ(dev.n_dots(), 2);
     auto gates = dev.gate_names();
-    ASSERT_EQ(gates.size(), 3u);
+    ASSERT_EQ(gates.size(), 3U);
     EXPECT_EQ(gates[0], "P1");
     EXPECT_EQ(gates[1], "P2");
     EXPECT_EQ(gates[2], "B1");
