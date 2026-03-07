@@ -1,0 +1,17 @@
+name: interpretationContainer
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: map
+    version: "1.0.0"
+    local_path: "../../../../collections/map/"
+  - name: interpretationContext
+    version: "1.0.0"
+    local_path: "../interpretationContext/"
+  - name: measurementContext
+    version: "1.0.0"
+    local_path: "../../contexts/measurementContext/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"

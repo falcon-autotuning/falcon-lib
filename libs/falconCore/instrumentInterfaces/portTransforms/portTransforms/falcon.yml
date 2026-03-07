@@ -1,0 +1,14 @@
+name: portTransforms
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: portTransform
+    version: "1.0.0"
+    local_path: "../portTransform/"
+  - name: array
+    version: "1.0.0"
+    local_path: "../../../../collections/array/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"
