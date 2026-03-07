@@ -1,0 +1,9 @@
+ffimport "standard-response-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct StandardResponse { 
+    routine New (string message) -> (StandardResponse response)
+    routine Equal (StandardResponse other) -> (bool equal)
+    routine NotEqual (StandardResponse other) -> (bool notequal)
+    routine FromJSON (string json) -> (StandardResponse response)
+    routine ToJSON -> (string json)
+    routine Message -> (string message)
+}

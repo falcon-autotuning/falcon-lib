@@ -1,0 +1,11 @@
+import "../../voltageStates/deviceVoltageStates/deviceVoltageStates.fal";
+ffimport "voltage-states-response-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct VoltageStatesResponse { 
+    routine New (string message, deviceVoltageStates::DeviceVoltageStates states) -> (VoltageStatesResponse response)
+    routine States -> (deviceVoltageStates::DeviceVoltageStates states)
+    routine Equal (VoltageStatesResponse other) -> (bool equal)
+    routine NotEqual (VoltageStatesResponse other) -> (bool notequal)
+    routine FromJSON (string json) -> (VoltageStatesResponse response)
+    routine ToJSON -> (string json)
+    routine Message -> (string message)
+}
