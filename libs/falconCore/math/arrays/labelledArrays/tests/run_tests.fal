@@ -81,7 +81,7 @@ autotuner LabelledArraysWithElements -> (int passed, int failed) {
         Array<labelledMeasuredArray::LabelledMeasuredArray> arr;
         arr.pushback(lma);
         labelledArrays::LabelledArrays la = labelledArrays::LabelledArrays.NewLabelledMeasuredArrays(arr);
-        Error err = t.ExpectEq(1, la.Size(), "LabelledMeasuredArrays with one element has size 1");
+        Error err = t.ExpectIntEq(1, la.Size(), "LabelledMeasuredArrays with one element has size 1");
         -> __end(runner, t);
     }
 
@@ -91,7 +91,7 @@ autotuner LabelledArraysWithElements -> (int passed, int failed) {
         Array<labelledControlArray::LabelledControlArray> arr;
         arr.pushback(lca);
         labelledArrays::LabelledArrays la = labelledArrays::LabelledArrays.NewLabelledControlArrays(arr);
-        Error err = t.ExpectEq(1, la.Size(), "LabelledControlArrays with one element has size 1");
+        Error err = t.ExpectIntEq(1, la.Size(), "LabelledControlArrays with one element has size 1");
         -> __end(runner, t);
     }
 }

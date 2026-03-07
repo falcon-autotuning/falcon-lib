@@ -18,7 +18,7 @@ autotuner ChannelsConstructor -> (int passed, int failed) {
         Channel c1 = Channel.New("ch1");
         Channel c2 = Channel.New("ch2");
         Channels chs = Channels.New([c1, c2]);
-        Error err = t.ExpectEq(2, chs.Size(), "New with two elements has size 2");
+        Error err = t.ExpectIntEq(2, chs.Size(), "New with two elements has size 2");
         -> __end(runner, t);
     }
 }
@@ -31,7 +31,7 @@ autotuner ChannelsListOps -> (int passed, int failed) {
         Channel c1 = Channel.New("ch1");
         Channels chs = Channels.New([]);
         chs.PushBack(c1);
-        Error err = t.ExpectEq(1, chs.Size(), "PushBack increases size");
+        Error err = t.ExpectIntEq(1, chs.Size(), "PushBack increases size");
         -> __end(runner, t);
     }
 
@@ -68,7 +68,7 @@ autotuner ChannelsListOps -> (int passed, int failed) {
         Channel c2 = Channel.New("ch2");
         Channels chs = Channels.New([c1, c2]);
         Channel popped = chs.PopBack();
-        Error err = t.ExpectEq(1, chs.Size(), "PopBack reduces size by one");
+        Error err = t.ExpectIntEq(1, chs.Size(), "PopBack reduces size by one");
         -> __end(runner, t);
     }
 
@@ -88,7 +88,7 @@ autotuner ChannelsListOps -> (int passed, int failed) {
         Channel c2 = Channel.New("ch2");
         Channels chs = Channels.New([c1, c2]);
         chs.Erase(0);
-        Error err = t.ExpectEq(1, chs.Size(), "Erase reduces size by one");
+        Error err = t.ExpectIntEq(1, chs.Size(), "Erase reduces size by one");
         -> __end(runner, t);
     }
 
@@ -119,7 +119,7 @@ autotuner ChannelsListOps -> (int passed, int failed) {
         Channel c1 = Channel.New("ch1");
         Channel c2 = Channel.New("ch2");
         Channels chs = Channels.New([c1, c2]);
-        Error err = t.ExpectEq(1, chs.IndexOf(c2), "IndexOf returns correct position");
+        Error err = t.ExpectIntEq(1, chs.IndexOf(c2), "IndexOf returns correct position");
         -> __end(runner, t);
     }
 }
