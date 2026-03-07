@@ -1,0 +1,21 @@
+import "../../../../../testing/testing.fal";
+import "../measurementRequest.fal";
+
+autotuner MeasurementRequestJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        MeasurementRequest orig     = MeasurementRequest.FromJSON("{\"polymorphic_id\":2147483649,\"polymorphic_name\":\"falcon_core::communications::messages::MeasurementRequest\",\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":{\"polymorphic_id\":1,\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":\"\"}}},\"value1\":\"\",\"value2\":[],\"value3\":{\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":[]}}},\"value4\":[],\"value5\":{\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":0,\"value1\":1}}}}}}");
+        string                json     = orig.ToJSON();
+        MeasurementRequest restored = MeasurementRequest.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "MeasurementRequest JSON roundtrip");
+        -> __end(runner, t);
+    }
+
+    state test_message (TestRunner runner, TestContext t) {
+        MeasurementRequest req = MeasurementRequest.FromJSON("{\"polymorphic_id\":2147483649,\"polymorphic_name\":\"falcon_core::communications::messages::MeasurementRequest\",\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":{\"polymorphic_id\":1,\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":\"test-msg\"}}},\"value1\":\"\",\"value2\":[],\"value3\":{\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":[]}}},\"value4\":[],\"value5\":{\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":0,\"value1\":1}}}}}}");
+        Error err = t.ExpectStrEq("test-msg", req.Message(), "MeasurementRequest.Message returns stored message");
+        -> __end(runner, t);
+    }
+}

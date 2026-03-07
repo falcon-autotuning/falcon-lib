@@ -1,0 +1,29 @@
+name: measurementRequest
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: waveform
+    version: "1.0.0"
+    local_path: "../../../instrumentInterfaces/waveform/"
+  - name: labelledDomain
+    version: "1.0.0"
+    local_path: "../../../math/domains/labelledDomain/"
+  - name: ports
+    version: "1.0.0"
+    local_path: "../../../instrumentInterfaces/names/ports/"
+  - name: instrumentPort
+    version: "1.0.0"
+    local_path: "../../../instrumentInterfaces/names/instrumentPort/"
+  - name: portTransform
+    version: "1.0.0"
+    local_path: "../../../instrumentInterfaces/portTransforms/portTransform/"
+  - name: map
+    version: "1.0.0"
+    local_path: "../../../../collections/map/"
+  - name: array
+    version: "1.0.0"
+    local_path: "../../../../collections/array/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"

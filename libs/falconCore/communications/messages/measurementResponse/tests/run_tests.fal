@@ -1,0 +1,22 @@
+import "../../../../../testing/testing.fal";
+import "../measurementResponse.fal";
+
+autotuner MeasurementResponseJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        MeasurementResponse orig     = MeasurementResponse.FromJSON("{\"polymorphic_id\":2147483649,\"polymorphic_name\":\"falcon_core::communications::messages::MeasurementResponse\",\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":{\"polymorphic_id\":1,\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":\"\"}}},\"value1\":{\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":[]}}}}}}");
+        string              json     = orig.ToJSON();
+        MeasurementResponse restored = MeasurementResponse.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "MeasurementResponse JSON roundtrip");
+        -> __end(runner, t);
+    }
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        MeasurementResponse resp = MeasurementResponse.FromJSON("{\"polymorphic_id\":2147483649,\"polymorphic_name\":\"falcon_core::communications::messages::MeasurementResponse\",\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":{\"polymorphic_id\":1,\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":\"\"}}},\"value1\":{\"ptr_wrapper\":{\"valid\":1,\"data\":{\"value0\":[]}}}}}}");
+        string json = resp.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+}
