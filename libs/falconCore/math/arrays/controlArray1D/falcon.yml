@@ -1,0 +1,11 @@
+name: controlArray1D
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: controlArray
+    version: "1.0.0"
+    local_path: "../controlArray/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"
