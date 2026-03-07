@@ -1,0 +1,148 @@
+// Tests for falconCore/autotunerInterfaces/contexts/measurementContext
+// Run with: falcon-test run_tests.fal
+import "../../../../../testing/testing.fal";
+import "../measurementContext.fal";
+import "../../../../physics/deviceStructures/connection/connection.fal";
+import "../../../../instrumentInterfaces/names/instrument/instrument.fal";
+
+autotuner MeasurementContextConstructor -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_plunger_dc (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        MeasurementContext mc   = MeasurementContext.New(conn, inst);
+        string itype            = mc.Instrument();
+        Error err = t.ExpectStrNe("", itype, "Instrument type is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_new_barrier_ammeter (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewBarrierGate("B1");
+        string inst             = Instrument.Amnmeter();
+        MeasurementContext mc   = MeasurementContext.New(conn, inst);
+        string itype            = mc.Instrument();
+        Error err = t.ExpectStrNe("", itype, "Ammeter instrument type is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_new_ohmic_voltage_source (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewOhmic("S1");
+        string inst             = Instrument.VoltageSource();
+        MeasurementContext mc   = MeasurementContext.New(conn, inst);
+        string itype            = mc.Instrument();
+        Error err = t.ExpectStrNe("", itype, "VoltageSource instrument type is non-empty");
+        -> __end(runner, t);
+    }
+}
+
+autotuner MeasurementContextAccessors -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_connection_name (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        MeasurementContext mc   = MeasurementContext.New(conn, inst);
+        Connection got          = mc.Connection();
+        Error err = t.ExpectStrEq("P1", got.Name(), "Connection name is P1");
+        -> __end(runner, t);
+    }
+
+    state test_instrument_roundtrip (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewBarrierGate("B1");
+        string inst             = Instrument.Amnmeter();
+        MeasurementContext mc   = MeasurementContext.New(conn, inst);
+        string got              = mc.Instrument();
+        Error err = t.ExpectStrEq(inst, got, "Instrument type round-trips");
+        -> __end(runner, t);
+    }
+
+    state test_connection_type_plunger (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P2");
+        string inst             = Instrument.DCVoltageSource();
+        MeasurementContext mc   = MeasurementContext.New(conn, inst);
+        Connection got          = mc.Connection();
+        Error err = t.ExpectTrue(got.IsPlungerGate(), "Connection is a PlungerGate");
+        -> __end(runner, t);
+    }
+}
+
+autotuner MeasurementContextEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        MeasurementContext a    = MeasurementContext.New(conn, inst);
+        MeasurementContext b    = MeasurementContext.New(conn, inst);
+        Error err = t.ExpectTrue(a.Equal(b), "Same conn+inst are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_conn (TestRunner runner, TestContext t) {
+        Connection c1           = Connection.NewPlungerGate("P1");
+        Connection c2           = Connection.NewPlungerGate("P2");
+        string inst             = Instrument.DCVoltageSource();
+        MeasurementContext a    = MeasurementContext.New(c1, inst);
+        MeasurementContext b    = MeasurementContext.New(c2, inst);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different connections are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_inst (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string dc               = Instrument.DCVoltageSource();
+        string amm              = Instrument.Amnmeter();
+        MeasurementContext a    = MeasurementContext.New(conn, dc);
+        MeasurementContext b    = MeasurementContext.New(conn, amm);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different instruments are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_different (TestRunner runner, TestContext t) {
+        Connection c1           = Connection.NewPlungerGate("P1");
+        Connection c2           = Connection.NewBarrierGate("B1");
+        string inst             = Instrument.DCVoltageSource();
+        MeasurementContext a    = MeasurementContext.New(c1, inst);
+        MeasurementContext b    = MeasurementContext.New(c2, inst);
+        Error err = t.ExpectFalse(a.Equal(b), "Equal is false for different connections");
+        -> __end(runner, t);
+    }
+}
+
+autotuner MeasurementContextJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        MeasurementContext mc   = MeasurementContext.New(conn, inst);
+        string json             = mc.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_equality (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewPlungerGate("P1");
+        string inst             = Instrument.DCVoltageSource();
+        MeasurementContext orig = MeasurementContext.New(conn, inst);
+        string json             = orig.ToJSON();
+        MeasurementContext res  = MeasurementContext.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(res), "ToJSON/FromJSON round-trip preserves equality");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_barrier (TestRunner runner, TestContext t) {
+        Connection conn         = Connection.NewBarrierGate("B2");
+        string inst             = Instrument.Amnmeter();
+        MeasurementContext orig = MeasurementContext.New(conn, inst);
+        string json             = orig.ToJSON();
+        MeasurementContext res  = MeasurementContext.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(res), "BarrierGate round-trip preserves equality");
+        -> __end(runner, t);
+    }
+}
