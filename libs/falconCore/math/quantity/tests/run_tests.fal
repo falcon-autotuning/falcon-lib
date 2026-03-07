@@ -2,7 +2,7 @@
 // Run with: falcon-test run_tests.fal
 import "../../../../testing/testing.fal";
 import "../quantity.fal";
-import "../../../../physics/units/symbolUnit/symbolUnit.fal";
+import "../../../physics/units/symbolUnit/symbolUnit.fal";
 
 autotuner QuantityConstructor -> (int passed, int failed) {
     passed = 0; failed = 0;

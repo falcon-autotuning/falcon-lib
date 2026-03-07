@@ -1,6 +1,6 @@
 import (
-"../../../physics/deviceStructures/connection/connection.fal"
-"../../../physics/units/symbolUnit/symbolUnit.fal"
+"../../physics/deviceStructures/connection/connection.fal"
+"../../physics/units/symbolUnit/symbolUnit.fal"
 )
 ffimport "quantity-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct Quantity {
@@ -13,10 +13,10 @@ struct Quantity {
     routine ConvertToUnit (symbolUnit::SymbolUnit new_unit) -> (Quantity converted_state)
     routine Times (float factor) -> (Quantity scaled_state)
     routine Times (int factor) -> (Quantity scaled_state)
-    routine Times (quantity::Quantity factor) -> (Quantity scaled_state)
+    routine Times (Quantity factor) -> (Quantity scaled_state)
     routine Divides (float divisor) -> (Quantity scaled_state)
     routine Divides (int divisor) -> (Quantity scaled_state)
-    routine Divides (quantity::Quantity divisor) -> (Quantity scaled_state)
+    routine Divides (Quantity divisor) -> (Quantity scaled_state)
     routine Power (float exponent) -> (Quantity powered_state)
     routine Add (Quantity other) -> (Quantity sum_state)
     routine Subtract (Quantity other) -> (Quantity difference_state)
