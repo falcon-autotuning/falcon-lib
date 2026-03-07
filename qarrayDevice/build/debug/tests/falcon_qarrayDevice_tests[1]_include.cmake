@@ -1,0 +1,5 @@
+if(EXISTS "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/tests/falcon_qarrayDevice_tests[1]_tests.cmake")
+  include("/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/tests/falcon_qarrayDevice_tests[1]_tests.cmake")
+else()
+  add_test(falcon_qarrayDevice_tests_NOT_BUILT falcon_qarrayDevice_tests_NOT_BUILT)
+endif()

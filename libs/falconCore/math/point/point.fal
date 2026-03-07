@@ -36,4 +36,10 @@ struct Point {
     routine GetOr (connection::Connection key, quantity::Quantity defaultValue) -> (quantity::Quantity value) {
         value = this.Coordinates().GetOr(key, defaultValue);
     }
+    routine Set (connection::Connection key, quantity::Quantity value) -> ()
+    routine Remove (connection::Connection key) -> (bool removed)
+    routine Clear () -> ()
+    routine Contains (connection::Connection key) -> (bool found) {
+        found = this.Coordinates().Contains(key);
+    }
 }

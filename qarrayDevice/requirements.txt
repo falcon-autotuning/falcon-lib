@@ -1,0 +1,11 @@
+# Python dependencies for falcon qarrayDevice
+# Install with: uv pip install -r requirements.txt
+#
+# IMPORTANT: Python 3.12 or earlier is required.
+# qarray-rust-core does not publish wheels for Python 3.13+, which causes
+# a source build that fails with CMake 4.x (see install notes in README).
+# Use: uv python pin 3.12 && uv venv && uv pip install -r requirements.txt
+
+qarray>=1.6.0
+numpy>=1.24.0
+pyyaml>=6.0

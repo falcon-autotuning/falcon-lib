@@ -34,26 +34,19 @@ nvim-install:
 	  'return {' \
 	  '  {' \
 	  '    "neovim/nvim-lspconfig",' \
-	  '    config = function()' \
-	  '      -- Ensure falcon_lsp.lua is on the runtime path' \
-	  '      local plugin_dir = vim.fn.expand("$(NVIM_LUA_DIR)")' \
-	  '      if not vim.tbl_contains(vim.opt.runtimepath:get(), plugin_dir) then' \
-	  '        vim.opt.runtimepath:append(plugin_dir)' \
-	  '      end' \
-	  '      local ok, falcon_lsp = pcall(require, "falcon_lsp")' \
-	  '      if ok then' \
-	  '        falcon_lsp.setup({' \
+	  '    opts = {' \
+	  '      servers = {' \
+	  '        falcon_lsp = {' \
 	  '          on_attach = function(_, bufnr)' \
 	  '            local opts = { buffer = bufnr, silent = true }' \
-	  '            vim.keymap.set("n", "K",          vim.lsp.buf.hover,        opts)' \
-	  '            vim.keymap.set("n", "gd",         vim.lsp.buf.definition,   opts)' \
-	  '            vim.keymap.set("n", "<C-Space>",  vim.lsp.buf.completion,   opts)' \
-	  '            vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename,       opts)' \
-	  '            vim.keymap.set("n", "<leader>e",  vim.diagnostic.open_float, opts)' \
+	  '            vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)' \
+	  '            vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)' \
+	  '            vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)' \
+	  '            vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts)' \
 	  '          end,' \
-	  '        })' \
-	  '      end' \
-	  '    end,' \
+	  '        },' \
+	  '      },' \
+	  '    },' \
 	  '  },' \
 	  '}' \
 	  > $(NVIM_LSP_LUA)
