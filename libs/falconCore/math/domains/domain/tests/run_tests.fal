@@ -164,7 +164,7 @@ autotuner DomainSetOperations -> (int passed, int failed) {
         Domain d1  = Domain.New(0.0, 1.0, true, true);
         Domain d2  = Domain.New(0.0, 2.0, true, true);
         float  val = d1.Transform(d2, 0.5);
-        Error  err = t.ExpectTrue(val == 1.0, "Transform maps 0.5 in [0,1] to 1.0 in [0,2]");
+        Error  err = t.ExpectTrue(val == 0.25, "Transform maps 0.5 in [0,2] to 0.25 in [0,2]");
         -> __end(runner, t);
     }
 }

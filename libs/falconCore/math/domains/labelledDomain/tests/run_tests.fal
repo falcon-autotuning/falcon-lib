@@ -15,7 +15,7 @@ autotuner LabelledDomainConstruction -> (int passed, int failed) {
         SymbolUnit volt   = SymbolUnit.Volt();
         string dc         = Instrument.DCVoltageSource();
         LabelledDomain ld = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, true, volt, "plunger gate");
-        Error err = t.ExpectFloatEq(-0.5, ld.LesserBound(), "LesserBound is -0.5");
+        Error err = t.ExpectFloatEq(-0.5, ld.LesserBound(), 1e-9, "LesserBound is -0.5");
         -> __end(runner, t);
     }
 
@@ -24,7 +24,7 @@ autotuner LabelledDomainConstruction -> (int passed, int failed) {
         SymbolUnit volt   = SymbolUnit.Volt();
         string dc         = Instrument.DCVoltageSource();
         LabelledDomain ld = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, true, volt, "plunger gate");
-        Error err = t.ExpectFloatEq(0.5, ld.GreaterBound(), "GreaterBound is 0.5");
+        Error err = t.ExpectFloatEq(0.5, ld.GreaterBound(), 1e-9, "GreaterBound is 0.5");
         -> __end(runner, t);
     }
 
