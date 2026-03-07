@@ -126,7 +126,8 @@ struct TypeDescriptor {
     // Build canonical monomorphized name: "Box<int,float>"
     std::string mono = base_name + "<";
     for (size_t i = 0; i < args.size(); ++i) {
-      if (i > 0) mono += ",";
+      if (i > 0)
+        mono += ",";
       mono += args[i].to_string();
     }
     mono += ">";
@@ -140,8 +141,10 @@ struct TypeDescriptor {
     return desc;
   }
 
-  [[nodiscard]] bool is_struct() const { return base_type == ParamType::Struct; }
-  [[nodiscard]] bool is_array()  const { return base_type == ParamType::Array; }
+  [[nodiscard]] bool is_struct() const {
+    return base_type == ParamType::Struct;
+  }
+  [[nodiscard]] bool is_array() const { return base_type == ParamType::Array; }
   [[nodiscard]] bool is_generic_struct() const {
     return is_struct() && !type_args.empty();
   }
@@ -157,8 +160,8 @@ struct TypeDescriptor {
 
   [[nodiscard]] bool is_tuple() const { return base_type == ParamType::Tuple; }
   [[nodiscard]] bool is_error() const { return base_type == ParamType::Error; }
-  [[nodiscard]] bool is_nil()   const { return base_type == ParamType::Nil; }
-  [[nodiscard]] bool is_void()  const { return base_type == ParamType::Void; }
+  [[nodiscard]] bool is_nil() const { return base_type == ParamType::Nil; }
+  [[nodiscard]] bool is_void() const { return base_type == ParamType::Void; }
   [[nodiscard]] bool is_union() const { return base_type == ParamType::Union; }
 
   [[nodiscard]] size_t tuple_size() const { return tuple_elements.size(); }
@@ -167,7 +170,8 @@ struct TypeDescriptor {
     if (is_union()) {
       std::string result = "(";
       for (size_t i = 0; i < union_types.size(); ++i) {
-        if (i > 0) result += " | ";
+        if (i > 0)
+          result += " | ";
         result += union_types[i].to_string();
       }
       result += ")";
@@ -176,14 +180,17 @@ struct TypeDescriptor {
     if (is_tuple()) {
       std::string result = "(";
       for (size_t i = 0; i < tuple_elements.size(); ++i) {
-        if (i > 0) result += ", ";
+        if (i > 0)
+          result += ", ";
         result += tuple_elements[i].to_string();
       }
       result += ")";
       return result;
     }
-    if (is_error() && !error_variant.empty()) return error_variant;
-    if (is_struct()) return struct_name;
+    if (is_error() && !error_variant.empty())
+      return error_variant;
+    if (is_struct())
+      return struct_name;
     if (is_array()) {
       return "Array<" + (element_type ? element_type->to_string() : "?") + ">";
     }
@@ -191,19 +198,25 @@ struct TypeDescriptor {
   }
 
   bool operator==(const TypeDescriptor &other) const {
-    if (base_type != other.base_type) return false;
-    if (is_struct()) return struct_name == other.struct_name;
+    if (base_type != other.base_type)
+      return false;
+    if (is_struct())
+      return struct_name == other.struct_name;
     if (is_union()) {
-      if (union_types.size() != other.union_types.size()) return false;
+      if (union_types.size() != other.union_types.size())
+        return false;
       for (size_t i = 0; i < union_types.size(); ++i) {
-        if (union_types[i] != other.union_types[i]) return false;
+        if (union_types[i] != other.union_types[i])
+          return false;
       }
       return true;
     }
     if (is_tuple()) {
-      if (tuple_elements.size() != other.tuple_elements.size()) return false;
+      if (tuple_elements.size() != other.tuple_elements.size())
+        return false;
       for (size_t i = 0; i < tuple_elements.size(); ++i) {
-        if (!(tuple_elements[i] == other.tuple_elements[i])) return false;
+        if (!(tuple_elements[i] == other.tuple_elements[i]))
+          return false;
       }
       return true;
     }
@@ -215,7 +228,9 @@ struct TypeDescriptor {
     return true;
   }
 
-  bool operator!=(const TypeDescriptor &other) const { return !(*this == other); }
+  bool operator!=(const TypeDescriptor &other) const {
+    return !(*this == other);
+  }
 };
 
 // ============================================================================
@@ -243,6 +258,20 @@ public:
 
   // Type annotation (filled in during semantic analysis)
   mutable std::optional<TypeDescriptor> inferred_type;
+
+  // Source location (filled in by the parser via set_expr_location).
+  // Uses the same 1-indexed convention as Stmt.
+  mutable std::string filename;
+  mutable int line = 0;
+  mutable int column = 0;
+
+protected:
+  // Copy location metadata from this node to a freshly-cloned node.
+  void copy_location_to(Expr &dest) const {
+    dest.filename = filename;
+    dest.line = line;
+    dest.column = column;
+  }
 };
 
 /**
@@ -265,7 +294,9 @@ public:
       : value(std::move(v)) {}
 
   std::unique_ptr<Expr> clone() const override {
-    return std::make_unique<LiteralExpr>(value);
+    auto c = std::make_unique<LiteralExpr>(value);
+    copy_location_to(*c);
+    return c;
   }
 };
 
@@ -290,7 +321,9 @@ public:
   NilLiteralExpr() = default;
 
   std::unique_ptr<Expr> clone() const override {
-    return std::make_unique<NilLiteralExpr>();
+    auto c = std::make_unique<NilLiteralExpr>();
+    copy_location_to(*c);
+    return c;
   }
 };
 
@@ -334,6 +367,7 @@ public:
   std::unique_ptr<Expr> clone() const override {
     auto cloned = std::make_unique<VarExpr>(name);
     cloned->scope = scope;
+    copy_location_to(*cloned);
     return cloned;
   }
 };
@@ -371,7 +405,9 @@ public:
       : op(std::move(o)), left(std::move(l)), right(std::move(r)) {}
 
   std::unique_ptr<Expr> clone() const override {
-    return std::make_unique<BinaryExpr>(op, left->clone(), right->clone());
+    auto c = std::make_unique<BinaryExpr>(op, left->clone(), right->clone());
+    copy_location_to(*c);
+    return c;
   }
 };
 
@@ -399,7 +435,9 @@ public:
       : op(std::move(o)), operand(std::move(e)) {}
 
   std::unique_ptr<Expr> clone() const override {
-    return std::make_unique<UnaryExpr>(op, operand->clone());
+    auto c = std::make_unique<UnaryExpr>(op, operand->clone());
+    copy_location_to(*c);
+    return c;
   }
 };
 
@@ -456,6 +494,7 @@ public:
   std::unique_ptr<Expr> clone() const override {
     auto cloned = std::make_unique<MemberExpr>(object->clone(), member);
     cloned->is_struct_access = is_struct_access;
+    copy_location_to(*cloned);
     return cloned;
   }
 };
@@ -504,6 +543,7 @@ public:
     auto cloned = std::make_unique<MethodCallExpr>(object->clone(), method_name,
                                                    std::move(cloned_args));
     cloned->is_struct_method = is_struct_method;
+    copy_location_to(*cloned);
     return cloned;
   }
 };
@@ -535,7 +575,9 @@ public:
       : object(std::move(obj)), index(std::move(idx)) {}
 
   std::unique_ptr<Expr> clone() const override {
-    return std::make_unique<IndexExpr>(object->clone(), index->clone());
+    auto c = std::make_unique<IndexExpr>(object->clone(), index->clone());
+    copy_location_to(*c);
+    return c;
   }
 };
 
@@ -605,7 +647,9 @@ public:
     for (const auto &arg : arguments) {
       cloned_args.push_back(arg.clone());
     }
-    return std::make_unique<CallExpr>(name, std::move(cloned_args));
+    auto c = std::make_unique<CallExpr>(name, std::move(cloned_args));
+    copy_location_to(*c);
+    return c;
   }
 };
 
@@ -1171,8 +1215,8 @@ struct AutotunerDecl {
                 std::vector<std::unique_ptr<Expr>> entry_params,
                 std::vector<StateDecl> sts)
       : name(std::move(n)), input_params(std::move(inputs)),
-        output_params(std::move(outputs)),
-        autotuner_variables(std::move(vars)), entry_state(std::move(entry)),
+        output_params(std::move(outputs)), autotuner_variables(std::move(vars)),
+        entry_state(std::move(entry)),
         entry_parameters(std::move(entry_params)), states(std::move(sts)) {}
 
   AutotunerDecl(AutotunerDecl &&) noexcept = default;
@@ -1282,7 +1326,8 @@ struct StructDecl {
   std::vector<VarDeclStmt> fields;
   std::vector<RoutineDecl> routines;
 
-  // Plain constructor (non-generic, or used internally for monomorphized copies)
+  // Plain constructor (non-generic, or used internally for monomorphized
+  // copies)
   StructDecl(std::string n, std::vector<VarDeclStmt> fs,
              std::vector<RoutineDecl> rs)
       : name(std::move(n)), fields(std::move(fs)), routines(std::move(rs)) {}
@@ -1302,21 +1347,24 @@ struct StructDecl {
 
   [[nodiscard]] const VarDeclStmt *find_field(const std::string &n) const {
     for (const auto &f : fields) {
-      if (f.name == n) return &f;
+      if (f.name == n)
+        return &f;
     }
     return nullptr;
   }
 
   [[nodiscard]] const RoutineDecl *find_routine(const std::string &n) const {
     for (const auto &r : routines) {
-      if (r.name == n) return &r;
+      if (r.name == n)
+        return &r;
     }
     return nullptr;
   }
 
   [[nodiscard]] const RoutineDecl *find_operator(const std::string &op) const {
     for (const auto &r : routines) {
-      if (r.operator_symbol() == op) return &r;
+      if (r.operator_symbol() == op)
+        return &r;
     }
     return nullptr;
   }

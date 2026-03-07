@@ -111,3 +111,31 @@ TEST(ImportResolver, IsResolvedAfterResolve) {
   resolver.resolve("./foo.fal");
   EXPECT_TRUE(resolver.is_resolved("./foo.fal"));
 }
+
+#include "falcon-lsp/SemanticAnalyzer.hpp"
+
+TEST(SemanticAnalyzer, UndefinedCall) {
+  FalconDocumentParser parser;
+  const std::string src = R"(
+autotuner T () -> () {
+  start -> s;
+  state s {
+    TotallyUnknownFn(1, 2, 3);
+    terminal;
+  }
+}
+)";
+  auto doc = parser.parse("file:///t.fal", src);
+  ASSERT_NE(doc.program, nullptr);
+
+  SemanticAnalyzer sa;
+  auto diags = sa.analyze(doc);
+  bool found = false;
+  for (const auto &d : diags) {
+    if (d.message.find("Undefined") != std::string::npos &&
+        d.message.find("TotallyUnknownFn") != std::string::npos) {
+      found = true;
+    }
+  }
+  EXPECT_TRUE(found) << "Expected 'Undefined: TotallyUnknownFn' diagnostic";
+}

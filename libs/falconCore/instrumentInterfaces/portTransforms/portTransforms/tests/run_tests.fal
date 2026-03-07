@@ -1,12 +1,12 @@
 // Tests for instrumentInterfaces/portTransforms/portTransforms
-import "../../../../testing/testing.fal";
+import "../../../../../testing/testing.fal";
 import "../portTransforms.fal";
-import "../../names/instrumentPort/instrumentPort.fal";
-import "../portTransform/portTransform.fal";
-import "../../../math/analyticFunction/analyticFunction.fal";
-import "../../../physics/deviceStructures/connection/connection.fal";
+import "../../../names/instrumentPort/instrumentPort.fal";
+import "../../portTransform/portTransform.fal";
+import "../../../../math/analyticFunction/analyticFunction.fal";
+import "../../../../physics/deviceStructures/connection/connection.fal";
 import "../../../names/instrument/instrument.fal";
-import "../../../physics/units/symbolUnit/symbolUnit.fal";
+import "../../../../physics/units/symbolUnit/symbolUnit.fal";
 
 autotuner PortTransformsConstruction -> (int passed, int failed) {
     passed = 0; failed = 0;

@@ -1,6 +1,7 @@
+import "../portTransform/portTransform.fal";
 ffimport "port-transforms-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct PortTransforms  { 
-    routine New (array::Array<portTransform::PortTransform> transforms) -> (PortTranforms transforms)
+    routine New (array::Array<portTransform::PortTransform> transforms) -> (PortTransforms transforms)
     routine Equal (PortTransforms other) -> (bool equal)
     routine NotEqual (PortTransforms other) -> (bool notequal)
     routine FromJSON (string json) -> (PortTransforms transforms)
@@ -10,7 +11,6 @@ struct PortTransforms  {
     routine GetIndex (int index) -> (portTransform::PortTransform value)
     routine SetIndex (int index, portTransform::PortTransform value) -> ()
     routine PushBack (portTransform::PortTransform value) -> ()
-    routine PopBack () -> (portTransform::PortTransform value)
     routine Insert (int index, portTransform::PortTransform value) -> ()
     routine Erase (int index) -> ()
     routine Clear () -> ()

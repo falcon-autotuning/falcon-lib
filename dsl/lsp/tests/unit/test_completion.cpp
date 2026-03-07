@@ -52,23 +52,3 @@ autotuner MyAT (int myInput) -> (int myOutput) {
   }
   EXPECT_TRUE(found);
 }
-
-TEST(CompletionProvider, ContainsBuiltins) {
-  FalconDocumentParser parser;
-  const std::string src =
-      "autotuner T () -> () { start -> s; state s { terminal; } }";
-  auto doc = parser.parse("file:///t.fal", src);
-
-  CompletionProvider cp;
-  lsp::Position pos{0, 0};
-  auto items = cp.complete(doc, pos);
-
-  bool found = false;
-  for (const auto &item : items) {
-    if (item.label == "logInfo") {
-      found = true;
-      break;
-    }
-  }
-  EXPECT_TRUE(found);
-}

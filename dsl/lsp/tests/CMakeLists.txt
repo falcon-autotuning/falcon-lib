@@ -23,6 +23,8 @@ add_executable(falcon_lsp_unit_tests
     unit/test_hover.cpp
     unit/test_completion.cpp
     unit/test_diagnostics.cpp
+    unit/test_import_resolver.cpp
+    unit/test_semantic_diagnostics.cpp
 )
 
 target_link_libraries(falcon_lsp_unit_tests

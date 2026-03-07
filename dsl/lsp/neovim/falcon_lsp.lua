@@ -1,38 +1,53 @@
--- falcon-lsp Neovim configuration
--- Registers the falcon-lsp language server with nvim-lspconfig.
+-- Falcon LSP — LazyVim plugin spec
+-- Install via:  cd dsl/lsp && make nvim-install
+-- Or manually copy to ~/.config/nvim/lua/plugins/falcon_lsp.lua
 --
--- Usage (lazy.nvim):
---   require('falcon_lsp').setup({ on_attach = my_on_attach, capabilities = my_caps })
+-- Also copy neovim/ftdetect/falcon.vim to ~/.config/nvim/ftdetect/falcon.vim
+-- (make nvim-install does both automatically)
 
-local M = {}
+return {
+	{
+		"neovim/nvim-lspconfig",
+		opts = function(_, opts)
+			opts.servers = opts.servers or {}
 
-function M.setup(opts)
-	opts = opts or {}
+			-- Register the custom server definition (not yet in upstream nvim-lspconfig)
+			local ok, configs = pcall(require, "lspconfig.configs")
+			if ok and not configs.falcon_lsp then
+				local lspconfig = require("lspconfig")
+				configs.falcon_lsp = {
+					default_config = {
+						cmd = { "/opt/falcon/lib/falcon-lsp" },
+						filetypes = { "falcon" },
+						root_dir = lspconfig.util.root_pattern(".git", "*.fal"),
+						settings = {},
+						init_options = {},
+					},
+				}
+			end
 
-	local ok_lspconfig, lspconfig = pcall(require, "lspconfig")
-	if not ok_lspconfig then
-		vim.notify("falcon_lsp: nvim-lspconfig not found", vim.log.levels.ERROR)
-		return
-	end
+			-- LazyVim will call lspconfig.falcon_lsp.setup() with merged capabilities
+			opts.servers.falcon_lsp = {}
+		end,
 
-	local configs = require("lspconfig.configs")
-
-	if not configs.falcon_lsp then
-		configs.falcon_lsp = {
-			default_config = {
-				cmd = { "/opt/falcon/lib/falcon-lsp" },
-				filetypes = { "falcon" },
-				root_dir = lspconfig.util.root_pattern(".git", "*.fal"),
-				settings = {},
-				init_options = {},
-			},
-		}
-	end
-
-	lspconfig.falcon_lsp.setup(vim.tbl_extend("force", {
-		on_attach = opts.on_attach,
-		capabilities = opts.capabilities,
-	}, opts.server or {}))
-end
-
-return M
+		init = function()
+			-- Wire keymaps when falcon_lsp attaches to a buffer
+			vim.api.nvim_create_autocmd("LspAttach", {
+				group = vim.api.nvim_create_augroup("falcon_lsp_keymaps", { clear = true }),
+				callback = function(args)
+					local client = vim.lsp.get_client_by_id(args.data.client_id)
+					if not client or client.name ~= "falcon_lsp" then
+						return
+					end
+					local buf = args.buf
+					local opts = { buffer = buf, silent = true }
+					vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+					vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+					vim.keymap.set("n", "<C-Space>", vim.lsp.buf.completion, opts)
+					vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+					vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts)
+				end,
+			})
+		end,
+	},
+}

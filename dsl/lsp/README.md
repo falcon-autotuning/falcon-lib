@@ -6,8 +6,8 @@ A [Language Server Protocol](https://microsoft.github.io/language-server-protoco
 
 | Capability | Description |
 |---|---|
-| Diagnostics | Syntax errors published on every open/change/save |
-| Hover | Show the type of a variable, parameter, state, or built-in function |
+| Diagnostics | Syntax errors published on every open/change/save (red squiggles) |
+| Hover | Show the type of a variable, parameter, state, or built-in function (`K`) |
 | Completion | Keywords, built-in functions, variables and state names in scope |
 | Go-to Definition | Jump to the declaration of a variable or state |
 
@@ -18,20 +18,49 @@ falcon-lsp        # LSP server over stdio (used by editors)
 falcon-lint *.fal # Standalone linter, exits 0 on success
 ```
 
-## Neovim setup
+## Neovim / LazyVim setup
 
-Copy `neovim/falcon_lsp.lua` to `~/.config/nvim/lua/falcon_lsp.lua` and add to your config:
+### Quick install (recommended)
 
-```lua
-require('falcon_lsp').setup()
+```bash
+cd dsl/lsp
+make nvim-install
 ```
 
-See `neovim/init.lua` for a complete lazy.nvim example. Requires `nvim-lspconfig`.
+This installs two files:
+
+| File | Destination |
+|---|---|
+| `neovim/falcon_lsp.lua` | `~/.config/nvim/lua/plugins/falcon_lsp.lua` |
+| `neovim/ftdetect/falcon.vim` | `~/.config/nvim/ftdetect/falcon.vim` |
+
+Restart Neovim, open any `.fal` file, and run `:LspInfo` to verify the server is attached.
+
+### Keymaps (set automatically on attach)
+
+| Key | Action |
+|---|---|
+| `K` | Hover — show type / docs |
+| `gd` | Go to definition |
+| `<C-Space>` | Trigger completion |
+| `<leader>rn` | Rename symbol |
+| `<leader>e` | Open diagnostics float |
+
+Red squiggles (error diagnostics) appear automatically on every file open/change/save — no extra configuration needed.
+
+### Manual install
+
+```bash
+cp dsl/lsp/neovim/falcon_lsp.lua     ~/.config/nvim/lua/plugins/falcon_lsp.lua
+cp dsl/lsp/neovim/ftdetect/falcon.vim ~/.config/nvim/ftdetect/falcon.vim
+```
+
+Requires `neovim/nvim-lspconfig` (already included in LazyVim).
 
 ## TreeSitter
 
-A TreeSitter grammar for syntax highlighting is in `treesitter/grammar.js`.
-See `treesitter/README.md` for installation instructions.
+A TreeSitter grammar for syntax highlighting is in `dsl/treesitter/grammar.js`.
+See `dsl/treesitter/README.md` for installation instructions.
 
 ## Language overview
 

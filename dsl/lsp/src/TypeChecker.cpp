@@ -3,11 +3,32 @@
 
 namespace falcon::lsp {
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Forward declarations of helpers defined later in this file
+// ─────────────────────────────────────────────────────────────────────────────
+static void analyze_stmt(const falcon::atc::Stmt &stmt,
+                         std::vector<Symbol> &symbols,
+                         const std::string &autotuner_name,
+                         const std::string &state_name);
+
+static void analyze_state(const falcon::atc::StateDecl &state,
+                          std::vector<Symbol> &symbols,
+                          const std::string &autotuner_name);
+
+static void analyze_routine_body(const falcon::atc::RoutineDecl &rt,
+                                 std::vector<Symbol> &symbols,
+                                 const std::string &owner_name);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main entry point
+// ─────────────────────────────────────────────────────────────────────────────
+
 void TypeChecker::analyze(const falcon::atc::Program &program) {
   symbols.clear();
   import_paths.clear();
   ffimport_paths.clear();
 
+  // ── Structs ─────────────────────────────────────────────────────────────
   for (const auto &st : program.structs) {
     {
       Symbol s;
@@ -27,34 +48,48 @@ void TypeChecker::analyze(const falcon::atc::Program &program) {
       symbols.push_back(std::move(s));
     }
     for (const auto &rt : st.routines) {
-      {
-        Symbol s;
-        s.name = rt.name;
-        s.kind = "struct_routine";
-        s.type_str = "routine";
-        s.autotuner_name = st.name;
-        symbols.push_back(std::move(s));
+      Symbol s;
+      s.name = rt.name;
+      s.kind = "struct_routine";
+      s.type_str = "routine";
+      s.autotuner_name = st.name;
+      s.required_param_count = 0;
+      for (const auto &p : rt.input_params) {
+        s.param_types.push_back(p->type.to_string() + " " + p->name);
+        ++s.required_param_count;
       }
-      analyze_routine(rt, st.name);
+      for (const auto &p : rt.output_params) {
+        s.return_types.push_back(p->type.to_string() + " " + p->name);
+      }
+      symbols.push_back(std::move(s));
+      analyze_routine_body(rt, symbols, st.name);
     }
   }
 
+  // ── Autotuners ──────────────────────────────────────────────────────────
   for (const auto &at : program.autotuners) {
     analyze_autotuner(at);
   }
 
+  // ── Top-level routines ──────────────────────────────────────────────────
   for (const auto &rt : program.routines) {
     Symbol s;
     s.name = rt.name;
     s.kind = "routine";
     s.type_str = "routine";
-    s.line = 0;
-    s.col = 0;
+    s.required_param_count = 0;
+    for (const auto &p : rt.input_params) {
+      s.param_types.push_back(p->type.to_string() + " " + p->name);
+      ++s.required_param_count;
+    }
+    for (const auto &p : rt.output_params) {
+      s.return_types.push_back(p->type.to_string() + " " + p->name);
+    }
     symbols.push_back(std::move(s));
-
-    analyze_routine(rt, rt.name);
+    analyze_routine_body(rt, symbols, rt.name);
   }
 
+  // ── Imports ─────────────────────────────────────────────────────────────
   for (const auto &path : program.imports) {
     Symbol s;
     s.name = path;
@@ -74,15 +109,25 @@ void TypeChecker::analyze(const falcon::atc::Program &program) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Autotuner
+// ─────────────────────────────────────────────────────────────────────────────
+
 void TypeChecker::analyze_autotuner(const falcon::atc::AutotunerDecl &at) {
   {
     Symbol s;
     s.name = at.name;
     s.kind = "autotuner";
     s.type_str = "autotuner";
-    s.line = 0;
-    s.col = 0;
     s.autotuner_name = at.name;
+    s.required_param_count = 0;
+    for (const auto &p : at.input_params) {
+      s.param_types.push_back(p->type.to_string() + " " + p->name);
+      ++s.required_param_count;
+    }
+    for (const auto &p : at.output_params) {
+      s.return_types.push_back(p->type.to_string() + " " + p->name);
+    }
     symbols.push_back(std::move(s));
   }
 
@@ -105,23 +150,51 @@ void TypeChecker::analyze_autotuner(const falcon::atc::AutotunerDecl &at) {
   }
 
   for (const auto &stmt : at.autotuner_variables) {
-    analyze_stmt(*stmt, at.name, "");
+    ::falcon::lsp::analyze_stmt(*stmt, symbols, at.name, "");
   }
 
   for (const auto &state : at.states) {
-    analyze_state(state, at.name);
+    ::falcon::lsp::analyze_state(state, symbols, at.name);
   }
 }
 
-void TypeChecker::analyze_state(const falcon::atc::StateDecl &state,
-                                const std::string &autotuner_name) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Static helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+static void analyze_stmt(const falcon::atc::Stmt &stmt,
+                         std::vector<Symbol> &symbols,
+                         const std::string &autotuner_name,
+                         const std::string &state_name) {
+  if (const auto *decl =
+          dynamic_cast<const falcon::atc::VarDeclStmt *>(&stmt)) {
+    Symbol s;
+    s.name = decl->name;
+    s.kind = "var";
+    s.type_str = decl->type.to_string();
+    s.line = decl->line;
+    s.col = decl->column;
+    s.autotuner_name = autotuner_name;
+    s.state_name = state_name;
+    symbols.push_back(std::move(s));
+  } else if (const auto *ifst =
+                 dynamic_cast<const falcon::atc::IfStmt *>(&stmt)) {
+    for (const auto &s : ifst->then_body)
+      analyze_stmt(*s, symbols, autotuner_name, state_name);
+    for (const auto &s : ifst->else_body)
+      analyze_stmt(*s, symbols, autotuner_name, state_name);
+  }
+}
+
+static void analyze_state(const falcon::atc::StateDecl &state,
+                          std::vector<Symbol> &symbols,
+                          const std::string &autotuner_name) {
   {
     Symbol s;
     s.name = state.name;
     s.kind = "state";
     s.type_str = "state";
     s.autotuner_name = autotuner_name;
-    s.state_name = state.name;
     symbols.push_back(std::move(s));
   }
 
@@ -136,47 +209,19 @@ void TypeChecker::analyze_state(const falcon::atc::StateDecl &state,
   }
 
   for (const auto &stmt : state.body) {
-    analyze_stmt(*stmt, autotuner_name, state.name);
+    analyze_stmt(*stmt, symbols, autotuner_name, state.name);
   }
 }
 
-void TypeChecker::analyze_stmt(const falcon::atc::Stmt &stmt,
-                               const std::string &autotuner_name,
-                               const std::string &state_name) {
-  const auto *vd = dynamic_cast<const falcon::atc::VarDeclStmt *>(&stmt);
-  if (vd) {
-    Symbol s;
-    s.name = vd->name;
-    s.kind = "var";
-    s.type_str = vd->type.to_string();
-    s.line = vd->line;
-    s.col = vd->column;
-    s.autotuner_name = autotuner_name;
-    s.state_name = state_name;
-    symbols.push_back(std::move(s));
-    return;
-  }
-
-  // Recurse into if-statement branches
-  const auto *ifs = dynamic_cast<const falcon::atc::IfStmt *>(&stmt);
-  if (ifs) {
-    for (const auto &s : ifs->then_body) {
-      analyze_stmt(*s, autotuner_name, state_name);
-    }
-    for (const auto &s : ifs->else_body) {
-      analyze_stmt(*s, autotuner_name, state_name);
-    }
-  }
-}
-
-void TypeChecker::analyze_routine(const falcon::atc::RoutineDecl &rt,
-                                  const std::string &parent_name) {
+static void analyze_routine_body(const falcon::atc::RoutineDecl &rt,
+                                 std::vector<Symbol> &symbols,
+                                 const std::string &owner_name) {
   for (const auto &p : rt.input_params) {
     Symbol s;
     s.name = p->name;
     s.kind = "input_param";
     s.type_str = p->type.to_string();
-    s.autotuner_name = parent_name;
+    s.autotuner_name = owner_name;
     symbols.push_back(std::move(s));
   }
   for (const auto &p : rt.output_params) {
@@ -184,11 +229,11 @@ void TypeChecker::analyze_routine(const falcon::atc::RoutineDecl &rt,
     s.name = p->name;
     s.kind = "output_param";
     s.type_str = p->type.to_string();
-    s.autotuner_name = parent_name;
+    s.autotuner_name = owner_name;
     symbols.push_back(std::move(s));
   }
   for (const auto &stmt : rt.body) {
-    analyze_stmt(*stmt, parent_name, "");
+    analyze_stmt(*stmt, symbols, owner_name, "");
   }
 }
 

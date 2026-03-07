@@ -124,6 +124,14 @@
       stmt->column   = loc.begin.column;
     }
   }
+
+  void set_expr_location(falcon::atc::Expr* expr, const falcon::atc::Parser::location_type& loc) {
+    if (expr) {
+      expr->filename = falcon::atc::current_filename;
+      expr->line   = loc.begin.line;
+      expr->column = loc.begin.column;
+    }
+  }
 }
 
 // ============================================================================
@@ -965,40 +973,50 @@ routine_decl[result]
 expr[result]
     : primary_expr[e]     { $result = std::move($e); }
     | postfix_expr[e]     { $result = std::move($e); }
-    | expr[l] PLUS  expr[r] { $result = std::make_unique<BinaryExpr>("+",  std::move($l), std::move($r)); }
-    | expr[l] MINUS expr[r] { $result = std::make_unique<BinaryExpr>("-",  std::move($l), std::move($r)); }
-    | expr[l] MUL   expr[r] { $result = std::make_unique<BinaryExpr>("*",  std::move($l), std::move($r)); }
-    | expr[l] DIV   expr[r] { $result = std::make_unique<BinaryExpr>("/",  std::move($l), std::move($r)); }
-    | expr[l] EQ    expr[r] { $result = std::make_unique<BinaryExpr>("==", std::move($l), std::move($r)); }
-    | expr[l] NE    expr[r] { $result = std::make_unique<BinaryExpr>("!=", std::move($l), std::move($r)); }
-    | expr[l] LL    expr[r] { $result = std::make_unique<BinaryExpr>("<",  std::move($l), std::move($r)); }
-    | expr[l] GG    expr[r] { $result = std::make_unique<BinaryExpr>(">",  std::move($l), std::move($r)); }
-    | expr[l] LE    expr[r] { $result = std::make_unique<BinaryExpr>("<=", std::move($l), std::move($r)); }
-    | expr[l] GE    expr[r] { $result = std::make_unique<BinaryExpr>(">=", std::move($l), std::move($r)); }
-    | expr[l] AND   expr[r] { $result = std::make_unique<BinaryExpr>("&&", std::move($l), std::move($r)); }
-    | expr[l] OR    expr[r] { $result = std::make_unique<BinaryExpr>("||", std::move($l), std::move($r)); }
-    | NOT  expr[e]  { $result = std::make_unique<UnaryExpr>("!",  std::move($e)); }
-    | MINUS expr[e] %prec UMINUS { $result = std::make_unique<UnaryExpr>("-", std::move($e)); }
+    | expr[l] PLUS  expr[r] { $result = std::make_unique<BinaryExpr>("+",  std::move($l), std::move($r)); set_expr_location($result.get(), @PLUS); }
+    | expr[l] MINUS expr[r] { $result = std::make_unique<BinaryExpr>("-",  std::move($l), std::move($r)); set_expr_location($result.get(), @MINUS); }
+    | expr[l] MUL   expr[r] { $result = std::make_unique<BinaryExpr>("*",  std::move($l), std::move($r)); set_expr_location($result.get(), @MUL); }
+    | expr[l] DIV   expr[r] { $result = std::make_unique<BinaryExpr>("/",  std::move($l), std::move($r)); set_expr_location($result.get(), @DIV); }
+    | expr[l] EQ    expr[r] { $result = std::make_unique<BinaryExpr>("==", std::move($l), std::move($r)); set_expr_location($result.get(), @EQ); }
+    | expr[l] NE    expr[r] { $result = std::make_unique<BinaryExpr>("!=", std::move($l), std::move($r)); set_expr_location($result.get(), @NE); }
+    | expr[l] LL    expr[r] { $result = std::make_unique<BinaryExpr>("<",  std::move($l), std::move($r)); set_expr_location($result.get(), @LL); }
+    | expr[l] GG    expr[r] { $result = std::make_unique<BinaryExpr>(">",  std::move($l), std::move($r)); set_expr_location($result.get(), @GG); }
+    | expr[l] LE    expr[r] { $result = std::make_unique<BinaryExpr>("<=", std::move($l), std::move($r)); set_expr_location($result.get(), @LE); }
+    | expr[l] GE    expr[r] { $result = std::make_unique<BinaryExpr>(">=", std::move($l), std::move($r)); set_expr_location($result.get(), @GE); }
+    | expr[l] AND   expr[r] { $result = std::make_unique<BinaryExpr>("&&", std::move($l), std::move($r)); set_expr_location($result.get(), @AND); }
+    | expr[l] OR    expr[r] { $result = std::make_unique<BinaryExpr>("||", std::move($l), std::move($r)); set_expr_location($result.get(), @OR); }
+    | NOT  expr[e]  { $result = std::make_unique<UnaryExpr>("!",  std::move($e));  set_expr_location($result.get(), @NOT); }
+    | MINUS expr[e] %prec UMINUS { $result = std::make_unique<UnaryExpr>("-", std::move($e)); set_expr_location($result.get(), @MINUS); }
     | LPAREN expr[e] RPAREN { $result = std::move($e); }
     ;
 
 primary_expr[result]
-    : INTEGER[v]  { $result = std::make_unique<LiteralExpr>(static_cast<int64_t>(std::stoll($v))); }
-    | DOUBLE[v]   { $result = std::make_unique<LiteralExpr>(std::stod($v)); }
-    | STRING[v]   { $result = std::make_unique<LiteralExpr>($v); }
-    | TRUE        { $result = std::make_unique<LiteralExpr>(true); }
-    | FALSE       { $result = std::make_unique<LiteralExpr>(false); }
-    | NIL         { $result = std::make_unique<NilLiteralExpr>(); }
-    | THIS        { $result = std::make_unique<VarExpr>("this"); }
-    | IDENTIFIER[name] { $result = std::make_unique<VarExpr>($name); }
+    : INTEGER[v]  { $result = std::make_unique<LiteralExpr>(static_cast<int64_t>(std::stoll($v)));
+                    set_expr_location($result.get(), @v); }
+    | DOUBLE[v]   { $result = std::make_unique<LiteralExpr>(std::stod($v));
+                    set_expr_location($result.get(), @v); }
+    | STRING[v]   { $result = std::make_unique<LiteralExpr>($v);
+                    set_expr_location($result.get(), @v); }
+    | TRUE        { $result = std::make_unique<LiteralExpr>(true);
+                    set_expr_location($result.get(), @TRUE); }
+    | FALSE       { $result = std::make_unique<LiteralExpr>(false);
+                    set_expr_location($result.get(), @FALSE); }
+    | NIL         { $result = std::make_unique<NilLiteralExpr>();
+                    set_expr_location($result.get(), @NIL); }
+    | THIS        { $result = std::make_unique<VarExpr>("this");
+                    set_expr_location($result.get(), @THIS); }
+    | IDENTIFIER[name] { $result = std::make_unique<VarExpr>($name);
+                          set_expr_location($result.get(), @name); }
     | IDENTIFIER[ns] COLONCOLON IDENTIFIER[sym]
-      { $result = std::make_unique<VarExpr>($ns + "::" + $sym); }
+      { $result = std::make_unique<VarExpr>($ns + "::" + $sym);
+        set_expr_location($result.get(), @ns); }
     ;
 
 postfix_expr[result]
     // Member access: expr.field
     : postfix_expr[obj] DOT IDENTIFIER[field]
-      { $result = std::make_unique<MemberExpr>(std::move($obj), std::move($field)); }
+      { $result = std::make_unique<MemberExpr>(std::move($obj), std::move($field));
+        set_expr_location($result.get(), @field); }
     // Method call: expr.method(args)
     | postfix_expr[obj] DOT IDENTIFIER[method] LPAREN call_arg_list[args] RPAREN
       {
@@ -1006,20 +1024,24 @@ postfix_expr[result]
         arg_exprs.reserve($args.size());
         for (auto& a : $args) { arg_exprs.push_back(std::move(a.value)); }
         $result = std::make_unique<MethodCallExpr>(std::move($obj), std::move($method), std::move(arg_exprs));
+        set_expr_location($result.get(), @method);
       }
     // Index: expr[idx]
     | postfix_expr[obj] LBRACKET expr[idx] RBRACKET
-      { $result = std::make_unique<IndexExpr>(std::move($obj), std::move($idx)); }
+      { $result = std::make_unique<IndexExpr>(std::move($obj), std::move($idx));
+        set_expr_location($result.get(), @LBRACKET); }
     // Plain function call: name(args)
     | IDENTIFIER[name] LPAREN call_arg_list[args] RPAREN
       {
         $result = std::make_unique<CallExpr>(std::move($name), std::move($args));
+        set_expr_location($result.get(), @name);
       }
     // Module-qualified function call: Module::symbol(args)
     | IDENTIFIER[ns] COLONCOLON IDENTIFIER[sym] LPAREN call_arg_list[args] RPAREN
       {
         // Encode as a CallExpr with the qualified name; the runtime resolves it.
         $result = std::make_unique<CallExpr>($ns + "::" + $sym, std::move($args));
+        set_expr_location($result.get(), @ns);
       }
     | primary_expr[e] { $result = std::move($e); }
     ;

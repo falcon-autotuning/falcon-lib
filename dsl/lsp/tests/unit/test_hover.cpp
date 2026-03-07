@@ -41,22 +41,50 @@ TEST(HoverProvider, HoverOnUnknownWord) {
   (void)result;
 }
 
-TEST(HoverProvider, HoverOnBuiltin) {
+TEST(HoverProvider, AutotunerSignatureInHover) {
   FalconDocumentParser parser;
-  const std::string src =
-      "autotuner T () -> () { start -> s; state s { terminal; } }";
-  auto doc = parser.parse("file:///t.fal", src);
+  const std::string src = R"(
+autotuner Calc (int a, int b) -> (int result) {
+  result = 0;
+  start -> s;
+  state s { terminal; }
+}
+)";
+  auto doc = parser.parse("file:///calc.fal", src);
+  ASSERT_NE(doc.program, nullptr);
 
   HoverProvider hp;
-  // Manually check hover on "logInfo" by looking up the word directly
-  // We create a doc with the word in text
-  FalconDocument fdoc;
-  fdoc.text = "logInfo(\"hello\")";
-  fdoc.uri = "file:///t.fal";
-
-  lsp::Position pos{0, 3};
-  auto result = hp.hover(fdoc, pos);
+  // Hover over "Calc" on line 1 (0-indexed), col 10
+  lsp::Position pos{1, 10};
+  auto result = hp.hover(doc, pos);
   ASSERT_TRUE(result.has_value());
   auto &mc = std::get<lsp::MarkupContent>(result->contents);
-  EXPECT_NE(mc.value.find("builtin"), std::string::npos);
+  // Should contain parameter info
+  EXPECT_NE(mc.value.find("int a"), std::string::npos)
+      << "Hover should show input params. Got: " << mc.value;
+}
+
+TEST(HoverProvider, ImportedSymbolNote) {
+  // Manually inject a from_import symbol into a document
+  FalconDocument doc;
+  doc.text = "Adder(1, 2)";
+  doc.uri = "file:///test.fal";
+
+  Symbol s;
+  s.name = "Adder";
+  s.kind = "autotuner";
+  s.type_str = "autotuner";
+  s.from_import = true;
+  s.param_types = {"int a", "int b"};
+  s.return_types = {"int result"};
+  doc.symbols.push_back(std::move(s));
+
+  HoverProvider hp;
+  lsp::Position pos{0, 3}; // over "Adder"
+  auto result = hp.hover(doc, pos);
+  ASSERT_TRUE(result.has_value());
+  auto &mc = std::get<lsp::MarkupContent>(result->contents);
+  EXPECT_NE(mc.value.find("from import"), std::string::npos)
+      << "Hover for imported symbol should mention 'from import'. Got: "
+      << mc.value;
 }

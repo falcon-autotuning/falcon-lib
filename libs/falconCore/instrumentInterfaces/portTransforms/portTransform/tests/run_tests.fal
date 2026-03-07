@@ -1,12 +1,12 @@
 // Tests for falconCore/instrumentInterfaces/portTransforms/portTransform
 // Run with: falcon-test run_tests.fal
-import "../../../../testing/testing.fal";
+import "../../../../../testing/testing.fal";
 import "../portTransform.fal";
-import "../../names/instrumentPort/instrumentPort.fal";
-import "../../../math/analyticFunction/analyticFunction.fal";
-import "../../../physics/deviceStructures/connection/connection.fal";
-import "../../names/instrument/instrument.fal";
-import "../../../physics/units/symbolUnit/symbolUnit.fal";
+import "../../../names/instrumentPort/instrumentPort.fal";
+import "../../../../math/analyticFunction/analyticFunction.fal";
+import "../../../../physics/deviceStructures/connection/connection.fal";
+import "../../../names/instrument/instrument.fal";
+import "../../../../physics/units/symbolUnit/symbolUnit.fal";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 

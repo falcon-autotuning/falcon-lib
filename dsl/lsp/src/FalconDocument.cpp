@@ -1,4 +1,5 @@
 #include "falcon-lsp/FalconDocument.hpp"
+#include "falcon-atc/Compiler.hpp"
 #include "falcon-atc/ParseError.hpp"
 #include "falcon-lsp/TypeChecker.hpp"
 #include <cstdio>
