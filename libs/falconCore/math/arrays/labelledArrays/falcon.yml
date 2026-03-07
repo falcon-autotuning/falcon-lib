@@ -1,0 +1,20 @@
+name: labelledArrays
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: labelledMeasuredArray
+    version: "1.0.0"
+    local_path: "../labelledMeasuredArray/"
+  - name: labelledControlArray
+    version: "1.0.0"
+    local_path: "../labelledControlArray/"
+  - name: acquisitionContext
+    version: "1.0.0"
+    local_path: "../../../autotunerInterfaces/acquisitionContext/"
+  - name: array
+    version: "1.0.0"
+    local_path: "../../../../collections/array/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"

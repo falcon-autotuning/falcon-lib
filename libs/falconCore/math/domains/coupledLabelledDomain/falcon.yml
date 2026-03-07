@@ -1,0 +1,20 @@
+name: coupledLabelledDomain
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: labelledDomain
+    version: "1.0.0"
+    local_path: "../labelledDomain/"
+  - name: ports
+    version: "1.0.0"
+    local_path: "../../../instrumentInterfaces/names/ports/"
+  - name: instrumentPort
+    version: "1.0.0"
+    local_path: "../../../instrumentInterfaces/names/instrumentPort/"
+  - name: array
+    version: "1.0.0"
+    local_path: "../../../../collections/array/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"
