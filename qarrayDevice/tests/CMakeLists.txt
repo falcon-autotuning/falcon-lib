@@ -16,4 +16,12 @@ target_link_libraries(falcon_qarrayDevice_tests
 )
 
 include(GoogleTest)
-gtest_discover_tests(falcon_qarrayDevice_tests)
+gtest_discover_tests(falcon_qarrayDevice_tests
+  # Inject environment variables so the embedded Python can find:
+  #   1. quantum_dot_device.py  (FALCON_QARRAY_PYTHON_PATH → src/)
+  #   2. qarray/numpy           (FALCON_QARRAY_VENV_SITE_PACKAGES → venv site-packages)
+  # These are set at cmake configure time from the detected venv Python.
+  PROPERTIES
+    ENVIRONMENT
+      "FALCON_QARRAY_PYTHON_PATH=${FALCON_DEV_PYTHON_PATH};FALCON_QARRAY_VENV_SITE_PACKAGES=${FALCON_DEV_SITE_PACKAGES}"
+)

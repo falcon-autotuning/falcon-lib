@@ -30,8 +30,8 @@ CMAKE_AR:FILEPATH=/usr/bin/llvm-ar
 // MinSizeRel ...
 CMAKE_BUILD_TYPE:STRING=Debug
 
-//CXX compiler
-CMAKE_CXX_COMPILER:STRING=/usr/bin/clang++
+//No help, variable specified on the command line.
+CMAKE_CXX_COMPILER:UNINITIALIZED=clang++
 
 //LLVM archiver
 CMAKE_CXX_COMPILER_AR:FILEPATH=/usr/bin/llvm-ar
@@ -262,8 +262,8 @@ CMAKE_STRIP:FILEPATH=/usr/bin/llvm-strip
 //Path to a program.
 CMAKE_TAPI:FILEPATH=CMAKE_TAPI-NOTFOUND
 
-//The CMake toolchain file
-CMAKE_TOOLCHAIN_FILE:FILEPATH=/home/tylerk/.local/share/vcpkg/scripts/buildsystems/vcpkg.cmake
+//No help, variable specified on the command line.
+CMAKE_TOOLCHAIN_FILE:UNINITIALIZED=/home/tylerk/.local/share/vcpkg/scripts/buildsystems/vcpkg.cmake
 
 //If this value is on, makefiles will be generated without the
 // .SILENT directive, and all commands will be echoed to the console
@@ -278,7 +278,13 @@ ENABLE_PCH:BOOL=ON
 GTest_DIR:PATH=/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/share/gtest
 
 //Path to a program.
-Python3_EXECUTABLE:FILEPATH=/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/python3/python3.12
+Python3_EXECUTABLE:FILEPATH=/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/.venv/bin/python
+
+//No help, variable specified on the command line.
+Python3_FIND_STRATEGY:UNINITIALIZED=LOCATION
+
+//No help, variable specified on the command line.
+Python3_ROOT_DIR:UNINITIALIZED=/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/.venv
 
 //Path to a program.
 SCCACHE_PROGRAM:FILEPATH=SCCACHE_PROGRAM-NOTFOUND
@@ -518,7 +524,7 @@ CMAKE_UNAME:INTERNAL=/usr/bin/uname
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding Python3
-FIND_PACKAGE_MESSAGE_DETAILS_Python3:INTERNAL=[/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/python3/python3.12][/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/python3.12][optimized;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libpython3.12.so;debug;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/libpython3.12d.so][found components: Interpreter Development Development.Module Development.Embed ][v3.12.9()]
+FIND_PACKAGE_MESSAGE_DETAILS_Python3:INTERNAL=[/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/.venv/bin/python][/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/python3.12][optimized;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libpython3.12.so;debug;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/libpython3.12d.so][found components: Interpreter Development Development.Module Development.Embed ][v3.12.12()]
 //Details about finding Threads
 FIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]
 //Test HAS_FLTO
@@ -526,7 +532,7 @@ HAS_FLTO:INTERNAL=1
 //Test HAS_FLTO_THIN
 HAS_FLTO_THIN:INTERNAL=1
 //Python executable during the last CMake run
-PYBIND11_PYTHON_EXECUTABLE_LAST:INTERNAL=/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/python3/python3.12
+PYBIND11_PYTHON_EXECUTABLE_LAST:INTERNAL=/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/.venv/bin/python
 //Python debug status
 PYTHON_IS_DEBUG:INTERNAL=0
 PYTHON_MODULE_DEBUG_POSTFIX:INTERNAL=
@@ -549,14 +555,22 @@ _PYBIND11_CROSSCOMPILING:INTERNAL=OFF
 _Python:INTERNAL=Python3
 //Compiler reason failure
 _Python3_Compiler_REASON_FAILURE:INTERNAL=
-_Python3_DEVELOPMENT_EMBED_SIGNATURE:INTERNAL=33222133b4c04d05b6fbe31419766fd1
-_Python3_DEVELOPMENT_MODULE_SIGNATURE:INTERNAL=9a086b27e149aa09e4bc021ad9a27021
+_Python3_DEVELOPMENT_EMBED_SIGNATURE:INTERNAL=7d3284dbb8f3736d2e5954160b506d12
+_Python3_DEVELOPMENT_MODULE_SIGNATURE:INTERNAL=7c2ea0f13cafa8ba3a2889dc54a02a7d
 //Development reason failure
 _Python3_Development_REASON_FAILURE:INTERNAL=
-_Python3_EXECUTABLE:INTERNAL=/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/python3/python3.12
+_Python3_EXECUTABLE:INTERNAL=/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/.venv/bin/python
+//Path to a file.
+_Python3_INCLUDE_DIR:INTERNAL=/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/python3.12
 //Python3 Properties
-_Python3_INTERPRETER_PROPERTIES:INTERNAL=Python;3;12;9;64;<none>;cpython-312-x86_64-linux-gnu;abi3;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/python3.12;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/python3.12;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/python3.12/site-packages;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/python3.12/site-packages
-_Python3_INTERPRETER_SIGNATURE:INTERNAL=186b320a7866291c65352f3f1b2847b0
+_Python3_INTERPRETER_PROPERTIES:INTERNAL=Python;3;12;12;64;<none>;cpython-312-x86_64-linux-gnu;abi3;/home/tylerk/.local/share/uv/python/cpython-3.12.12-linux-x86_64-gnu/lib/python3.12;/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/.venv/lib/python3.12;/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/.venv/lib/python3.12/site-packages;/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/.venv/lib/python3.12/site-packages
+_Python3_INTERPRETER_SIGNATURE:INTERNAL=ab7e0e8328db6e9697b4083a5de94c81
+//Interpreter reason failure
+_Python3_Interpreter_REASON_FAILURE:INTERNAL=
+//Path to a library.
+_Python3_LIBRARY_DEBUG:INTERNAL=/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/libpython3.12d.so
+//Path to a library.
+_Python3_LIBRARY_RELEASE:INTERNAL=/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libpython3.12.so
 //NumPy reason failure
 _Python3_NumPy_REASON_FAILURE:INTERNAL=
 //Directories where pybind11 and possibly Python headers are located
