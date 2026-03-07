@@ -228,7 +228,7 @@ autotuner ControlArrayReduction -> (int passed, int failed) {
         Array<float> v; v.pushback(3.0); v.pushback(1.0); v.pushback(2.0);
         controlArray::ControlArray a = CA(v);
         float m = a.Min();
-        Error err = t.ExpectFloatEq(1.0, m, "Min of [3,1,2] is 1");
+        Error err = t.ExpectFloatEq(1.0, m, 1e-9, "Min of [3,1,2] is 1");
         -> __end(runner, t);
     }
 
@@ -236,7 +236,7 @@ autotuner ControlArrayReduction -> (int passed, int failed) {
         Array<float> v; v.pushback(3.0); v.pushback(1.0); v.pushback(2.0);
         controlArray::ControlArray a = CA(v);
         float m = a.Max();
-        Error err = t.ExpectFloatEq(3.0, m, "Max of [3,1,2] is 3");
+        Error err = t.ExpectFloatEq(3.0, m, 1e-9, "Max of [3,1,2] is 3");
         -> __end(runner, t);
     }
 }
