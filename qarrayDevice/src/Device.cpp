@@ -98,9 +98,47 @@ struct Device::Impl {
   py::object py_device;
 
   explicit Impl(const std::string &config_path) {
-    InterpreterGuard::instance(); // ensure interpreter + sys.path are set up
+    // The caller is responsible for starting the interpreter via
+    // pybind11::scoped_interpreter before constructing any Device.
+    // We assert it's running here to give a clear error if not.
+    if (Py_IsInitialized() == 0) {
+      throw std::runtime_error("Python interpreter is not initialized. "
+                               "Create a pybind11::scoped_interpreter before "
+                               "constructing falcon::qarray::Device.");
+    }
 
     py::gil_scoped_acquire gil;
+
+    // Set up sys.path (site-packages + module dir) if not already done.
+    // We use a flag so this only runs once per interpreter lifetime.
+    static bool path_configured = false;
+    if (!path_configured) {
+      auto sys = py::module_::import("sys");
+      auto sys_path = sys.attr("path");
+
+      std::string site_packages;
+      if (const char *env = std::getenv("FALCON_QARRAY_VENV_SITE_PACKAGES")) {
+        site_packages = env;
+      } else {
+        site_packages = FALCON_QARRAY_PYTHON_SITE_PACKAGES;
+      }
+      if (!site_packages.empty()) {
+        sys_path.attr("insert")(0, site_packages);
+      }
+
+      std::string module_dir;
+      if (const char *env = std::getenv("FALCON_QARRAY_PYTHON_PATH")) {
+        module_dir = env;
+      } else {
+        module_dir = FALCON_QARRAY_PYTHON_MODULE_DIR;
+      }
+      if (!module_dir.empty()) {
+        sys_path.attr("insert")(0, module_dir);
+      }
+
+      path_configured = true;
+    }
+
     py::module_ qd_module = py::module_::import("device");
     py::object DeviceClass = qd_module.attr("Device");
     py_device = DeviceClass(config_path);

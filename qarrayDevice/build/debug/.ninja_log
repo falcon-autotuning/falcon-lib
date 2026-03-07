@@ -1,8 +1,13 @@
 # ninja log v7
-1	15	1772862817167910056	tests/CMakeFiles/falcon_qarrayDevice_tests.dir/test_device.cpp.o	f73379fb85d641c9
-1	2511	1772862817167331080	CMakeFiles/falcon-qarrayDevice.dir/cmake_pch.hxx.pch	579f5b6390d94e1d
-2511	3860	1772862819677148979	CMakeFiles/falcon-qarrayDevice.dir/src/Device.cpp.o	5e4ea740e595d704
-3860	3963	1772862821026051524	libfalcon-qarrayDevice.so	a220a86a6d5a4395
-3963	4053	1772862821217037765	tests/falcon_qarrayDevice_tests	597b9a57e8cb60ca
-3963	4053	1772862821217037765	tests/falcon_qarrayDevice_tests[1]_tests.cmake	597b9a57e8cb60ca
-3963	4053	1772862821217037765	/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/tests/falcon_qarrayDevice_tests[1]_tests.cmake	597b9a57e8cb60ca
+3	3030	1772864264084037312	tests/CMakeFiles/falcon_qarrayDevice_tests.dir/test_device.cpp.o	f73379fb85d641c9
+1	1983	1772863871635861948	CMakeFiles/falcon-qarrayDevice.dir/cmake_pch.hxx.pch	579f5b6390d94e1d
+2	1288	1772864264083037304	CMakeFiles/falcon-qarrayDevice.dir/src/Device.cpp.o	5e4ea740e595d704
+1288	1388	1772864265369047732	libfalcon-qarrayDevice.so	a220a86a6d5a4395
+3030	3139	1772864267219062760	tests/falcon_qarrayDevice_tests	c6da5043c2910b17
+3030	3139	1772864267219062760	tests/falcon_qarrayDevice_tests[1]_tests.cmake	c6da5043c2910b17
+3030	3139	1772864267219062760	/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/tests/falcon_qarrayDevice_tests[1]_tests.cmake	c6da5043c2910b17
+2	1272	1772864288193235476	CMakeFiles/falcon-qarrayDevice.dir/src/Device.cpp.o	5e4ea740e595d704
+1272	1366	1772864289463246070	libfalcon-qarrayDevice.so	a220a86a6d5a4395
+1366	1484	1772864289674247832	tests/falcon_qarrayDevice_tests	c6da5043c2910b17
+1366	1484	1772864289674247832	tests/falcon_qarrayDevice_tests[1]_tests.cmake	c6da5043c2910b17
+1366	1484	1772864289674247832	/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/tests/falcon_qarrayDevice_tests[1]_tests.cmake	c6da5043c2910b17
