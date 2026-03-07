@@ -30,8 +30,8 @@ CMAKE_AR:FILEPATH=/usr/bin/llvm-ar
 // MinSizeRel ...
 CMAKE_BUILD_TYPE:STRING=Debug
 
-//No help, variable specified on the command line.
-CMAKE_CXX_COMPILER:UNINITIALIZED=clang++
+//CXX compiler
+CMAKE_CXX_COMPILER:STRING=/usr/bin/clang++
 
 //LLVM archiver
 CMAKE_CXX_COMPILER_AR:FILEPATH=/usr/bin/llvm-ar
@@ -262,8 +262,8 @@ CMAKE_STRIP:FILEPATH=/usr/bin/llvm-strip
 //Path to a program.
 CMAKE_TAPI:FILEPATH=CMAKE_TAPI-NOTFOUND
 
-//No help, variable specified on the command line.
-CMAKE_TOOLCHAIN_FILE:UNINITIALIZED=/home/tylerk/.local/share/vcpkg/scripts/buildsystems/vcpkg.cmake
+//The CMake toolchain file
+CMAKE_TOOLCHAIN_FILE:FILEPATH=/home/tylerk/.local/share/vcpkg/scripts/buildsystems/vcpkg.cmake
 
 //If this value is on, makefiles will be generated without the
 // .SILENT directive, and all commands will be echoed to the console
@@ -554,17 +554,9 @@ _Python3_DEVELOPMENT_MODULE_SIGNATURE:INTERNAL=9a086b27e149aa09e4bc021ad9a27021
 //Development reason failure
 _Python3_Development_REASON_FAILURE:INTERNAL=
 _Python3_EXECUTABLE:INTERNAL=/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/tools/python3/python3.12
-//Path to a file.
-_Python3_INCLUDE_DIR:INTERNAL=/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/python3.12
 //Python3 Properties
 _Python3_INTERPRETER_PROPERTIES:INTERNAL=Python;3;12;9;64;<none>;cpython-312-x86_64-linux-gnu;abi3;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/python3.12;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/python3.12;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/python3.12/site-packages;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/python3.12/site-packages
 _Python3_INTERPRETER_SIGNATURE:INTERNAL=186b320a7866291c65352f3f1b2847b0
-//Interpreter reason failure
-_Python3_Interpreter_REASON_FAILURE:INTERNAL=
-//Path to a library.
-_Python3_LIBRARY_DEBUG:INTERNAL=/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/libpython3.12d.so
-//Path to a library.
-_Python3_LIBRARY_RELEASE:INTERNAL=/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libpython3.12.so
 //NumPy reason failure
 _Python3_NumPy_REASON_FAILURE:INTERNAL=
 //Directories where pybind11 and possibly Python headers are located

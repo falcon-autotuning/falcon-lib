@@ -70,7 +70,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/qarrayDevice" TYPE FILE FILES "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/src/quantum_dot_device.py")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/qarrayDevice" TYPE FILE FILES "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/src/device.py")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)

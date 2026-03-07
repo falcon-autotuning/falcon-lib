@@ -113,7 +113,7 @@ install(TARGETS falcon-qarrayDevice
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Install the Python module so the embedded interpreter can find it
-install(FILES src/quantum_dot_device.py
+install(FILES src/device.py
   DESTINATION share/qarrayDevice
 )
 

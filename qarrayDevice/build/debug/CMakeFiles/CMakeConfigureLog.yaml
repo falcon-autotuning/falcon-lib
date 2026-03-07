@@ -2072,8 +2072,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-qbQBWx"
-      binary: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-qbQBWx"
+      source: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-9EqBSN"
+      binary: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-9EqBSN"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
       CMAKE_CXX_FLAGS: ""
@@ -2088,10 +2088,10 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: '/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-qbQBWx'
+        Change Dir: '/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-9EqBSN'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_4a0c8
-        [1/2] /usr/bin/clang++   -v -MD -MT CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+        Run Build Command(s): /usr/bin/ninja -v cmTC_5d966
+        [1/2] /usr/bin/clang++   -v -MD -MT CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
         clang version 21.1.6
         Target: x86_64-pc-linux-gnu
         Thread model: posix
@@ -2103,7 +2103,7 @@ events:
         Candidate multilib: 32;@m32
         Selected multilib: .;@m64
          (in-process)
-         "/usr/bin/clang++" -cc1 -triple x86_64-pc-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-qbQBWx -v -fcoverage-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-qbQBWx -resource-dir /usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1 -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/x86_64-pc-linux-gnu -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/backward -internal-isystem /usr/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../x86_64-pc-linux-gnu/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -stack-protector 2 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+         "/usr/bin/clang++" -cc1 -triple x86_64-pc-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-9EqBSN -v -fcoverage-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-9EqBSN -resource-dir /usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1 -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/x86_64-pc-linux-gnu -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/backward -internal-isystem /usr/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../x86_64-pc-linux-gnu/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -stack-protector 2 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
         clang -cc1 version 21.1.6 based upon LLVM 21.1.6 default target x86_64-pc-linux-gnu
         ignoring nonexistent directory "/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../x86_64-pc-linux-gnu/include"
         ignoring nonexistent directory "/include"
@@ -2116,7 +2116,7 @@ events:
          /usr/local/include
          /usr/include
         End of search list.
-        [2/2] : && /usr/bin/clang++  -v -Wl,-v CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_4a0c8   && :
+        [2/2] : && /usr/bin/clang++  -v -Wl,-v CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_5d966   && :
         clang version 21.1.6
         Target: x86_64-pc-linux-gnu
         Thread model: posix
@@ -2127,7 +2127,7 @@ events:
         Candidate multilib: .;@m64
         Candidate multilib: 32;@m32
         Selected multilib: .;@m64
-         "/usr/bin/ld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_4a0c8 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o
+         "/usr/bin/ld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_5d966 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o
         GNU ld (GNU Binutils) 2.45.1
         
       exitCode: 0
@@ -2167,10 +2167,10 @@ events:
       Parsed CXX implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|"|[0-9]+>[ 	-]*Build:[ 	0-9]+ ms[ 	]*)?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)))("|,| |$)]
-        ignore line: [Change Dir: '/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-qbQBWx']
+        ignore line: [Change Dir: '/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-9EqBSN']
         ignore line: []
-        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_4a0c8]
-        ignore line: [[1/2] /usr/bin/clang++   -v -MD -MT CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_5d966]
+        ignore line: [[1/2] /usr/bin/clang++   -v -MD -MT CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-pc-linux-gnu]
         ignore line: [Thread model: posix]
@@ -2185,7 +2185,7 @@ events:
         ignore line: [Selected multilib: .]
         ignore line: [@m64]
         ignore line: [ (in-process)]
-        ignore line: [ "/usr/bin/clang++" -cc1 -triple x86_64-pc-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-qbQBWx -v -fcoverage-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-qbQBWx -resource-dir /usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1 -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/x86_64-pc-linux-gnu -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/backward -internal-isystem /usr/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../x86_64-pc-linux-gnu/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -stack-protector 2 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [ "/usr/bin/clang++" -cc1 -triple x86_64-pc-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-9EqBSN -v -fcoverage-compilation-dir=/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-9EqBSN -resource-dir /usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1 -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/x86_64-pc-linux-gnu -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../include/c++/15.2.1/backward -internal-isystem /usr/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../x86_64-pc-linux-gnu/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -stack-protector 2 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
         ignore line: [clang -cc1 version 21.1.6 based upon LLVM 21.1.6 default target x86_64-pc-linux-gnu]
         ignore line: [ignoring nonexistent directory "/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../x86_64-pc-linux-gnu/include"]
         ignore line: [ignoring nonexistent directory "/include"]
@@ -2198,7 +2198,7 @@ events:
         ignore line: [ /usr/local/include]
         ignore line: [ /usr/include]
         ignore line: [End of search list.]
-        ignore line: [[2/2] : && /usr/bin/clang++  -v -Wl -v CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_4a0c8   && :]
+        ignore line: [[2/2] : && /usr/bin/clang++  -v -Wl -v CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_5d966   && :]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-pc-linux-gnu]
         ignore line: [Thread model: posix]
@@ -2212,7 +2212,7 @@ events:
         ignore line: [@m32]
         ignore line: [Selected multilib: .]
         ignore line: [@m64]
-        link line: [ "/usr/bin/ld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_4a0c8 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o]
+        link line: [ "/usr/bin/ld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_5d966 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o]
           arg [/usr/bin/ld] ==> ignore
           arg [--hash-style=gnu] ==> ignore
           arg [--build-id] ==> ignore
@@ -2223,7 +2223,7 @@ events:
           arg [-dynamic-linker] ==> ignore
           arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
           arg [-o] ==> ignore
-          arg [cmTC_4a0c8] ==> ignore
+          arg [cmTC_5d966] ==> ignore
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o]
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o]
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o]
@@ -2234,7 +2234,7 @@ events:
           arg [-L/lib] ==> dir [/lib]
           arg [-L/usr/lib] ==> dir [/usr/lib]
           arg [-v] ==> ignore
-          arg [CMakeFiles/cmTC_4a0c8.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+          arg [CMakeFiles/cmTC_5d966.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
           arg [-lstdc++] ==> lib [stdc++]
           arg [-lm] ==> lib [m]
           arg [-lgcc_s] ==> lib [gcc_s]
@@ -3109,8 +3109,8 @@ events:
     checks:
       - "Performing Test HAS_FLTO_THIN"
     directories:
-      source: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-xmHPhx"
-      binary: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-xmHPhx"
+      source: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-RnmcFo"
+      binary: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-RnmcFo"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
       CMAKE_CXX_FLAGS: ""
@@ -3124,11 +3124,11 @@ events:
       variable: "HAS_FLTO_THIN"
       cached: true
       stdout: |
-        Change Dir: '/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-xmHPhx'
+        Change Dir: '/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-RnmcFo'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_a96a2
-        [1/2] /usr/bin/clang++ -DHAS_FLTO_THIN  -std=gnu++17   -flto -MD -MT CMakeFiles/cmTC_a96a2.dir/src.cxx.o -MF CMakeFiles/cmTC_a96a2.dir/src.cxx.o.d -o CMakeFiles/cmTC_a96a2.dir/src.cxx.o -c /home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-xmHPhx/src.cxx
-        [2/2] : && /usr/bin/clang++   CMakeFiles/cmTC_a96a2.dir/src.cxx.o -o cmTC_a96a2  -flto && :
+        Run Build Command(s): /usr/bin/ninja -v cmTC_b8485
+        [1/2] /usr/bin/clang++ -DHAS_FLTO_THIN  -std=gnu++17   -flto -MD -MT CMakeFiles/cmTC_b8485.dir/src.cxx.o -MF CMakeFiles/cmTC_b8485.dir/src.cxx.o.d -o CMakeFiles/cmTC_b8485.dir/src.cxx.o -c /home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-RnmcFo/src.cxx
+        [2/2] : && /usr/bin/clang++   CMakeFiles/cmTC_b8485.dir/src.cxx.o -o cmTC_b8485  -flto && :
         
       exitCode: 0
   -
@@ -3146,8 +3146,8 @@ events:
     checks:
       - "Performing Test HAS_FLTO"
     directories:
-      source: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-oRFS0O"
-      binary: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-oRFS0O"
+      source: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-qIAg48"
+      binary: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-qIAg48"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
       CMAKE_CXX_FLAGS: ""
@@ -3161,11 +3161,11 @@ events:
       variable: "HAS_FLTO"
       cached: true
       stdout: |
-        Change Dir: '/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-oRFS0O'
+        Change Dir: '/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-qIAg48'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_5a519
-        [1/2] /usr/bin/clang++ -DHAS_FLTO  -std=gnu++17   -flto -MD -MT CMakeFiles/cmTC_5a519.dir/src.cxx.o -MF CMakeFiles/cmTC_5a519.dir/src.cxx.o.d -o CMakeFiles/cmTC_5a519.dir/src.cxx.o -c /home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-oRFS0O/src.cxx
-        [2/2] : && /usr/bin/clang++   CMakeFiles/cmTC_5a519.dir/src.cxx.o -o cmTC_5a519  -flto && :
+        Run Build Command(s): /usr/bin/ninja -v cmTC_270cb
+        [1/2] /usr/bin/clang++ -DHAS_FLTO  -std=gnu++17   -flto -MD -MT CMakeFiles/cmTC_270cb.dir/src.cxx.o -MF CMakeFiles/cmTC_270cb.dir/src.cxx.o.d -o CMakeFiles/cmTC_270cb.dir/src.cxx.o -c /home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-qIAg48/src.cxx
+        [2/2] : && /usr/bin/clang++   CMakeFiles/cmTC_270cb.dir/src.cxx.o -o cmTC_270cb  -flto && :
         
       exitCode: 0
   -
@@ -3285,8 +3285,8 @@ events:
     checks:
       - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
     directories:
-      source: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-WwAfQE"
-      binary: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-WwAfQE"
+      source: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-BUOss8"
+      binary: "/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-BUOss8"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
       CMAKE_CXX_FLAGS: ""
@@ -3300,11 +3300,11 @@ events:
       variable: "CMAKE_HAVE_LIBC_PTHREAD"
       cached: true
       stdout: |
-        Change Dir: '/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-WwAfQE'
+        Change Dir: '/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-BUOss8'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_cd083
-        [1/2] /usr/bin/clang++ -DCMAKE_HAVE_LIBC_PTHREAD  -std=gnu++17 -MD -MT CMakeFiles/cmTC_cd083.dir/src.cxx.o -MF CMakeFiles/cmTC_cd083.dir/src.cxx.o.d -o CMakeFiles/cmTC_cd083.dir/src.cxx.o -c /home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-WwAfQE/src.cxx
-        [2/2] : && /usr/bin/clang++   CMakeFiles/cmTC_cd083.dir/src.cxx.o -o cmTC_cd083   && :
+        Run Build Command(s): /usr/bin/ninja -v cmTC_7a8ff
+        [1/2] /usr/bin/clang++ -DCMAKE_HAVE_LIBC_PTHREAD  -std=gnu++17 -MD -MT CMakeFiles/cmTC_7a8ff.dir/src.cxx.o -MF CMakeFiles/cmTC_7a8ff.dir/src.cxx.o.d -o CMakeFiles/cmTC_7a8ff.dir/src.cxx.o -c /home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/CMakeFiles/CMakeScratch/TryCompile-BUOss8/src.cxx
+        [2/2] : && /usr/bin/clang++   CMakeFiles/cmTC_7a8ff.dir/src.cxx.o -o cmTC_7a8ff   && :
         
       exitCode: 0
   -
@@ -3407,197 +3407,5 @@ events:
         - "/usr/X11R6"
         - "/usr/pkg"
         - "/opt"
-      CMAKE_FIND_ROOT_PATH: "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic"
-...
-
----
-events:
-  -
-    kind: "find-v1"
-    backtrace:
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/share/python3/vcpkg-cmake-wrapper.cmake:42 (find_path)"
-      - "/home/tylerk/.local/share/vcpkg/scripts/buildsystems/vcpkg.cmake:862 (include)"
-      - "CMakeLists.txt:42 (find_package)"
-    mode: "path"
-    variable: "_Python3_INCLUDE_DIR"
-    description: "Path to a file."
-    settings:
-      SearchFramework: "LAST"
-      SearchAppBundle: "LAST"
-      CMAKE_FIND_USE_CMAKE_PATH: true
-      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
-      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
-      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
-      CMAKE_FIND_USE_INSTALL_PREFIX: true
-    names:
-      - "Python.h"
-    candidate_directories:
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/python3.12/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/python3.12/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/python3.12/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/"
-    searched_directories:
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/python3.12/Python.h"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/Python.h"
-    found: "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/include/python3.12/"
-    search_context:
-      CMAKE_PREFIX_PATH:
-        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug"
-        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic"
-      ENV{PATH}:
-        - "/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin"
-        - "/opt/falcon/lib"
-        - "/home/tylerk/.local/share/nvim/mason/bin"
-        - "/home/tylerk/.local/share/../bin"
-        - "/opt/falcon/lib"
-        - "/usr/local/bin"
-        - "/usr/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-      CMAKE_INSTALL_PREFIX: "/opt/falcon"
-      CMAKE_SYSTEM_PREFIX_PATH:
-        - "/usr/local"
-        - "/usr"
-        - "/"
-        - "/usr"
-        - "/opt/falcon"
-        - "/usr/X11R6"
-        - "/usr/pkg"
-        - "/opt"
-      CMAKE_SYSTEM_INCLUDE_PATH:
-        - "/usr/include/X11"
-      CMAKE_FIND_ROOT_PATH: "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic"
-  -
-    kind: "find-v1"
-    backtrace:
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/share/python3/vcpkg-cmake-wrapper.cmake:52 (find_library)"
-      - "/home/tylerk/.local/share/vcpkg/scripts/buildsystems/vcpkg.cmake:862 (include)"
-      - "CMakeLists.txt:42 (find_package)"
-    mode: "library"
-    variable: "_Python3_LIBRARY_RELEASE"
-    description: "Path to a library."
-    settings:
-      SearchFramework: "LAST"
-      SearchAppBundle: "LAST"
-      CMAKE_FIND_USE_CMAKE_PATH: true
-      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
-      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
-      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
-      CMAKE_FIND_USE_INSTALL_PREFIX: true
-    names:
-      - "python312"
-      - "python3.12"
-    candidate_directories:
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/"
-    searched_directories:
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/"
-    found: "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/libpython3.12.so"
-    search_context:
-      CMAKE_LIBRARY_PATH:
-        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/manual-link"
-        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/manual-link"
-      CMAKE_PREFIX_PATH:
-        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug"
-        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic"
-      ENV{PATH}:
-        - "/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin"
-        - "/opt/falcon/lib"
-        - "/home/tylerk/.local/share/nvim/mason/bin"
-        - "/home/tylerk/.local/share/../bin"
-        - "/opt/falcon/lib"
-        - "/usr/local/bin"
-        - "/usr/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-      CMAKE_INSTALL_PREFIX: "/opt/falcon"
-      CMAKE_SYSTEM_PREFIX_PATH:
-        - "/usr/local"
-        - "/usr"
-        - "/"
-        - "/usr"
-        - "/opt/falcon"
-        - "/usr/X11R6"
-        - "/usr/pkg"
-        - "/opt"
-      CMAKE_SYSTEM_LIBRARY_PATH:
-        - "/usr/lib/X11"
-      CMAKE_FIND_ROOT_PATH: "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic"
-  -
-    kind: "find-v1"
-    backtrace:
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/share/python3/vcpkg-cmake-wrapper.cmake:60 (find_library)"
-      - "/home/tylerk/.local/share/vcpkg/scripts/buildsystems/vcpkg.cmake:862 (include)"
-      - "CMakeLists.txt:42 (find_package)"
-    mode: "library"
-    variable: "_Python3_LIBRARY_DEBUG"
-    description: "Path to a library."
-    settings:
-      SearchFramework: "LAST"
-      SearchAppBundle: "LAST"
-      CMAKE_FIND_USE_CMAKE_PATH: true
-      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
-      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
-      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
-      CMAKE_FIND_USE_INSTALL_PREFIX: true
-    names:
-      - "python312_d"
-      - "python3.12d"
-    candidate_directories:
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/"
-    searched_directories:
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/"
-      - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/"
-    found: "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/libpython3.12d.so"
-    search_context:
-      CMAKE_LIBRARY_PATH:
-        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug/lib/manual-link"
-        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/lib/manual-link"
-      CMAKE_PREFIX_PATH:
-        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug"
-        - "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic"
-      ENV{PATH}:
-        - "/home/tylerk/.opam/falcon-lib-ocaml-5.4.0/bin"
-        - "/opt/falcon/lib"
-        - "/home/tylerk/.local/share/nvim/mason/bin"
-        - "/home/tylerk/.local/share/../bin"
-        - "/opt/falcon/lib"
-        - "/usr/local/bin"
-        - "/usr/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-      CMAKE_INSTALL_PREFIX: "/opt/falcon"
-      CMAKE_SYSTEM_PREFIX_PATH:
-        - "/usr/local"
-        - "/usr"
-        - "/"
-        - "/usr"
-        - "/opt/falcon"
-        - "/usr/X11R6"
-        - "/usr/pkg"
-        - "/opt"
-      CMAKE_SYSTEM_LIBRARY_PATH:
-        - "/usr/lib/X11"
       CMAKE_FIND_ROOT_PATH: "/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic/debug;/home/tylerk/falcon-dev/falcon-lib/vcpkg_installed/x64-linux-dynamic"
 ...

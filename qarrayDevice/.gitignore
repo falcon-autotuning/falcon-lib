@@ -1,0 +1,9 @@
+build/
+*.install
+*.ba
+*~
+*.swp
+.DS_Store
+vcpkg_installed/
+.python-version
+.venv/

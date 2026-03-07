@@ -74,31 +74,22 @@ struct Device::Impl {
   explicit Impl(const std::string &config_path) {
     // Ensure the interpreter is running
     InterpreterGuard::instance();
-
     py::gil_scoped_acquire gil;
 
-    // Locate the quantum_dot_device.py bundled alongside this library.
-    // It lives next to this compiled .so in the install tree, or at the
-    // path set by FALCON_QARRAY_PYTHON_PATH env var.
+    // Locate the device.py bundled alongside this library.
     std::string module_dir;
     if (const char *env = std::getenv("FALCON_QARRAY_PYTHON_PATH")) {
       module_dir = env;
     } else {
-      // Default: same directory as the shared library.
-      // __file__ equivalent: look relative to source location at build time.
-      // We embed the path at cmake configure time via a generated header.
-#ifdef FALCON_QARRAY_PYTHON_MODULE_DIR
-      module_dir = FALCON_QARRAY_PYTHON_MODULE_DIR;
-#else
-      module_dir = "/opt/falcon/share/qarrayDevice";
-#endif
+      // Use the directory of this source file for development/testing
+      module_dir = std::filesystem::path(__FILE__).parent_path().string();
     }
 
     // Insert module directory into sys.path
     py::module_::import("sys").attr("path").attr("insert")(0, module_dir);
 
     // Import the module and instantiate Device
-    py::module_ qd_module = py::module_::import("quantum_dot_device");
+    py::module_ qd_module = py::module_::import("device.py");
     py::object DeviceClass = qd_module.attr("Device");
     py_device = DeviceClass(config_path);
   }

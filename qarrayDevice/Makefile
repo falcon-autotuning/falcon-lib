@@ -162,7 +162,7 @@ test: build-release
 
 test-debug: build-debug
 	@echo "Running debug tests..."
-	cd $(BUILD_DIR_DEBUG) && ctest --output-on-failure -C Debug
+	. .venv/bin/activate && cd $(BUILD_DIR_DEBUG) && ctest --output-on-failure -C Debug
 	@echo "✓ Tests passed"
 
 # ── Install ───────────────────────────────────────────────────────────────────
