@@ -1,0 +1,142 @@
+// Tests for falcon_core/math/discrete_spaces/Discretizer
+// Run with: falcon-test run_tests.fal
+import "../../../../../testing/testing.fal";
+import "../discretizer.fal";
+
+autotuner DiscretizerCartesian -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_delta_value (TestRunner runner, TestContext t) {
+        Discretizer d = Discretizer.NewCartesianDiscretizer(0.1);
+        Error err = t.ExpectFloatEq(0.1, d.Delta(), 1.0e-9, "Cartesian delta is 0.1");
+        -> __end(runner, t);
+    }
+
+    state test_is_cartesian (TestRunner runner, TestContext t) {
+        Discretizer d = Discretizer.NewCartesianDiscretizer(0.5);
+        Error err = t.ExpectTrue(d.IsCartesian(), "NewCartesianDiscretizer.IsCartesian is true");
+        -> __end(runner, t);
+    }
+
+    state test_not_polar (TestRunner runner, TestContext t) {
+        Discretizer d = Discretizer.NewCartesianDiscretizer(0.5);
+        Error err = t.ExpectFalse(d.IsPolar(), "NewCartesianDiscretizer.IsPolar is false");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DiscretizerPolar -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_delta_value (TestRunner runner, TestContext t) {
+        Discretizer d = Discretizer.NewPolarDiscretizer(0.05);
+        Error err = t.ExpectFloatEq(0.05, d.Delta(), 1.0e-9, "Polar delta is 0.05");
+        -> __end(runner, t);
+    }
+
+    state test_is_polar (TestRunner runner, TestContext t) {
+        Discretizer d = Discretizer.NewPolarDiscretizer(0.2);
+        Error err = t.ExpectTrue(d.IsPolar(), "NewPolarDiscretizer.IsPolar is true");
+        -> __end(runner, t);
+    }
+
+    state test_not_cartesian (TestRunner runner, TestContext t) {
+        Discretizer d = Discretizer.NewPolarDiscretizer(0.2);
+        Error err = t.ExpectFalse(d.IsCartesian(), "NewPolarDiscretizer.IsCartesian is false");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DiscretizerSetDelta -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_set_delta (TestRunner runner, TestContext t) {
+        Discretizer d = Discretizer.NewCartesianDiscretizer(0.1);
+        d.SetDelta(0.5);
+        Error err = t.ExpectFloatEq(0.5, d.Delta(), 1.0e-9, "SetDelta updates delta to 0.5");
+        -> __end(runner, t);
+    }
+
+    state test_set_delta_polar (TestRunner runner, TestContext t) {
+        Discretizer d = Discretizer.NewPolarDiscretizer(0.1);
+        d.SetDelta(0.3);
+        Error err = t.ExpectFloatEq(0.3, d.Delta(), 1.0e-9, "SetDelta on polar updates delta to 0.3");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DiscretizerDomain -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_domain_non_empty (TestRunner runner, TestContext t) {
+        Discretizer d   = Discretizer.NewCartesianDiscretizer(0.1);
+        Domain      dom = d.Domain();
+        Error err = t.ExpectTrue(dom.Range() > 0.0, "Domain range is positive");
+        -> __end(runner, t);
+    }
+
+    state test_domain_contains_delta (TestRunner runner, TestContext t) {
+        Discretizer d   = Discretizer.NewCartesianDiscretizer(0.1);
+        Domain      dom = d.Domain();
+        Error err = t.ExpectTrue(dom.In(0.1), "Domain contains the delta value");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DiscretizerEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same_type_and_delta (TestRunner runner, TestContext t) {
+        Discretizer a = Discretizer.NewCartesianDiscretizer(0.1);
+        Discretizer b = Discretizer.NewCartesianDiscretizer(0.1);
+        Error err = t.ExpectTrue(a.Equal(b), "Same type and delta are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_delta (TestRunner runner, TestContext t) {
+        Discretizer a = Discretizer.NewCartesianDiscretizer(0.1);
+        Discretizer b = Discretizer.NewCartesianDiscretizer(0.2);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different deltas are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_type (TestRunner runner, TestContext t) {
+        Discretizer a = Discretizer.NewCartesianDiscretizer(0.1);
+        Discretizer b = Discretizer.NewPolarDiscretizer(0.1);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Cartesian and Polar are not equal");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DiscretizerJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Discretizer d    = Discretizer.NewCartesianDiscretizer(0.1);
+        string      json = d.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_cartesian (TestRunner runner, TestContext t) {
+        Discretizer orig     = Discretizer.NewCartesianDiscretizer(0.25);
+        string      json     = orig.ToJSON();
+        Discretizer restored = Discretizer.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "Cartesian round-trip equality");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_polar (TestRunner runner, TestContext t) {
+        Discretizer orig     = Discretizer.NewPolarDiscretizer(0.1);
+        string      json     = orig.ToJSON();
+        Discretizer restored = Discretizer.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "Polar round-trip equality");
+        -> __end(runner, t);
+    }
+}

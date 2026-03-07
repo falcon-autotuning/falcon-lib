@@ -1,0 +1,11 @@
+name: discretizer
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: domain
+    version: "1.0.0"
+    local_path: "../../domains/domain/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"

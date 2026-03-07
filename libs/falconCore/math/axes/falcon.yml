@@ -1,0 +1,11 @@
+name: axes
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: array
+    version: "1.0.0"
+    local_path: "../../../collections/array/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../testing/"
