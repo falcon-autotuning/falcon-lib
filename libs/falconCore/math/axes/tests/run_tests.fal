@@ -1,0 +1,176 @@
+// Tests for falcon_core/math/axes (Axes<T> FAL struct)
+// Run with: falcon-test run_tests.fal
+//
+// Note: Equal, NotEqual, FromJSON, ToJSON are FFI stubs (Axes<T> is a FAL
+// struct, not a C++ opaque), so only the inline-body routines are tested here.
+import "../../../../testing/testing.fal";
+import "../axes.fal";
+
+autotuner AxesConstruction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_empty (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        Error err = t.ExpectTrue(ax.IsEmpty(), "New axes is empty");
+        -> __end(runner, t);
+    }
+
+    state test_new_size_zero (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        Error err = t.ExpectTrue(ax.Size() == 0, "New axes has size 0");
+        -> __end(runner, t);
+    }
+}
+
+autotuner AxesPushBackAndSize -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_push_back_one (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(42);
+        Error err = t.ExpectTrue(ax.Size() == 1, "Size is 1 after one PushBack");
+        -> __end(runner, t);
+    }
+
+    state test_push_back_three (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(1);
+        ax.PushBack(2);
+        ax.PushBack(3);
+        Error err = t.ExpectTrue(ax.Size() == 3, "Size is 3 after three PushBacks");
+        -> __end(runner, t);
+    }
+
+    state test_not_empty_after_push (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(10);
+        Error err = t.ExpectFalse(ax.IsEmpty(), "Not empty after PushBack");
+        -> __end(runner, t);
+    }
+}
+
+autotuner AxesGetIndex -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_get_first (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(10);
+        ax.PushBack(20);
+        Error err = t.ExpectTrue(ax.GetIndex(0) == 10, "GetIndex(0) is 10");
+        -> __end(runner, t);
+    }
+
+    state test_get_second (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(10);
+        ax.PushBack(20);
+        Error err = t.ExpectTrue(ax.GetIndex(1) == 20, "GetIndex(1) is 20");
+        -> __end(runner, t);
+    }
+
+    state test_float_axes (TestRunner runner, TestContext t) {
+        Axes<float> ax = Axes<float>.New();
+        ax.PushBack(1.5);
+        ax.PushBack(2.5);
+        Error err = t.ExpectFloatEq(1.5, ax.GetIndex(0), 1.0e-9, "GetIndex(0) float is 1.5");
+        -> __end(runner, t);
+    }
+}
+
+autotuner AxesSetIndex -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_set_index (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(1);
+        ax.PushBack(2);
+        ax.SetIndex(0, 99);
+        Error err = t.ExpectTrue(ax.GetIndex(0) == 99, "SetIndex(0, 99) sets first element");
+        -> __end(runner, t);
+    }
+}
+
+autotuner AxesPopBack -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_pop_back_value (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(5);
+        ax.PushBack(7);
+        int v = ax.PopBack();
+        Error err = t.ExpectTrue(v == 7, "PopBack returns last element 7");
+        -> __end(runner, t);
+    }
+
+    state test_pop_back_reduces_size (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(1);
+        ax.PushBack(2);
+        ax.PopBack();
+        Error err = t.ExpectTrue(ax.Size() == 1, "Size is 1 after PopBack");
+        -> __end(runner, t);
+    }
+}
+
+autotuner AxesClear -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_clear_empties (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(1);
+        ax.PushBack(2);
+        ax.Clear();
+        Error err = t.ExpectTrue(ax.IsEmpty(), "Clear empties the axes");
+        -> __end(runner, t);
+    }
+
+    state test_clear_size_zero (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(3);
+        ax.Clear();
+        Error err = t.ExpectTrue(ax.Size() == 0, "Size is 0 after Clear");
+        -> __end(runner, t);
+    }
+}
+
+autotuner AxesContainsAndIndexOf -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_contains_present (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(10);
+        ax.PushBack(20);
+        Error err = t.ExpectTrue(ax.Contains(20), "Contains 20 is true");
+        -> __end(runner, t);
+    }
+
+    state test_contains_absent (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(10);
+        Error err = t.ExpectFalse(ax.Contains(99), "Contains 99 is false");
+        -> __end(runner, t);
+    }
+
+    state test_index_of_found (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(10);
+        ax.PushBack(20);
+        ax.PushBack(30);
+        Error err = t.ExpectTrue(ax.IndexOf(20) == 1, "IndexOf 20 is 1");
+        -> __end(runner, t);
+    }
+
+    state test_index_of_not_found (TestRunner runner, TestContext t) {
+        Axes<int> ax = Axes<int>.New();
+        ax.PushBack(10);
+        Error err = t.ExpectTrue(ax.IndexOf(99) == -1, "IndexOf absent value is -1");
+        -> __end(runner, t);
+    }
+}
