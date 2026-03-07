@@ -1,0 +1,299 @@
+// Tests for falconCore/math/arrays/controlArray
+// Run with: falcon-test run_tests.fal
+import "../../../../../testing/testing.fal";
+import "../controlArray.fal";
+import "../../../../generic/farray/tests/farray-test-helpers.fal";
+
+routine FA (Array<float> vals) -> (farray::FArray arr) {
+    arr = FArrayTestHelpers.NewFromFloats(vals);
+}
+
+routine CA (Array<float> vals) -> (controlArray::ControlArray carray) {
+    farray::FArray fa = FA(vals);
+    carray = controlArray::ControlArray.New(fa);
+}
+
+// ── Construction ──────────────────────────────────────────────────────────────
+
+autotuner ControlArrayConstruction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_from_farray (TestRunner runner, TestContext t) {
+        Array<float> vals; vals.pushback(1.0); vals.pushback(2.0); vals.pushback(3.0);
+        controlArray::ControlArray ca = CA(vals);
+        string json = ca.ToJSON();
+        Error err = t.ExpectStrNe("", json, "New from FArray produces non-empty JSON");
+        -> __end(runner, t);
+    }
+}
+
+// ── Equality ──────────────────────────────────────────────────────────────────
+
+autotuner ControlArrayEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        controlArray::ControlArray a = CA(v);
+        controlArray::ControlArray b = CA(v);
+        Error err = t.ExpectTrue(a.Equal(b), "Same-data ControlArrays are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different (TestRunner runner, TestContext t) {
+        Array<float> va; va.pushback(1.0); va.pushback(2.0); va.pushback(3.0);
+        Array<float> vb; vb.pushback(1.0); vb.pushback(2.0); vb.pushback(4.0);
+        controlArray::ControlArray a = CA(va);
+        controlArray::ControlArray b = CA(vb);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different-data ControlArrays are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_for_different (TestRunner runner, TestContext t) {
+        Array<float> va; va.pushback(1.0); va.pushback(2.0);
+        Array<float> vb; vb.pushback(3.0); vb.pushback(4.0);
+        controlArray::ControlArray a = CA(va);
+        controlArray::ControlArray b = CA(vb);
+        Error err = t.ExpectFalse(a.Equal(b), "Equal is false for different data");
+        -> __end(runner, t);
+    }
+}
+
+// ── Arithmetic: Times / Divides ───────────────────────────────────────────────
+
+autotuner ControlArrayScaling -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_times_float (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(1.0);  v.pushback(2.0);  v.pushback(3.0);
+        Array<float> exp; exp.pushback(2.0); exp.pushback(4.0); exp.pushback(6.0);
+        controlArray::ControlArray a   = CA(v);
+        controlArray::ControlArray res = a.Times(2.0);
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Times(2.0): [1,2,3]*2=[2,4,6]");
+        -> __end(runner, t);
+    }
+
+    state test_times_int (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(1.0);  v.pushback(2.0);  v.pushback(3.0);
+        Array<float> exp; exp.pushback(3.0); exp.pushback(6.0); exp.pushback(9.0);
+        controlArray::ControlArray a   = CA(v);
+        controlArray::ControlArray res = a.Times(3);
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Times(3): [1,2,3]*3=[3,6,9]");
+        -> __end(runner, t);
+    }
+
+    state test_divides_float (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(2.0);  v.pushback(4.0);  v.pushback(6.0);
+        Array<float> exp; exp.pushback(1.0); exp.pushback(2.0); exp.pushback(3.0);
+        controlArray::ControlArray a   = CA(v);
+        controlArray::ControlArray res = a.Divides(2.0);
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Divides(2.0): [2,4,6]/2=[1,2,3]");
+        -> __end(runner, t);
+    }
+
+    state test_divides_int (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(3.0);  v.pushback(6.0);  v.pushback(9.0);
+        Array<float> exp; exp.pushback(1.0); exp.pushback(2.0); exp.pushback(3.0);
+        controlArray::ControlArray a   = CA(v);
+        controlArray::ControlArray res = a.Divides(3);
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Divides(3): [3,6,9]/3=[1,2,3]");
+        -> __end(runner, t);
+    }
+}
+
+// ── Arithmetic: Add / Minus ───────────────────────────────────────────────────
+
+autotuner ControlArrayAddMinus -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_add_float (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(1.0);  v.pushback(2.0);  v.pushback(3.0);
+        Array<float> exp; exp.pushback(2.0); exp.pushback(3.0); exp.pushback(4.0);
+        controlArray::ControlArray a   = CA(v);
+        controlArray::ControlArray res = a.Add(1.0);
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Add(1.0): [1,2,3]+1=[2,3,4]");
+        -> __end(runner, t);
+    }
+
+    state test_add_int (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(1.0);  v.pushback(2.0);  v.pushback(3.0);
+        Array<float> exp; exp.pushback(3.0); exp.pushback(4.0); exp.pushback(5.0);
+        controlArray::ControlArray a   = CA(v);
+        controlArray::ControlArray res = a.Add(2);
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Add(2): [1,2,3]+2=[3,4,5]");
+        -> __end(runner, t);
+    }
+
+    state test_add_control_array (TestRunner runner, TestContext t) {
+        Array<float> va;  va.pushback(1.0); va.pushback(2.0); va.pushback(3.0);
+        Array<float> vb;  vb.pushback(1.0); vb.pushback(1.0); vb.pushback(1.0);
+        Array<float> exp; exp.pushback(2.0); exp.pushback(3.0); exp.pushback(4.0);
+        controlArray::ControlArray a   = CA(va);
+        controlArray::ControlArray b   = CA(vb);
+        controlArray::ControlArray res = a.Add(b);
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Add(ControlArray): [1,2,3]+[1,1,1]=[2,3,4]");
+        -> __end(runner, t);
+    }
+
+    state test_add_farray (TestRunner runner, TestContext t) {
+        Array<float> va;  va.pushback(1.0); va.pushback(2.0); va.pushback(3.0);
+        Array<float> vb;  vb.pushback(0.0); vb.pushback(0.0); vb.pushback(1.0);
+        Array<float> exp; exp.pushback(1.0); exp.pushback(2.0); exp.pushback(4.0);
+        controlArray::ControlArray a   = CA(va);
+        farray::FArray             fb  = FA(vb);
+        controlArray::ControlArray res = a.Add(fb);
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Add(FArray): [1,2,3]+[0,0,1]=[1,2,4]");
+        -> __end(runner, t);
+    }
+
+    state test_minus_float (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(2.0);  v.pushback(3.0);  v.pushback(4.0);
+        Array<float> exp; exp.pushback(1.0); exp.pushback(2.0); exp.pushback(3.0);
+        controlArray::ControlArray a   = CA(v);
+        controlArray::ControlArray res = a.Minus(1.0);
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Minus(1.0): [2,3,4]-1=[1,2,3]");
+        -> __end(runner, t);
+    }
+
+    state test_minus_control_array (TestRunner runner, TestContext t) {
+        Array<float> va;  va.pushback(3.0); va.pushback(4.0); va.pushback(5.0);
+        Array<float> vb;  vb.pushback(1.0); vb.pushback(1.0); vb.pushback(1.0);
+        Array<float> exp; exp.pushback(2.0); exp.pushback(3.0); exp.pushback(4.0);
+        controlArray::ControlArray a   = CA(va);
+        controlArray::ControlArray b   = CA(vb);
+        controlArray::ControlArray res = a.Minus(b);
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Minus(ControlArray): [3,4,5]-[1,1,1]=[2,3,4]");
+        -> __end(runner, t);
+    }
+}
+
+// ── Unary ─────────────────────────────────────────────────────────────────────
+
+autotuner ControlArrayUnary -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_negate (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(1.0);  v.pushback(2.0);  v.pushback(3.0);
+        Array<float> exp; exp.pushback(-1.0); exp.pushback(-2.0); exp.pushback(-3.0);
+        controlArray::ControlArray a   = CA(v);
+        controlArray::ControlArray res = a.Negate();
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Negate: [1,2,3]->[-1,-2,-3]");
+        -> __end(runner, t);
+    }
+
+    state test_abs_negative (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(-1.0); v.pushback(-2.0); v.pushback(-3.0);
+        Array<float> exp; exp.pushback(1.0); exp.pushback(2.0); exp.pushback(3.0);
+        controlArray::ControlArray a   = CA(v);
+        controlArray::ControlArray res = a.Abs();
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Abs([-1,-2,-3])=[1,2,3]");
+        -> __end(runner, t);
+    }
+
+    state test_power_two (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(1.0);  v.pushback(2.0);  v.pushback(3.0);
+        Array<float> exp; exp.pushback(1.0); exp.pushback(4.0); exp.pushback(9.0);
+        controlArray::ControlArray a   = CA(v);
+        controlArray::ControlArray res = a.Power(2.0);
+        controlArray::ControlArray e   = CA(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Power(2.0): [1,2,3]^2=[1,4,9]");
+        -> __end(runner, t);
+    }
+}
+
+// ── Reduction ─────────────────────────────────────────────────────────────────
+
+autotuner ControlArrayReduction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_min (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(3.0); v.pushback(1.0); v.pushback(2.0);
+        controlArray::ControlArray a = CA(v);
+        float m = a.Min();
+        Error err = t.ExpectFloatEq(1.0, m, "Min of [3,1,2] is 1");
+        -> __end(runner, t);
+    }
+
+    state test_max (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(3.0); v.pushback(1.0); v.pushback(2.0);
+        controlArray::ControlArray a = CA(v);
+        float m = a.Max();
+        Error err = t.ExpectFloatEq(3.0, m, "Max of [3,1,2] is 3");
+        -> __end(runner, t);
+    }
+}
+
+// ── Control metadata ──────────────────────────────────────────────────────────
+
+autotuner ControlArrayMetadata -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_principle_dimension (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        controlArray::ControlArray a = CA(v);
+        int dim = a.PrincipleDimension();
+        Error err = t.ExpectIntEq(0, dim, "PrincipleDimension of 1D monotone array is 0");
+        -> __end(runner, t);
+    }
+
+    state test_alignment_non_null_json (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        controlArray::ControlArray a = CA(v);
+        increasingAlignment::IncreasingAlignment al = a.Alignment();
+        string json = al.ToJSON();
+        Error err = t.ExpectStrNe("", json, "Alignment of monotone array is non-null");
+        -> __end(runner, t);
+    }
+
+    state test_alignment_increasing (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        controlArray::ControlArray a = CA(v);
+        increasingAlignment::IncreasingAlignment al = a.Alignment();
+        bool inc = al.Alignment();
+        Error err = t.ExpectTrue(inc, "Increasing array has increasing alignment");
+        -> __end(runner, t);
+    }
+}
+
+// ── JSON ──────────────────────────────────────────────────────────────────────
+
+autotuner ControlArrayJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        controlArray::ControlArray a = CA(v);
+        string json = a.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        controlArray::ControlArray a   = CA(v);
+        string json                    = a.ToJSON();
+        controlArray::ControlArray res = controlArray::ControlArray.FromJSON(json);
+        Error err = t.ExpectTrue(a.Equal(res), "FromJSON(ToJSON(a)) round-trips");
+        -> __end(runner, t);
+    }
+}

@@ -1,0 +1,271 @@
+// Tests for falconCore/math/arrays/measuredArray1D
+// Run with: falcon-test run_tests.fal
+import "../../../../../testing/testing.fal";
+import "../measuredArray1D.fal";
+import "../../../../generic/farray/tests/farray-test-helpers.fal";
+
+routine FA (Array<float> vals) -> (farray::FArray arr) {
+    arr = FArrayTestHelpers.NewFromFloats(vals);
+}
+
+routine MA1D (Array<float> vals) -> (measuredArray1D::MeasuredArray1D marray) {
+    farray::FArray fa = FA(vals);
+    marray = measuredArray1D::MeasuredArray1D.New(fa);
+}
+
+// ── Construction ──────────────────────────────────────────────────────────────
+
+autotuner MeasuredArray1DConstruction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_from_farray (TestRunner runner, TestContext t) {
+        Array<float> vals; vals.pushback(1.0); vals.pushback(2.0); vals.pushback(3.0);
+        measuredArray1D::MeasuredArray1D ma = MA1D(vals);
+        string json = ma.ToJSON();
+        Error err = t.ExpectStrNe("", json, "New from FArray produces non-empty JSON");
+        -> __end(runner, t);
+    }
+}
+
+// ── 1D accessors ──────────────────────────────────────────────────────────────
+
+autotuner MeasuredArray1DAccessors -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_get_start (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        measuredArray1D::MeasuredArray1D ma = MA1D(v);
+        float s = ma.GetStart();
+        Error err = t.ExpectFloatEq(1.0, s, "GetStart of [1,2,3] is 1");
+        -> __end(runner, t);
+    }
+
+    state test_get_end (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        measuredArray1D::MeasuredArray1D ma = MA1D(v);
+        float e = ma.GetEnd();
+        Error err = t.ExpectFloatEq(3.0, e, "GetEnd of [1,2,3] is 3");
+        -> __end(runner, t);
+    }
+
+    state test_get_distance (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        measuredArray1D::MeasuredArray1D ma = MA1D(v);
+        float d = ma.GetDistance();
+        Error err = t.ExpectFloatEq(2.0, d, "GetDistance of [1,2,3] is 2");
+        -> __end(runner, t);
+    }
+
+    state test_get_mean (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        measuredArray1D::MeasuredArray1D ma = MA1D(v);
+        float m = ma.GetMean();
+        Error err = t.ExpectFloatEq(2.0, m, "GetMean of [1,2,3] is 2");
+        -> __end(runner, t);
+    }
+
+    state test_is_increasing_true (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        measuredArray1D::MeasuredArray1D ma = MA1D(v);
+        Error err = t.ExpectTrue(ma.IsIncreasing(), "[1,2,3] is increasing");
+        -> __end(runner, t);
+    }
+
+    state test_is_decreasing_false (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        measuredArray1D::MeasuredArray1D ma = MA1D(v);
+        Error err = t.ExpectFalse(ma.IsDecreasing(), "[1,2,3] is not decreasing");
+        -> __end(runner, t);
+    }
+
+    state test_is_decreasing_true (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(3.0); v.pushback(2.0); v.pushback(1.0);
+        measuredArray1D::MeasuredArray1D ma = MA1D(v);
+        Error err = t.ExpectTrue(ma.IsDecreasing(), "[3,2,1] is decreasing");
+        -> __end(runner, t);
+    }
+
+    state test_get_closest_index (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(0.0); v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        measuredArray1D::MeasuredArray1D ma = MA1D(v);
+        int idx = ma.GetClosestIndex(1.4);
+        Error err = t.ExpectIntEq(1, idx, "GetClosestIndex(1.4) in [0,1,2,3] is 1");
+        -> __end(runner, t);
+    }
+}
+
+// ── Arithmetic: Times / Divides ───────────────────────────────────────────────
+
+autotuner MeasuredArray1DScaling -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_times_float (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(1.0);  v.pushback(2.0);  v.pushback(3.0);
+        Array<float> exp; exp.pushback(2.0); exp.pushback(4.0); exp.pushback(6.0);
+        measuredArray1D::MeasuredArray1D a   = MA1D(v);
+        measuredArray1D::MeasuredArray1D res = a.Times(2.0);
+        measuredArray1D::MeasuredArray1D e   = MA1D(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Times(2.0): [1,2,3]*2=[2,4,6]");
+        -> __end(runner, t);
+    }
+
+    state test_divides_float (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(2.0);  v.pushback(4.0);  v.pushback(6.0);
+        Array<float> exp; exp.pushback(1.0); exp.pushback(2.0); exp.pushback(3.0);
+        measuredArray1D::MeasuredArray1D a   = MA1D(v);
+        measuredArray1D::MeasuredArray1D res = a.Divides(2.0);
+        measuredArray1D::MeasuredArray1D e   = MA1D(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Divides(2.0): [2,4,6]/2=[1,2,3]");
+        -> __end(runner, t);
+    }
+}
+
+// ── Arithmetic: Add / Minus ───────────────────────────────────────────────────
+
+autotuner MeasuredArray1DAddMinus -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_add_float (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(1.0);  v.pushback(2.0);  v.pushback(3.0);
+        Array<float> exp; exp.pushback(2.0); exp.pushback(3.0); exp.pushback(4.0);
+        measuredArray1D::MeasuredArray1D a   = MA1D(v);
+        measuredArray1D::MeasuredArray1D res = a.Add(1.0);
+        measuredArray1D::MeasuredArray1D e   = MA1D(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Add(1.0): [1,2,3]+1=[2,3,4]");
+        -> __end(runner, t);
+    }
+
+    state test_add_int (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(1.0);  v.pushback(2.0);  v.pushback(3.0);
+        Array<float> exp; exp.pushback(3.0); exp.pushback(4.0); exp.pushback(5.0);
+        measuredArray1D::MeasuredArray1D a   = MA1D(v);
+        measuredArray1D::MeasuredArray1D res = a.Add(2);
+        measuredArray1D::MeasuredArray1D e   = MA1D(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Add(2): [1,2,3]+2=[3,4,5]");
+        -> __end(runner, t);
+    }
+
+    state test_add_farray (TestRunner runner, TestContext t) {
+        Array<float> va;  va.pushback(1.0); va.pushback(2.0); va.pushback(3.0);
+        Array<float> vb;  vb.pushback(1.0); vb.pushback(1.0); vb.pushback(1.0);
+        Array<float> exp; exp.pushback(2.0); exp.pushback(3.0); exp.pushback(4.0);
+        measuredArray1D::MeasuredArray1D a   = MA1D(va);
+        farray::FArray                   fb  = FA(vb);
+        measuredArray1D::MeasuredArray1D res = a.Add(fb);
+        measuredArray1D::MeasuredArray1D e   = MA1D(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Add(FArray): [1,2,3]+[1,1,1]=[2,3,4]");
+        -> __end(runner, t);
+    }
+
+    state test_minus_float (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(2.0);  v.pushback(3.0);  v.pushback(4.0);
+        Array<float> exp; exp.pushback(1.0); exp.pushback(2.0); exp.pushback(3.0);
+        measuredArray1D::MeasuredArray1D a   = MA1D(v);
+        measuredArray1D::MeasuredArray1D res = a.Minus(1.0);
+        measuredArray1D::MeasuredArray1D e   = MA1D(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Minus(1.0): [2,3,4]-1=[1,2,3]");
+        -> __end(runner, t);
+    }
+}
+
+// ── Unary ─────────────────────────────────────────────────────────────────────
+
+autotuner MeasuredArray1DUnary -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_negate (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(1.0);  v.pushback(2.0);  v.pushback(3.0);
+        Array<float> exp; exp.pushback(-1.0); exp.pushback(-2.0); exp.pushback(-3.0);
+        measuredArray1D::MeasuredArray1D a   = MA1D(v);
+        measuredArray1D::MeasuredArray1D res = a.Negate();
+        measuredArray1D::MeasuredArray1D e   = MA1D(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Negate: [1,2,3]->[-1,-2,-3]");
+        -> __end(runner, t);
+    }
+
+    state test_abs_negative (TestRunner runner, TestContext t) {
+        Array<float> v;   v.pushback(-3.0); v.pushback(-2.0); v.pushback(-1.0);
+        Array<float> exp; exp.pushback(3.0); exp.pushback(2.0); exp.pushback(1.0);
+        measuredArray1D::MeasuredArray1D a   = MA1D(v);
+        measuredArray1D::MeasuredArray1D res = a.Abs();
+        measuredArray1D::MeasuredArray1D e   = MA1D(exp);
+        Error err = t.ExpectTrue(res.Equal(e), "Abs([-3,-2,-1])=[3,2,1]");
+        -> __end(runner, t);
+    }
+}
+
+// ── Reduction ─────────────────────────────────────────────────────────────────
+
+autotuner MeasuredArray1DReduction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_min (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(3.0); v.pushback(1.0); v.pushback(2.0);
+        measuredArray1D::MeasuredArray1D a = MA1D(v);
+        float m = a.Min();
+        Error err = t.ExpectFloatEq(1.0, m, "Min of [3,1,2] is 1");
+        -> __end(runner, t);
+    }
+
+    state test_max (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(3.0); v.pushback(1.0); v.pushback(2.0);
+        measuredArray1D::MeasuredArray1D a = MA1D(v);
+        float m = a.Max();
+        Error err = t.ExpectFloatEq(3.0, m, "Max of [3,1,2] is 3");
+        -> __end(runner, t);
+    }
+}
+
+// ── Equality ──────────────────────────────────────────────────────────────────
+
+autotuner MeasuredArray1DEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        measuredArray1D::MeasuredArray1D a = MA1D(v);
+        measuredArray1D::MeasuredArray1D b = MA1D(v);
+        Error err = t.ExpectTrue(a.Equal(b), "Same-data MeasuredArray1Ds are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different (TestRunner runner, TestContext t) {
+        Array<float> va; va.pushback(1.0); va.pushback(2.0); va.pushback(3.0);
+        Array<float> vb; vb.pushback(1.0); vb.pushback(2.0); vb.pushback(4.0);
+        measuredArray1D::MeasuredArray1D a = MA1D(va);
+        measuredArray1D::MeasuredArray1D b = MA1D(vb);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different-data MeasuredArray1Ds are not equal");
+        -> __end(runner, t);
+    }
+}
+
+// ── JSON ──────────────────────────────────────────────────────────────────────
+
+autotuner MeasuredArray1DJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        measuredArray1D::MeasuredArray1D a = MA1D(v);
+        string json = a.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
+        measuredArray1D::MeasuredArray1D a   = MA1D(v);
+        string json                          = a.ToJSON();
+        measuredArray1D::MeasuredArray1D res = measuredArray1D::MeasuredArray1D.FromJSON(json);
+        Error err = t.ExpectTrue(a.Equal(res), "FromJSON(ToJSON(a)) round-trips");
+        -> __end(runner, t);
+    }
+}
