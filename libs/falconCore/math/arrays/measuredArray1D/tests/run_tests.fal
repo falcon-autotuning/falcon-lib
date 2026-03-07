@@ -38,7 +38,7 @@ autotuner MeasuredArray1DAccessors -> (int passed, int failed) {
         Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
         measuredArray1D::MeasuredArray1D ma = MA1D(v);
         float s = ma.GetStart();
-        Error err = t.ExpectFloatEq(1.0, s, "GetStart of [1,2,3] is 1");
+        Error err = t.ExpectFloatEq(1.0, s, 1e-9, "GetStart of [1,2,3] is 1");
         -> __end(runner, t);
     }
 
@@ -46,7 +46,7 @@ autotuner MeasuredArray1DAccessors -> (int passed, int failed) {
         Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
         measuredArray1D::MeasuredArray1D ma = MA1D(v);
         float e = ma.GetEnd();
-        Error err = t.ExpectFloatEq(3.0, e, "GetEnd of [1,2,3] is 3");
+        Error err = t.ExpectFloatEq(3.0, e, 1e-9, "GetEnd of [1,2,3] is 3");
         -> __end(runner, t);
     }
 
@@ -54,7 +54,7 @@ autotuner MeasuredArray1DAccessors -> (int passed, int failed) {
         Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
         measuredArray1D::MeasuredArray1D ma = MA1D(v);
         float d = ma.GetDistance();
-        Error err = t.ExpectFloatEq(2.0, d, "GetDistance of [1,2,3] is 2");
+        Error err = t.ExpectFloatEq(2.0, d, 1e-9, "GetDistance of [1,2,3] is 2");
         -> __end(runner, t);
     }
 
@@ -62,7 +62,7 @@ autotuner MeasuredArray1DAccessors -> (int passed, int failed) {
         Array<float> v; v.pushback(1.0); v.pushback(2.0); v.pushback(3.0);
         measuredArray1D::MeasuredArray1D ma = MA1D(v);
         float m = ma.GetMean();
-        Error err = t.ExpectFloatEq(2.0, m, "GetMean of [1,2,3] is 2");
+        Error err = t.ExpectFloatEq(2.0, m, 1e-9, "GetMean of [1,2,3] is 2");
         -> __end(runner, t);
     }
 
@@ -209,7 +209,7 @@ autotuner MeasuredArray1DReduction -> (int passed, int failed) {
         Array<float> v; v.pushback(3.0); v.pushback(1.0); v.pushback(2.0);
         measuredArray1D::MeasuredArray1D a = MA1D(v);
         float m = a.Min();
-        Error err = t.ExpectFloatEq(1.0, m, "Min of [3,1,2] is 1");
+        Error err = t.ExpectFloatEq(1.0, m, 1e-9, "Min of [3,1,2] is 1");
         -> __end(runner, t);
     }
 
@@ -217,7 +217,7 @@ autotuner MeasuredArray1DReduction -> (int passed, int failed) {
         Array<float> v; v.pushback(3.0); v.pushback(1.0); v.pushback(2.0);
         measuredArray1D::MeasuredArray1D a = MA1D(v);
         float m = a.Max();
-        Error err = t.ExpectFloatEq(3.0, m, "Max of [3,1,2] is 3");
+        Error err = t.ExpectFloatEq(3.0, m, 1e-9, "Max of [3,1,2] is 3");
         -> __end(runner, t);
     }
 }
