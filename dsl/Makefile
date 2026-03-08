@@ -177,7 +177,7 @@ uninstall-lsp:
 install-pm: build-release
 	@echo "Installing falcon-pm (package manager) to $(INSTALL_PREFIX)..."
 	$(SUDO) mkdir -p $(INSTALL_LIBDIR)
-	$(SUDO) mkdir -p $(INSTALL_INCLUDEDIR)/falcon-pm
+	$(SUDO) mkdir -p $(INSTALL_INCLUDEDIR)/falcon-pm-cli
 	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/package-manager/libfalcon-pm.a $(INSTALL_LIBDIR)/ 2>/dev/null || true
 	$(SUDO) find $(BUILD_DIR_RELEASE)/package-manager -name "falcon-pm" -type f \
 		-exec cp -v {} $(INSTALL_PREFIX)/bin/falcon-pm \; 2>/dev/null || true
@@ -193,6 +193,13 @@ uninstall:
 	$(SUDO) rm -f  $(INSTALL_LIBDIR)/libfalcon-dsl.so.1
 	$(SUDO) rm -f  $(INSTALL_LIBDIR)/libfalcon-dsl.so.1.0.0
 	$(SUDO) rm -r $(INSTALL_INCLUDEDIR)/falcon-dsl
+	$(SUDO) rm -r $(INSTALL_INCLUDEDIR)/falcon-pm
+	$(SUDO) rm -r $(INSTALL_INCLUDEDIR)/falcon-lsp
+	$(SUDO) rm -f  $(INSTALL_LIBDIR)/falcon-lsp
+	$(SUDO) rm -f  $(INSTALL_LIBDIR)/falcon-pm
+	$(SUDO) rm -f  $(INSTALL_LIBDIR)/falcon-dsl
+	$(SUDO) rm -f  $(INSTALL_LIBDIR)/falcon-run
+	$(SUDO) rm -f  $(INSTALL_LIBDIR)/falcon-test
 	$(SUDO) rm -r $(INSTALL_CMAKEDIR)
 	@echo "✓ Uninstall complete"
 

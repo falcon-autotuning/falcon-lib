@@ -1,3 +1,15 @@
+// falcon-pm: A package manager for the Falcon DSL.
+//
+// Usage:
+//   falcon-pm [options]
+//
+// Options:
+//  --init  [dir] [name]        Create falcon.yml and .falcon/cache/ in <dir>
+//                              (defaults to current directory)
+//  --install <source> [ver]    Install a package from a local path or GitHub
+//  --remove  <name>            Remove a package from the manifest and cache
+//  --list                      List all packages in the cache index
+//  --help                      Show this message
 #include "falcon-pm/PackageManager.hpp"
 #include <filesystem>
 #include <iostream>
@@ -6,18 +18,18 @@
 
 static void print_usage() {
   std::cout <<
-      R"(falcon-pm — Falcon package manager
+      R"(falcon-pm: A package manager for the Falcon DSL.
 
-USAGE:
-  falcon-pm <command> [args]
+Usage:
+  falcon-pm [options]
 
-COMMANDS:
-  init  [dir] [name]        Create falcon.yml and .falcon/cache/ in <dir>
-                            (defaults to current directory)
-  install <source> [ver]    Install a package from a local path or GitHub
-  remove  <name>            Remove a package from the manifest and cache
-  list                      List all packages in the cache index
-  help                      Show this message
+Options:
+ --init  [dir] [name]        Create falcon.yml and .falcon/cache/ in <dir>
+                             (defaults to current directory)
+ --install <source> [ver]    Install a package from a local path or GitHub
+ --remove  <name>            Remove a package from the manifest and cache
+ --list                      List all packages in the cache index
+ --help                      Show this message
 )" << '\n';
 }
 
@@ -35,7 +47,7 @@ int main(int argc, char *argv[]) {
       return 0;
     }
 
-    if (cmd == "init") {
+    if (cmd == "--init") {
       std::filesystem::path dir =
           (argc >= 3) ? argv[2] : std::filesystem::current_path();
       std::string name = (argc >= 4) ? argv[3] : dir.filename().string();
@@ -48,7 +60,7 @@ int main(int argc, char *argv[]) {
     // For all other commands we need an existing project context.
     falcon::pm::PackageManager pm(std::filesystem::current_path());
 
-    if (cmd == "list") {
+    if (cmd == "list" || cmd == "--list") {
       auto pkgs = pm.list();
       if (pkgs.empty()) {
         std::cout << "(no packages cached)\n";
@@ -71,9 +83,9 @@ int main(int argc, char *argv[]) {
       return 0;
     }
 
-    if (cmd == "install") {
+    if (cmd == "--install") {
       if (argc < 3) {
-        std::cerr << "Usage: falcon-pm install <source> [version]\n";
+        std::cerr << "Usage: falcon-pm --install <source> [version]\n";
         return 1;
       }
       std::string source = argv[2];
@@ -83,9 +95,9 @@ int main(int argc, char *argv[]) {
       return 0;
     }
 
-    if (cmd == "remove") {
+    if (cmd == "--remove") {
       if (argc < 3) {
-        std::cerr << "Usage: falcon-pm remove <package-name>\n";
+        std::cerr << "Usage: falcon-pm --remove <package-name>\n";
         return 1;
       }
       pm.remove(argv[2]);
