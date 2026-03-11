@@ -58,7 +58,7 @@ using QDevice = falcon::qarray::Device;
 static QDevice *g_device = nullptr;
 
 static QDevice &device() {
-  if (!g_device) {
+  if (g_device == nullptr) {
     // Default config path — override by recompiling with -DQARRAY_CONFIG=...
 #ifndef QARRAY_CONFIG
 #define QARRAY_CONFIG "/opt/qarray/device.yaml"
