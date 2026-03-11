@@ -5,4 +5,7 @@ github: ""
 dependencies:
   - name: deviceVoltageStates
     version: "1.0.0"
-    local_path: "../../libs/falconCore/communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
+    local_path: "../../libs/falconCore/communications/voltageStates/deviceVoltageStates/"
+  - name: map
+    version: "1.0.0"
+    local_path: "../../libs/collections/map/"
