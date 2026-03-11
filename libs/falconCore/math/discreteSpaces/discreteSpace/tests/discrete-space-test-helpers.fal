@@ -1,7 +1,0 @@
-// Test-only binding for DiscreteSpace construction — NOT for production use.
-// Exposes New1D so tests can create DiscreteSpace instances without needing
-// a public FAL constructor (which does not yet exist in the main interface).
-ffimport "../discrete-space-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
-struct DiscreteSpaceTestHelpers {
-    routine New1D () -> (discreteSpace::DiscreteSpace ds)
-}

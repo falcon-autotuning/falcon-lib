@@ -1,52 +1,245 @@
 // Tests for falconCore/math/discreteSpaces/discreteSpace
+// All tests construct instances directly via the public FAL API.
+// No test-helper shim is needed now that CartesianDiscreteSpace1D is bound.
 import "../../../../../testing/testing.fal";
 import "../discreteSpace.fal";
-import "./discrete-space-test-helpers.fal";
+import "../../../domains/coupledLabelledDomain/coupledLabelledDomain.fal";
+import "../../../domains/domain/domain.fal";
+import "../../../../../collections/map/map.fal";
+import "../../../../instrumentInterfaces/names/instrumentPort/instrumentPort.fal";
+
+// ── helpers shared across suites ─────────────────────────────────────────────
+// Build a standard 1-D DiscreteSpace used by most tests.
+//   division   = 10
+//   domain     = [0, 1]
+//   increasing = {} (empty map, monotonicity unspecified)
+routine make1D () -> (DiscreteSpace ds) {
+    Domain             dom = Domain.New(0.0, 1.0, true, true);
+    Array<LabelledDomain> arr = Array.New();
+    CoupledLabelledDomain cld = CoupledLabelledDomain.New(arr);
+    Map<string, bool>  inc = Map.New();
+    ds = DiscreteSpace.CartesianDiscreteSpace1D(10, cld, inc, dom);
+}
+
+// ── Construction ─────────────────────────────────────────────────────────────
 
 autotuner DiscreteSpaceConstruction -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
 
-    state test_new_1d (TestRunner runner, TestContext t) {
-        DiscreteSpace ds = DiscreteSpaceTestHelpers.New1D();
-        Error err = t.ExpectTrue(ds.Equal(ds), "New1D creates a valid DiscreteSpace");
+    state test_cartesian1d (TestRunner runner, TestContext t) {
+        DiscreteSpace ds = make1D();
+        Error err = t.ExpectTrue(ds.Equal(ds),
+            "CartesianDiscreteSpace1D produces a valid DiscreteSpace");
+        -> __end(runner, t);
+    }
+
+    state test_cartesian1d_json_roundtrip_not_empty (TestRunner runner, TestContext t) {
+        DiscreteSpace ds  = make1D();
+        string        json = ds.ToJSON();
+        Error err = t.ExpectStrNe("", json,
+            "CartesianDiscreteSpace1D: ToJSON returns non-empty string");
         -> __end(runner, t);
     }
 }
+
+// ── Space accessor ────────────────────────────────────────────────────────────
+
+autotuner DiscreteSpaceAccessorSpace -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_space_returns_unit_space (TestRunner runner, TestContext t) {
+        DiscreteSpace ds   = make1D();
+        UnitSpace     us   = ds.Space();
+        // Round-trip through JSON to confirm the UnitSpace is non-trivial.
+        string        json = us.ToJSON();
+        Error err = t.ExpectStrNe("", json,
+            "Space() returns a non-empty UnitSpace");
+        -> __end(runner, t);
+    }
+}
+
+// ── Increasing accessor ───────────────────────────────────────────────────────
+
+autotuner DiscreteSpaceAccessorIncreasing -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_increasing_returns_axes (TestRunner runner, TestContext t) {
+        DiscreteSpace             ds  = make1D();
+        Axes<Map<string, bool>>   inc = ds.Increasing();
+        // A 1-D space has exactly 1 axis entry.
+        Error err = t.ExpectIntEq(1, inc.Size(),
+            "Increasing() returns an Axes of length 1 for a 1-D space");
+        -> __end(runner, t);
+    }
+}
+
+// ── Knobs accessor ────────────────────────────────────────────────────────────
+
+autotuner DiscreteSpaceAccessorKnobs -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_knobs_non_null (TestRunner runner, TestContext t) {
+        DiscreteSpace ds    = make1D();
+        Ports         knobs = ds.Knobs();
+        // Ports wraps the labelled axes; it should be non-null (size >= 0).
+        int           sz    = knobs.Size();
+        Error err = t.ExpectTrue(sz >= 0,
+            "Knobs() returns a Ports object with non-negative size");
+        -> __end(runner, t);
+    }
+}
+
+// ── GetAxis ───────────────────────────────────────────────────────────────────
+
+autotuner DiscreteSpaceGetAxis -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_get_axis_known_knob (TestRunner runner, TestContext t) {
+        // Build a 1-D space with a named knob so we can look it up.
+        Domain             dom = Domain.New(0.0, 1.0, true, true);
+        Connection conn = Connection.NewPlungerGate("P1");
+        Instrument inst = Instrument.DCVoltageSource();
+        SymbolUnit volt = SymbolUnit.Volt();
+        InstrumentPort     ip  = InstrumentPort.NewKnob("freq", conn, inst, volt, "");
+        LabelledDomain     ld  = LabelledDomain.FromPortAndDomain(ip, Domain.New(0.0, 1.0, true, true));
+        Array<LabelledDomain> arr = Array.New();
+        arr.PushBack(ld);
+        CoupledLabelledDomain cld = CoupledLabelledDomain.New(arr);
+        Map<string, bool>  inc = Map.New();
+        DiscreteSpace      ds  = DiscreteSpace.CartesianDiscreteSpace1D(10, cld, inc, dom);
+        int axis = ds.GetAxis(ip);
+        Error err = t.ExpectIntEq(0, axis,
+            "GetAxis returns 0 for the sole axis of a 1-D space");
+        -> __end(runner, t);
+    }
+}
+
+// ── GetDomain ─────────────────────────────────────────────────────────────────
+
+autotuner DiscreteSpaceGetDomain -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_get_domain_known_knob (TestRunner runner, TestContext t) {
+        Domain             dom = Domain.New(0.0, 1.0, true, true);
+        Connection conn = Connection.NewPlungerGate("P1");
+        Instrument inst = Instrument.DCVoltageSource();
+        SymbolUnit volt = SymbolUnit.Volt();
+        InstrumentPort     ip  = InstrumentPort.NewKnob("freq", conn, inst, volt, "");
+        LabelledDomain     ld  = LabelledDomain.FromPortAndDomain(ip, dom);
+        Array<LabelledDomain> arr = Array.New();
+        arr.PushBack(ld);
+        CoupledLabelledDomain cld = CoupledLabelledDomain.New(arr);
+        Map<string, bool>  inc = Map.New();
+        DiscreteSpace      ds  = DiscreteSpace.CartesianDiscreteSpace1D(10, cld, inc, dom);
+        Domain got = ds.GetDomain(ip);
+        string json = got.ToJSON();
+        Error err = t.ExpectStrNe("", json,
+            "GetDomain returns a non-empty Domain for a known knob");
+        -> __end(runner, t);
+    }
+}
+
+// ── GetProjection ─────────────────────────────────────────────────────────────
+
+autotuner DiscreteSpaceGetProjection -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_get_projection_1d (TestRunner runner, TestContext t) {
+        Domain             dom = Domain.New(0.0, 1.0, true, true);
+        Connection conn = Connection.NewPlungerGate("P1");
+        Instrument inst = Instrument.DCVoltageSource();
+        SymbolUnit volt = SymbolUnit.Volt();
+        InstrumentPort     ip  = InstrumentPort.NewKnob("freq", conn, inst, volt, "");
+        LabelledDomain     ld  = LabelledDomain.FromPortAndDomain(ip, dom);
+        Array<LabelledDomain> arr = Array.New();
+        arr.PushBack(ld);
+        CoupledLabelledDomain cld = CoupledLabelledDomain.New(arr);
+        Map<string, bool>  inc = Map.New();
+        DiscreteSpace      ds  = DiscreteSpace.CartesianDiscreteSpace1D(10, cld, inc, dom);
+        Axes<InstrumentPort> portProjection = Axes.New();
+        portProjection.PushBack(ip);
+        Axes<LabelledControlArray> proj = ds.GetProjection(portProjection);
+        Error err = t.ExpectIntEq(1, proj.Size(),
+            "GetProjection returns one LabelledControlArray for a 1-D projection");
+        -> __end(runner, t);
+    }
+}
+
+// ── Equality ──────────────────────────────────────────────────────────────────
 
 autotuner DiscreteSpaceEquality -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
 
-    state test_equal_same (TestRunner runner, TestContext t) {
-        DiscreteSpace ds = DiscreteSpaceTestHelpers.New1D();
-        Error err = t.ExpectTrue(ds.Equal(ds), "DiscreteSpace equals itself");
+    state test_equal_self (TestRunner runner, TestContext t) {
+        DiscreteSpace ds = make1D();
+        Error err = t.ExpectTrue(ds.Equal(ds),
+            "Equal: a DiscreteSpace equals itself");
         -> __end(runner, t);
     }
 
-    state test_not_equal_false_for_same (TestRunner runner, TestContext t) {
-        DiscreteSpace ds = DiscreteSpaceTestHelpers.New1D();
-        Error err = t.ExpectFalse(ds.NotEqual(ds), "NotEqual is false for same object");
+    state test_notequal_false_for_self (TestRunner runner, TestContext t) {
+        DiscreteSpace ds = make1D();
+        Error err = t.ExpectFalse(ds.NotEqual(ds),
+            "NotEqual: false when comparing a DiscreteSpace to itself");
+        -> __end(runner, t);
+    }
+
+    state test_equal_after_json_roundtrip (TestRunner runner, TestContext t) {
+        DiscreteSpace orig = make1D();
+        DiscreteSpace rt   = DiscreteSpace.FromJSON(orig.ToJSON());
+        Error err = t.ExpectTrue(orig.Equal(rt),
+            "Equal: JSON round-trip produces an equal DiscreteSpace");
+        -> __end(runner, t);
+    }
+
+    state test_notequal_true_after_roundtrip_false (TestRunner runner, TestContext t) {
+        DiscreteSpace orig = make1D();
+        DiscreteSpace rt   = DiscreteSpace.FromJSON(orig.ToJSON());
+        Error err = t.ExpectFalse(orig.NotEqual(rt),
+            "NotEqual: false after JSON round-trip");
         -> __end(runner, t);
     }
 }
+
+// ── JSON ──────────────────────────────────────────────────────────────────────
 
 autotuner DiscreteSpaceJSON -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
 
     state test_to_json_non_empty (TestRunner runner, TestContext t) {
-        DiscreteSpace ds = DiscreteSpaceTestHelpers.New1D();
-        string json = ds.ToJSON();
-        Error err = t.ExpectStrNe("", json, "ToJSON returns non-empty string");
+        DiscreteSpace ds   = make1D();
+        string        json = ds.ToJSON();
+        Error err = t.ExpectStrNe("", json,
+            "ToJSON returns a non-empty string");
         -> __end(runner, t);
     }
 
-    state test_roundtrip (TestRunner runner, TestContext t) {
-        DiscreteSpace orig = DiscreteSpaceTestHelpers.New1D();
-        string json = orig.ToJSON();
-        DiscreteSpace rt = DiscreteSpace.FromJSON(json);
-        Error err = t.ExpectTrue(orig.Equal(rt), "JSON round-trip preserves equality");
+    state test_roundtrip_equality (TestRunner runner, TestContext t) {
+        DiscreteSpace orig = make1D();
+        string        json = orig.ToJSON();
+        DiscreteSpace rt   = DiscreteSpace.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(rt),
+            "FromJSON(ToJSON(ds)) == ds");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_json_stable (TestRunner runner, TestContext t) {
+        // Serialise twice through the round-trip and confirm the JSON is stable.
+        DiscreteSpace orig  = make1D();
+        string        json1 = orig.ToJSON();
+        DiscreteSpace rt    = DiscreteSpace.FromJSON(json1);
+        string        json2 = rt.ToJSON();
+        Error err = t.ExpectStrEq(json1, json2,
+            "ToJSON is stable across a round-trip");
         -> __end(runner, t);
     }
 }

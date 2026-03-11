@@ -16,7 +16,7 @@ struct DiscreteSpace {
     routine Knobs -> (ports::Ports ports)
     routine GetAxis (instrumentPort::InstrumentPort port) -> (int axis)
     routine GetDomain (instrumentPort::InstrumentPort port) -> (domain::Domain domain)
-    routine GetProjection (axes::Axes<instrumentPort::InstrumentPort> projection) -> (axes::Axes<labelledControlArray::LabelledControlArray out)
+    routine GetProjection (axes::Axes<instrumentPort::InstrumentPort> projection) -> (axes::Axes<labelledControlArray::LabelledControlArray> out)
     routine Equal (DiscreteSpace other) -> (bool equal)
     routine NotEqual (DiscreteSpace other) -> (bool notequal)
     routine FromJSON (string json) -> (DiscreteSpace dstate)

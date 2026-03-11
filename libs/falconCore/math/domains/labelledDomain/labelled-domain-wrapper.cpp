@@ -3,9 +3,7 @@
 #include "falcon_core/math/domains/LabelledDomain.hpp"
 #include "falcon_core/physics/device_structures/Connection.hpp"
 #include "falcon_core/physics/units/SymbolUnit.hpp"
-#include <csignal>
 #include <falcon-typing/FFIHelpers.hpp>
-#include <stdexcept>
 
 using namespace falcon::typing;
 using namespace falcon::typing::ffi::wrapper;

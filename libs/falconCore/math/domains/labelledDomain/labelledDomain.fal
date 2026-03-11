@@ -3,7 +3,7 @@ import "../../../physics/deviceStructures/connection/connection.fal";
 import "../../../instrumentInterfaces/names/instrument/instrument.fal";
 import "../../../physics/units/symbolUnit/symbolUnit.fal";
 import "../../../instrumentInterfaces/names/instrumentPort/instrumentPort.fal";
-ffimport "domain-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "labelled-domain-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct LabelledDomain {
     routine NewFromKnob (string defaultName, float min, float max, connection::Connection psuedoName, instrument::Instrument instrumentType, bool lesserBoundContained, bool greaterBoundContained, symbolUnit::SymbolUnit units, string description) -> (LabelledDomain d)
     routine FromPort (float max, float min, instrumentPort::InstrumentPort port, bool lesserboundContainer, bool greaterBoundContained) -> (LabelledDomain d)

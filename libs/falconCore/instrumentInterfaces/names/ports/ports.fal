@@ -15,4 +15,13 @@ struct Ports {
     routine NotEqual (Ports other) -> (bool notequal)
     routine FromJSON (string json) -> (Ports ports)
     routine ToJSON () -> (string json)
+    routine Size () -> (int size)
+    routine IsEmpty () -> (bool empty)
+    routine GetIndex (int index) -> (instrumentPort::InstrumentPort value)
+    routine PushBack (instrumentPort::InstrumentPort value) -> ()
+    routine Insert (int index, instrumentPort::InstrumentPort value) -> ()
+    routine Contains (instrumentPort::InstrumentPort value) -> (bool found)
+    routine Index (instrumentPort::InstrumentPort value) -> (int index)
+    routine Clear () -> ()
+    routine Erase (int index) -> ()
 }
