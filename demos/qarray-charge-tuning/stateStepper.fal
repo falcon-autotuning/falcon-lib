@@ -1,13 +1,21 @@
 import (
 "hub"
+"database"
 )
 // direction indicates the direction to travel for the cell center, either up or right
 autotuner BlipStateStepper (string direction) {
     // assumes that starting from the center of a cell
-    deviceVoltageState::DeviceVoltageState topWall;
-    deviceVoltageState::DeviceVoltageState bottomWall;
-    deviceVoltageState::DeviceVoltageState leftWall;
-    deviceVoltageState::DeviceVoltageState rightWall;
+    deviceVoltageState::DeviceVoltageState firstBlip;
+    deviceVoltageState::DeviceVoltageState secondBlip;
+    database::Database db = database::Database::New();
+    database::DeviceCharacteristicQuery queryResolution = database::DeviceCharacteristicQuery::New()
+        .SetScope("global")
+        .SetName("resolution");
+    database::DeviceCharacteristicList possibleResolutions = db.GetByQuery(queryResolution);
+    bool foundVirtualization;
+    database::DeviceCharacteristic virtualization;
+    virtualization, foundVirtualization = database::GetByName("virtuallization");
+
     start -> navigate (direction);
     // moves in the direction till experiencing blip
     state navigate (string direction) {
