@@ -41,6 +41,7 @@ endif()
 add_executable(falcon_db_integration_tests
   integration/test_snapshot_manager.cpp
   integration/test_full_workflow.cpp
+  integration/test_cli.cpp
 )
 
 target_link_libraries(falcon_db_integration_tests
