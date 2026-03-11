@@ -1,0 +1,22 @@
+CompileFlags:
+  Add:
+    - -I./../vcpkg_installed/x64-linux-dynamic/include
+    - -I/opt/falcon/include
+
+Diagnostics:
+  ClangTidy:
+    Add:
+      - modernize-*
+      - performance-*
+      - bugprone-*
+      - readability-*
+      - misc-*
+      - clang-analyzer-*
+      - portability-*
+      - hicpp-*
+      - cert-*
+    Remove:
+      - modernize-use-trailing-return-type
+      - cppcoreguidelines-non-private-member-variables-in-classes
+      - misc-non-private-member-variables-in-classes
+  UnusedIncludes: Strict
