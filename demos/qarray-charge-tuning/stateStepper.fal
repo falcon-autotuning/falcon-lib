@@ -1,27 +1,47 @@
 import (
 "hub"
 "database"
+"log"
+"../../libs/falconCore/generic/farray/farray.fal"
+"../../libs/falconCore/physics/deviceStructures/connections/connections.fal"
 )
 // direction indicates the direction to travel for the cell center, either up or right
-autotuner BlipStateStepper (string direction) {
+autotuner BlipStateStepper (string direction) -> (Error err) {
     // assumes that starting from the center of a cell
     deviceVoltageState::DeviceVoltageState firstBlip;
     deviceVoltageState::DeviceVoltageState secondBlip;
-    database::Database db = database::Database::New();
-    database::DeviceCharacteristicQuery queryResolution = database::DeviceCharacteristicQuery::New()
-        .SetScope("global")
-        .SetName("resolution");
-    database::DeviceCharacteristicList possibleResolutions = db.GetByQuery(queryResolution);
-    bool foundVirtualization;
-    database::DeviceCharacteristic virtualization;
-    virtualization, foundVirtualization = database::GetByName("virtuallization");
+    farray::FArray virtualization;
+    connections::Connections virtualizationNames;
 
-    start -> navigate (direction);
+    start -> checkDatabaseEntries;
     // moves in the direction till experiencing blip
-    state navigate (string direction) {
-        Array<connection::Connection> gates = hub::CollectCurrentPlungerGates();
-        ...
-        -> findTopWall;
+    state checkDatabaseEntries {
+        database::Database db = database::Database::New();
+        bool foundResolution;
+        database::DeviceCharacteristic dcharResolution;
+        dcharResolution, foundResolution = database::GateByName("resolution");
+        bool foundVirtualization;
+        database::DeviceCharacteristic dcharVirtualization;
+        dcharVirtualization, foundVirtualization = database::GetByName("virtualization");
+        bool foundVirtualizationNames;
+        database::DeviceCharacteristic dcharVirtualizationNames;
+        dcharVirtualizationNames, foundVirtualizationNames = database::GetByName("virtualizationNames")
+        if (!foundResolution) {
+            log::Err("The resolution is not found in the database");
+            err = Error.Msg("The resolution is not found in the database");
+            terminal;
+        }
+        if (!foundVirtualization) {
+            log::Err("The virtualization is not found in the database");
+            err = Error.Msg("The virtualization is not found in the database");
+            terminal;
+        }
+        if (!foundVirtualizationNames) {
+            log::Err("The virtualization names is not found in the database");
+            err = Error.Msg("The virtualization names is not found in the database");
+            terminal;
+        }
+        -> ;
     }
     state findTopWall {
         ...
