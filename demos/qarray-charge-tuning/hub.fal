@@ -1,0 +1,17 @@
+import (
+"../../libs/falconCore/communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
+"../../libs/collections/map/map.fal"
+"../../libs/falconCore/math/quantity/quantity.fal"
+"../../libs/falconCore/physics/deviceStructures/connection/connection.fal"
+)
+ffimport "qarray-wrapper.cpp" ("/opt/falcon/include/qarrayDevice/") ("/opt/falcon/lib/libfalcon-qarrayDevice.so")
+// Collects the current device gate voltages
+routine CollectCurrentDeviceState() -> (deviceVoltageStates::DeviceVoltageStates dstates)
+// Collects the current plunger gates 
+routine CollectCurrentPlungerGates() -> (array::Array<connection::Connection> gates)
+// Ramps the device to the supplied end voltage 
+routine Ramp(map::Map<connection::Connection, quantity::Quantity> stop) -> ()
+// Analyze if a blip is there or not
+routine AnalyzeBlips(map::Map<connection::Connection, quantity::Quantity> start, map::Map<connection::Connection, quantity::Quantity> stop, int resolution) -> (int num_blips, Array<deviceVoltageStates::DeviceVoltageStates> locations)
+
+

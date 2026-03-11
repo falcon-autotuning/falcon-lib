@@ -1,0 +1,38 @@
+import (
+"hub"
+)
+// direction indicates the direction to travel for the cell center, either up or right
+autotuner BlipStateStepper (string direction) {
+    // assumes that starting from the center of a cell
+    deviceVoltageState::DeviceVoltageState topWall;
+    deviceVoltageState::DeviceVoltageState bottomWall;
+    deviceVoltageState::DeviceVoltageState leftWall;
+    deviceVoltageState::DeviceVoltageState rightWall;
+    start -> navigate (direction);
+    // moves in the direction till experiencing blip
+    state navigate (string direction) {
+        Array<connection::Connection> gates = hub::CollectCurrentPlungerGates();
+        ...
+        -> findTopWall;
+    }
+    state findTopWall {
+        ...
+        -> findBottomWall;
+    }
+    state findBottomWall {
+        ...
+        -> findLeftWall;
+    }
+    state findLeftWall {
+        ...
+        -> findRightWall;
+    }
+    state findRightWall {
+        ...
+        -> returnToCellCenter;
+    }
+    state returnToCellCenter {
+        ...
+        terminal;
+    }
+}

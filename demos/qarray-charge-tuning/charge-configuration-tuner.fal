@@ -1,6 +1,6 @@
 import (
 "stateStepper" 
-"deviceStates" 
+"../../libs/falconCore/communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal" 
 "hub"
 )
 // (n,m) indicates the x,y axis count
@@ -12,7 +12,7 @@ autotuner ChargeConfigurationTuner (int n, int m) -> (deviceStates::DeviceStates
     string startingDirection = "up";
     start -> tuning (startingDirection);
     state tuning (string direction) {
-        stateStepper::BlipStateStepper(string dir=direction);
+        stateStepper::BlipStateStepper(direction);
         if (direction == "up") {
             current_n = current_n + 1
             if (current_n < n) {
