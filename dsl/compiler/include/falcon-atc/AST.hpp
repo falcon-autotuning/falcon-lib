@@ -135,12 +135,6 @@ struct TypeDescriptor {
     return desc;
   }
 
-  static TypeDescriptor make_array(TypeDescriptor elem) {
-    TypeDescriptor desc(ParamType::Array);
-    desc.element_type = std::make_shared<TypeDescriptor>(std::move(elem));
-    return desc;
-  }
-
   [[nodiscard]] bool is_struct() const {
     return base_type == ParamType::Struct;
   }

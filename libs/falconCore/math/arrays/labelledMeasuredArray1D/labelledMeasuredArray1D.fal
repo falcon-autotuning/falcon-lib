@@ -1,6 +1,6 @@
 import (
 "../measuredArray/measuredArray.fal"
-"../../../autotunerInterfaces/acquisitionContext/acquisitionContext.fal"
+"../../../autotunerInterfaces/contexts/acquisitionContext/acquisitionContext.fal"
 )
 ffimport "labelled-measured-array-1D-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct LabelledMeasuredArray1D {

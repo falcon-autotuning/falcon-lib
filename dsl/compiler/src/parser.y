@@ -636,8 +636,6 @@ type_spec[result]
       { $result = std::make_unique<TypeDescriptor>(ParamType::String); }
     | ERROR_KW
       { $result = std::make_unique<TypeDescriptor>(ParamType::Error, "Error"); }
-    | ARRAY_KW LL type_spec[elem] GG
-      { $result = std::make_unique<TypeDescriptor>(TypeDescriptor::make_array(std::move(*$elem))); }
     | qualified_name[name] LL type_arg_list[args] GG
       {
         // The base name must be a known generic struct.

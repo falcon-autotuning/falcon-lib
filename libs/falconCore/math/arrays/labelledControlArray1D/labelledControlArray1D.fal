@@ -1,7 +1,7 @@
 import (
 "../../../generic/farray/farray.fal"
 "../increasingAlignment/increasingAlignment.fal"
-"../../../autotunerInterfaces/acquisitionContext/acquisitionContext.fal"
+"../../../autotunerInterfaces/contexts/acquisitionContext/acquisitionContext.fal"
 )
 ffimport "labelled-control-array-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct LabelledControlArray1D {
@@ -23,12 +23,12 @@ struct LabelledControlArray1D {
     routine Abs -> (LabelledControlArray1D carray)
     routine Min -> (float min)
     routine PrincipleDimension -> (int dim)
-    routine Alignment -> (increasingAlignment::increasingAlignment alignment)
+    routine Alignment -> (increasingAlignment::IncreasingAlignment alignment)
     routine Label -> (acquisitionContext::AcquisitionContext ac)
     routine Connection -> (connection::Connection conn)
     routine InstrumentType -> (instrument::Instrument it)
     routine Units -> (symbolUnit::SymbolUnit unit)
-    routine GetStart -> (float start)
+    routine GetStart -> (float s)
     routine GetEnd -> (float end)
     routine IsDecreasing -> (bool decreasing)
     routine IsIncreasing -> (bool increasing)

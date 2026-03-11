@@ -22,7 +22,7 @@ struct ControlArray {
     routine Abs -> (ControlArray carray)
     routine Min -> (float min)
     routine PrincipleDimension -> (int dim)
-    routine Alignment -> (increasingAlignment::increasingAlignment alignment)
+    routine Alignment -> (increasingAlignment::IncreasingAlignment alignment)
     // TODO: arraywise min and max
     routine Max -> (float max)
     routine Reshape (Array<int> shape) -> (ControlArray carray)

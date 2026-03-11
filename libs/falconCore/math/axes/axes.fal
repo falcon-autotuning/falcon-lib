@@ -22,7 +22,7 @@ struct Axes <T> {
 
     // New() -> empty Axes<T>
     routine New () -> (Axes<T> axes) {
-        arr_ = Array<T>.New();
+        arr_ = Array.New();
     }
 
     // NewFrom(T a, T b, T c) — convenience 1–8 element constructors are in
