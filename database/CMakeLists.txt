@@ -108,8 +108,20 @@ if(BUILD_TESTS)
   add_subdirectory(tests)
 endif()
 
+# CLI Executable
+add_executable(falcon-db-cli src/cli.cpp)
+target_link_libraries(falcon-db-cli PRIVATE falcon-database)
+if(ENABLE_PCH)
+  target_precompile_headers(falcon-db-cli
+    PRIVATE
+      <string>
+      <vector>
+      <iostream>
+  )
+endif()
+
 # Installation
-install(TARGETS falcon-database
+install(TARGETS falcon-database falcon-db-cli
   EXPORT falcon-database-targets
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
