@@ -13,20 +13,16 @@
 // routine name (e.g. FUNCCollectCurrentDeviceState), matching the FAL
 // ffimport convention for top-level routines.
 
-#include "qarrayDevice/qarrayDevice.hpp"
-
-#include "falcon_core/communications/voltage_states/DeviceVoltageState.hpp"
-#include "falcon_core/communications/voltage_states/DeviceVoltageStates.hpp"
-#include "falcon_core/generic/List.hpp"
-#include "falcon_core/math/Quantity.hpp"
-#include "falcon_core/physics/device_structures/Connection.hpp"
-#include "falcon_core/physics/units/SymbolUnit.hpp"
-#include <falcon-typing/FFIHelpers.hpp>
-
 #include <algorithm>
 #include <cmath>
-#include <map>
+#include <falcon-typing/FFIHelpers.hpp>
+#include <falcon_core/communications/voltage_states/DeviceVoltageState.hpp>
+#include <falcon_core/communications/voltage_states/DeviceVoltageStates.hpp>
+#include <falcon_core/generic/List.hpp>
+#include <falcon_core/math/Quantity.hpp>
+#include <falcon_core/physics/device_structures/Connection.hpp>
 #include <memory>
+#include <qarrayDevice/Device.hpp>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -145,19 +141,22 @@ static void pack_dvss_array(std::vector<DeviceVoltageStatesSP> items,
 // Helper: retrieve the ArrayValue for a named field inside a StructInstance.
 static std::shared_ptr<ArrayValue>
 field_array(const std::shared_ptr<StructInstance> &inst, const char *field) {
-  auto it = inst->fields.find(field);
-  if (it == inst->fields.end())
+  auto it = inst->fields->find(field);
+  if (it == inst->fields->end()) {
     throw std::runtime_error(
         std::string("qarray-wrapper: Map StructInstance missing field '") +
         field + "'");
+  }
   const RuntimeValue &fv = it->second;
-  if (!std::holds_alternative<std::shared_ptr<StructInstance>>(fv))
+  if (!std::holds_alternative<std::shared_ptr<StructInstance>>(fv)) {
     throw std::runtime_error(std::string("qarray-wrapper: Map field '") +
                              field + "' is not a StructInstance");
+  }
   auto arr_inst = std::get<std::shared_ptr<StructInstance>>(fv);
-  if (!arr_inst || !arr_inst->native_handle.has_value())
+  if (!arr_inst || !arr_inst->native_handle.has_value()) {
     throw std::runtime_error(std::string("qarray-wrapper: Map field '") +
                              field + "' StructInstance has no native_handle");
+  }
   return std::static_pointer_cast<ArrayValue>(arr_inst->native_handle.value());
 }
 
@@ -167,13 +166,15 @@ field_array(const std::shared_ptr<StructInstance> &inst, const char *field) {
 static std::shared_ptr<StructInstance>
 get_map_param(const FalconParamEntry *params, int32_t count, const char *key) {
   for (int32_t i = 0; i < count; ++i) {
-    if (std::strcmp(params[i].key, key) != 0)
+    if (std::strcmp(params[i].key, key) != 0) {
       continue;
+    }
     const FalconParamEntry &e = params[i];
-    if (e.tag != FALCON_TYPE_OPAQUE)
+    if (e.tag != FALCON_TYPE_OPAQUE) {
       throw std::runtime_error(
           std::string("qarray-wrapper: parameter '") + key +
           "' is not OPAQUE (tag=" + std::to_string(e.tag) + ")");
+    }
     // ptr is a heap-allocated shared_ptr<void>* whose managed object is the
     // StructInstance (same convention as native StructInstances passed by the
     // engine: ptr = new shared_ptr<void>(native_handle)).
@@ -194,10 +195,11 @@ dsl_map_to_volt_map(const std::shared_ptr<StructInstance> &map_inst) {
   auto keys_arr = field_array(map_inst, "keys_");
   auto vals_arr = field_array(map_inst, "values_");
 
-  if (keys_arr->elements.size() != vals_arr->elements.size())
+  if (keys_arr->elements.size() != vals_arr->elements.size()) {
     throw std::runtime_error(
         "qarray-wrapper: Map<Connection,Quantity> keys_ and values_ "
         "have different sizes");
+  }
 
   auto volt_unit = SymbolUnit::Volt();
   std::map<std::string, double> result;
@@ -205,25 +207,29 @@ dsl_map_to_volt_map(const std::shared_ptr<StructInstance> &map_inst) {
   for (size_t i = 0; i < keys_arr->elements.size(); ++i) {
     // ── key: Connection StructInstance with native_handle
     const RuntimeValue &kv = keys_arr->elements[i];
-    if (!std::holds_alternative<std::shared_ptr<StructInstance>>(kv))
+    if (!std::holds_alternative<std::shared_ptr<StructInstance>>(kv)) {
       throw std::runtime_error(
           "qarray-wrapper: Map key element is not a StructInstance");
+    }
     auto k_inst = std::get<std::shared_ptr<StructInstance>>(kv);
-    if (!k_inst || !k_inst->native_handle.has_value())
+    if (!k_inst || !k_inst->native_handle.has_value()) {
       throw std::runtime_error(
           "qarray-wrapper: Map key StructInstance has no native_handle");
+    }
     auto conn =
         std::static_pointer_cast<Connection>(k_inst->native_handle.value());
 
     // ── value: Quantity StructInstance with native_handle
     const RuntimeValue &vv = vals_arr->elements[i];
-    if (!std::holds_alternative<std::shared_ptr<StructInstance>>(vv))
+    if (!std::holds_alternative<std::shared_ptr<StructInstance>>(vv)) {
       throw std::runtime_error(
           "qarray-wrapper: Map value element is not a StructInstance");
+    }
     auto v_inst = std::get<std::shared_ptr<StructInstance>>(vv);
-    if (!v_inst || !v_inst->native_handle.has_value())
+    if (!v_inst || !v_inst->native_handle.has_value()) {
       throw std::runtime_error(
           "qarray-wrapper: Map value StructInstance has no native_handle");
+    }
     auto qty =
         std::static_pointer_cast<Quantity>(v_inst->native_handle.value());
 
@@ -270,21 +276,24 @@ build_dvss_from_volt_map(const std::map<std::string, double> &volt_map) {
 static std::vector<int> detect_peaks(const std::vector<double> &signal,
                                      double threshold_sigma = 2.0) {
   const int n = static_cast<int>(signal.size());
-  if (n < 3)
+  if (n < 3) {
     return {};
+  }
 
   // Compute mean and stddev
   double sum = 0.0;
-  for (double v : signal)
+  for (double v : signal) {
     sum += v;
+  }
   double mean = sum / n;
 
   double sq_sum = 0.0;
-  for (double v : signal)
+  for (double v : signal) {
     sq_sum += (v - mean) * (v - mean);
+  }
   double stddev = std::sqrt(sq_sum / n);
 
-  double threshold = mean + threshold_sigma * stddev;
+  double threshold = mean + (threshold_sigma * stddev);
 
   std::vector<int> peaks;
   for (int i = 1; i < n - 1; ++i) {
@@ -327,8 +336,9 @@ void CollectCurrentPlungerGates(const FalconParamEntry * /*params*/,
   const auto &names = device().gate_names();
   std::vector<ConnectionSP> conns;
   conns.reserve(names.size());
-  for (const auto &name : names)
+  for (const auto &name : names) {
     conns.push_back(Connection::PlungerGate(name));
+  }
   pack_connection_array(std::move(conns), out, oc);
 }
 
@@ -404,15 +414,15 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
     } else if (result.differentiated_signal.size() > 0 && resolution > 0) {
       n_sensors =
           static_cast<int>(result.differentiated_signal.size()) / resolution;
-      if (n_sensors < 1)
-        n_sensors = 1;
+      n_sensors = std::max(n_sensors, 1);
     }
     for (int i = 0; i < resolution; ++i) {
-      size_t idx = static_cast<size_t>(i * n_sensors); // column 0 of row i
-      if (idx < result.differentiated_signal.size())
+      auto idx = static_cast<size_t>(i * n_sensors); // column 0 of row i
+      if (idx < result.differentiated_signal.size()) {
         signal.push_back(result.differentiated_signal[idx]);
-      else
+      } else {
         signal.push_back(0.0);
+      }
     }
   } else {
     // No sensor data — no blips possible
@@ -427,8 +437,9 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
   //    Gate order matches the iteration order of start_map (std::map = sorted).
   std::vector<std::string> gate_order;
   gate_order.reserve(start_map.size());
-  for (const auto &kv : start_map)
+  for (const auto &kv : start_map) {
     gate_order.push_back(kv.first);
+  }
 
   const int n_gates = static_cast<int>(gate_order.size());
   auto volt_unit = SymbolUnit::Volt();
@@ -442,7 +453,7 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
 
     for (int g = 0; g < n_gates; ++g) {
       double v = 0.0;
-      size_t traj_idx = static_cast<size_t>(peak_idx * n_gates + g);
+      auto traj_idx = static_cast<size_t>((peak_idx * n_gates) + g);
       if (!result.trajectory.empty() && traj_idx < result.trajectory.size()) {
         v = result.trajectory[traj_idx];
       }
