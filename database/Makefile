@@ -243,6 +243,7 @@ endif
 install: build-release
 	@echo "Installing falcon-database to $(INSTALL_PREFIX)..."
 	$(SUDO) cmake --install $(BUILD_DIR_RELEASE) --prefix $(INSTALL_PREFIX)
+	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/falcon-db-cli $(INSTALL_LIBDIR)/falcon-db-cli
 	@echo "Copying vcpkg headers and libraries..."
 	$(SUDO) cp -r $(VCPKG_INSTALLED_DIR)/$(VCPKG_TRIPLET)/include/* $(INSTALL_INCLUDEDIR)/
 	$(SUDO) cp -r $(VCPKG_INSTALLED_DIR)/$(VCPKG_TRIPLET)/lib/* $(INSTALL_LIBDIR)/
@@ -251,7 +252,7 @@ install: build-release
 
 uninstall:
 	@echo "Uninstalling falcon-database from $(INSTALL_PREFIX)..."
-	$(SUDO) rm -r $(INSTALL_LIBDIR)/libfalcon-database* $(INSTALL_INCLUDEDIR)/falcon-database* $(INSTALL_PREFIX)/lib/cmake/falcon-database || true
+	$(SUDO) rm -r $(INSTALL_LIBDIR)/libfalcon-database* $(INSTALL_INCLUDEDIR)/falcon-database* $(INSTALL_PREFIX)/lib/cmake/falcon-database $(INSTALL_LIBDIR)/falcon-db-cli || true
 	@echo "✓ Uninstall complete"
 
 clean: uninstall
