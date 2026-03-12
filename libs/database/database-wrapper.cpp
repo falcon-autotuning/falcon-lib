@@ -76,6 +76,11 @@ void STRUCTDeviceCharacteristicGetUnitName(const FalconParamEntry *p,
   auto dchar = get_opaque<DeviceCharacteristic>(p, pc, "this");
   pack_results(FunctionResult{opt_str(dchar->unit_name)}, out, 16, oc);
 }
+void STRUCTDeviceCharacteristicGetValue(const FalconParamEntry *p, int32_t pc,
+                                        FalconResultSlot *out, int32_t *oc) {
+  auto dchar = get_opaque<DeviceCharacteristic>(p, pc, "this");
+  pack_results(FunctionResult{opt_str(dchar->characteristic)}, out, 16, oc);
+}
 void STRUCTDeviceCharacteristicToJson(const FalconParamEntry *p, int32_t pc,
                                       FalconResultSlot *out, int32_t *oc) {
   auto dchar = get_opaque<DeviceCharacteristic>(p, pc, "this");

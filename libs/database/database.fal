@@ -9,6 +9,7 @@ struct DeviceCharacteristic {
     routine GetTime()       -> (int time)
     routine GetState()      -> (string state_val)
     routine GetUnitName()   -> (string unit_name)
+    routine GetValue()      -> (string value)
     routine ToJson()        -> (string json_str)
 }
 
