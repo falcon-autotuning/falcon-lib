@@ -44,47 +44,70 @@ static std::string opt_str(const std::optional<std::string> &opt) {
 // ----------------------------------------------------------------------------
 
 extern "C" {
-void STRUCTDeviceCharacteristicGetScope(const FalconParamEntry *p, int32_t pc,
-                                        FalconResultSlot *out, int32_t *oc) {
-  auto dchar = get_opaque<DeviceCharacteristic>(p, pc, "this");
-  pack_results(FunctionResult{dchar->scope}, out, 16, oc);
+#define IMPLEMENT_GETTER(TypeName, MethodName, FieldExpr)                      \
+  void STRUCT##TypeName##Get##MethodName(                                      \
+      const FalconParamEntry *param_entries, int32_t param_count,              \
+      FalconResultSlot *result_slots, int32_t *out_count) {                    \
+    auto obj = get_opaque<TypeName>(param_entries, param_count, "this");       \
+    pack_results(FunctionResult{FieldExpr}, result_slots,                      \
+                 FALCON_RESULT_SLOT_COUNT, out_count);                         \
+  }
+
+constexpr int FALCON_RESULT_SLOT_COUNT = 16;
+IMPLEMENT_GETTER(DeviceCharacteristic, Scope, obj->scope)
+IMPLEMENT_GETTER(DeviceCharacteristic, Name, obj->name)
+IMPLEMENT_GETTER(DeviceCharacteristic, Hash, opt_str(obj->hash))
+IMPLEMENT_GETTER(DeviceCharacteristic, State, opt_str(obj->state))
+IMPLEMENT_GETTER(DeviceCharacteristic, UnitName, opt_str(obj->unit_name))
+IMPLEMENT_GETTER(DeviceCharacteristic, Value, opt_str(obj->characteristic))
+void STRUCTDeviceCharacteristicGetTime(const FalconParamEntry *param_entries,
+                                       int32_t param_count,
+                                       FalconResultSlot *result_slots,
+                                       int32_t *out_count) {
+  auto device_char =
+      get_opaque<DeviceCharacteristic>(param_entries, param_count, "this");
+  int64_t time_val = device_char->time ? *device_char->time : 0;
+  pack_results(FunctionResult{time_val}, result_slots, FALCON_RESULT_SLOT_COUNT,
+               out_count);
 }
-void STRUCTDeviceCharacteristicGetName(const FalconParamEntry *p, int32_t pc,
+
+#define IMPLEMENT_SETTER(TypeName, MethodName, FieldName, ParamName)           \
+  void STRUCT##TypeName##Set##MethodName(const FalconParamEntry *p,            \
+                                         int32_t pc, FalconResultSlot *out,    \
+                                         int32_t *oc) {                        \
+    auto params = unpack_params(p, pc);                                        \
+    auto obj = get_opaque<TypeName>(p, pc, "this");                            \
+    obj->FieldName = std::get<std::string>(params.at(ParamName));              \
+    out[0] = {};                                                               \
+    out[0].tag = FALCON_TYPE_OPAQUE;                                           \
+    out[0].value.opaque.type_name = #TypeName;                                 \
+    out[0].value.opaque.ptr = new std::shared_ptr<TypeName>(obj);              \
+    out[0].value.opaque.deleter = [](void *ptr) {                              \
+      delete static_cast<std::shared_ptr<TypeName> *>(ptr);                    \
+    };                                                                         \
+    *oc = 1;                                                                   \
+  }
+
+IMPLEMENT_SETTER(DeviceCharacteristic, Scope, scope, "scope")
+IMPLEMENT_SETTER(DeviceCharacteristic, Name, name, "name")
+IMPLEMENT_SETTER(DeviceCharacteristic, State, state, "state_val")
+IMPLEMENT_SETTER(DeviceCharacteristic, Hash, hash, "hash")
+IMPLEMENT_SETTER(DeviceCharacteristic, UnitName, unit_name, "unit_name")
+IMPLEMENT_SETTER(DeviceCharacteristic, Value, characteristic, "characteristic")
+void STRUCTDeviceCharacteristicSetTime(const FalconParamEntry *p, int32_t pc,
                                        FalconResultSlot *out, int32_t *oc) {
-  auto dchar = get_opaque<DeviceCharacteristic>(p, pc, "this");
-  pack_results(FunctionResult{dchar->name}, out, 16, oc);
-}
-void STRUCTDeviceCharacteristicGetHash(const FalconParamEntry *p, int32_t pc,
-                                       FalconResultSlot *out, int32_t *oc) {
-  auto dchar = get_opaque<DeviceCharacteristic>(p, pc, "this");
-  pack_results(FunctionResult{opt_str(dchar->hash)}, out, 16, oc);
-}
-void STRUCTDeviceCharacteristicGetTime(const FalconParamEntry *p, int32_t pc,
-                                       FalconResultSlot *out, int32_t *oc) {
-  auto dchar = get_opaque<DeviceCharacteristic>(p, pc, "this");
-  int64_t t = dchar->time ? *dchar->time : 0;
-  pack_results(FunctionResult{t}, out, 16, oc);
-}
-void STRUCTDeviceCharacteristicGetState(const FalconParamEntry *p, int32_t pc,
-                                        FalconResultSlot *out, int32_t *oc) {
-  auto dchar = get_opaque<DeviceCharacteristic>(p, pc, "this");
-  pack_results(FunctionResult{opt_str(dchar->state)}, out, 16, oc);
-}
-void STRUCTDeviceCharacteristicGetUnitName(const FalconParamEntry *p,
-                                           int32_t pc, FalconResultSlot *out,
-                                           int32_t *oc) {
-  auto dchar = get_opaque<DeviceCharacteristic>(p, pc, "this");
-  pack_results(FunctionResult{opt_str(dchar->unit_name)}, out, 16, oc);
-}
-void STRUCTDeviceCharacteristicGetValue(const FalconParamEntry *p, int32_t pc,
-                                        FalconResultSlot *out, int32_t *oc) {
-  auto dchar = get_opaque<DeviceCharacteristic>(p, pc, "this");
-  pack_results(FunctionResult{opt_str(dchar->characteristic)}, out, 16, oc);
-}
-void STRUCTDeviceCharacteristicToJson(const FalconParamEntry *p, int32_t pc,
-                                      FalconResultSlot *out, int32_t *oc) {
-  auto dchar = get_opaque<DeviceCharacteristic>(p, pc, "this");
-  pack_results(FunctionResult{dchar->to_json().dump()}, out, 16, oc);
+  auto pm = unpack_params(p, pc);
+  auto q = get_opaque<DeviceCharacteristic>(p, pc, "this");
+  int64_t val = std::get<int64_t>(pm.at("time_val"));
+  q->time = std::make_optional(val);
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_OPAQUE;
+  out[0].value.opaque.type_name = "DeviceCharacteristic";
+  out[0].value.opaque.ptr = new std::shared_ptr<DeviceCharacteristic>(q);
+  out[0].value.opaque.deleter = [](void *ptr) {
+    delete static_cast<std::shared_ptr<DeviceCharacteristic> *>(ptr);
+  };
+  *oc = 1;
 }
 }
 
@@ -135,44 +158,17 @@ void STRUCTDeviceCharacteristicQueryNew(const FalconParamEntry *p, int32_t pc,
   *oc = 1;
 }
 
-void STRUCTDeviceCharacteristicQuerySetScope(const FalconParamEntry *p,
-                                             int32_t pc, FalconResultSlot *out,
-                                             int32_t *oc) {
-  auto pm = unpack_params(p, pc);
-  auto q = get_opaque<DeviceCharacteristicQuery>(p, pc, "this");
-  q->scope = std::get<std::string>(pm.at("scope"));
-  out[0] = {};
-  out[0].tag = FALCON_TYPE_OPAQUE;
-  out[0].value.opaque.type_name = "DeviceCharacteristicQuery";
-  out[0].value.opaque.ptr = new std::shared_ptr<DeviceCharacteristicQuery>(q);
-  out[0].value.opaque.deleter = [](void *ptr) {
-    delete static_cast<std::shared_ptr<DeviceCharacteristicQuery> *>(ptr);
-  };
-  *oc = 1;
-}
+IMPLEMENT_GETTER(DeviceCharacteristicQuery, Scope, opt_str(obj->scope))
+IMPLEMENT_GETTER(DeviceCharacteristicQuery, Name, opt_str(obj->name))
+IMPLEMENT_GETTER(DeviceCharacteristicQuery, Hash, opt_str(obj->hash))
+IMPLEMENT_GETTER(DeviceCharacteristicQuery, State, opt_str(obj->state))
+IMPLEMENT_GETTER(DeviceCharacteristicQuery, UnitName, opt_str(obj->unit_name))
 
-#define IMPLEMENT_SETTER(MethodName, FieldName, ParamName)                     \
-  void STRUCTDeviceCharacteristicQuerySet##MethodName(                         \
-      const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,            \
-      int32_t *oc) {                                                           \
-    auto pm = unpack_params(p, pc);                                            \
-    auto q = get_opaque<DeviceCharacteristicQuery>(p, pc, "this");             \
-    q->FieldName = std::get<std::string>(pm.at(ParamName));                    \
-    out[0] = {};                                                               \
-    out[0].tag = FALCON_TYPE_OPAQUE;                                           \
-    out[0].value.opaque.type_name = "DeviceCharacteristicQuery";               \
-    out[0].value.opaque.ptr =                                                  \
-        new std::shared_ptr<DeviceCharacteristicQuery>(q);                     \
-    out[0].value.opaque.deleter = [](void *ptr) {                              \
-      delete static_cast<std::shared_ptr<DeviceCharacteristicQuery> *>(ptr);   \
-    };                                                                         \
-    *oc = 1;                                                                   \
-  }
-
-IMPLEMENT_SETTER(Name, name, "name")
-IMPLEMENT_SETTER(State, state, "state_val")
-IMPLEMENT_SETTER(Hash, hash, "hash")
-IMPLEMENT_SETTER(UnitName, unit_name, "unit_name")
+IMPLEMENT_SETTER(DeviceCharacteristicQuery, Scope, scope, "scope")
+IMPLEMENT_SETTER(DeviceCharacteristicQuery, Name, name, "name")
+IMPLEMENT_SETTER(DeviceCharacteristicQuery, State, state, "state_val")
+IMPLEMENT_SETTER(DeviceCharacteristicQuery, Hash, hash, "hash")
+IMPLEMENT_SETTER(DeviceCharacteristicQuery, UnitName, unit_name, "unit_name")
 }
 
 // ----------------------------------------------------------------------------
