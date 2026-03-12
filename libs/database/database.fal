@@ -34,7 +34,6 @@ routine GetAll() -> (DeviceCharacteristicList list)
 routine GetByHashRange(string hash_start, string hash_end) -> (DeviceCharacteristicList list)
 routine GetByQuery(DeviceCharacteristicQuery query) -> (DeviceCharacteristicList list)
 routine Count() -> (int count)
-routine TestConnection() -> (bool ok)
 routine IsConnected() -> (bool connected)
 
 // Write methods

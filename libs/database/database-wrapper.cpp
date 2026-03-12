@@ -250,12 +250,6 @@ void Count(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
                oc);
 }
 
-void TestConnection(const FalconParamEntry *p, int32_t pc,
-                    FalconResultSlot *out, int32_t *oc) {
-  pack_results(FunctionResult{get_global_database()->test_connection()}, out,
-               16, oc);
-}
-
 void IsConnected(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
                  int32_t *oc) {
   pack_results(FunctionResult{get_global_database()->is_connected()}, out, 16,

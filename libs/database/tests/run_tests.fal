@@ -87,19 +87,6 @@ autotuner ConnectionTests -> (int passed, int failed) {
         Error err = t.ExpectFalse(connected, "Connection is lazily initialized");
         -> __end(runner, t);
     }
-
-    state test_connection_after_test (TestRunner runner, TestContext t) {
-        bool ok = database::TestConnection();
-        Error err = t.ExpectTrue(ok, "TestConnection should succeed with valid FALCON_DATABASE_URL");
-        -> __end(runner, t);
-    }
-
-    state test_is_connected_after_test (TestRunner runner, TestContext t) {
-        bool ok = database::TestConnection();
-        bool connected = database::IsConnected();
-        Error err = t.ExpectTrue(connected, "IsConnected returns true after TestConnection");
-        -> __end(runner, t);
-    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -434,7 +421,6 @@ autotuner IntegrationTests -> (int passed, int failed) {
     start -> __init;
 
     state test_connection_then_count (TestRunner runner, TestContext t) {
-        bool ok = database::TestConnection();
         int count = database::Count();
         Error err = t.ExpectTrue(ok, "Connection test followed by count query succeeds");
         err = t.ExpectIntGt(count, -1, "Count returns valid result after connection");

@@ -94,7 +94,7 @@ For more information about the CLI tool, see `/database/docs/CLI.md` in the repo
 
 ```bash
 # Make sure database is running and initialized first!
-export FALCON_DATABASE_URL="postgresql://username:password@localhost:5432/falcon_db"
+export FALCON_DATABASE_URL="postgresql://falcon_test:falcon_test_password@localhost:5432/falcon_test"
 falcon-db-cli init
 
 # Now run the tests
