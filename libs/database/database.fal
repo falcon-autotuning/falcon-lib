@@ -3,6 +3,7 @@ ffimport "database-wrapper.cpp" ("-I/opt/falcon/include/" "-std=c++20") ("-L/opt
 // ── DeviceCharacteristic ──────────────────────────────────────────────────────
 
 struct DeviceCharacteristic {
+    routine New()                             -> (DeviceCharacteristic d)
     routine GetScope()                        -> (string scope)
     routine GetName()                         -> (string name)
     routine GetHash()                         -> (string hash)

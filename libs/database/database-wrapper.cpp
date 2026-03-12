@@ -44,6 +44,18 @@ static std::string opt_str(const std::optional<std::string> &opt) {
 // ----------------------------------------------------------------------------
 
 extern "C" {
+void STRUCTDeviceCharacteristicNew(const FalconParamEntry *p, int32_t pc,
+                                   FalconResultSlot *out, int32_t *oc) {
+  auto q = std::make_shared<DeviceCharacteristic>();
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_OPAQUE;
+  out[0].value.opaque.type_name = "DeviceCharacteristic";
+  out[0].value.opaque.ptr = new std::shared_ptr<DeviceCharacteristic>(q);
+  out[0].value.opaque.deleter = [](void *ptr) {
+    delete static_cast<std::shared_ptr<DeviceCharacteristic> *>(ptr);
+  };
+  *oc = 1;
+}
 #define IMPLEMENT_GETTER(TypeName, MethodName, FieldExpr)                      \
   void STRUCT##TypeName##Get##MethodName(                                      \
       const FalconParamEntry *param_entries, int32_t param_count,              \
