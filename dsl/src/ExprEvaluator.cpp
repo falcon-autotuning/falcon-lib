@@ -18,14 +18,18 @@ substitute_type(const atc::TypeDescriptor &td,
   if (td.is_struct()) {
     // If the struct_name is a known generic param, replace it.
     auto it = subst.find(td.struct_name);
-    if (it != subst.end()) return it->second;
+    if (it != subst.end())
+      return it->second;
     // Otherwise keep as-is (plain struct or already-monomorphized name).
     return td;
   }
   if (td.is_array()) {
     if (td.element_type) {
       auto new_elem = substitute_type(*td.element_type, subst);
-      return atc::TypeDescriptor::make_array(std::move(new_elem));
+      atc::TypeDescriptor td_arr(atc::ParamType::Array);
+      td_arr.element_type =
+          std::make_shared<atc::TypeDescriptor>(std::move(new_elem));
+      return td_arr;
     }
   }
   // For primitive types (Int, Float, Bool, String) — no substitution needed.
@@ -48,7 +52,8 @@ monomorphize_struct(const atc::StructDecl &base_decl,
   // Build monomorphized name, e.g. "Box<int>"
   std::string mono_name = base_decl.name + "<";
   for (size_t i = 0; i < type_args.size(); ++i) {
-    if (i > 0) mono_name += ",";
+    if (i > 0)
+      mono_name += ",";
     mono_name += type_args[i].to_string();
   }
   mono_name += ">";
@@ -80,8 +85,8 @@ monomorphize_struct(const atc::StructDecl &base_decl,
     if (f.initializer.has_value()) {
       new_init = f.initializer.value()->clone();
     }
-    auto new_f = std::make_unique<atc::VarDeclStmt>(
-        std::move(new_type), f.name, std::move(new_init));
+    auto new_f = std::make_unique<atc::VarDeclStmt>(std::move(new_type), f.name,
+                                                    std::move(new_init));
     new_f->decl_scope = atc::VarDeclStmt::DeclScope::StructField;
     new_fields.push_back(std::move(*new_f));
   }
@@ -93,8 +98,8 @@ monomorphize_struct(const atc::StructDecl &base_decl,
     std::vector<std::unique_ptr<atc::ParamDecl>> new_ins, new_outs;
     for (const auto &p : r.input_params) {
       auto new_type = substitute_type(p->type, subst);
-      new_ins.push_back(std::make_unique<atc::ParamDecl>(
-          std::move(new_type), p->name));
+      new_ins.push_back(
+          std::make_unique<atc::ParamDecl>(std::move(new_type), p->name));
     }
     for (const auto &p : r.output_params) {
       auto new_type = substitute_type(p->type, subst);
@@ -116,21 +121,25 @@ monomorphize_struct(const atc::StructDecl &base_decl,
           std::string rebuilt = base_decl.name + "<";
           // Extract the comma-separated args inside the brackets.
           auto inner_start = new_type.struct_name.find('<') + 1;
-          auto inner_end   = new_type.struct_name.rfind('>');
-          std::string inner = new_type.struct_name.substr(
-              inner_start, inner_end - inner_start);
+          auto inner_end = new_type.struct_name.rfind('>');
+          std::string inner =
+              new_type.struct_name.substr(inner_start, inner_end - inner_start);
           // Split on commas and substitute each token.
           std::vector<std::string> tokens;
           {
             std::string tok;
             for (char c : inner) {
-              if (c == ',') { tokens.push_back(tok); tok.clear(); }
-              else tok += c;
+              if (c == ',') {
+                tokens.push_back(tok);
+                tok.clear();
+              } else
+                tok += c;
             }
             tokens.push_back(tok);
           }
           for (size_t ti = 0; ti < tokens.size(); ++ti) {
-            if (ti > 0) rebuilt += ",";
+            if (ti > 0)
+              rebuilt += ",";
             // Trim whitespace.
             auto &t = tokens[ti];
             t.erase(0, t.find_first_not_of(' '));
@@ -146,12 +155,13 @@ monomorphize_struct(const atc::StructDecl &base_decl,
         }
       }
 
-      new_outs.push_back(std::make_unique<atc::ParamDecl>(
-          std::move(new_type), p->name));
+      new_outs.push_back(
+          std::make_unique<atc::ParamDecl>(std::move(new_type), p->name));
     }
     // Clone body stmts unchanged (field names stay the same)
     std::vector<std::unique_ptr<atc::Stmt>> new_body;
-    for (const auto &s : r.body) new_body.push_back(s->clone());
+    for (const auto &s : r.body)
+      new_body.push_back(s->clone());
     new_routines.push_back(atc::RoutineDecl(
         r.name, std::move(new_ins), std::move(new_outs), std::move(new_body)));
   }
@@ -542,8 +552,7 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
     }
 
     const atc::StructDecl *struct_decl = types_->lookup_struct(lookup_name);
-    if (struct_decl == nullptr &&
-          lookup_name.find("::") != std::string::npos) {
+    if (struct_decl == nullptr && lookup_name.find("::") != std::string::npos) {
       struct_decl = types_->lookup_struct(strip_module_prefix(lookup_name));
     }
 
@@ -553,10 +562,12 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
             variables_.end()) {
       // It IS a struct type name used as a static receiver.
 
-      // If this is a generic struct and we have injected type args, monomorphize
-      // now so that constructor output params get the correct concrete type.
+      // If this is a generic struct and we have injected type args,
+      // monomorphize now so that constructor output params get the correct
+      // concrete type.
       if (struct_decl->is_generic() && !injected_type_args.empty()) {
-        struct_decl = monomorphize_struct(*struct_decl, injected_type_args, types_);
+        struct_decl =
+            monomorphize_struct(*struct_decl, injected_type_args, types_);
       } else if (struct_decl->is_generic() && injected_type_args.empty()) {
         // Generic struct called without type args — this is a programmer error,
         // but we let it fall through; the routine will likely fail at output
@@ -572,8 +583,10 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
                               "' on type '" + struct_decl->name + "'");
       }
 
-      // Build a fresh receiver instance using the (possibly monomorphized) name.
-      auto receiver = std::make_shared<typing::StructInstance>(struct_decl->name);
+      // Build a fresh receiver instance using the (possibly monomorphized)
+      // name.
+      auto receiver =
+          std::make_shared<typing::StructInstance>(struct_decl->name);
       for (const auto &field : struct_decl->fields) {
         typing::RuntimeValue fval;
         if (field.initializer.has_value()) {
@@ -728,7 +741,7 @@ ExprEvaluator::eval_method_call(const atc::MethodCallExpr &expr) {
 
 typing::RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
   auto object = evaluate(*expr.object);
-  auto index  = evaluate(*expr.index);
+  auto index = evaluate(*expr.index);
 
   // ---------------------------------------------------------------------------
   // Array indexing: arr[i]  →  arr.GetIndex(i)
@@ -752,12 +765,15 @@ typing::RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
       if (get_index) {
         typing::FunctionResult outputs =
             exec_struct_routine(instPtr, *struct_decl, *get_index, {index});
-        if (outputs.empty()) return nullptr;
-        if (outputs.size() == 1) return outputs[0];
+        if (outputs.empty())
+          return nullptr;
+        if (outputs.size() == 1)
+          return outputs[0];
         return std::make_shared<typing::TupleValue>(outputs);
       }
     }
-    // Also try lookup via FFI method (for monomorphized names like "Array<int>")
+    // Also try lookup via FFI method (for monomorphized names like
+    // "Array<int>")
     const typing::TypeMethod *ffi_method =
         types_->lookup_ffi_method(instPtr->type_name, "GetIndex");
     if (ffi_method == nullptr) {
@@ -770,11 +786,13 @@ typing::RuntimeValue ExprEvaluator::eval_index(const atc::IndexExpr &expr) {
     }
     if (ffi_method != nullptr) {
       typing::ParameterMap params;
-      params["this"]  = object;
+      params["this"] = object;
       params["index"] = index;
       auto result = (*ffi_method)(object, params);
-      if (result.empty()) return nullptr;
-      if (result.size() == 1) return result[0];
+      if (result.empty())
+        return nullptr;
+      if (result.size() == 1)
+        return result[0];
       return std::make_shared<typing::TupleValue>(result);
     }
     throw EvaluationError("Type '" + instPtr->type_name +
