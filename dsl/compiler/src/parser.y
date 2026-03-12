@@ -158,7 +158,7 @@
 %type <std::vector<std::string>> generic_param_decl_list
 %type <std::vector<std::unique_ptr<Stmt>>> autotuner_var_decls routine_body routine_body_stmts 
 %type <std::unique_ptr<VarDeclStmt>> var_decl_stmt struct_field_decl
-%type <std::string> entry_state qualified_name
+%type <std::string> entry_state qualified_name primitive_type_name
 %type <std::vector<std::unique_ptr<Expr>>> entry_params
 %type <std::vector<StateDecl>> state_list
 %type <std::unique_ptr<StateDecl>> state_decl
@@ -1041,7 +1041,20 @@ postfix_expr[result]
         $result = std::make_unique<CallExpr>($ns + "::" + $sym, std::move($args));
         set_expr_location($result.get(), @ns);
       }
+    // Type coercion call: int("5"), float(x), string(42), bool("true")
+    | primitive_type_name[type_name] LPAREN call_arg_list[args] RPAREN
+      {
+        $result = std::make_unique<CallExpr>(std::move($type_name), std::move($args));
+        set_expr_location($result.get(), @type_name);
+      }
     | primary_expr[e] { $result = std::move($e); }
+    ;
+
+primitive_type_name[result]
+    : INT_KW    { $result = "int"; }
+    | FLOAT_KW  { $result = "float"; }
+    | BOOL_KW   { $result = "bool"; }
+    | STRING_KW { $result = "string"; }
     ;
 
 expr_list[result]

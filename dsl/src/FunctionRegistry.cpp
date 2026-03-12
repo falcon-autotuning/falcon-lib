@@ -174,6 +174,108 @@ void register_all_builtins(FunctionRegistry &registry) {
         std::string message = std::get<std::string>(params.at("message"));
         return typing::FunctionResult{typing::ErrorObject{message, true}};
       });
+
+  // ========================================================================
+  // TYPE COERCION
+  // ========================================================================
+
+  registry.register_builtin(
+      "int", [](const typing::ParameterMap &params) -> typing::FunctionResult {
+        auto val = params.at("val");
+        if (std::holds_alternative<std::string>(val)) {
+          try {
+            return typing::FunctionResult{
+                static_cast<int64_t>(std::stoll(std::get<std::string>(val)))};
+          } catch (...) {
+            return typing::FunctionResult{
+                nullptr, typing::ErrorObject{"Cannot convert string to int: " +
+                                                 std::get<std::string>(val),
+                                             false}};
+          }
+        } else if (std::holds_alternative<double>(val)) {
+          return typing::FunctionResult{
+              static_cast<int64_t>(std::get<double>(val))};
+        } else if (std::holds_alternative<bool>(val)) {
+          return typing::FunctionResult{
+              static_cast<int64_t>(std::get<bool>(val) ? 1 : 0)};
+        } else if (std::holds_alternative<int64_t>(val)) {
+          return typing::FunctionResult{std::get<int64_t>(val)};
+        }
+        return typing::FunctionResult{
+            nullptr, typing::ErrorObject{"Unsupported type for int()", false}};
+      });
+
+  registry.register_builtin(
+      "float",
+      [](const typing::ParameterMap &params) -> typing::FunctionResult {
+        auto val = params.at("val");
+        if (std::holds_alternative<std::string>(val)) {
+          try {
+            return typing::FunctionResult{
+                std::stod(std::get<std::string>(val))};
+          } catch (...) {
+            return typing::FunctionResult{
+                nullptr,
+                typing::ErrorObject{"Cannot convert string to float: " +
+                                        std::get<std::string>(val),
+                                    false}};
+          }
+        } else if (std::holds_alternative<int64_t>(val)) {
+          return typing::FunctionResult{
+              static_cast<double>(std::get<int64_t>(val))};
+        } else if (std::holds_alternative<bool>(val)) {
+          return typing::FunctionResult{
+              static_cast<double>(std::get<bool>(val) ? 1.0 : 0.0)};
+        } else if (std::holds_alternative<double>(val)) {
+          return typing::FunctionResult{std::get<double>(val)};
+        }
+        return typing::FunctionResult{
+            nullptr,
+            typing::ErrorObject{"Unsupported type for float()", false}};
+      });
+
+  registry.register_builtin(
+      "bool", [](const typing::ParameterMap &params) -> typing::FunctionResult {
+        auto val = params.at("val");
+        if (std::holds_alternative<std::string>(val)) {
+          auto s = std::get<std::string>(val);
+          if (s == "true" || s == "1") {
+            return typing::FunctionResult{true};
+          } else if (s == "false" || s == "0") {
+            return typing::FunctionResult{false};
+          }
+          return typing::FunctionResult{
+              nullptr, typing::ErrorObject{
+                           "Cannot convert string to bool: " + s, false}};
+        } else if (std::holds_alternative<int64_t>(val)) {
+          return typing::FunctionResult{std::get<int64_t>(val) != 0};
+        } else if (std::holds_alternative<double>(val)) {
+          return typing::FunctionResult{std::get<double>(val) != 0.0};
+        } else if (std::holds_alternative<bool>(val)) {
+          return typing::FunctionResult{std::get<bool>(val)};
+        }
+        return typing::FunctionResult{
+            nullptr, typing::ErrorObject{"Unsupported type for bool()", false}};
+      });
+
+  registry.register_builtin(
+      "string",
+      [](const typing::ParameterMap &params) -> typing::FunctionResult {
+        auto val = params.at("val");
+        if (std::holds_alternative<std::string>(val)) {
+          return typing::FunctionResult{std::get<std::string>(val)};
+        } else if (std::holds_alternative<int64_t>(val)) {
+          return typing::FunctionResult{std::to_string(std::get<int64_t>(val))};
+        } else if (std::holds_alternative<double>(val)) {
+          return typing::FunctionResult{std::to_string(std::get<double>(val))};
+        } else if (std::holds_alternative<bool>(val)) {
+          return typing::FunctionResult{
+              std::string(std::get<bool>(val) ? "true" : "false")};
+        }
+        return typing::FunctionResult{
+            nullptr,
+            typing::ErrorObject{"Unsupported type for string()", false}};
+      });
 }
 
 } // namespace falcon::dsl

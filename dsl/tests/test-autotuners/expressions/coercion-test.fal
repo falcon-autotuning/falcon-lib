@@ -1,0 +1,12 @@
+autotuner CoercionTest() -> (int int_result, float float_result, bool bool_result, string string_result) {
+    bool completed = false;
+    start -> init;
+
+    state init {
+        int_result = int("42");
+        float_result = float("3.14");
+        bool_result = bool("true");
+        string_result = string(123);
+        terminal;
+    }
+}
