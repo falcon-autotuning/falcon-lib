@@ -39,6 +39,13 @@ static std::string opt_str(const std::optional<std::string> &opt) {
   return opt ? *opt : "";
 }
 
+static std::string json_to_str(const nlohmann::json &j) {
+  if (j.is_null())
+    return "";
+  if (j.is_string())
+    return j.get<std::string>();
+  return j.dump();
+}
 // ----------------------------------------------------------------------------
 // DeviceCharacteristic
 // ----------------------------------------------------------------------------
@@ -71,7 +78,7 @@ IMPLEMENT_GETTER(DeviceCharacteristic, Name, obj->name)
 IMPLEMENT_GETTER(DeviceCharacteristic, Hash, opt_str(obj->hash))
 IMPLEMENT_GETTER(DeviceCharacteristic, State, opt_str(obj->state))
 IMPLEMENT_GETTER(DeviceCharacteristic, UnitName, opt_str(obj->unit_name))
-IMPLEMENT_GETTER(DeviceCharacteristic, Value, opt_str(obj->characteristic))
+IMPLEMENT_GETTER(DeviceCharacteristic, Value, json_to_str(obj->characteristic))
 void STRUCTDeviceCharacteristicGetTime(const FalconParamEntry *param_entries,
                                        int32_t param_count,
                                        FalconResultSlot *result_slots,
@@ -110,7 +117,7 @@ void STRUCTDeviceCharacteristicSetTime(const FalconParamEntry *p, int32_t pc,
                                        FalconResultSlot *out, int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto q = get_opaque<DeviceCharacteristic>(p, pc, "this");
-  int64_t val = std::get<int64_t>(pm.at("time_val"));
+  int64_t val = std::get<int64_t>(pm.at("time"));
   q->time = std::make_optional(val);
   out[0] = {};
   out[0].tag = FALCON_TYPE_OPAQUE;
