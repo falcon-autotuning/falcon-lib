@@ -14,4 +14,4 @@ routine Ramp(map::Map<connection::Connection, quantity::Quantity> stop) -> ()
 // Analyze if a blip is there or not
 routine AnalyzeBlips(map::Map<connection::Connection, quantity::Quantity> start, map::Map<connection::Connection, quantity::Quantity> stop, int resolution) -> (int num_blips, Array<deviceVoltageStates::DeviceVoltageStates> locations)
 // Calculates a device state given a virtualization matrix, spacing in a direction
-routine EndState(Connection direction, Quantity spacing, FArray virtualization) -> (Point endstate)
+routine EndState(Connection direction, Quantity spacing, FArray virtualization, Connections virtualNames) -> (Point endstate)
