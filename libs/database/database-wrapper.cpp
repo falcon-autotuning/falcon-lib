@@ -218,80 +218,68 @@ static void pack_dchar_list(std::vector<DeviceCharacteristic> list,
 }
 
 extern "C" {
-void STRUCTDatabaseNew(const FalconParamEntry *p, int32_t pc,
-                       FalconResultSlot *out, int32_t *oc) {
-  (void)p;
-  (void)pc;
-  out[0] = {};
-  out[0].tag = FALCON_TYPE_OPAQUE;
-  out[0].value.opaque.type_name = "Database";
-  out[0].value.opaque.ptr = nullptr;
-  out[0].value.opaque.deleter = [](void *) {};
-  *oc = 1;
-}
-
-void STRUCTDatabaseGetByName(const FalconParamEntry *p, int32_t pc,
-                             FalconResultSlot *out, int32_t *oc) {
+void GetByName(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
+               int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto name = std::get<std::string>(pm.at("name"));
   pack_dchar_opt(get_global_database()->get_by_name(name), out, oc);
 }
 
-void STRUCTDatabaseGetAll(const FalconParamEntry *p, int32_t pc,
-                          FalconResultSlot *out, int32_t *oc) {
+void GetAll(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
+            int32_t *oc) {
   pack_dchar_list(get_global_database()->get_all(), out, oc);
 }
 
-void STRUCTDatabaseGetByHashRange(const FalconParamEntry *p, int32_t pc,
-                                  FalconResultSlot *out, int32_t *oc) {
+void GetByHashRange(const FalconParamEntry *p, int32_t pc,
+                    FalconResultSlot *out, int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto h1 = std::get<std::string>(pm.at("hash_start"));
   auto h2 = std::get<std::string>(pm.at("hash_end"));
   pack_dchar_list(get_global_database()->get_by_hash_range(h1, h2), out, oc);
 }
 
-void STRUCTDatabaseGetByQuery(const FalconParamEntry *p, int32_t pc,
-                              FalconResultSlot *out, int32_t *oc) {
+void GetByQuery(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
+                int32_t *oc) {
   auto q = get_opaque<DeviceCharacteristicQuery>(p, pc, "query");
   pack_dchar_list(get_global_database()->get_by_query(*q), out, oc);
 }
 
-void STRUCTDatabaseCount(const FalconParamEntry *p, int32_t pc,
-                         FalconResultSlot *out, int32_t *oc) {
+void Count(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
+           int32_t *oc) {
   pack_results(FunctionResult{(int64_t)get_global_database()->count()}, out, 16,
                oc);
 }
 
-void STRUCTDatabaseTestConnection(const FalconParamEntry *p, int32_t pc,
-                                  FalconResultSlot *out, int32_t *oc) {
+void TestConnection(const FalconParamEntry *p, int32_t pc,
+                    FalconResultSlot *out, int32_t *oc) {
   pack_results(FunctionResult{get_global_database()->test_connection()}, out,
                16, oc);
 }
 
-void STRUCTDatabaseIsConnected(const FalconParamEntry *p, int32_t pc,
-                               FalconResultSlot *out, int32_t *oc) {
+void IsConnected(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
+                 int32_t *oc) {
   pack_results(FunctionResult{get_global_database()->is_connected()}, out, 16,
                oc);
 }
 
 // Write methods
-void STRUCTDatabaseInsert(const FalconParamEntry *p, int32_t pc,
-                          FalconResultSlot *out, int32_t *oc) {
+void Insert(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
+            int32_t *oc) {
   auto dchar = get_opaque<DeviceCharacteristic>(p, pc, "dchar");
   get_global_database()->insert(*dchar);
   pack_results(FunctionResult{}, out, 16, oc);
 }
 
-void STRUCTDatabaseDeleteByName(const FalconParamEntry *p, int32_t pc,
-                                FalconResultSlot *out, int32_t *oc) {
+void DeleteByName(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
+                  int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto name = std::get<std::string>(pm.at("name"));
   pack_results(FunctionResult{get_global_database()->delete_by_name(name)}, out,
                16, oc);
 }
 
-void STRUCTDatabaseDeleteByHash(const FalconParamEntry *p, int32_t pc,
-                                FalconResultSlot *out, int32_t *oc) {
+void DeleteByHash(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
+                  int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto hash = std::get<std::string>(pm.at("hash"));
   pack_results(
@@ -300,29 +288,29 @@ void STRUCTDatabaseDeleteByHash(const FalconParamEntry *p, int32_t pc,
 }
 
 // Admin methods
-void STRUCTDatabaseInitializeSchema(const FalconParamEntry *p, int32_t pc,
-                                    FalconResultSlot *out, int32_t *oc) {
+void InitializeSchema(const FalconParamEntry *p, int32_t pc,
+                      FalconResultSlot *out, int32_t *oc) {
   get_global_database()->initialize_schema();
   pack_results(FunctionResult{}, out, 16, oc);
 }
 
-void STRUCTDatabaseClearAll(const FalconParamEntry *p, int32_t pc,
-                            FalconResultSlot *out, int32_t *oc) {
+void ClearAll(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
+              int32_t *oc) {
   get_global_database()->clear_all();
   pack_results(FunctionResult{}, out, 16, oc);
 }
 
 // Snapshot methods
-void STRUCTDatabaseExportToJson(const FalconParamEntry *p, int32_t pc,
-                                FalconResultSlot *out, int32_t *oc) {
+void ExportToJson(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
+                  int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto filename = std::get<std::string>(pm.at("filename"));
   get_global_snapshot_manager()->export_to_json(filename);
   pack_results(FunctionResult{}, out, 16, oc);
 }
 
-void STRUCTDatabaseImportFromJson(const FalconParamEntry *p, int32_t pc,
-                                  FalconResultSlot *out, int32_t *oc) {
+void ImportFromJson(const FalconParamEntry *p, int32_t pc,
+                    FalconResultSlot *out, int32_t *oc) {
   auto pm = unpack_params(p, pc);
   auto filename = std::get<std::string>(pm.at("filename"));
   bool clear_existing = std::get<bool>(pm.at("clear_existing"));

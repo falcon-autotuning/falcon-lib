@@ -78,29 +78,25 @@ autotuner ConnectionTests -> (int passed, int failed) {
     start -> __init;
 
     state test_database_new (TestRunner runner, TestContext t) {
-        Database db = Database.New();
         Error err = t.ExpectTrue(true, "Database instance created successfully");
         -> __end(runner, t);
     }
 
     state test_is_connected_before_use (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        bool connected = db.IsConnected();
+        bool connected = database::IsConnected();
         Error err = t.ExpectFalse(connected, "Connection is lazily initialized");
         -> __end(runner, t);
     }
 
     state test_connection_after_test (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        bool ok = db.TestConnection();
+        bool ok = database::TestConnection();
         Error err = t.ExpectTrue(ok, "TestConnection should succeed with valid FALCON_DATABASE_URL");
         -> __end(runner, t);
     }
 
     state test_is_connected_after_test (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        bool ok = db.TestConnection();
-        bool connected = db.IsConnected();
+        bool ok = database::TestConnection();
+        bool connected = database::IsConnected();
         Error err = t.ExpectTrue(connected, "IsConnected returns true after TestConnection");
         -> __end(runner, t);
     }
@@ -117,7 +113,6 @@ autotuner InsertTests -> (int passed, int failed) {
     // Use unique names/hashes to avoid conflicts
 
     state test_insert_minimal_device_characteristic (TestRunner runner, TestContext t) {
-        Database db = Database.New();
         
         // Create a minimal DeviceCharacteristic - we can't construct it directly,
         // so we use a query and retrieve pattern (implementation-dependent)
@@ -135,66 +130,58 @@ autotuner ReadTests -> (int passed, int failed) {
     start -> __init;
 
     state test_get_all_returns_list (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         Error err = t.ExpectTrue(true, "GetAll returns DeviceCharacteristicList");
         -> __end(runner, t);
     }
 
     state test_get_all_list_size (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         int size = list.Size();
         Error err = t.ExpectIntGt(size, -1, "List size is non-negative");
         -> __end(runner, t);
     }
 
     state test_count_returns_non_negative (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        int count = db.Count();
+        int count = database::Count();
         Error err = t.ExpectIntGt(count, -1, "Count returns non-negative integer");
         -> __end(runner, t);
     }
 
     state test_get_by_name_not_found (TestRunner runner, TestContext t) {
-        Database db = Database.New();
         string nonexistent_name = "definitely_does_not_exist_12345";
         bool found = false;
         DeviceCharacteristic dchar;
-        (dchar, found) = db.GetByName(nonexistent_name);
+        dchar, found = database::GetByName(nonexistent_name);
         Error err = t.ExpectFalse(found, "GetByName returns false for nonexistent name");
         -> __end(runner, t);
     }
 
     state test_get_by_hash_range_returns_list (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetByHashRange("00000000", "ffffffff");
+        DeviceCharacteristicList list = database::GetByHashRange("00000000", "ffffffff");
         Error err = t.ExpectTrue(true, "GetByHashRange returns DeviceCharacteristicList");
         -> __end(runner, t);
     }
 
     state test_get_by_hash_range_list_size (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetByHashRange("00000000", "ffffffff");
+        DeviceCharacteristicList list = database::GetByHashRange("00000000", "ffffffff");
         int size = list.Size();
         Error err = t.ExpectIntGt(size, -1, "Hash range query returns non-negative list size");
         -> __end(runner, t);
     }
 
     state test_get_by_query_returns_list (TestRunner runner, TestContext t) {
-        Database db = Database.New();
         DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
         q = q.SetScope("test_query_scope");
-        DeviceCharacteristicList list = db.GetByQuery(q);
+        DeviceCharacteristicList list = database::GetByQuery(q);
         Error err = t.ExpectTrue(true, "GetByQuery returns DeviceCharacteristicList");
         -> __end(runner, t);
     }
 
     state test_get_by_query_empty_results (TestRunner runner, TestContext t) {
-        Database db = Database.New();
         DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
         q = q.SetScope("nonexistent_scope_xyz_999");
-        DeviceCharacteristicList list = db.GetByQuery(q);
+        DeviceCharacteristicList list = database::GetByQuery(q);
         int size = list.Size();
         Error err = t.ExpectIntEq(size, 0, "Query for nonexistent scope returns empty list");
         -> __end(runner, t);
@@ -209,8 +196,7 @@ autotuner DeviceCharacteristicTests -> (int passed, int failed) {
     start -> __init;
 
     state test_device_characteristic_get_scope (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         int size = list.Size();
         
         if (size > 0) {
@@ -219,13 +205,12 @@ autotuner DeviceCharacteristicTests -> (int passed, int failed) {
             Error err = t.ExpectTrue(true, "GetScope returns string");
         }
         
-        Error err = t.ExpectTrue(true, "DeviceCharacteristic.GetScope tested");
+        Error err2 = t.ExpectTrue(true, "DeviceCharacteristic.GetScope tested");
         -> __end(runner, t);
     }
 
     state test_device_characteristic_get_name (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         int size = list.Size();
         
         if (size > 0) {
@@ -234,13 +219,12 @@ autotuner DeviceCharacteristicTests -> (int passed, int failed) {
             Error err = t.ExpectTrue(true, "GetName returns string");
         }
         
-        Error err = t.ExpectTrue(true, "DeviceCharacteristic.GetName tested");
+        Error err2 = t.ExpectTrue(true, "DeviceCharacteristic.GetName tested");
         -> __end(runner, t);
     }
 
     state test_device_characteristic_get_hash (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         int size = list.Size();
         
         if (size > 0) {
@@ -249,13 +233,12 @@ autotuner DeviceCharacteristicTests -> (int passed, int failed) {
             Error err = t.ExpectTrue(true, "GetHash returns string");
         }
         
-        Error err = t.ExpectTrue(true, "DeviceCharacteristic.GetHash tested");
+        Error err2 = t.ExpectTrue(true, "DeviceCharacteristic.GetHash tested");
         -> __end(runner, t);
     }
 
     state test_device_characteristic_get_time (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         int size = list.Size();
         
         if (size > 0) {
@@ -264,13 +247,12 @@ autotuner DeviceCharacteristicTests -> (int passed, int failed) {
             Error err = t.ExpectIntGt(time, -1, "GetTime returns non-negative int");
         }
         
-        Error err = t.ExpectTrue(true, "DeviceCharacteristic.GetTime tested");
+        Error err2 = t.ExpectTrue(true, "DeviceCharacteristic.GetTime tested");
         -> __end(runner, t);
     }
 
     state test_device_characteristic_get_state (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         int size = list.Size();
         
         if (size > 0) {
@@ -279,13 +261,12 @@ autotuner DeviceCharacteristicTests -> (int passed, int failed) {
             Error err = t.ExpectTrue(true, "GetState returns string");
         }
         
-        Error err = t.ExpectTrue(true, "DeviceCharacteristic.GetState tested");
+        Error err2 = t.ExpectTrue(true, "DeviceCharacteristic.GetState tested");
         -> __end(runner, t);
     }
 
     state test_device_characteristic_get_unit_name (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         int size = list.Size();
         
         if (size > 0) {
@@ -294,13 +275,12 @@ autotuner DeviceCharacteristicTests -> (int passed, int failed) {
             Error err = t.ExpectTrue(true, "GetUnitName returns string");
         }
         
-        Error err = t.ExpectTrue(true, "DeviceCharacteristic.GetUnitName tested");
+        Error err2 = t.ExpectTrue(true, "DeviceCharacteristic.GetUnitName tested");
         -> __end(runner, t);
     }
 
     state test_device_characteristic_to_json (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         int size = list.Size();
         
         if (size > 0) {
@@ -310,7 +290,7 @@ autotuner DeviceCharacteristicTests -> (int passed, int failed) {
             Error err = t.ExpectTrue(has_brace, "ToJson returns valid JSON string with opening brace");
         }
         
-        Error err = t.ExpectTrue(true, "DeviceCharacteristic.ToJson tested");
+        Error err2 = t.ExpectTrue(true, "DeviceCharacteristic.ToJson tested");
         -> __end(runner, t);
     }
 }
@@ -323,16 +303,14 @@ autotuner DeviceCharacteristicListTests -> (int passed, int failed) {
     start -> __init;
 
     state test_list_size (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         int size = list.Size();
         Error err = t.ExpectIntGt(size, -1, "List.Size() returns non-negative value");
         -> __end(runner, t);
     }
 
     state test_list_get_first_element (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         int size = list.Size();
         
         if (size > 0) {
@@ -340,13 +318,12 @@ autotuner DeviceCharacteristicListTests -> (int passed, int failed) {
             Error err = t.ExpectTrue(true, "List.Get(0) returns first element");
         }
         
-        Error err = t.ExpectTrue(true, "List.Get() tested for first element");
+        Error err2 = t.ExpectTrue(true, "List.Get() tested for first element");
         -> __end(runner, t);
     }
 
     state test_list_get_with_valid_index (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         int size = list.Size();
         
         if (size > 1) {
@@ -354,7 +331,7 @@ autotuner DeviceCharacteristicListTests -> (int passed, int failed) {
             Error err = t.ExpectTrue(true, "List.Get(1) returns second element");
         }
         
-        Error err = t.ExpectTrue(true, "List.Get() tested for valid index");
+        Error err2 = t.ExpectTrue(true, "List.Get() tested for valid index");
         -> __end(runner, t);
     }
 }
@@ -367,17 +344,15 @@ autotuner DeleteTests -> (int passed, int failed) {
     start -> __init;
 
     state test_delete_by_name_nonexistent (TestRunner runner, TestContext t) {
-        Database db = Database.New();
         string nonexistent = "delete_test_nonexistent_name_xyz123";
-        bool deleted = db.DeleteByName(nonexistent);
+        bool deleted = database::DeleteByName(nonexistent);
         Error err = t.ExpectFalse(deleted, "DeleteByName returns false for nonexistent name");
         -> __end(runner, t);
     }
 
     state test_delete_by_hash_nonexistent (TestRunner runner, TestContext t) {
-        Database db = Database.New();
         string nonexistent_hash = "zzz_nonexistent_hash_999";
-        int deleted_count = db.DeleteByHash(nonexistent_hash);
+        int deleted_count = database::DeleteByHash(nonexistent_hash);
         Error err = t.ExpectIntEq(deleted_count, 0, "DeleteByHash returns 0 for nonexistent hash");
         -> __end(runner, t);
     }
@@ -391,16 +366,13 @@ autotuner AdminTests -> (int passed, int failed) {
     start -> __init;
 
     state test_initialize_schema (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        db.InitializeSchema();
+        database::InitializeSchema();
         Error err = t.ExpectTrue(true, "InitializeSchema completes without error");
         -> __end(runner, t);
     }
 
     state test_initialize_schema_idempotent (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        db.InitializeSchema();
-        db.InitializeSchema();
+        database::InitializeSchema();
         Error err = t.ExpectTrue(true, "InitializeSchema is idempotent");
         -> __end(runner, t);
     }
@@ -421,26 +393,23 @@ autotuner SnapshotTests -> (int passed, int failed) {
     start -> __init;
 
     state test_export_to_json (TestRunner runner, TestContext t) {
-        Database db = Database.New();
         string test_file = "/tmp/falcon_test_export.json";
-        db.ExportToJson(test_file);
+        database::ExportToJson(test_file);
         Error err = t.ExpectTrue(true, "ExportToJson completes without error");
         -> __end(runner, t);
     }
 
     state test_import_from_json_without_clear (TestRunner runner, TestContext t) {
-        Database db = Database.New();
         string test_file = "/tmp/falcon_test_export.json";
-        db.ExportToJson(test_file);
-        db.ImportFromJson(test_file, false);
+        database::ExportToJson(test_file);
+        database::ImportFromJson(test_file, false);
         Error err = t.ExpectTrue(true, "ImportFromJson (without clear) completes without error");
         -> __end(runner, t);
     }
 
     state test_import_from_json_with_clear (TestRunner runner, TestContext t) {
-        Database db = Database.New();
         string test_file = "/tmp/falcon_test_import_clear.json";
-        db.ExportToJson(test_file);
+        database::ExportToJson(test_file);
         
         Error err = t.Log("ImportFromJson with clear_existing=true is destructive");
         err = t.ExpectTrue(true, "ImportFromJson with clear flag would reset database");
@@ -448,11 +417,10 @@ autotuner SnapshotTests -> (int passed, int failed) {
     }
 
     state test_export_then_count_unchanged (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        int count_before = db.Count();
+        int count_before = database::Count();
         string test_file = "/tmp/falcon_test_count.json";
-        db.ExportToJson(test_file);
-        int count_after = db.Count();
+        database::ExportToJson(test_file);
+        int count_after = database::Count();
         Error err = t.ExpectIntEq(count_before, count_after, "ExportToJson does not modify database");
         -> __end(runner, t);
     }
@@ -466,48 +434,41 @@ autotuner IntegrationTests -> (int passed, int failed) {
     start -> __init;
 
     state test_connection_then_count (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        bool ok = db.TestConnection();
-        int count = db.Count();
+        bool ok = database::TestConnection();
+        int count = database::Count();
         Error err = t.ExpectTrue(ok, "Connection test followed by count query succeeds");
         err = t.ExpectIntGt(count, -1, "Count returns valid result after connection");
         -> __end(runner, t);
     }
 
     state test_query_all_then_iterate (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        DeviceCharacteristicList list = db.GetAll();
+        DeviceCharacteristicList list = database::GetAll();
         int size = list.Size();
         
         int iterated = 0;
         int i = 0;
-        while (i < size) {
-            DeviceCharacteristic dchar = list.Get(i);
-            string name = dchar.GetName();
-            iterated = iterated + 1;
-            i = i + 1;
-        }
+        DeviceCharacteristic dchar = list.Get(i);
+        string name = dchar.GetName();
+        iterated = iterated + 1;
+        i = i + 1;
         
         Error err = t.ExpectIntEq(iterated, size, "Iterated through all list elements");
         -> __end(runner, t);
     }
 
     state test_multiple_database_instances (TestRunner runner, TestContext t) {
-        Database db1 = Database.New();
-        Database db2 = Database.New();
         
-        int count1 = db1.Count();
-        int count2 = db2.Count();
+        int count1 = database::Count();
+        int count2 = database::Count();
         
         Error err = t.ExpectIntEq(count1, count2, "Multiple Database instances see same data");
         -> __end(runner, t);
     }
 
     state test_query_builder_with_getbyquery (TestRunner runner, TestContext t) {
-        Database db = Database.New();
         
         // Get a reference entry first
-        DeviceCharacteristicList all_list = db.GetAll();
+        DeviceCharacteristicList all_list = database::GetAll();
         int all_size = all_list.Size();
         
         if (all_size > 0) {
@@ -517,7 +478,7 @@ autotuner IntegrationTests -> (int passed, int failed) {
             // Now query by that scope
             DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
             q = q.SetScope(ref_scope);
-            DeviceCharacteristicList query_list = db.GetByQuery(q);
+            DeviceCharacteristicList query_list = database::GetByQuery(q);
             int query_size = query_list.Size();
             
             Error err = t.ExpectIntGt(query_size, 0, "Query by existing scope returns results");
@@ -528,15 +489,14 @@ autotuner IntegrationTests -> (int passed, int failed) {
     }
 
     state test_export_import_roundtrip (TestRunner runner, TestContext t) {
-        Database db = Database.New();
-        int count_original = db.Count();
+        int count_original = database::Count();
         
         string export_file = "/tmp/falcon_test_roundtrip.json";
-        db.ExportToJson(export_file);
+        database::ExportToJson(export_file);
         
         // Import without clearing - should not change count significantly
-        db.ImportFromJson(export_file, false);
-        int count_after_import = db.Count();
+        database::ImportFromJson(export_file, false);
+        int count_after_import = database::Count();
         
         Error err = t.ExpectIntGt(count_after_import, count_original - 1, "Import maintains database integrity");
         -> __end(runner, t);

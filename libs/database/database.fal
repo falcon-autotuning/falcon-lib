@@ -28,27 +28,22 @@ struct DeviceCharacteristicQuery {
 }
 
 // ── Database ──────────────────────────────────────────────────────────────────
+// Read methods
+routine GetByName(string name) -> (DeviceCharacteristic dchar, bool found)
+routine GetAll() -> (DeviceCharacteristicList list)
+routine GetByHashRange(string hash_start, string hash_end) -> (DeviceCharacteristicList list)
+routine GetByQuery(DeviceCharacteristicQuery query) -> (DeviceCharacteristicList list)
+routine Count() -> (int count)
+routine TestConnection() -> (bool ok)
+routine IsConnected() -> (bool connected)
 
-struct Database {
-    routine New() -> (Database db)
-    
-    // Read methods
-    routine GetByName(string name) -> (DeviceCharacteristic dchar, bool found)
-    routine GetAll() -> (DeviceCharacteristicList list)
-    routine GetByHashRange(string hash_start, string hash_end) -> (DeviceCharacteristicList list)
-    routine GetByQuery(DeviceCharacteristicQuery query) -> (DeviceCharacteristicList list)
-    routine Count() -> (int count)
-    routine TestConnection() -> (bool ok)
-    routine IsConnected() -> (bool connected)
-    
-    // Write methods
-    routine Insert(DeviceCharacteristic dchar) -> ()
-    routine DeleteByName(string name) -> (bool deleted)
-    routine DeleteByHash(string hash) -> (int deleted_count)
-    
-    // Admin & Snapshot methods
-    routine InitializeSchema() -> ()
-    routine ClearAll() -> ()
-    routine ExportToJson(string filename) -> ()
-    routine ImportFromJson(string filename, bool clear_existing) -> ()
-}
+// Write methods
+routine Insert(DeviceCharacteristic dchar) -> ()
+routine DeleteByName(string name) -> (bool deleted)
+routine DeleteByHash(string hash) -> (int deleted_count)
+
+// Admin & Snapshot methods
+routine InitializeSchema() -> ()
+routine ClearAll() -> ()
+routine ExportToJson(string filename) -> ()
+routine ImportFromJson(string filename, bool clear_existing) -> ()
