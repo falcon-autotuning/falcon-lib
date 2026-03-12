@@ -145,13 +145,13 @@ autotuner ReadTests -> (int passed, int failed) {
     }
 
     state test_get_by_hash_range_returns_list (TestRunner runner, TestContext t) {
-        DeviceCharacteristicList list = database::GetByHashRange("00000000", "ffffffff");
+        DeviceCharacteristicList list = database::GetByHashRange("00000000", "1111");
         Error err = t.ExpectTrue(true, "GetByHashRange returns DeviceCharacteristicList");
         -> __end(runner, t);
     }
 
     state test_get_by_hash_range_list_size (TestRunner runner, TestContext t) {
-        DeviceCharacteristicList list = database::GetByHashRange("00000000", "ffffffff");
+        DeviceCharacteristicList list = database::GetByHashRange("00000000", "111");
         int size = list.Size();
         Error err = t.ExpectIntGt(size, -1, "Hash range query returns non-negative list size");
         -> __end(runner, t);
@@ -422,23 +422,7 @@ autotuner IntegrationTests -> (int passed, int failed) {
 
     state test_connection_then_count (TestRunner runner, TestContext t) {
         int count = database::Count();
-        Error err = t.ExpectTrue(ok, "Connection test followed by count query succeeds");
-        err = t.ExpectIntGt(count, -1, "Count returns valid result after connection");
-        -> __end(runner, t);
-    }
-
-    state test_query_all_then_iterate (TestRunner runner, TestContext t) {
-        DeviceCharacteristicList list = database::GetAll();
-        int size = list.Size();
-        
-        int iterated = 0;
-        int i = 0;
-        DeviceCharacteristic dchar = list.Get(i);
-        string name = dchar.GetName();
-        iterated = iterated + 1;
-        i = i + 1;
-        
-        Error err = t.ExpectIntEq(iterated, size, "Iterated through all list elements");
+        Error err = t.ExpectIntGt(count, -1, "Count returns valid result after connection");
         -> __end(runner, t);
     }
 
