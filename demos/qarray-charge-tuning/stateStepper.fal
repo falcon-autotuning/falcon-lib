@@ -64,7 +64,7 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
     state performStep {
         point::Point startingStates = hub::CollectCurrentDeviceState().ToPoint();
         Quantity spacing = interdotSpacing.Get(direction);
-        point::Point endstate = hub::EndState(direction, spacing, virtualization);
+        point::Point endstate = hub::EndState(direction, spacing, virtualization, virtualizationNames);
         int num_blips;
         Array<deviceVoltageStates::deviceVoltageStates> locations;
         num_blips, locations = hub::AnalyzeBlips(startingStates.Coordinates(), endstate.Coordinates(), resolution);
