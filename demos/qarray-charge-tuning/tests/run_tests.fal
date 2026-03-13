@@ -45,15 +45,7 @@ autotuner FirstTest -> (int passed, int failed) {
             .SetName("resolution")
             .SetValue(strings::FromInt(resolution));
         database::Insert(dcharResolution);
-        // 3. Build the interdotSpacing variable
-        // TODO: fix 
-        float interdotSpacing = 0.1;
-        database::DeviceCharacteristic dcharInterdotSpacing = database::DeviceCharacteristic.New()
-            .SetScope("device")
-            .SetName("interdotSpacing")
-            .SetValue(strings::FromDouble(interdotSpacing));
-        database::Insert(dcharInterdotSpacing);
-        // 4. Build the virualization names variable
+        // 3. Build the virualization names variable
         array::Array<connection::Connection> rawPlungerGates = hub::CollectCurrentPlungerGates(); 
         connections::Connections virtualizationNames = connections::Connections.New(rawPlungerGates);
         database::DeviceCharacteristic dcharVirtualizationNames = database::DeviceCharacteristic.New()
@@ -61,6 +53,20 @@ autotuner FirstTest -> (int passed, int failed) {
             .SetName("virtualizationNames")
             .SetValue(virtualizationNames.ToJSON());
         database::Insert(dcharVirtualizationNames);
+        // 4. Build the interdotSpacing variable
+        Quantity interdotSpacing = Quantity.New(0.1, symbolUnit::SymbolUnit.Volt());
+        database::DeviceCharacteristic dcharInterdotSpacing = database::DeviceCharacteristic.New()
+            .SetScope("device")
+            .SetName("interdotSpacing")
+            .SetPlungerGate(rawPlungerGates[0])
+            .SetValue(interdotSpacing.ToJSON());
+        database::Insert(dcharInterdotSpacing);
+        database::DeviceCharacteristic dcharInterdotSpacing = database::DeviceCharacteristic.New()
+            .SetScope("device")
+            .SetName("interdotSpacing")
+            .SetPlungerGate(rawPlungerGates[1])
+            .SetValue(interdotSpacing.ToJSON());
+        database::Insert(dcharInterdotSpacing);
         // 5. Define the starting position 
         Map<connection::Connection, quantity::Quantity> begin = Map.New();
         begin.Set(rawPlungerGates[0], quantity::Quantity.New(-200.0, symbolUnit::SymbolUnit.Millivolt()));

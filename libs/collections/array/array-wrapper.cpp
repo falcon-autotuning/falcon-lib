@@ -48,8 +48,8 @@ get_array(const FalconParamEntry *p, int32_t pc, const char *key = "this") {
 // Pack an ArrayValue result using shared_ptr<void>* so that:
 //   (a) engine::unpack_results' else-branch can reinterpret it correctly, and
 //   (b) get_opaque<ArrayValue> can static_pointer_cast it back safely.
-static void pack_array(std::shared_ptr<ArrayValue> arr,
-                       FalconResultSlot *out, int32_t *oc) {
+static void pack_array(std::shared_ptr<ArrayValue> arr, FalconResultSlot *out,
+                       int32_t *oc) {
   out[0] = {};
   out[0].tag = FALCON_TYPE_OPAQUE;
   out[0].value.opaque.type_name = "Array";
@@ -76,8 +76,8 @@ void STRUCTArrayNew(const FalconParamEntry * /*p*/, int32_t /*pc*/,
 void STRUCTArraySize(const FalconParamEntry *p, int32_t pc,
                      FalconResultSlot *out, int32_t *oc) {
   auto arr = get_array(p, pc);
-  pack_results(FunctionResult{static_cast<int64_t>(arr->elements.size())},
-               out, 16, oc);
+  pack_results(FunctionResult{static_cast<int64_t>(arr->elements.size())}, out,
+               16, oc);
 }
 
 // ── IsEmpty() -> (bool empty) ─────────────────────────────────────────────
@@ -89,8 +89,8 @@ void STRUCTArrayIsEmpty(const FalconParamEntry *p, int32_t pc,
 
 // ── GetIndex(int index) -> (T value) ─────────────────────────────────────
 void STRUCTArrayGetIndex(const FalconParamEntry *p, int32_t pc,
-                          FalconResultSlot *out, int32_t *oc) {
-  auto pm  = unpack_params(p, pc);
+                         FalconResultSlot *out, int32_t *oc) {
+  auto pm = unpack_params(p, pc);
   auto arr = get_array(p, pc);
   int64_t idx = std::get<int64_t>(pm.at("index"));
   if (idx < 0 || static_cast<size_t>(idx) >= arr->elements.size()) {
@@ -98,14 +98,14 @@ void STRUCTArrayGetIndex(const FalconParamEntry *p, int32_t pc,
         "Array.GetIndex: index out of bounds: " + std::to_string(idx) +
         " (size=" + std::to_string(arr->elements.size()) + ")");
   }
-  pack_results(FunctionResult{arr->elements[static_cast<size_t>(idx)]},
-               out, 16, oc);
+  pack_results(FunctionResult{arr->elements[static_cast<size_t>(idx)]}, out, 16,
+               oc);
 }
 
 // ── SetIndex(int index, T value) -> () ────────────────────────────────────
 void STRUCTArraySetIndex(const FalconParamEntry *p, int32_t pc,
-                          FalconResultSlot *out, int32_t *oc) {
-  auto pm  = unpack_params(p, pc);
+                         FalconResultSlot *out, int32_t *oc) {
+  auto pm = unpack_params(p, pc);
   auto arr = get_array(p, pc);
   int64_t idx = std::get<int64_t>(pm.at("index"));
   if (idx < 0 || static_cast<size_t>(idx) >= arr->elements.size()) {
@@ -114,21 +114,25 @@ void STRUCTArraySetIndex(const FalconParamEntry *p, int32_t pc,
         " (size=" + std::to_string(arr->elements.size()) + ")");
   }
   arr->elements[static_cast<size_t>(idx)] = pm.at("value");
-  out[0] = {}; out[0].tag = FALCON_TYPE_NIL; *oc = 1;
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_NIL;
+  *oc = 1;
 }
 
 // ── PushBack(T value) -> () ───────────────────────────────────────────────
 void STRUCTArrayPushBack(const FalconParamEntry *p, int32_t pc,
-                          FalconResultSlot *out, int32_t *oc) {
-  auto pm  = unpack_params(p, pc);
+                         FalconResultSlot *out, int32_t *oc) {
+  auto pm = unpack_params(p, pc);
   auto arr = get_array(p, pc);
   arr->elements.push_back(pm.at("value"));
-  out[0] = {}; out[0].tag = FALCON_TYPE_NIL; *oc = 1;
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_NIL;
+  *oc = 1;
 }
 
 // ── PopBack() -> (T value) ────────────────────────────────────────────────
 void STRUCTArrayPopBack(const FalconParamEntry *p, int32_t pc,
-                         FalconResultSlot *out, int32_t *oc) {
+                        FalconResultSlot *out, int32_t *oc) {
   auto arr = get_array(p, pc);
   if (arr->elements.empty()) {
     throw std::runtime_error("Array.PopBack: array is empty");
@@ -140,8 +144,8 @@ void STRUCTArrayPopBack(const FalconParamEntry *p, int32_t pc,
 
 // ── Insert(int index, T value) -> () ─────────────────────────────────────
 void STRUCTArrayInsert(const FalconParamEntry *p, int32_t pc,
-                        FalconResultSlot *out, int32_t *oc) {
-  auto pm  = unpack_params(p, pc);
+                       FalconResultSlot *out, int32_t *oc) {
+  auto pm = unpack_params(p, pc);
   auto arr = get_array(p, pc);
   int64_t idx = std::get<int64_t>(pm.at("index"));
   if (idx < 0 || static_cast<size_t>(idx) > arr->elements.size()) {
@@ -150,13 +154,15 @@ void STRUCTArrayInsert(const FalconParamEntry *p, int32_t pc,
         " (size=" + std::to_string(arr->elements.size()) + ")");
   }
   arr->elements.insert(arr->elements.begin() + idx, pm.at("value"));
-  out[0] = {}; out[0].tag = FALCON_TYPE_NIL; *oc = 1;
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_NIL;
+  *oc = 1;
 }
 
 // ── Erase(int index) -> () ────────────────────────────────────────────────
 void STRUCTArrayErase(const FalconParamEntry *p, int32_t pc,
-                       FalconResultSlot *out, int32_t *oc) {
-  auto pm  = unpack_params(p, pc);
+                      FalconResultSlot *out, int32_t *oc) {
+  auto pm = unpack_params(p, pc);
   auto arr = get_array(p, pc);
   int64_t idx = std::get<int64_t>(pm.at("index"));
   if (idx < 0 || static_cast<size_t>(idx) >= arr->elements.size()) {
@@ -165,38 +171,55 @@ void STRUCTArrayErase(const FalconParamEntry *p, int32_t pc,
         " (size=" + std::to_string(arr->elements.size()) + ")");
   }
   arr->elements.erase(arr->elements.begin() + idx);
-  out[0] = {}; out[0].tag = FALCON_TYPE_NIL; *oc = 1;
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_NIL;
+  *oc = 1;
 }
 
 // ── Clear() -> () ─────────────────────────────────────────────────────────
 void STRUCTArrayClear(const FalconParamEntry *p, int32_t pc,
-                       FalconResultSlot *out, int32_t *oc) {
+                      FalconResultSlot *out, int32_t *oc) {
   auto arr = get_array(p, pc);
   arr->elements.clear();
-  out[0] = {}; out[0].tag = FALCON_TYPE_NIL; *oc = 1;
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_NIL;
+  *oc = 1;
 }
 
 // ── Contains(T value) -> (bool found) ────────────────────────────────────
 void STRUCTArrayContains(const FalconParamEntry *p, int32_t pc,
-                          FalconResultSlot *out, int32_t *oc) {
-  auto pm  = unpack_params(p, pc);
+                         FalconResultSlot *out, int32_t *oc) {
+  auto pm = unpack_params(p, pc);
   auto arr = get_array(p, pc);
   const RuntimeValue &needle = pm.at("value");
   bool found = false;
   for (const auto &elem : arr->elements) {
-    if (elem == needle) { found = true; break; }
+    if (elem == needle) {
+      found = true;
+      break;
+    }
   }
   pack_results(FunctionResult{found}, out, 16, oc);
 }
 
 // ── IndexOf(T value) -> (int index) ──────────────────────────────────────
 void STRUCTArrayIndexOf(const FalconParamEntry *p, int32_t pc,
-                         FalconResultSlot *out, int32_t *oc) {
-  auto pm  = unpack_params(p, pc);
+                        FalconResultSlot *out, int32_t *oc) {
+  auto pm = unpack_params(p, pc);
   auto arr = get_array(p, pc);
   const RuntimeValue &needle = pm.at("value");
   for (size_t i = 0; i < arr->elements.size(); ++i) {
-    if (arr->elements[i] == needle) {
+    // If both are shared_ptr, compare their contents
+    if (std::holds_alternative<std::shared_ptr<StructInstance>>(
+            arr->elements[i]) &&
+        std::holds_alternative<std::shared_ptr<StructInstance>>(needle)) {
+      auto lhs = std::get<std::shared_ptr<StructInstance>>(arr->elements[i]);
+      auto rhs = std::get<std::shared_ptr<StructInstance>>(needle);
+      if (lhs && rhs && *lhs == *rhs) {
+        pack_results(FunctionResult{static_cast<int64_t>(i)}, out, 16, oc);
+        return;
+      }
+    } else if (arr->elements[i] == needle) {
       pack_results(FunctionResult{static_cast<int64_t>(i)}, out, 16, oc);
       return;
     }

@@ -15,7 +15,7 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
     farray::FArray virtualization;
     connections::Connections virtualizationNames;
     int resolution;
-    Map<Connection, Quantity> interdotSpacing;
+    Map<Connection, Quantity> interdotSpacing = Map.New();
 
     start -> checkDatabaseEntries;
     // moves in the direction till experiencing blip
@@ -29,9 +29,6 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
         bool foundVirtualizationNames;
         database::DeviceCharacteristic dcharVirtualizationNames;
         dcharVirtualizationNames, foundVirtualizationNames = database::GetByName("virtualizationNames");
-        bool foundAverageInterdotSpacing;
-        database::DeviceCharacteristic dcharAverageInterdotSpacing;
-        dcharAverageInterdotSpacing, foundAverageInterdotSpacing = database::GetByName("interdotSpacing");
         if (!foundResolution) {
             log::Err("The resolution is not found in the database");
             err = errorMsg("The resolution is not found in the database");
@@ -47,19 +44,32 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
             err = errorMsg("The virtualization names is not found in the database");
             terminal;
         }
-        if (!foundAverageInterdotSpacing) {
-            log::Err("The average interdotSpacing is not found in the database");
-            err = errorMsg("The average interdotSpacing is not found in the database");
-        }
         virtualization = FArray.FromJSON(dcharVirtualization.GetValue());
         virtualizationNames = Connections.FromJSON(dcharVirtualizationNames.GetValue());
         resolution = strings::ToInt(dcharResolution.GetValue());
-        interdotSpacing, err = Map.FromJSON(dcharAverageInterdotSpacing.GetValue());
-        if (err != nil){
-            log::Err(err);
+        -> unpackInterdotSpacing(0);
+    }
+    state unpackInterdotSpacing (int index) {
+        bool foundAverageInterdotSpacing;
+        database::DeviceCharacteristicList dcharAverageInterdotSpacing;
+        database::DeviceCharacteristicQuery query = DeviceCharacteristicQuery.New()
+            .SetScope("device")
+            .SetName("interdotSpacing")
+            .SetPlungerGate(virtualizationNames[index]);
+        dcharAverageInterdotSpacing = database::GetByQuery(query);
+        if (dcharAverageInterdotSpacing.Size() != 1) {
+            log::Err("Weird number of matches found for interdotSpacing");
+            err = errorMsg("Weird number of matches found for interdotSpacing");
             terminal;
         }
-        -> performStep;
+        interdotSpacing.Set(virtualizationNames[index], Quantity.FromJSON(dcharAverageInterdotSpacing.Get(0).GetValue()));
+        index = index + 1;
+        if (index == virtualizationNames.Size()) {
+            ->performStep;
+        }
+        else {
+            -> unpackInterdotSpacing (index);
+        }
     }
     state performStep {
         point::Point startingStates = hub::CollectCurrentDeviceState().ToPoint();

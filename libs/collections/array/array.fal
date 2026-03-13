@@ -1,4 +1,4 @@
-ffimport "array-wrapper.cpp" ("/opt/falcon/include/") ()
+ffimport "array-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib/")
 
 // ---------------------------------------------------------------------------
 // Array<T> — a generic, dynamically-typed ordered list.
