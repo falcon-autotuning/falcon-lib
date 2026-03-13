@@ -3,7 +3,7 @@ import (
 "../../../physics/units/symbolUnit/symbolUnit.fal"
 "../instrument/instrument.fal"
 )
-ffimport "instrument-port-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "instrument-port-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct InstrumentPort {
     routine NewKnob (string default_name, connection::Connection conn = nil, instrument::Instrument type, symbolUnit::SymbolUnit units, string description) -> (InstrumentPort port)
     routine NewMeter (string default_name, connection::Connection conn = nil, instrument::Instrument type, symbolUnit::SymbolUnit units, string description) -> (InstrumentPort port)

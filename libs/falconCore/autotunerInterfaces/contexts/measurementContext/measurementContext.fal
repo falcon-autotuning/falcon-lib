@@ -3,7 +3,7 @@ import (
 "../../../instrumentInterfaces/names/instrumentPort/instrumentPort.fal"
 "../../../physics/deviceStructures/connection/connection.fal"
 )
-ffimport "measurement-context-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "measurement-context-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct MeasurementContext {
     routine New (connection::Connection conn, instrument::Instrument inst) -> (MeasurementContext context)
     routine Connection -> (connection::Connection conn) 

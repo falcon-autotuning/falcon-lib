@@ -138,21 +138,8 @@ std::shared_ptr<spdlog::logger> get_logger() { return get_logger_internal(); }
 
 extern "C" {
 
-void STRUCTLogNew(const FalconParamEntry *params, int32_t param_count,
-                  FalconResultSlot *out, int32_t *out_count) {
-  (void)params;
-  (void)param_count;
-  // Dummy opaque pointer to satisfy struct instantiation
-  out[0] = {};
-  out[0].tag = FALCON_TYPE_OPAQUE;
-  out[0].value.opaque.type_name = "Log";
-  out[0].value.opaque.ptr = nullptr;
-  out[0].value.opaque.deleter = [](void *) {};
-  *out_count = 1;
-}
-
-void STRUCTLogInfo(const FalconParamEntry *params, int32_t param_count,
-                   FalconResultSlot *out, int32_t *out_count) {
+void Info(const FalconParamEntry *params, int32_t param_count,
+          FalconResultSlot *out, int32_t *out_count) {
   auto pm = unpack_params(params, param_count);
   std::string message = std::get<std::string>(pm.at("message"));
   try {
@@ -164,8 +151,8 @@ void STRUCTLogInfo(const FalconParamEntry *params, int32_t param_count,
   }
 }
 
-void STRUCTLogDebug(const FalconParamEntry *params, int32_t param_count,
-                    FalconResultSlot *out, int32_t *out_count) {
+void Debug(const FalconParamEntry *params, int32_t param_count,
+           FalconResultSlot *out, int32_t *out_count) {
   auto pm = unpack_params(params, param_count);
   std::string message = std::get<std::string>(pm.at("message"));
   try {
@@ -177,8 +164,8 @@ void STRUCTLogDebug(const FalconParamEntry *params, int32_t param_count,
   }
 }
 
-void STRUCTLogWarn(const FalconParamEntry *params, int32_t param_count,
-                   FalconResultSlot *out, int32_t *out_count) {
+void Warn(const FalconParamEntry *params, int32_t param_count,
+          FalconResultSlot *out, int32_t *out_count) {
   auto pm = unpack_params(params, param_count);
   std::string message = std::get<std::string>(pm.at("message"));
   try {
@@ -190,8 +177,8 @@ void STRUCTLogWarn(const FalconParamEntry *params, int32_t param_count,
   }
 }
 
-void STRUCTLogErr(const FalconParamEntry *params, int32_t param_count,
-                  FalconResultSlot *out, int32_t *out_count) {
+void Err(const FalconParamEntry *params, int32_t param_count,
+         FalconResultSlot *out, int32_t *out_count) {
   auto pm = unpack_params(params, param_count);
   std::string message = std::get<std::string>(pm.at("message"));
   try {

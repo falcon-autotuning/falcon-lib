@@ -1,4 +1,4 @@
-ffimport "channel-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "channel-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct Channel {
     routine New (string name) -> (Channel channel)
     routine Name -> (string name)

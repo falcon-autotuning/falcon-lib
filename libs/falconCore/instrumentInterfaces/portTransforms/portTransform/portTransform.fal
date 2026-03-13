@@ -3,7 +3,7 @@ import (
 "../../../math/analyticFunction/analyticFunction.fal"
 )
 
-ffimport "port-transform-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "port-transform-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct PortTransform  { 
     routine New (instrumentPort::InstrumentPort port, analyticFunction::AnalyticFunction func) -> (PortTransform transform)
     routine ConstantTransform (instrumentPort::InstrumentPort port, float value) -> (PortTransform transform)

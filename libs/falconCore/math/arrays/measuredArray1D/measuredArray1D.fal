@@ -1,7 +1,7 @@
 import (
 "../measuredArray/measuredArray.fal"
 )
-ffimport "measured-array-1D-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "measured-array-1D-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct MeasuredArray1D {
     routine New (FArray arr) -> (MeasuredArray1D carray)
     routine Add (MeasuredArray other) -> (MeasuredArray1D carray)

@@ -1,4 +1,4 @@
-ffimport "standard-request-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "standard-request-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct StandardRequest { 
     routine New (string message) -> (StandardRequest request)
     routine Equal (StandardRequest other) -> (bool equal)

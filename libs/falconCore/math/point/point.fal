@@ -5,7 +5,7 @@ import (
 "../../physics/deviceStructures/connection/connection.fal"
 "../../physics/units/symbolUnit/symbolUnit.fal"
 )
-ffimport "point-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "point-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct Point {
     routine NewFromRaw (map::Map<connection::Connection, float> init, symbolUnit::SymbolUnit unit) -> (Point p)
     routine NewFromQuantity (map::Map<connection::Connection, quantity::Quantity> init) -> (Point p)

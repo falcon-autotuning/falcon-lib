@@ -1,7 +1,7 @@
 import (
 "../../arrays/controlArray/controlArray.fal"
 )
-ffimport "control-array-1D-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "control-array-1D-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct ControlArray1D {
     routine New (FArray arr) -> (ControlArray1D carray)
     routine Add (controlArray::ControlArray other) -> (ControlArray1D carray)

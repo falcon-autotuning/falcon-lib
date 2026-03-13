@@ -2,7 +2,7 @@ import (
 "../../../generic/farray/farray.fal"
 "../../../autotunerInterfaces/contexts/acquisitionContext/acquisitionContext.fal"
 )
-ffimport "measured-array-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "labelled-measured-array-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct LabelledMeasuredArray {
     routine New (FArray arr) -> (LabelledMeasuredArray carray)
     routine Add (MeasuredArray other) -> (LabelledMeasuredArray carray)

@@ -2,7 +2,7 @@ import (
 "../../../instrumentInterfaces/waveform/waveform.fal"
 "../../../math/domains/labelledDomain/labelledDomain.fal"
 )
-ffimport "measurement-request-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "measurement-request-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct MeasurementRequest { 
     routine New (string message, string measurement_name, array::Array<waveform::Waveform> waveforms, ports::Ports getters, map::Map<instrumentPort::InstrumentPort, portTransform::PortTransform> meterTransforms, labelledDomain::LabelledDomain timeDomain) -> (MeasurementRequest request)
     routine MeasurementName -> (string name)

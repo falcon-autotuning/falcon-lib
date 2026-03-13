@@ -5,11 +5,12 @@ import (
 "../../../libs/collections/array/array.fal"
 "../../../libs/collections/map/map.fal"
 "../../../libs/falconCore/generic/farray/farray.fal"
+"../../../libs/falconCore/physics/units/symbolUnit/symbolUnit.fal"
 "../../../libs/falconCore/communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
 "../../../libs/falconCore/physics/deviceStructures/connections/connections.fal"
 "../../../libs/falconCore/communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
-"tester.fal"
 "../hub.fal"
+"../chargeConfigurationTuner.fal"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -21,15 +22,16 @@ autotuner FirstTest -> (int passed, int failed) {
 
     state test_symmetrical(TestRunner runner, TestContext t) {
         // Call our yaml file
-        tester::RestartDevice("../2_dot.yaml");
+        hub::RestartDevice("../2_dot.yml");
         // Reset the database
+        database::InitializeSchema();
         database::ClearAll();
         // Generate stability diagram plot
-        tester::MakeStabilityDiagramPlot("./stability_diagram_2_dot.png");
+        hub::MakeStabilityDiagram("./stability_diagram_2_dot.png");
         // Set the global variables for the autotuning 
         // 1. Build a virtualization matrix 
         farray::FArray virtualization;
-        virtualization = tester::BuildVirtualizationMatrix("../2_dot.yaml");
+        virtualization = hub::BuildVirtualizationMatrix("../2_dot.yml");
         database::DeviceCharacteristic dcharVirtualization;
         dcharVirtualization = database::DeviceCharacteristic.New()
             .SetScope("device")
@@ -41,9 +43,17 @@ autotuner FirstTest -> (int passed, int failed) {
         database::DeviceCharacteristic dcharResolution = database::DeviceCharacteristic.New()
             .SetScope("device")
             .SetName("resolution")
-            .SetValue(strings::fromInt(resolution));
+            .SetValue(strings::FromInt(resolution));
         database::Insert(dcharResolution);
-        // 3. Build the virualization names variable
+        // 3. Build the interdotSpacing variable
+        // TODO: fix 
+        float interdotSpacing = 0.1;
+        database::DeviceCharacteristic dcharInterdotSpacing = database::DeviceCharacteristic.New()
+            .SetScope("device")
+            .SetName("interdotSpacing")
+            .SetValue(strings::FromDouble(interdotSpacing));
+        database::Insert(dcharInterdotSpacing);
+        // 4. Build the virualization names variable
         array::Array<connection::Connection> rawPlungerGates = hub::CollectCurrentPlungerGates(); 
         connections::Connections virtualizationNames = connections::Connections.New(rawPlungerGates);
         database::DeviceCharacteristic dcharVirtualizationNames = database::DeviceCharacteristic.New()
@@ -51,14 +61,14 @@ autotuner FirstTest -> (int passed, int failed) {
             .SetName("virtualizationNames")
             .SetValue(virtualizationNames.ToJSON());
         database::Insert(dcharVirtualizationNames);
-        // 4. Define the starting position 
-        Map<connection::Connection, quantity::Quantity> begin;
-        begin.Insert(rawPlungerGates[0], quantity::Quantity.New(-200, "mV"));
-        begin.Insert(rawPlungerGates[1], quantity::Quantity.New(-200, "mV"));
+        // 5. Define the starting position 
+        Map<connection::Connection, quantity::Quantity> begin = Map.New();
+        begin.Set(rawPlungerGates[0], quantity::Quantity.New(-200.0, symbolUnit::SymbolUnit.Millivolt()));
+        begin.Set(rawPlungerGates[1], quantity::Quantity.New(-200.0, symbolUnit::SymbolUnit.Millivolt()));
         hub::Ramp(begin);
-        // 5. Run the charge tuning autotuner
+        // 6. Run the charge tuning autotuner
         deviceVoltageStates::DeviceVoltageStates theEndState = chargeConfigurationTuner::ChargeConfigurationTuner(3,3); 
-        // 6. Check the end state is correct by making sure we are in the (3,3) cell of the stability diagram
+        // 7. Check the end state is correct by making sure we are in the (3,3) cell of the stability diagram
         // TODO: write this  check
         Error err = t.ExpectTrue(true, "Made it all the way through");
         -> __end(runner, t);

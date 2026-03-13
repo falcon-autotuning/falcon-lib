@@ -3,7 +3,7 @@ import (
 "../instrumentInterfaces/portTransforms/portTransforms/portTransforms.fal"
 "../math/domains/coupledLabelledDomain/coupledLabelledDomain.fal"
 )
-ffimport "port-transforms-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "waveform-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct Waveform  { 
     routine New (discreteSpace::DiscreteSpace space, array::Array<portTransform::PortTransform> transforms) -> (Waveform waveform)
     routine NewCartesianWaveform (axes::Axes<int> divisions, axes::Axes<coupledLabelledDomain::CoupledLabelledDomain> axes, axes::Axes<map::Map<string, bool>> increasing, array::Array<portTransform::PortTransform> transforms, domain::Domain domain) -> (Waveform waveform)

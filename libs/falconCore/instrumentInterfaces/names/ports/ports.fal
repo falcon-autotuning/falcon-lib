@@ -3,7 +3,7 @@ import (
 "../instrumentPort/instrumentPort.fal"
 "../../../../collections/array/array.fal"
 )
-ffimport "ports-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "ports-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct Ports {
     routine New (Array<instrumentPort::InstrumentPort> ports) -> (Ports ports)
     routine Ports -> (Array<instrumentPort::InstrumentPort> ports)

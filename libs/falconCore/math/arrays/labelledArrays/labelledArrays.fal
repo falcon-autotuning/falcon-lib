@@ -3,7 +3,7 @@ import (
 "../labelledControlArray/labelledControlArray.fal"
 "../../../autotunerInterfaces/acquisitionContext/acquisitionContext.fal"
 )
-ffimport "labelled-arrays-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "labelled-arrays-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct LabelledArrays <T> { // T can by LabelledMeasuredArray or LabelledControlArray
     routine NewLabelledMeasuredArrays (array::Array<T> arr) -> (LabelledArrays<T> arrays)
     routine NewLabelledControlArrays (array::Array<T> arr) -> (LabelledArrays<T> arrays)

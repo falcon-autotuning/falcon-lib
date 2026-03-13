@@ -1,9 +1,10 @@
 import (
-"hub"
-"database"
-"log"
+"./hub.fal"
+"../../libs/database/database.fal"
+"../../libs/log/log.fal"
 "../../libs/falconCore/generic/farray/farray.fal"
 "../../libs/falconCore/physics/deviceStructures/connections/connections.fal"
+"../../libs/falconCore/communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
 "../../libs/falconCore/math/point/point.fal"
 )
 // direction indicates the direction to travel for the cell center, either up or right
@@ -19,19 +20,18 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
     start -> checkDatabaseEntries;
     // moves in the direction till experiencing blip
     state checkDatabaseEntries {
-        database::Database db = database::Database::New();
         bool foundResolution;
         database::DeviceCharacteristic dcharResolution;
-        dcharResolution, foundResolution = database::GateByName("resolution");
+        dcharResolution, foundResolution = database::GetByName("resolution");
         bool foundVirtualization;
         database::DeviceCharacteristic dcharVirtualization;
         dcharVirtualization, foundVirtualization = database::GetByName("virtualization");
         bool foundVirtualizationNames;
         database::DeviceCharacteristic dcharVirtualizationNames;
-        dcharVirtualizationNames, foundVirtualizationNames = database::GetByName("virtualizationNames")
+        dcharVirtualizationNames, foundVirtualizationNames = database::GetByName("virtualizationNames");
         bool foundAverageInterdotSpacing;
         database::DeviceCharacteristic dcharAverageInterdotSpacing;
-        dcharAverageInterdotSpacing, foundAverageInterdotSpacing = database::GateByName("interdotSpacing");
+        dcharAverageInterdotSpacing, foundAverageInterdotSpacing = database::GetByName("interdotSpacing");
         if (!foundResolution) {
             log::Err("The resolution is not found in the database");
             err = errorMsg("The resolution is not found in the database");
@@ -39,7 +39,7 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
         }
         if (!foundVirtualization) {
             log::Err("The virtualization is not found in the database");
-            err = Error.Msg("The virtualization is not found in the database");
+            err = errorMsg("The virtualization is not found in the database");
             terminal;
         }
         if (!foundVirtualizationNames) {
@@ -49,11 +49,11 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
         }
         if (!foundAverageInterdotSpacing) {
             log::Err("The average interdotSpacing is not found in the database");
-            err = errorMsg("The average interdotSpacing is not found in the database"):
+            err = errorMsg("The average interdotSpacing is not found in the database");
         }
         virtualization = FArray.FromJSON(dcharVirtualization.GetValue());
-        virtualizationNames = Connections.FromJSON(dcharVirtualization.GetValue());
-        resolution, err = strings.asInt(dcharResolution.GetValue());
+        virtualizationNames = Connections.FromJSON(dcharVirtualizationNames.GetValue());
+        resolution = strings::ToInt(dcharResolution.GetValue());
         interdotSpacing, err = Map.FromJSON(dcharAverageInterdotSpacing.GetValue());
         if (err != nil){
             log::Err(err);
@@ -66,7 +66,7 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
         Quantity spacing = interdotSpacing.Get(direction);
         point::Point endstate = hub::EndState(direction, spacing, virtualization, virtualizationNames);
         int num_blips;
-        Array<deviceVoltageStates::deviceVoltageStates> locations;
+        Array<deviceVoltageStates::DeviceVoltageStates> locations;
         num_blips, locations = hub::AnalyzeBlips(startingStates.Coordinates(), endstate.Coordinates(), resolution);
         if (num_blips == 0) {
             log::Err("We found no blips");

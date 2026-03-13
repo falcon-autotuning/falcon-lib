@@ -1,4 +1,4 @@
-ffimport "interpretation-context-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "interpretation-context-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct InterpretationContext {
     routine New (axes::Axes<measurementContext::MeasurementContext> independantVariables, array::Array<measurementContext::MeasurementContext> dependantVariables, symbolUnit::SymbolUnit unit) -> (interpretationContext::InterpretationContext context)
     routine IndependentVariables -> (axes::Axes<measurementContext::MeasurementContext> contexts)

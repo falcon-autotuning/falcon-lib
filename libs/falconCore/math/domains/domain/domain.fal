@@ -1,4 +1,4 @@
-ffimport "domain-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "domain-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct Domain {
     routine New (float min, float max, bool lesser_bound_contained, bool greater_bound_contained) -> (Domain d)
     routine LesserBound() -> (float min)

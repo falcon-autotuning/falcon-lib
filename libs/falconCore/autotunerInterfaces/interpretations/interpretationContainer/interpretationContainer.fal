@@ -3,7 +3,7 @@ import (
 "../interpretationContext/interpretationContext.fal"
 "../../contexts/measurementContext/measurementContext.fal"
 )
-ffimport "interpretation-container-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "interpretation-container-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct InterpretationContainer <T> {
     routine New (map::Map<interpretationContext::InterpretationContext, T> map) -> (InterpretationContainer container)
     routine Unit -> (symbolUnit::SymbolUnit unit)

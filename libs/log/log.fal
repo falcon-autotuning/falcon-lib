@@ -1,9 +1,6 @@
-ffimport "log-wrapper.cpp" ("/opt/falcon/include/spdlog/") ("/opt/falcon/lib/libspdlog.so")
+ffimport "log-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lspdlog")
 
-struct Log {
-    routine New() -> (Log logger)
-    routine Info(string message) -> (Error err)
-    routine Debug(string message) -> (Error err)
-    routine Warn(string message) -> (Error err)
-    routine Err(string message) -> (Error err)
-}
+routine Info(string message) -> (Error err)
+routine Debug(string message) -> (Error err)
+routine Warn(string message) -> (Error err)
+routine Err(string message) -> (Error err)

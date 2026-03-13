@@ -1,4 +1,4 @@
-ffimport "standard-response-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "standard-response-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct StandardResponse { 
     routine New (string message) -> (StandardResponse response)
     routine Equal (StandardResponse other) -> (bool equal)

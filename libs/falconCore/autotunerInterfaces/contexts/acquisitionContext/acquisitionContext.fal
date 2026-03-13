@@ -5,7 +5,7 @@ import (
 "../../../physics/units/symbolUnit/symbolUnit.fal"
 "../measurementContext/measurementContext.fal"
 )
-ffimport "acquisition-context-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "acquisition-context-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct AcquisitionContext {
     routine New (connection::Connection conn, instrument::Instrument inst, symbolUnit::SymbolUnit unit) -> (AcquisitionContext context)
     routine NewFromContext (measurementContext::MeasurementContext context, symbolUnit::SymbolUnit unit) -> (AcquisitionContext context)

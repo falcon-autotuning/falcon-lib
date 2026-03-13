@@ -1,4 +1,4 @@
-ffimport "symbol-unit-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "symbol-unit-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct SymbolUnit {
     routine Meter -> (SymbolUnit unit)
     routine Kilogram -> (SymbolUnit unit)
@@ -29,8 +29,8 @@ struct SymbolUnit {
     routine Percent -> (SymbolUnit unit)
     routine Radian -> (SymbolUnit unit)
     routine Kilometer -> (SymbolUnit unit)
-    routine Miillimeter -> (SymbolUnit unit)
-    routine Miilivolt -> (SymbolUnit unit)
+    routine Millimeter -> (SymbolUnit unit)
+    routine Millivolt -> (SymbolUnit unit)
     routine Kilovolt -> (SymbolUnit unit)
     routine Milliampere -> (SymbolUnit unit)
     routine Microampere -> (SymbolUnit unit)

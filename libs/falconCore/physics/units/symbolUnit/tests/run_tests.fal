@@ -183,13 +183,13 @@ autotuner SymbolUnitConstructors -> (int passed, int failed) {
     }
 
     state test_millimeter (TestRunner runner, TestContext t) {
-        SymbolUnit u = SymbolUnit.Miillimeter();
+        SymbolUnit u = SymbolUnit.Millimeter();
         Error err = t.ExpectStrEq("mm", u.Symbol(), "Millimeter symbol is mm");
         -> __end(runner, t);
     }
 
     state test_millivolt (TestRunner runner, TestContext t) {
-        SymbolUnit u = SymbolUnit.Miilivolt();
+        SymbolUnit u = SymbolUnit.Millivolt();
         Error err = t.ExpectStrEq("mV", u.Symbol(), "Millivolt symbol is mV");
         -> __end(runner, t);
     }

@@ -5,7 +5,7 @@ import (
 "../../../physics/deviceStructures/connection/connection.fal"
 "../../../physics/units/symbolUnit/symbolUnit.fal"
 )
-ffimport "vector-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "vector-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct Vector {
     routine NewFromStart (point::Point start) -> (Vector v)
     routine New (point::Point start, point::Point end) -> (Vector v)

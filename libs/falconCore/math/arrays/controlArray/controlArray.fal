@@ -2,7 +2,7 @@ import (
 "../../../generic/farray/farray.fal"
 "../increasingAlignment/increasingAlignment.fal"
 )
-ffimport "control-array-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "control-array-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct ControlArray {
     routine New (farray::FArray arr) -> (ControlArray carray)
     routine Add (ControlArray other) -> (ControlArray carray)

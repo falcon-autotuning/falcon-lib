@@ -6,7 +6,7 @@ import (
 "../../../math/arrays/labelledControlArray/labelledControlArray.fal"
 "../../../math/domains/coupledLabelledDomain/coupledLabelledDomain.fal"
 )
-ffimport "discrete-space-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "discrete-space-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct DiscreteSpace {
     routine New (unitSpace::UnitSpace space, axes::Axes<coupledLabelledDomain::CoupledLabelledDomain> axes, axes::Axes<map::Map<string, bool>> increasing) -> (DiscreteSpace dspace)
     routine CartesianDiscreteSpace (axes::Axes<int> divisions, axes::Axes<coupledLabelledDomain::CoupledLabelledDomain> axes, axes::Axes<map::Map<string, bool>> increasing, domain::Domain domain) -> (DiscreteSpace dspace)

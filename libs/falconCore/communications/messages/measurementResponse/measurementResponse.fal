@@ -2,7 +2,7 @@ import (
 "../../../math/arrays/labelledArrays/labelledArrays.fal"
 "../../../math/arrays/labelledMeasuredArray/labelledMeasuredArray.fal"
 )
-ffimport "measurement-response-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "measurement-response-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct MeasurementResponse { 
     routine New (labelledArrays::LabelledArrays<labelledMeasuredArray::LabelledMeasuredArray> arrays) -> (MeasurementResponse response)
     routine Arrays -> (labelledArrays::LabelledArrays<labelledMeasuredArray::LabelledMeasuredArray> arrays)

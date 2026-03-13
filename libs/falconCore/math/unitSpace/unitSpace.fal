@@ -3,7 +3,7 @@ import (
 "../arrays/controlArray1D/controlArray1D.fal"
 "../discreteSpaces/discretizer/discretizer.fal"
 )
-ffimport "unit-space-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "unit-space-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct UnitSpace {
     routine New (axes::Axes<discretizer::Discretizer> axes, domain::Domain domain) -> (UnitSpace space)
     routine RaySpace (float dr, float dtheta, domain::Domain domain) -> (UnitSpace space)

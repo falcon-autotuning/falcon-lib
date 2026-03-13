@@ -3,7 +3,7 @@ import (
 "../increasingAlignment/increasingAlignment.fal"
 "../../../autotunerInterfaces/contexts/acquisitionContext/acquisitionContext.fal"
 )
-ffimport "labelled-control-array-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "labelled-control-array-1D-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct LabelledControlArray1D {
     routine New (farray::FArray arr) -> (LabelledControlArray1D carray)
     routine Add (ControlArray other) -> (LabelledControlArray1D carray)

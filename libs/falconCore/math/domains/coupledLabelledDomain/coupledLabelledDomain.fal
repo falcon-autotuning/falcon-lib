@@ -2,7 +2,7 @@ import "../../../../collections/array/array.fal";
 import "../labelledDomain/labelledDomain.fal";
 import "../../../instrumentInterfaces/names/ports/ports.fal";
 import "../../../instrumentInterfaces/names/instrumentPort/instrumentPort.fal";
-ffimport "coupled-labelled-domain-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+ffimport "coupled-labelled-domain-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct CoupledLabelledDomain {
     routine New (Array<LabelledDomain> conns) -> (CoupledLabelledDomain c)
     routine Equal (CoupledLabelledDomain other) -> (bool equal)

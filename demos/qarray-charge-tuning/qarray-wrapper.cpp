@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <dlfcn.h>
 #include <falcon-typing/FFIHelpers.hpp>
 #include <falcon_core/communications/voltage_states/DeviceVoltageState.hpp>
 #include <falcon_core/communications/voltage_states/DeviceVoltageStates.hpp>
@@ -31,6 +32,7 @@
 #include <plplot/plplotP.h>
 #include <plplot/plstream.h>
 #include <qarrayDevice/Device.hpp>
+#include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -41,10 +43,14 @@
 #include <xtensor/xadapt.hpp>
 #include <yaml-cpp/yaml.h>
 namespace {
-struct InterpreterGuard {
-  InterpreterGuard() { pybind11::scoped_interpreter guard{}; }
-};
-static InterpreterGuard interpreter_guard_instance;
+static bool python_initialized = false;
+static void ensure_python_interpreter() {
+  if (!python_initialized) {
+    dlopen("/opt/falcon/lib/libpython3.12.so", RTLD_NOW | RTLD_GLOBAL);
+    static pybind11::scoped_interpreter guard{};
+    python_initialized = true;
+  }
+}
 } // namespace
 
 using namespace falcon::typing;
@@ -78,19 +84,26 @@ using QDevice = falcon::qarray::Device;
 // pybind11 / Python atexit ordering issues).
 
 static QDevice *g_device = nullptr;
+static std::string current_config_path;
 
 // Always initialize at startup using env or default
 static void initialize_device() {
+  ensure_python_interpreter();
   const char *env_path = std::getenv("QARRAY_CONFIG_PATH");
 #ifndef QARRAY_CONFIG
 #define QARRAY_CONFIG "/opt/qarray/device.yaml"
 #endif
   std::string config_path = env_path ? env_path : QARRAY_CONFIG;
+  if (g_device != nullptr && current_config_path == config_path) {
+    // Already initialized with this config, do nothing
+    return;
+  }
   if (g_device != nullptr) {
     delete g_device;
     g_device = nullptr;
   }
   g_device = new QDevice(config_path);
+  current_config_path = config_path;
 }
 
 static QDevice &device() {
@@ -102,16 +115,30 @@ static QDevice &device() {
 
 // Restart the device singleton with a new config path
 void restart_device(const std::string &config_path) {
+  spdlog::info("The config_path is " + config_path);
+  ensure_python_interpreter();
+  if (g_device != nullptr && current_config_path == config_path) {
+    // Already initialized with this config, do nothing
+    return;
+  }
   if (g_device != nullptr) {
     delete g_device;
     g_device = nullptr;
   }
   g_device = new QDevice(config_path);
+  current_config_path = config_path;
 }
 
 // Optionally, expose this via extern "C" for FFI or module API
-extern "C" void RestartDevice(const char *config_path) {
+extern "C" void RestartDevice(const FalconParamEntry *params,
+                              int32_t param_count, FalconResultSlot *out,
+                              int32_t *oc) {
+  auto pm = unpack_params(params, param_count);
+  std::string config_path = std::get<std::string>(pm.at("configPath"));
   restart_device(config_path);
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_NIL;
+  *oc = 1;
 }
 
 // ── pack helpers
@@ -823,6 +850,7 @@ void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
     zptrs[i] = z2d[i].data();
 
   // Set up plplot device and output
+  plsetopt("bgcolor", "white");
   plsdev("pngcairo");
   plsfnam(output_filepath.c_str());
   plinit();
