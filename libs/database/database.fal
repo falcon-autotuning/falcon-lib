@@ -1,3 +1,4 @@
+import "../falconCore/physics/deviceStructures/connection/connection.fal";
 ffimport "database-wrapper.cpp" ("-I/opt/falcon/include/" "-std=c++20") ("-L/opt/falcon/lib" "-lfalcon-database" "-lpqxx")
 
 // ── DeviceCharacteristic ──────────────────────────────────────────────────────
@@ -11,8 +12,20 @@ struct DeviceCharacteristic {
     routine GetState()                        -> (string state_val)
     routine GetUnitName()                     -> (string unit_name)
     routine GetValue()                        -> (string value)
+    routine GetBarrierGate ()                 -> (Connection conn)
+    routine GetPlungerGate ()                 -> (Connection conn)
+    routine GetReservoirGate()                -> (Connection conn)
+    routine GetScreeningGate()                -> (Connection conn)
+    routine GetExtra ()                       -> (string extra)
+    routine GetUncertainty()                  -> (float uncertainty)
     routine SetScope(string scope)            -> (DeviceCharacteristic d)
     routine SetName(string name)              -> (DeviceCharacteristic d)
+    routine SetBarrierGate (Connection conn)  -> (DeviceCharacteristic d)
+    routine SetPlungerGate (Connection conn)  -> (DeviceCharacteristic d)
+    routine SetReservoirGate(Connection conn) -> (DeviceCharacteristic d)
+    routine SetScreeningGate(Connection conn) -> (DeviceCharacteristic d)
+    routine SetExtra (string extra)           -> (DeviceCharacteristic d)
+    routine SetUncertainty(float uncertainty) -> (DeviceCharacteristic d)
     routine SetHash(string hash)              -> (DeviceCharacteristic d)
     routine SetState(string state_val)        -> (DeviceCharacteristic d)
     routine SetUnitName(string unit_name)     -> (DeviceCharacteristic d)
@@ -32,11 +45,21 @@ struct DeviceCharacteristicQuery {
     routine SetState(string state_val)        -> (DeviceCharacteristicQuery q)
     routine SetHash(string hash)              -> (DeviceCharacteristicQuery q)
     routine SetUnitName(string unit_name)     -> (DeviceCharacteristicQuery q)
+    routine SetBarrierGate (Connection conn)  -> (DeviceCharacteristic d)
+    routine SetPlungerGate (Connection conn)  -> (DeviceCharacteristic d)
+    routine SetReservoirGate(Connection conn) -> (DeviceCharacteristic d)
+    routine SetScreeningGate(Connection conn) -> (DeviceCharacteristic d)
+    routine SetExtra (string extra)           -> (DeviceCharacteristic d)
     routine GetScope()                        -> (string scope)
     routine GetName()                         -> (string name)
     routine GetHash()                         -> (string hash)
     routine GetState()                        -> (string state_val)
     routine GetUnitName()                     -> (string unit_name)
+    routine GetBarrierGate ()                 -> (Connection conn)
+    routine GetPlungerGate ()                 -> (Connection conn)
+    routine GetReservoirGate()                -> (Connection conn)
+    routine GetScreeningGate()                -> (Connection conn)
+    routine GetExtra ()                       -> (string extra)
 }
 
 // ── Database ──────────────────────────────────────────────────────────────────
