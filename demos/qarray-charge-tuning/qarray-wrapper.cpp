@@ -25,6 +25,7 @@
 #include <falcon_core/math/Point.hpp>
 #include <falcon_core/math/Quantity.hpp>
 #include <falcon_core/physics/device_structures/Connection.hpp>
+#include <matplot/matplot.h>
 #include <memory>
 #include <qarrayDevice/Device.hpp>
 #include <stdexcept>
@@ -791,6 +792,65 @@ void BuildVirtualizationMatrix(const FalconParamEntry *params,
   out[0].value.opaque.deleter = [](void *p) {
     delete static_cast<std::shared_ptr<void> *>(p);
   };
+  *oc = 1;
+}
+
+void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
+                          FalconResultSlot *out, int32_t *oc) {
+  auto pm = unpack_params(params, param_count);
+  std::string output_filepath = std::get<std::string>(pm.at("outputFilepath"));
+
+  // Choose gates and sweep range
+  auto gate_names = device().gate_names();
+  if (gate_names.size() < 2) {
+    out[0] = {};
+    out[0].tag = FALCON_TYPE_NIL;
+    *oc = 1;
+    return;
+  }
+  std::string x_gate = gate_names[0];
+  std::string y_gate = gate_names[1];
+  int resolution = 100;
+  auto result =
+      device().scan_2d(x_gate, y_gate, {-1.0, 1.0}, {-1.0, 1.0}, resolution);
+
+  // differentiated_signal: flat [resolution*resolution*n_sensors], use channel
+  // 0
+  std::vector<double> data;
+  if (result.has_sensor && !result.differentiated_signal.empty()) {
+    int n_sensors = 1;
+    if (!result.differentiated_signal_shape.empty() &&
+        result.differentiated_signal_shape.size() >= 2)
+      n_sensors = result.differentiated_signal_shape[1];
+    for (int i = 0; i < resolution * resolution; ++i) {
+      int idx = i * n_sensors;
+      if (idx < result.differentiated_signal.size())
+        data.push_back(result.differentiated_signal[idx]);
+      else
+        data.push_back(0.0);
+    }
+  } else {
+    data.assign(resolution * resolution, 0.0);
+  }
+
+  // Reshape for matplotplusplus
+  std::vector<std::vector<double>> Z(resolution,
+                                     std::vector<double>(resolution));
+  for (int i = 0; i < resolution; ++i)
+    for (int j = 0; j < resolution; ++j)
+      Z[i][j] = data[i * resolution + j];
+
+  using namespace matplot;
+  auto fig = figure(true);
+  auto ax = fig->current_axes();
+  ax->xlabel(x_gate);
+  ax->ylabel(y_gate);
+  ax->title("Stability Diagram");
+  ax->imagesc(Z);
+  fig->save(output_filepath);
+
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_NIL;
   *oc = 1;
 }
 } // extern "C"
