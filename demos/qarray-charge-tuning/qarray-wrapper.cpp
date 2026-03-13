@@ -15,6 +15,7 @@
 // routine name (e.g. FUNCCollectCurrentDeviceState), matching the FAL
 // ffimport convention for top-level routines.
 
+#include "falcon_core/generic/FArray.hpp"
 #include <algorithm>
 #include <cmath>
 #include <falcon-typing/FFIHelpers.hpp>
@@ -29,6 +30,8 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <xtensor/xadapt.hpp>
+#include <yaml-cpp/yaml.h>
 
 using namespace falcon::typing;
 using namespace falcon::typing::ffi::wrapper;
@@ -757,4 +760,37 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
   }
 }
 
+void BuildVirtualizationMatrix(const FalconParamEntry *params,
+                               int32_t param_count, FalconResultSlot *out,
+                               int32_t *oc) {
+  // Unpack configPath from params
+  auto pm = unpack_params(params, param_count);
+  std::string config_path = std::get<std::string>(pm.at("configPath"));
+
+  // Load YAML and extract Cgd
+  YAML::Node config = YAML::LoadFile(config_path);
+  const YAML::Node &cgd = config["capacitances"]["Cgd"];
+  std::vector<std::vector<double>> values;
+  for (const auto &row : cgd) {
+    std::vector<double> r;
+    for (const auto &v : row)
+      r.push_back(v.as<double>());
+    values.push_back(r);
+  }
+  xt::xarray<double> arr = xt::adapt(values);
+
+  // Pack into FArray<double>
+  auto farr = std::make_shared<falcon_core::generic::FArray<double>>(arr);
+
+  // Pack as FFI result
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_OPAQUE;
+  out[0].value.opaque.type_name = "FArray";
+  out[0].value.opaque.ptr =
+      new std::shared_ptr<void>(std::static_pointer_cast<void>(farr));
+  out[0].value.opaque.deleter = [](void *p) {
+    delete static_cast<std::shared_ptr<void> *>(p);
+  };
+  *oc = 1;
+}
 } // extern "C"
