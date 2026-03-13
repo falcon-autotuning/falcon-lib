@@ -26,6 +26,7 @@
 #include <falcon_core/math/Point.hpp>
 #include <falcon_core/math/Quantity.hpp>
 #include <falcon_core/physics/device_structures/Connection.hpp>
+#include <falcon_core/physics/device_structures/Connections.hpp>
 #include <matplot/matplot.h>
 #include <memory>
 #include <plplot/plplot.h>
@@ -64,6 +65,10 @@ using DeviceVoltageStates =
 using DeviceVoltageStatesSP = std::shared_ptr<DeviceVoltageStates>;
 using Connection = falcon_core::physics::device_structures::Connection;
 using ConnectionSP = std::shared_ptr<Connection>;
+using Connections = falcon_core::physics::device_structures::Connections;
+using ConnectionsSP = std::shared_ptr<Connections>;
+using FArray = falcon_core::generic::FArray<double>;
+using FArraySP = std::shared_ptr<FArray>;
 using Quantity = falcon_core::math::Quantity;
 using QuantitySP = std::shared_ptr<Quantity>;
 using SymbolUnit = falcon_core::physics::units::SymbolUnit;
@@ -225,24 +230,30 @@ static void pack_dvss_array(std::vector<DeviceVoltageStatesSP> items,
 
 // Helper: retrieve the ArrayValue for a named field inside a StructInstance.
 static std::shared_ptr<ArrayValue>
-field_array(const std::shared_ptr<StructInstance> &inst, const char *field) {
-  auto it = inst->fields->find(field);
-  if (it == inst->fields->end()) {
+get_struct_field_array(const std::shared_ptr<StructInstance> &inst,
+                       const char *field_name) {
+  if (!inst)
     throw std::runtime_error(
-        std::string("qarray-wrapper: Map StructInstance missing field '") +
-        field + "'");
-  }
+        std::string("get_struct_field_array: null StructInstance for field '") +
+        field_name + "'");
+  // Fields are stored in inst->fields as RuntimeValue entries keyed by name.
+  auto it = inst->fields->find(field_name);
+  if (it == inst->fields->end())
+    throw std::runtime_error(std::string("get_struct_field_array: field '") +
+                             field_name + "' not found in StructInstance");
   const RuntimeValue &fv = it->second;
-  if (!std::holds_alternative<std::shared_ptr<StructInstance>>(fv)) {
-    throw std::runtime_error(std::string("qarray-wrapper: Map field '") +
-                             field + "' is not a StructInstance");
+  // The field itself is an Array, represented as a nested StructInstance
+  // carrying native_handle = shared_ptr<void> aliasing an ArrayValue.
+  if (std::holds_alternative<std::shared_ptr<StructInstance>>(fv)) {
+    auto farr_inst = std::get<std::shared_ptr<StructInstance>>(fv);
+    if (farr_inst && farr_inst->native_handle.has_value()) {
+      return std::static_pointer_cast<ArrayValue>(
+          farr_inst->native_handle.value());
+    }
   }
-  auto arr_inst = std::get<std::shared_ptr<StructInstance>>(fv);
-  if (!arr_inst || !arr_inst->native_handle.has_value()) {
-    throw std::runtime_error(std::string("qarray-wrapper: Map field '") +
-                             field + "' StructInstance has no native_handle");
-  }
-  return std::static_pointer_cast<ArrayValue>(arr_inst->native_handle.value());
+  throw std::runtime_error(std::string("get_struct_field_array: field '") +
+                           field_name +
+                           "' is not a StructInstance with a native_handle");
 }
 
 // Helper: get a DSL Map StructInstance from the param list by name.
@@ -317,8 +328,8 @@ get_array_param(const FalconParamEntry *params, int32_t count,
 //   value = Quantity   StructInstance  → convert to Volt, then q->value()
 static std::map<std::string, double>
 dsl_map_to_volt_map(const std::shared_ptr<StructInstance> &map_inst) {
-  auto keys_arr = field_array(map_inst, "keys_");
-  auto vals_arr = field_array(map_inst, "values_");
+  auto keys_arr = get_struct_field_array(map_inst, "keys_");
+  auto vals_arr = get_struct_field_array(map_inst, "values_");
 
   if (keys_arr->elements.size() != vals_arr->elements.size()) {
     throw std::runtime_error(
@@ -632,28 +643,12 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
         get_opaque_param<Connection>(params, param_count, "direction");
     auto spacing = get_opaque_param<Quantity>(params, param_count, "spacing");
     auto virtualization_arr =
-        get_array_param(params, param_count, "virtualization");
+        get_opaque_param<FArray>(params, param_count, "virtualization");
     auto virtual_names_arr =
-        get_array_param(params, param_count, "virtualNames");
+        get_opaque_param<Connections>(params, param_count, "virtualNames");
 
     // Extract virtual names as a vector of Connections
-    std::vector<ConnectionSP> virtual_names;
-    virtual_names.reserve(virtual_names_arr->elements.size());
-
-    for (const auto &elem : virtual_names_arr->elements) {
-      if (!std::holds_alternative<std::shared_ptr<StructInstance>>(elem)) {
-        throw std::runtime_error(
-            "EndState: virtualNames element is not a StructInstance");
-      }
-      auto conn_inst = std::get<std::shared_ptr<StructInstance>>(elem);
-      if (!conn_inst || !conn_inst->native_handle.has_value()) {
-        throw std::runtime_error(
-            "EndState: virtualNames element has no native_handle");
-      }
-      virtual_names.push_back(std::static_pointer_cast<Connection>(
-          conn_inst->native_handle.value()));
-    }
-
+    std::vector<ConnectionSP> virtual_names = virtual_names_arr->items();
     const int n_gates = static_cast<int>(virtual_names.size());
 
     // Step 1: Create a unit vector for the direction
@@ -670,84 +665,57 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
     }
 
     if (!direction_found) {
-      throw std::runtime_error(
-          "EndState: direction Connection not found in virtualNames");
-    }
-
-    // Step 2: Extract the virtualization matrix from the FArray
-    // FArray is a 2D array of floats in row-major order: [n_gates x n_gates]
-    std::vector<double> virt_matrix;
-    virt_matrix.reserve(virtualization_arr->elements.size());
-
-    for (const auto &elem : virtualization_arr->elements) {
-      double value = 0.0;
-      if (std::holds_alternative<int64_t>(elem)) {
-        value = static_cast<double>(std::get<int64_t>(elem));
-      } else if (std::holds_alternative<double>(elem)) {
-        value = std::get<double>(elem);
-      } else {
-        throw std::runtime_error(
-            "EndState: virtualization matrix element is not numeric");
+      std::string available_names;
+      for (const auto &conn : virtual_names) {
+        available_names += fmt::format("[{}:{}] ", conn->name(), conn->type());
       }
-      virt_matrix.push_back(value);
-    }
-
-    if (virt_matrix.size() != static_cast<size_t>(n_gates * n_gates)) {
-      throw std::runtime_error(
-          "EndState: virtualization matrix size mismatch (expected " +
-          std::to_string(n_gates * n_gates) + ", got " +
-          std::to_string(virt_matrix.size()) + ")");
+      throw std::runtime_error(fmt::format(
+          "EndState: direction Connection not found in virtualNames. The "
+          "current direction is {} and the type is {}. The virtualNames that "
+          "are available are {}",
+          direction->name(), direction->type(), available_names));
     }
 
     // Step 3: Compute the inverse of the virtualization matrix (using Gaussian
     // elimination)
-    std::vector<double> virt_inv = virt_matrix;
-    std::vector<double> identity(n_gates * n_gates, 0.0);
-    for (int i = 0; i < n_gates; ++i) {
-      identity[i * n_gates + i] = 1.0;
-    }
-
-    // Forward elimination
+    xt::xarray<double> virt_matrix =
+        virtualization_arr->data(); // shape: {n_gates, n_gates}
+    xt::xarray<double> identity = xt::eye<double>(n_gates); // identity matrix
     for (int i = 0; i < n_gates; ++i) {
       // Find pivot
       int pivot_row = i;
       for (int j = i + 1; j < n_gates; ++j) {
-        if (std::abs(virt_inv[j * n_gates + i]) >
-            std::abs(virt_inv[pivot_row * n_gates + i])) {
+        if (std::abs(virt_matrix(j, i)) > std::abs(virt_matrix(pivot_row, i))) {
           pivot_row = j;
         }
       }
-
       // Swap rows
       if (pivot_row != i) {
-        for (int j = 0; j < n_gates; ++j) {
-          std::swap(virt_inv[i * n_gates + j],
-                    virt_inv[pivot_row * n_gates + j]);
-          std::swap(identity[i * n_gates + j],
-                    identity[pivot_row * n_gates + j]);
-        }
+        xt::view(virt_matrix, i) = xt::view(virt_matrix, pivot_row);
+        xt::view(virt_matrix, pivot_row) = xt::view(virt_matrix, i);
+        xt::view(identity, i) = xt::view(identity, pivot_row);
+        xt::view(identity, pivot_row) = xt::view(identity, i);
       }
-
       // Check for singular matrix
-      if (std::abs(virt_inv[i * n_gates + i]) < 1e-10) {
-        throw std::runtime_error(
-            "EndState: virtualization matrix is singular or ill-conditioned");
+      if (std::abs(virt_matrix(i, i)) < 1e-10) {
+        throw std::runtime_error("Matrix is singular or ill-conditioned");
       }
-
       // Eliminate column
-      double pivot = virt_inv[i * n_gates + i];
-      for (int j = 0; j < n_gates; ++j) {
-        virt_inv[i * n_gates + j] /= pivot;
-        identity[i * n_gates + j] /= pivot;
-      }
-
+      double pivot = virt_matrix(i, i);
+      auto row = xt::view(virt_matrix, i, xt::all());
+      row = row / pivot;
+      auto id_row = xt::view(identity, i, xt::all());
+      id_row = id_row / pivot;
       for (int j = 0; j < n_gates; ++j) {
         if (i != j) {
-          double factor = virt_inv[j * n_gates + i];
-          for (int k = 0; k < n_gates; ++k) {
-            virt_inv[j * n_gates + k] -= factor * virt_inv[i * n_gates + k];
-            identity[j * n_gates + k] -= factor * identity[i * n_gates + k];
-          }
+          double factor = virt_matrix(j, i);
+          auto row_j = xt::view(virt_matrix, j, xt::all());
+          auto row_i = xt::view(virt_matrix, i, xt::all());
+          row_j = row_j - factor * row_i;
+
+          auto id_row_j = xt::view(identity, j, xt::all());
+          auto id_row_i = xt::view(identity, i, xt::all());
+          id_row_j = id_row_j - factor * id_row_i;
         }
       }
     }
@@ -757,7 +725,7 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
     std::vector<double> result_vector(n_gates, 0.0);
     for (int i = 0; i < n_gates; ++i) {
       for (int j = 0; j < n_gates; ++j) {
-        result_vector[i] += identity[i * n_gates + j] * unit_vector[j];
+        result_vector[i] += identity(i, j) * unit_vector[j];
       }
     }
 

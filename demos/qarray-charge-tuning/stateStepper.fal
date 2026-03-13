@@ -1,6 +1,7 @@
 import (
 "./hub.fal"
 "../../libs/database/database.fal"
+"../../libs/strings/strings.fal"
 "../../libs/log/log.fal"
 "../../libs/falconCore/generic/farray/farray.fal"
 "../../libs/falconCore/physics/deviceStructures/connections/connections.fal"
@@ -45,7 +46,9 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
             terminal;
         }
         virtualization = FArray.FromJSON(dcharVirtualization.GetValue());
+        log::Warn(strings::Concat("The available virtual names are ",dcharVirtualizationNames.GetValue()));
         virtualizationNames = Connections.FromJSON(dcharVirtualizationNames.GetValue());
+        log::Warn(strings::Concat("After unserialization the first named Connection is ", virtualizationNames[0].Name()));
         resolution = strings::ToInt(dcharResolution.GetValue());
         -> unpackInterdotSpacing(0);
     }
@@ -74,6 +77,7 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
     state performStep {
         point::Point startingStates = hub::CollectCurrentDeviceState().ToPoint();
         Quantity spacing = interdotSpacing.Get(direction);
+        log::Warn(strings::Concat("After unserialization in performStep the first named Connection is ", virtualizationNames[0].Name()));
         point::Point endstate = hub::EndState(direction, spacing, virtualization, virtualizationNames);
         int num_blips;
         Array<deviceVoltageStates::DeviceVoltageStates> locations;
