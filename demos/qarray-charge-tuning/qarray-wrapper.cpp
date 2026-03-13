@@ -8,17 +8,21 @@
 //                Map<Connection,Quantity> stop,
 //                int resolution)
 //       -> (int num_blips, Array<DeviceVoltageStates> locations)
+//   EndState(Connection direction, Quantity spacing, FArray virtualization,
+//            Connections virtualNames) -> (Point endstate)
 //
 // Naming convention for free routines: the function symbol is just the
 // routine name (e.g. FUNCCollectCurrentDeviceState), matching the FAL
 // ffimport convention for top-level routines.
 
+#include "falcon_core/generic/FArray.hpp"
 #include <algorithm>
 #include <cmath>
 #include <falcon-typing/FFIHelpers.hpp>
 #include <falcon_core/communications/voltage_states/DeviceVoltageState.hpp>
 #include <falcon_core/communications/voltage_states/DeviceVoltageStates.hpp>
 #include <falcon_core/generic/List.hpp>
+#include <falcon_core/math/Point.hpp>
 #include <falcon_core/math/Quantity.hpp>
 #include <falcon_core/physics/device_structures/Connection.hpp>
 #include <memory>
@@ -26,6 +30,8 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <xtensor/xadapt.hpp>
+#include <yaml-cpp/yaml.h>
 
 using namespace falcon::typing;
 using namespace falcon::typing::ffi::wrapper;
@@ -42,10 +48,12 @@ using Quantity = falcon_core::math::Quantity;
 using QuantitySP = std::shared_ptr<Quantity>;
 using SymbolUnit = falcon_core::physics::units::SymbolUnit;
 using SymbolUnitSP = std::shared_ptr<SymbolUnit>;
+using Point = falcon_core::math::Point;
+using PointSP = std::shared_ptr<Point>;
 using QDevice = falcon::qarray::Device;
 
 // ── Module-level singleton device
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 //
 // The Device embeds CPython via pybind11.  Only one interpreter may be active
 // per process, and Device construction is expensive, so we keep a single
@@ -57,19 +65,43 @@ using QDevice = falcon::qarray::Device;
 
 static QDevice *g_device = nullptr;
 
-static QDevice &device() {
-  if (g_device == nullptr) {
-    // Default config path — override by recompiling with -DQARRAY_CONFIG=...
+// Always initialize at startup using env or default
+static void initialize_device() {
+  const char *env_path = std::getenv("QARRAY_CONFIG_PATH");
 #ifndef QARRAY_CONFIG
 #define QARRAY_CONFIG "/opt/qarray/device.yaml"
 #endif
-    g_device = new QDevice(QARRAY_CONFIG);
+  std::string config_path = env_path ? env_path : QARRAY_CONFIG;
+  if (g_device != nullptr) {
+    delete g_device;
+    g_device = nullptr;
+  }
+  g_device = new QDevice(config_path);
+}
+
+static QDevice &device() {
+  if (g_device == nullptr) {
+    initialize_device();
   }
   return *g_device;
 }
 
+// Restart the device singleton with a new config path
+void restart_device(const std::string &config_path) {
+  if (g_device != nullptr) {
+    delete g_device;
+    g_device = nullptr;
+  }
+  g_device = new QDevice(config_path);
+}
+
+// Optionally, expose this via extern "C" for FFI or module API
+extern "C" void RestartDevice(const char *config_path) {
+  restart_device(config_path);
+}
+
 // ── pack helpers
-// ──────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────
 
 static void pack_dvss(DeviceVoltageStatesSP dvss, FalconResultSlot *out,
                       int32_t *oc) {
@@ -79,6 +111,18 @@ static void pack_dvss(DeviceVoltageStatesSP dvss, FalconResultSlot *out,
   out[0].value.opaque.ptr = new DeviceVoltageStatesSP(std::move(dvss));
   out[0].value.opaque.deleter = [](void *p) {
     delete static_cast<DeviceVoltageStatesSP *>(p);
+  };
+  *oc = 1;
+}
+
+// Pack a Point as a DSL-compatible opaque.
+static void pack_point(PointSP point, FalconResultSlot *out, int32_t *oc) {
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_OPAQUE;
+  out[0].value.opaque.type_name = "Point";
+  out[0].value.opaque.ptr = new PointSP(std::move(point));
+  out[0].value.opaque.deleter = [](void *p) {
+    delete static_cast<PointSP *>(p);
   };
   *oc = 1;
 }
@@ -185,6 +229,46 @@ get_map_param(const FalconParamEntry *params, int32_t count, const char *key) {
                            "' not found");
 }
 
+// Helper: get a DSL opaque parameter (Connection, Point, etc.) by name.
+template <typename T>
+static std::shared_ptr<T> get_opaque_param(const FalconParamEntry *params,
+                                           int32_t count, const char *key) {
+  for (int32_t i = 0; i < count; ++i) {
+    if (std::strcmp(params[i].key, key) != 0) {
+      continue;
+    }
+    const FalconParamEntry &e = params[i];
+    if (e.tag != FALCON_TYPE_OPAQUE) {
+      throw std::runtime_error(std::string("qarray-wrapper: parameter '") +
+                               key + "' is not OPAQUE");
+    }
+    auto sv = *static_cast<std::shared_ptr<void> *>(e.value.opaque.ptr);
+    return std::static_pointer_cast<T>(sv);
+  }
+  throw std::runtime_error(std::string("qarray-wrapper: parameter '") + key +
+                           "' not found");
+}
+
+// Helper: get a DSL Array parameter by name.
+static std::shared_ptr<ArrayValue>
+get_array_param(const FalconParamEntry *params, int32_t count,
+                const char *key) {
+  for (int32_t i = 0; i < count; ++i) {
+    if (std::strcmp(params[i].key, key) != 0) {
+      continue;
+    }
+    const FalconParamEntry &e = params[i];
+    if (e.tag != FALCON_TYPE_OPAQUE) {
+      throw std::runtime_error(std::string("qarray-wrapper: parameter '") +
+                               key + "' is not OPAQUE");
+    }
+    auto sv = *static_cast<std::shared_ptr<void> *>(e.value.opaque.ptr);
+    return std::static_pointer_cast<ArrayValue>(sv);
+  }
+  throw std::runtime_error(std::string("qarray-wrapper: parameter '") + key +
+                           "' not found");
+}
+
 // Convert a DSL Map<Connection,Quantity> to std::map<string,double> in Volts.
 //
 // For each parallel entry i:
@@ -244,7 +328,7 @@ dsl_map_to_volt_map(const std::shared_ptr<StructInstance> &map_inst) {
 }
 
 // ── build_dvss_from_volt_map
-// ──────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────
 //
 // Given a std::map<string,double> of gate→voltage-in-Volts, construct a
 // DeviceVoltageStates where each entry is:
@@ -307,7 +391,7 @@ static std::vector<int> detect_peaks(const std::vector<double> &signal,
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Exported FFI functions
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────��───────────────────────────────────────
 
 extern "C" {
 
@@ -343,7 +427,7 @@ void CollectCurrentPlungerGates(const FalconParamEntry * /*params*/,
 }
 
 // ── Ramp(stop: Map<Connection,Quantity>) -> ()
-// ────────────────────────────────
+// ────────────────────────────────────
 //
 // Convert the DSL Map<Connection,Quantity> stop to std::map<string,double>
 // in Volts, then call device().scan_ray(current_voltages, stop, resolution=4).
@@ -487,4 +571,226 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
   *oc = 2;
 }
 
+// ── EndState(direction, spacing, virtualization, virtualNames)
+//       -> (Point endstate)
+//       ────────────────────────────────────────────────────
+//
+// Algorithm:
+// 1. Create a unit vector where the index corresponding to the `direction`
+//    Connection (as found in virtualNames) is 1.0, all others are 0.0.
+// 2. Multiply this unit vector by the inverse of the virtualization matrix.
+// 3. Scale the result by the spacing Quantity.
+// 4. Get the current device state (DeviceVoltageStates → Point).
+// 5. Add the calculated vector to the current state for matching Connections.
+// 6. Return the resulting Point.
+void EndState(const FalconParamEntry *params, int32_t param_count,
+              FalconResultSlot *out, int32_t *oc) {
+  try {
+    // Unpack parameters
+    auto direction =
+        get_opaque_param<Connection>(params, param_count, "direction");
+    auto spacing = get_opaque_param<Quantity>(params, param_count, "spacing");
+    auto virtualization_arr =
+        get_array_param(params, param_count, "virtualization");
+    auto virtual_names_arr =
+        get_array_param(params, param_count, "virtualNames");
+
+    // Extract virtual names as a vector of Connections
+    std::vector<ConnectionSP> virtual_names;
+    virtual_names.reserve(virtual_names_arr->elements.size());
+
+    for (const auto &elem : virtual_names_arr->elements) {
+      if (!std::holds_alternative<std::shared_ptr<StructInstance>>(elem)) {
+        throw std::runtime_error(
+            "EndState: virtualNames element is not a StructInstance");
+      }
+      auto conn_inst = std::get<std::shared_ptr<StructInstance>>(elem);
+      if (!conn_inst || !conn_inst->native_handle.has_value()) {
+        throw std::runtime_error(
+            "EndState: virtualNames element has no native_handle");
+      }
+      virtual_names.push_back(std::static_pointer_cast<Connection>(
+          conn_inst->native_handle.value()));
+    }
+
+    const int n_gates = static_cast<int>(virtual_names.size());
+
+    // Step 1: Create a unit vector for the direction
+    std::vector<double> unit_vector(n_gates, 0.0);
+    bool direction_found = false;
+
+    for (int i = 0; i < n_gates; ++i) {
+      if (virtual_names[i]->name() == direction->name() &&
+          virtual_names[i]->type() == direction->type()) {
+        unit_vector[i] = 1.0;
+        direction_found = true;
+        break;
+      }
+    }
+
+    if (!direction_found) {
+      throw std::runtime_error(
+          "EndState: direction Connection not found in virtualNames");
+    }
+
+    // Step 2: Extract the virtualization matrix from the FArray
+    // FArray is a 2D array of floats in row-major order: [n_gates x n_gates]
+    std::vector<double> virt_matrix;
+    virt_matrix.reserve(virtualization_arr->elements.size());
+
+    for (const auto &elem : virtualization_arr->elements) {
+      double value = 0.0;
+      if (std::holds_alternative<int64_t>(elem)) {
+        value = static_cast<double>(std::get<int64_t>(elem));
+      } else if (std::holds_alternative<double>(elem)) {
+        value = std::get<double>(elem);
+      } else {
+        throw std::runtime_error(
+            "EndState: virtualization matrix element is not numeric");
+      }
+      virt_matrix.push_back(value);
+    }
+
+    if (virt_matrix.size() != static_cast<size_t>(n_gates * n_gates)) {
+      throw std::runtime_error(
+          "EndState: virtualization matrix size mismatch (expected " +
+          std::to_string(n_gates * n_gates) + ", got " +
+          std::to_string(virt_matrix.size()) + ")");
+    }
+
+    // Step 3: Compute the inverse of the virtualization matrix (using Gaussian
+    // elimination)
+    std::vector<double> virt_inv = virt_matrix;
+    std::vector<double> identity(n_gates * n_gates, 0.0);
+    for (int i = 0; i < n_gates; ++i) {
+      identity[i * n_gates + i] = 1.0;
+    }
+
+    // Forward elimination
+    for (int i = 0; i < n_gates; ++i) {
+      // Find pivot
+      int pivot_row = i;
+      for (int j = i + 1; j < n_gates; ++j) {
+        if (std::abs(virt_inv[j * n_gates + i]) >
+            std::abs(virt_inv[pivot_row * n_gates + i])) {
+          pivot_row = j;
+        }
+      }
+
+      // Swap rows
+      if (pivot_row != i) {
+        for (int j = 0; j < n_gates; ++j) {
+          std::swap(virt_inv[i * n_gates + j],
+                    virt_inv[pivot_row * n_gates + j]);
+          std::swap(identity[i * n_gates + j],
+                    identity[pivot_row * n_gates + j]);
+        }
+      }
+
+      // Check for singular matrix
+      if (std::abs(virt_inv[i * n_gates + i]) < 1e-10) {
+        throw std::runtime_error(
+            "EndState: virtualization matrix is singular or ill-conditioned");
+      }
+
+      // Eliminate column
+      double pivot = virt_inv[i * n_gates + i];
+      for (int j = 0; j < n_gates; ++j) {
+        virt_inv[i * n_gates + j] /= pivot;
+        identity[i * n_gates + j] /= pivot;
+      }
+
+      for (int j = 0; j < n_gates; ++j) {
+        if (i != j) {
+          double factor = virt_inv[j * n_gates + i];
+          for (int k = 0; k < n_gates; ++k) {
+            virt_inv[j * n_gates + k] -= factor * virt_inv[i * n_gates + k];
+            identity[j * n_gates + k] -= factor * identity[i * n_gates + k];
+          }
+        }
+      }
+    }
+
+    // Step 4: Multiply inverse matrix by unit vector
+    // result = inv(virtualization) * unit_vector
+    std::vector<double> result_vector(n_gates, 0.0);
+    for (int i = 0; i < n_gates; ++i) {
+      for (int j = 0; j < n_gates; ++j) {
+        result_vector[i] += identity[i * n_gates + j] * unit_vector[j];
+      }
+    }
+
+    // Step 5: Scale by spacing Quantity
+    auto volt_unit = SymbolUnit::Volt();
+    auto spacing_copy = std::make_shared<Quantity>(*spacing);
+    spacing_copy->convert_to(volt_unit);
+    double spacing_value = spacing_copy->value();
+
+    for (double &v : result_vector) {
+      v *= spacing_value;
+    }
+
+    // Step 6: Get current device state and create adjustment Point
+    const auto &current_voltages = device().voltages();
+    auto adjustment = std::make_shared<Point>();
+
+    for (int i = 0; i < n_gates; ++i) {
+      auto conn = virtual_names[i];
+      auto qty = std::make_shared<Quantity>(result_vector[i], volt_unit);
+      adjustment->insert(conn, qty);
+    }
+
+    // Step 7: Get current state as Point
+    auto current_state = build_dvss_from_volt_map(current_voltages);
+    auto current_point = current_state->to_point();
+
+    // Step 8: Add adjustment to current state
+    // Point supports addition operator
+    auto final_point = current_point->operator+(adjustment);
+
+    // Pack and return
+    pack_point(std::move(final_point), out, oc);
+
+  } catch (const std::exception &e) {
+    // Error handling: set error result
+    out[0] = {};
+    out[0].tag = FALCON_TYPE_NIL;
+    *oc = 1;
+    throw;
+  }
+}
+
+void BuildVirtualizationMatrix(const FalconParamEntry *params,
+                               int32_t param_count, FalconResultSlot *out,
+                               int32_t *oc) {
+  // Unpack configPath from params
+  auto pm = unpack_params(params, param_count);
+  std::string config_path = std::get<std::string>(pm.at("configPath"));
+
+  // Load YAML and extract Cgd
+  YAML::Node config = YAML::LoadFile(config_path);
+  const YAML::Node &cgd = config["capacitances"]["Cgd"];
+  std::vector<std::vector<double>> values;
+  for (const auto &row : cgd) {
+    std::vector<double> r;
+    for (const auto &v : row)
+      r.push_back(v.as<double>());
+    values.push_back(r);
+  }
+  xt::xarray<double> arr = xt::adapt(values);
+
+  // Pack into FArray<double>
+  auto farr = std::make_shared<falcon_core::generic::FArray<double>>(arr);
+
+  // Pack as FFI result
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_OPAQUE;
+  out[0].value.opaque.type_name = "FArray";
+  out[0].value.opaque.ptr =
+      new std::shared_ptr<void>(std::static_pointer_cast<void>(farr));
+  out[0].value.opaque.deleter = [](void *p) {
+    delete static_cast<std::shared_ptr<void> *>(p);
+  };
+  *oc = 1;
+}
 } // extern "C"
