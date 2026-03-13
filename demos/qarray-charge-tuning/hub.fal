@@ -9,8 +9,8 @@ import (
   "../../libs/falconCore/generic/farray/farray.fal"
 )
 ffimport "qarray-wrapper.cpp" (
-  "/opt/falcon/include"
-  "/opt/falcon/include/python3.12"
+  "-I/opt/falcon/include"
+  "-I/opt/falcon/include/python3.12"
 ) (
   "-L/opt/falcon/lib"
   "-lfalcon-qarrayDevice"

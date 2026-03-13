@@ -46,9 +46,7 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
             terminal;
         }
         virtualization = FArray.FromJSON(dcharVirtualization.GetValue());
-        log::Warn(strings::Concat("The available virtual names are ",dcharVirtualizationNames.GetValue()));
         virtualizationNames = Connections.FromJSON(dcharVirtualizationNames.GetValue());
-        log::Warn(strings::Concat("After unserialization the first named Connection is ", virtualizationNames[0].Name()));
         resolution = strings::ToInt(dcharResolution.GetValue());
         -> unpackInterdotSpacing(0);
     }
