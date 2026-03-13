@@ -1,9 +1,0 @@
-autotuner Main() -> (int result) {
-    bool completed = false;
-    start -> init;
-
-    state init {
-        result = int("5");
-        terminal;
-    }
-}

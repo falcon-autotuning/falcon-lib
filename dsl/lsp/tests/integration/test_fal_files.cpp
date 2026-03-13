@@ -154,13 +154,3 @@ TEST(FalFilesIntegration, ForeignFunctionRoutine) {
       << "Parse errors in routine.fal: "
       << (doc.parse_errors.empty() ? "" : doc.parse_errors[0].message);
 }
-
-// ---- type coercion ----
-
-TEST(FalFilesIntegration, TypeCoercion) {
-  auto doc = parse_file("expressions/coercion-test.fal");
-  EXPECT_NE(doc.program, nullptr);
-  EXPECT_TRUE(doc.parse_errors.empty())
-      << "Parse errors in coercion-test.fal: "
-      << (doc.parse_errors.empty() ? "" : doc.parse_errors[0].message);
-}

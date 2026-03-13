@@ -46,6 +46,26 @@ routine IndexOf     (string s, string sub)              -> (int index)
 // Remove all ANSI / VT100 escape sequences from `s` (e.g. colour codes).
 routine StripAnsi   (string s)                          -> (string result)
 
+// ── Conversion ────────────────────────────────────────────────────────────────
+
+// Convert an integer to its string representation.
+routine FromInt     (int i)                             -> (string result)
+
+// Convert a double to its string representation.
+routine FromDouble  (float f)                           -> (string result)
+
+// Convert a boolean to "true" or "false".
+routine FromBool    (bool b)                            -> (string result)
+
+// Parse an integer from its string representation.
+routine ToInt       (string s)                          -> (int result)
+
+// Parse a double from its string representation.
+routine ToDouble    (string s)                          -> (float result)
+
+// Parse a boolean from "true"/"1" or "false"/"0".
+routine ToBool      (string s)                          -> (bool result)
+
 // ── Regex ─────────────────────────────────────────────────────────────────────
 
 // RegexMatch — holds the result of a single regex search.

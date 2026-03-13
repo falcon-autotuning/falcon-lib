@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/cmake_install.cmake",
-		"/home/tylerk/falcon-dev/falcon-lib/qarrayDevice/build/debug/tests/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
