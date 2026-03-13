@@ -1,7 +1,11 @@
 find_package(GTest CONFIG REQUIRED)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PLPLOT REQUIRED IMPORTED_TARGET plplot)
+
 add_executable(falcon_qarrayDevice_tests
   test_device.cpp
+  test_visual.cpp
 )
 
 target_include_directories(falcon_qarrayDevice_tests
@@ -14,6 +18,7 @@ target_link_libraries(falcon_qarrayDevice_tests
     falcon-qarrayDevice
     GTest::gtest        # NOT GTest::gtest_main — we define our own main()
     pybind11::embed     # needed for scoped_interpreter in test_device.cpp
+    PkgConfig::PLPLOT
 )
 
 include(GoogleTest)

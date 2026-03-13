@@ -27,7 +27,6 @@
 #include <falcon_core/math/Quantity.hpp>
 #include <falcon_core/physics/device_structures/Connection.hpp>
 #include <falcon_core/physics/device_structures/Connections.hpp>
-#include <matplot/matplot.h>
 #include <memory>
 #include <plplot/plplot.h>
 #include <plplot/plplotP.h>

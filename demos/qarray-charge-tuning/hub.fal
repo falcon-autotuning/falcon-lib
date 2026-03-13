@@ -1,12 +1,16 @@
 import (
-"../../libs/falconCore/communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
-"../../libs/collections/map/map.fal"
-"../../libs/falconCore/math/quantity/quantity.fal"
-"../../libs/falconCore/physics/deviceStructures/connection/connection.fal"
+  "../../libs/falconCore/communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
+  "../../libs/collections/map/map.fal"
+  "../../libs/collections/array/array.fal"
+  "../../libs/falconCore/math/quantity/quantity.fal"
+  "../../libs/falconCore/math/point/point.fal"
+  "../../libs/falconCore/physics/deviceStructures/connection/connection.fal"
+  "../../libs/falconCore/physics/deviceStructures/connections/connections.fal"
+  "../../libs/falconCore/generic/farray/farray.fal"
 )
 ffimport "qarray-wrapper.cpp" (
-  "-I/opt/falcon/include"
-  "-I/opt/falcon/include/python3.12"
+  "/opt/falcon/include"
+  "/opt/falcon/include/python3.12"
 ) (
   "-L/opt/falcon/lib"
   "-lfalcon-qarrayDevice"
@@ -22,9 +26,9 @@ routine CollectCurrentPlungerGates() -> (array::Array<connection::Connection> ga
 // Ramps the device to the supplied end voltage 
 routine Ramp(map::Map<connection::Connection, quantity::Quantity> stop) -> ()
 // Analyze if a blip is there or not
-routine AnalyzeBlips(map::Map<connection::Connection, quantity::Quantity> begin, map::Map<connection::Connection, quantity::Quantity> stop, int resolution) -> (int num_blips, Array<deviceVoltageStates::DeviceVoltageStates> locations)
+routine AnalyzeBlips(map::Map<connection::Connection, quantity::Quantity> begin, map::Map<connection::Connection, quantity::Quantity> stop, int resolution) -> (int num_blips, array::Array<deviceVoltageStates::DeviceVoltageStates> locations)
 // Calculates a device state given a virtualization matrix, spacing in a direction
-routine EndState(Connection direction, Quantity spacing, FArray virtualization, Connections virtualNames) -> (Point endstate)
+routine EndState(connection::Connection direction, quantity::Quantity spacing, farray::FArray virtualization, connections::Connections virtualNames) -> (point::Point endstate)
 
 // Testing functionality
 // Allows restarting of the qarray simlator from the tester
@@ -32,5 +36,5 @@ routine RestartDevice(string configPath) -> ()
 // Makes a stablity diagram plot of the device 
 routine MakeStabilityDiagram(string outputFilepath) -> ()
 // Builds a virtualization matrix for the device given a set of plunger gates and a set of virtual gates
-routine BuildVirtualizationMatrix(string configPath) -> (FArray virtualization)
+routine BuildVirtualizationMatrix(string configPath) -> (farray::FArray virtualization)
 
