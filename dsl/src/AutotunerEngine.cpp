@@ -613,12 +613,8 @@ bool AutotunerEngine::process_ff_import(const atc::FFImportDecl &ffi,
   if (!fs::exists(so_path)) {
     std::string includes;
     for (const auto &inc : ffi.imports) {
-      includes += " -I" + inc;
+      includes += " " + inc; // Do NOT add extra -I
     }
-#ifdef FALCON_AUTOTUNER_INCLUDE_DIR
-    includes += " -I" FALCON_AUTOTUNER_INCLUDE_DIR;
-#endif
-    includes += " -I/opt/falcon/include";
 
     std::string libs;
     for (const auto &lib : ffi.build_libs) {
@@ -626,9 +622,9 @@ bool AutotunerEngine::process_ff_import(const atc::FFImportDecl &ffi,
     }
 
     std::string cmd = "clang++ -std=c++17 -fPIC -shared -O2"
-                      " -o " +
-                      so_path.string() + includes + " " + wrapper_src.string() +
-                      libs;
+                      " -o \"" +
+                      so_path.string() + "\"" + includes + " \"" +
+                      wrapper_src.string() + "\"" + libs;
 
     log::debug("Compiling FFI wrapper: " + wrapper_src.string());
     log::debug("FFI compile command: " + cmd);

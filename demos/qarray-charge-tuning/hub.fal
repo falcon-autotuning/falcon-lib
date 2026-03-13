@@ -4,7 +4,17 @@ import (
 "../../libs/falconCore/math/quantity/quantity.fal"
 "../../libs/falconCore/physics/deviceStructures/connection/connection.fal"
 )
-ffimport "qarray-wrapper.cpp" ("/opt/falcon/include/qarrayDevice/") ("/opt/falcon/lib/libfalcon-qarrayDevice.so")
+ffimport "qarray-wrapper.cpp" (
+  "-I/opt/falcon/include"
+  "-I/opt/falcon/include/python3.12"
+) (
+  "-L/opt/falcon/lib"
+  "-lfalcon-qarrayDevice"
+  "-lplplot"
+  "-lm"
+  "-lpthread"
+  "-lpython3.12"
+)
 // Collects the current device gate voltages
 routine CollectCurrentDeviceState() -> (deviceVoltageStates::DeviceVoltageStates dstates)
 // Collects the current plunger gates 
@@ -12,6 +22,6 @@ routine CollectCurrentPlungerGates() -> (array::Array<connection::Connection> ga
 // Ramps the device to the supplied end voltage 
 routine Ramp(map::Map<connection::Connection, quantity::Quantity> stop) -> ()
 // Analyze if a blip is there or not
-routine AnalyzeBlips(map::Map<connection::Connection, quantity::Quantity> start, map::Map<connection::Connection, quantity::Quantity> stop, int resolution) -> (int num_blips, Array<deviceVoltageStates::DeviceVoltageStates> locations)
+routine AnalyzeBlips(map::Map<connection::Connection, quantity::Quantity> begin, map::Map<connection::Connection, quantity::Quantity> stop, int resolution) -> (int num_blips, Array<deviceVoltageStates::DeviceVoltageStates> locations)
 // Calculates a device state given a virtualization matrix, spacing in a direction
 routine EndState(Connection direction, Quantity spacing, FArray virtualization, Connections virtualNames) -> (Point endstate)

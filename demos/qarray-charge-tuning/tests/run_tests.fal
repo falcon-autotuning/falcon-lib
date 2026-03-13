@@ -1,10 +1,11 @@
 import (
-"../../testing/testing.fal"
+"../../../libs/testing/testing.fal"
 "../../../libs/database/database.fal"
 "../../../libs/strings/strings.fal"
 "../../../libs/collections/array/array.fal"
 "../../../libs/collections/map/map.fal"
 "../../../libs/falconCore/generic/farray/farray.fal"
+"../../../libs/falconCore/communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
 "../../../libs/falconCore/physics/deviceStructures/connections/connections.fal"
 "../../../libs/falconCore/communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
 "tester.fal"
@@ -24,39 +25,42 @@ autotuner FirstTest -> (int passed, int failed) {
         // Reset the database
         database::ClearAll();
         // Generate stability diagram plot
-        tester::MakeStabilityDiagramPlot("stability_diagram_2_dot.png");
+        tester::MakeStabilityDiagramPlot("./stability_diagram_2_dot.png");
         // Set the global variables for the autotuning 
         // 1. Build a virtualization matrix 
-        farray::FArray virtualization = tester::BuildVirtualizationMatrix("../2_dot.yaml");
-        database::DeviceCharacteristic dcharVirtualization = database::DeviceCharacteristic::New()
+        farray::FArray virtualization;
+        virtualization = tester::BuildVirtualizationMatrix("../2_dot.yaml");
+        database::DeviceCharacteristic dcharVirtualization;
+        dcharVirtualization = database::DeviceCharacteristic.New()
             .SetScope("device")
 .SetName("virtualization")
             .SetValue(virtualization.ToJSON());
         database::Insert(dcharVirtualization);
         // 2. Build the resolution variable
         int resolution = 100;
-        database::DeviceCharacteristic dcharResolution = database::DeviceCharacteristic::New()
+        database::DeviceCharacteristic dcharResolution = database::DeviceCharacteristic.New()
             .SetScope("device")
             .SetName("resolution")
             .SetValue(strings::fromInt(resolution));
         database::Insert(dcharResolution);
         // 3. Build the virualization names variable
         array::Array<connection::Connection> rawPlungerGates = hub::CollectCurrentPlungerGates(); 
-        connections::Connections virtualizationNames = connections::Connections::New(rawPlungerGates);
-        database::DeviceCharacteristic dcharVirtualizationNames = database::DeviceCharacteristic::New()
+        connections::Connections virtualizationNames = connections::Connections.New(rawPlungerGates);
+        database::DeviceCharacteristic dcharVirtualizationNames = database::DeviceCharacteristic.New()
             .SetScope("device")
             .SetName("virtualizationNames")
             .SetValue(virtualizationNames.ToJSON());
         database::Insert(dcharVirtualizationNames);
         // 4. Define the starting position 
-        Map<connection::Connection, quantity::Quantity> start;
-        start.Insert(rawPlungerGates[0], quantity::Quantity::New(-200, "mV"));
-        start.Insert(rawPlungerGates[1], quantity::Quantity::New(-200, "mV"));
-        hub::Ramp(start);
+        Map<connection::Connection, quantity::Quantity> begin;
+        begin.Insert(rawPlungerGates[0], quantity::Quantity.New(-200, "mV"));
+        begin.Insert(rawPlungerGates[1], quantity::Quantity.New(-200, "mV"));
+        hub::Ramp(begin);
         // 5. Run the charge tuning autotuner
-        deviceStates::DeviceStates theEndState = chargeConfigurationTuner::ChargeConfigurationTuner(3,3); 
+        deviceVoltageStates::DeviceVoltageStates theEndState = chargeConfigurationTuner::ChargeConfigurationTuner(3,3); 
         // 6. Check the end state is correct by making sure we are in the (3,3) cell of the stability diagram
         // TODO: write this  check
         Error err = t.ExpectTrue(true, "Made it all the way through");
         -> __end(runner, t);
     }
+}

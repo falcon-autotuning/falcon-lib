@@ -15,24 +15,37 @@
 // routine name (e.g. FUNCCollectCurrentDeviceState), matching the FAL
 // ffimport convention for top-level routines.
 
-#include "falcon_core/generic/FArray.hpp"
 #include <algorithm>
 #include <cmath>
 #include <falcon-typing/FFIHelpers.hpp>
 #include <falcon_core/communications/voltage_states/DeviceVoltageState.hpp>
 #include <falcon_core/communications/voltage_states/DeviceVoltageStates.hpp>
+#include <falcon_core/generic/FArray.hpp>
 #include <falcon_core/generic/List.hpp>
 #include <falcon_core/math/Point.hpp>
 #include <falcon_core/math/Quantity.hpp>
 #include <falcon_core/physics/device_structures/Connection.hpp>
 #include <matplot/matplot.h>
 #include <memory>
+#include <plplot/plplot.h>
+#include <plplot/plplotP.h>
+#include <plplot/plstream.h>
 #include <qarrayDevice/Device.hpp>
 #include <stdexcept>
 #include <string>
 #include <vector>
+#ifdef PI
+#undef PI
+#endif
+#include <pybind11/embed.h>
 #include <xtensor/xadapt.hpp>
 #include <yaml-cpp/yaml.h>
+namespace {
+struct InterpreterGuard {
+  InterpreterGuard() { pybind11::scoped_interpreter guard{}; }
+};
+static InterpreterGuard interpreter_guard_instance;
+} // namespace
 
 using namespace falcon::typing;
 using namespace falcon::typing::ffi::wrapper;
@@ -473,7 +486,7 @@ void Ramp(const FalconParamEntry *params, int32_t param_count,
 void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
                   FalconResultSlot *out, int32_t *oc) {
   // 1. Decode inputs
-  auto start_inst = get_map_param(params, param_count, "start");
+  auto start_inst = get_map_param(params, param_count, "begin");
   auto stop_inst = get_map_param(params, param_count, "stop");
   auto pm = unpack_params(params, param_count);
   int resolution = static_cast<int>(std::get<int64_t>(pm.at("resolution")));
@@ -761,46 +774,10 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
   }
 }
 
-void BuildVirtualizationMatrix(const FalconParamEntry *params,
-                               int32_t param_count, FalconResultSlot *out,
-                               int32_t *oc) {
-  // Unpack configPath from params
-  auto pm = unpack_params(params, param_count);
-  std::string config_path = std::get<std::string>(pm.at("configPath"));
-
-  // Load YAML and extract Cgd
-  YAML::Node config = YAML::LoadFile(config_path);
-  const YAML::Node &cgd = config["capacitances"]["Cgd"];
-  std::vector<std::vector<double>> values;
-  for (const auto &row : cgd) {
-    std::vector<double> r;
-    for (const auto &v : row)
-      r.push_back(v.as<double>());
-    values.push_back(r);
-  }
-  xt::xarray<double> arr = xt::adapt(values);
-
-  // Pack into FArray<double>
-  auto farr = std::make_shared<falcon_core::generic::FArray<double>>(arr);
-
-  // Pack as FFI result
-  out[0] = {};
-  out[0].tag = FALCON_TYPE_OPAQUE;
-  out[0].value.opaque.type_name = "FArray";
-  out[0].value.opaque.ptr =
-      new std::shared_ptr<void>(std::static_pointer_cast<void>(farr));
-  out[0].value.opaque.deleter = [](void *p) {
-    delete static_cast<std::shared_ptr<void> *>(p);
-  };
-  *oc = 1;
-}
-
 void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
                           FalconResultSlot *out, int32_t *oc) {
   auto pm = unpack_params(params, param_count);
   std::string output_filepath = std::get<std::string>(pm.at("outputFilepath"));
-
-  // Choose gates and sweep range
   auto gate_names = device().gate_names();
   if (gate_names.size() < 2) {
     out[0] = {};
@@ -814,43 +791,87 @@ void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
   auto result =
       device().scan_2d(x_gate, y_gate, {-1.0, 1.0}, {-1.0, 1.0}, resolution);
 
-  // differentiated_signal: flat [resolution*resolution*n_sensors], use channel
-  // 0
   std::vector<double> data;
   if (result.has_sensor && !result.differentiated_signal.empty()) {
     int n_sensors = 1;
     if (!result.differentiated_signal_shape.empty() &&
-        result.differentiated_signal_shape.size() >= 2)
+        result.differentiated_signal_shape.size() >= 2) {
       n_sensors = result.differentiated_signal_shape[1];
+    }
     for (int i = 0; i < resolution * resolution; ++i) {
       int idx = i * n_sensors;
-      if (idx < result.differentiated_signal.size())
+      if (idx < result.differentiated_signal.size()) {
         data.push_back(result.differentiated_signal[idx]);
-      else
+      } else {
         data.push_back(0.0);
+      }
     }
   } else {
     data.assign(resolution * resolution, 0.0);
   }
 
-  // Reshape for matplotplusplus
-  std::vector<std::vector<double>> Z(resolution,
-                                     std::vector<double>(resolution));
+  // Convert data to 2D PLFLT array
+  std::vector<std::vector<PLFLT>> z2d(resolution,
+                                      std::vector<PLFLT>(resolution));
   for (int i = 0; i < resolution; ++i)
     for (int j = 0; j < resolution; ++j)
-      Z[i][j] = data[i * resolution + j];
+      z2d[i][j] = static_cast<PLFLT>(data[i * resolution + j]);
 
-  using namespace matplot;
-  auto fig = figure(true);
-  auto ax = fig->current_axes();
-  ax->xlabel(x_gate);
-  ax->ylabel(y_gate);
-  ax->title("Stability Diagram");
-  ax->imagesc(Z);
-  fig->save(output_filepath);
+  // Create pointer-to-pointer for plimage
+  std::vector<PLFLT *> zptrs(resolution);
+  for (int i = 0; i < resolution; ++i)
+    zptrs[i] = z2d[i].data();
+
+  // Set up plplot device and output
+  plsdev("pngcairo");
+  plsfnam(output_filepath.c_str());
+  plinit();
+
+  plenv(-1.0, 1.0, -1.0, 1.0, 0, 0);
+  pllab(x_gate.c_str(), y_gate.c_str(), "Stability Diagram");
+
+  // Plot image: arguments are pointer-to-pointer, nx, ny, xmin, xmax, ymin,
+  // ymax, zmin, zmax, Dxmin, Dxmax, Dymin, Dymax
+  plimage(zptrs.data(), resolution, resolution, -1.0, 1.0, -1.0, 1.0, 0.0,
+          1.0, // zmin, zmax (adjust as needed)
+          -1.0, 1.0, -1.0, 1.0);
+
+  plend();
 
   out[0] = {};
   out[0].tag = FALCON_TYPE_NIL;
+  *oc = 1;
+}
+void BuildVirtualizationMatrix(const FalconParamEntry *params,
+                               int32_t param_count, FalconResultSlot *out,
+                               int32_t *oc) {
+  // Unpack configPath from params
+  auto pm = unpack_params(params, param_count);
+  std::string config_path = std::get<std::string>(pm.at("configPath"));
+  // Load YAML and extract Cgd
+  YAML::Node config = YAML::LoadFile(config_path);
+  const YAML::Node &cgd = config["capacitances"]["Cgd"];
+  std::vector<double> flat;
+  size_t rows = cgd.size();
+  size_t cols = rows > 0 ? cgd[0].size() : 0;
+  flat.reserve(rows * cols);
+  for (const auto &row : cgd) {
+    for (const auto &v : row)
+      flat.push_back(v.as<double>());
+  }
+  auto shape = std::array<std::size_t, 2>{rows, cols};
+  xt::xarray<double> arr = xt::adapt(flat, shape);
+  // Pack into FArray<double>
+  auto farr = std::make_shared<falcon_core::generic::FArray<double>>(arr);
+  // Pack as FFI result
+  out[0] = {};
+  out[0].tag = FALCON_TYPE_OPAQUE;
+  out[0].value.opaque.type_name = "FArray";
+  out[0].value.opaque.ptr =
+      new std::shared_ptr<void>(std::static_pointer_cast<void>(farr));
+  out[0].value.opaque.deleter = [](void *p) {
+    delete static_cast<std::shared_ptr<void> *>(p);
+  };
   *oc = 1;
 }
 } // extern "C"
