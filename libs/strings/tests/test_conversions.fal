@@ -1,0 +1,25 @@
+import "../strings.fal";
+
+autotuner StringConversionsTest() -> (
+    string s_int, string s_double, string s_bool_t, string s_bool_f,
+    int i_res, float f_res, bool b_res_t, bool b_res_f
+) {
+    bool completed = false;
+    start -> init;
+
+    state init {
+        // Type to String
+        s_int = strings::FromInt(123);
+        s_double = strings::FromDouble(123.456);
+        s_bool_t = strings::FromBool(true);
+        s_bool_f = strings::FromBool(false);
+
+        // String to Type
+        i_res = strings::ToInt("456");
+        f_res = strings::ToDouble("456.789");
+        b_res_t = strings::ToBool("true");
+        b_res_f = strings::ToBool("0");
+
+        terminal;
+    }
+}

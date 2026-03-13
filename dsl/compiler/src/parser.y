@@ -1041,21 +1041,9 @@ postfix_expr[result]
         $result = std::make_unique<CallExpr>($ns + "::" + $sym, std::move($args));
         set_expr_location($result.get(), @ns);
       }
-    // Type coercion call: int("5"), float(x), string(42), bool("true")
-    | primitive_type_name[type_name] LPAREN call_arg_list[args] RPAREN
-      {
-        $result = std::make_unique<CallExpr>(std::move($type_name), std::move($args));
-        set_expr_location($result.get(), @type_name);
-      }
     | primary_expr[e] { $result = std::move($e); }
     ;
 
-primitive_type_name[result]
-    : INT_KW    { $result = "int"; }
-    | FLOAT_KW  { $result = "float"; }
-    | BOOL_KW   { $result = "bool"; }
-    | STRING_KW { $result = "string"; }
-    ;
 
 expr_list[result]
     : expr[first]
