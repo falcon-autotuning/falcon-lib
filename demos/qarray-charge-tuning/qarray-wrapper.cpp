@@ -79,19 +79,10 @@ using QDevice = falcon::qarray::Device;
 
 // ── Module-level singleton device
 // ─────────────────────────────────────────────────────
-//
-// The Device embeds CPython via pybind11.  Only one interpreter may be active
-// per process, and Device construction is expensive, so we keep a single
-// lazily-initialised instance.  The config path is baked in here; for a
-// production binding it could be passed as a module-init parameter.
-//
-// NOTE: this is intentionally a raw pointer so it is never destroyed (avoids
-// pybind11 / Python atexit ordering issues).
 
 static QDevice *g_device = nullptr;
 static std::string current_config_path;
 
-// Always initialize at startup using env or default
 static void initialize_device() {
   ensure_python_interpreter();
   const char *env_path = std::getenv("QARRAY_CONFIG_PATH");
@@ -100,7 +91,6 @@ static void initialize_device() {
 #endif
   std::string config_path = env_path ? env_path : QARRAY_CONFIG;
   if (g_device != nullptr && current_config_path == config_path) {
-    // Already initialized with this config, do nothing
     return;
   }
   if (g_device != nullptr) {
@@ -118,12 +108,10 @@ static QDevice &device() {
   return *g_device;
 }
 
-// Restart the device singleton with a new config path
 void restart_device(const std::string &config_path) {
   spdlog::info("The config_path is " + config_path);
   ensure_python_interpreter();
   if (g_device != nullptr && current_config_path == config_path) {
-    // Already initialized with this config, do nothing
     return;
   }
   if (g_device != nullptr) {
@@ -134,7 +122,6 @@ void restart_device(const std::string &config_path) {
   current_config_path = config_path;
 }
 
-// Optionally, expose this via extern "C" for FFI or module API
 extern "C" void RestartDevice(const FalconParamEntry *params,
                               int32_t param_count, FalconResultSlot *out,
                               int32_t *oc) {
@@ -161,7 +148,6 @@ static void pack_dvss(DeviceVoltageStatesSP dvss, FalconResultSlot *out,
   *oc = 1;
 }
 
-// Pack a Point as a DSL-compatible opaque.
 static void pack_point(PointSP point, FalconResultSlot *out, int32_t *oc) {
   out[0] = {};
   out[0].tag = FALCON_TYPE_OPAQUE;
@@ -173,8 +159,6 @@ static void pack_point(PointSP point, FalconResultSlot *out, int32_t *oc) {
   *oc = 1;
 }
 
-// Pack an Array<Connection> as a DSL-compatible Array opaque.
-// Each Connection is a StructInstance with native_handle set to its SP.
 static void pack_connection_array(std::vector<ConnectionSP> conns,
                                   FalconResultSlot *out, int32_t *oc) {
   auto arr = std::make_shared<ArrayValue>("Connection");
@@ -195,7 +179,6 @@ static void pack_connection_array(std::vector<ConnectionSP> conns,
   *oc = 1;
 }
 
-// Pack an Array<DeviceVoltageStates> for AnalyzeBlips locations output.
 static void pack_dvss_array(std::vector<DeviceVoltageStatesSP> items,
                             FalconResultSlot *out, int32_t *oc) {
   auto arr = std::make_shared<ArrayValue>("DeviceVoltageStates");
@@ -217,33 +200,22 @@ static void pack_dvss_array(std::vector<DeviceVoltageStatesSP> items,
 }
 
 // ── DSL Map<Connection,Quantity> → std::map<string,double> ───────────────────
-//
-// The DSL Map<K,V> is a pure-FAL struct (no native_handle of its own).
-// It arrives as an OPAQUE whose ptr is a shared_ptr<void>* aliasing a
-// shared_ptr<StructInstance> (type_name="Map").
-// Its fields are:
-//   keys_   : Array<Connection>   — elements are
-//   StructInstance{native_handle=ConnectionSP} values_ : Array<Quantity>     —
-//   elements are StructInstance{native_handle=QuantitySP}
-//
-// We retrieve the StructInstance, then walk its keys_/values_ Array fields.
 
-// Helper: retrieve the ArrayValue for a named field inside a StructInstance.
 static std::shared_ptr<ArrayValue>
 get_struct_field_array(const std::shared_ptr<StructInstance> &inst,
                        const char *field_name) {
-  if (!inst)
+  if (!inst) {
     throw std::runtime_error(
         std::string("get_struct_field_array: null StructInstance for field '") +
         field_name + "'");
-  // Fields are stored in inst->fields as RuntimeValue entries keyed by name.
+  }
+
   auto it = inst->fields->find(field_name);
-  if (it == inst->fields->end())
+  if (it == inst->fields->end()) {
     throw std::runtime_error(std::string("get_struct_field_array: field '") +
                              field_name + "' not found in StructInstance");
+  }
   const RuntimeValue &fv = it->second;
-  // The field itself is an Array, represented as a nested StructInstance
-  // carrying native_handle = shared_ptr<void> aliasing an ArrayValue.
   if (std::holds_alternative<std::shared_ptr<StructInstance>>(fv)) {
     auto farr_inst = std::get<std::shared_ptr<StructInstance>>(fv);
     if (farr_inst && farr_inst->native_handle.has_value()) {
@@ -256,32 +228,6 @@ get_struct_field_array(const std::shared_ptr<StructInstance> &inst,
                            "' is not a StructInstance with a native_handle");
 }
 
-// Helper: get a DSL Map StructInstance from the param list by name.
-// The Map arrives as OPAQUE{type_name="Map", ptr=shared_ptr<void>* aliasing
-// shared_ptr<StructInstance>}.
-static std::shared_ptr<StructInstance>
-get_map_param(const FalconParamEntry *params, int32_t count, const char *key) {
-  for (int32_t i = 0; i < count; ++i) {
-    if (std::strcmp(params[i].key, key) != 0) {
-      continue;
-    }
-    const FalconParamEntry &e = params[i];
-    if (e.tag != FALCON_TYPE_OPAQUE) {
-      throw std::runtime_error(
-          std::string("qarray-wrapper: parameter '") + key +
-          "' is not OPAQUE (tag=" + std::to_string(e.tag) + ")");
-    }
-    // ptr is a heap-allocated shared_ptr<void>* whose managed object is the
-    // StructInstance (same convention as native StructInstances passed by the
-    // engine: ptr = new shared_ptr<void>(native_handle)).
-    auto sv = *static_cast<std::shared_ptr<void> *>(e.value.opaque.ptr);
-    return std::static_pointer_cast<StructInstance>(sv);
-  }
-  throw std::runtime_error(std::string("qarray-wrapper: parameter '") + key +
-                           "' not found");
-}
-
-// Helper: get a DSL opaque parameter (Connection, Point, etc.) by name.
 template <typename T>
 static std::shared_ptr<T> get_opaque_param(const FalconParamEntry *params,
                                            int32_t count, const char *key) {
@@ -301,7 +247,6 @@ static std::shared_ptr<T> get_opaque_param(const FalconParamEntry *params,
                            "' not found");
 }
 
-// Helper: get a DSL Array parameter by name.
 static std::shared_ptr<ArrayValue>
 get_array_param(const FalconParamEntry *params, int32_t count,
                 const char *key) {
@@ -321,11 +266,6 @@ get_array_param(const FalconParamEntry *params, int32_t count,
                            "' not found");
 }
 
-// Convert a DSL Map<Connection,Quantity> to std::map<string,double> in Volts.
-//
-// For each parallel entry i:
-//   key   = Connection StructInstance  → conn->name()
-//   value = Quantity   StructInstance  → convert to Volt, then q->value()
 static std::map<std::string, double>
 dsl_map_to_volt_map(const std::shared_ptr<StructInstance> &map_inst) {
   auto keys_arr = get_struct_field_array(map_inst, "keys_");
@@ -341,7 +281,6 @@ dsl_map_to_volt_map(const std::shared_ptr<StructInstance> &map_inst) {
   std::map<std::string, double> result;
 
   for (size_t i = 0; i < keys_arr->elements.size(); ++i) {
-    // ── key: Connection StructInstance with native_handle
     const RuntimeValue &kv = keys_arr->elements[i];
     if (!std::holds_alternative<std::shared_ptr<StructInstance>>(kv)) {
       throw std::runtime_error(
@@ -355,7 +294,6 @@ dsl_map_to_volt_map(const std::shared_ptr<StructInstance> &map_inst) {
     auto conn =
         std::static_pointer_cast<Connection>(k_inst->native_handle.value());
 
-    // ── value: Quantity StructInstance with native_handle
     const RuntimeValue &vv = vals_arr->elements[i];
     if (!std::holds_alternative<std::shared_ptr<StructInstance>>(vv)) {
       throw std::runtime_error(
@@ -369,7 +307,6 @@ dsl_map_to_volt_map(const std::shared_ptr<StructInstance> &map_inst) {
     auto qty =
         std::static_pointer_cast<Quantity>(v_inst->native_handle.value());
 
-    // Convert Quantity to Volt and extract scalar value
     auto qty_copy = std::make_shared<Quantity>(*qty);
     qty_copy->convert_to(volt_unit);
     double volts = qty_copy->value();
@@ -379,12 +316,6 @@ dsl_map_to_volt_map(const std::shared_ptr<StructInstance> &map_inst) {
   return result;
 }
 
-// ── build_dvss_from_volt_map
-// ──────────────────────────────────────────────────────
-//
-// Given a std::map<string,double> of gate→voltage-in-Volts, construct a
-// DeviceVoltageStates where each entry is:
-//   DeviceVoltageState( Connection::PlungerGate(name), voltage, Volt )
 static DeviceVoltageStatesSP
 build_dvss_from_volt_map(const std::map<std::string, double> &volt_map) {
   auto volt_unit = SymbolUnit::Volt();
@@ -399,16 +330,6 @@ build_dvss_from_volt_map(const std::map<std::string, double> &volt_map) {
       std::make_shared<falcon_core::generic::List<DeviceVoltageState>>(vec));
 }
 
-// ── peak detection
-// ────────────────────────────────────────────────────────────
-//
-// Simple local-maximum detector on a 1-D signal with significance threshold.
-//
-// A sample at index i is considered a peak when:
-//   signal[i] > signal[i-1]  AND  signal[i] > signal[i+1]   (local max)
-//   AND  signal[i] > mean + threshold_sigma * stddev          (significant)
-//
-// Returns the indices of detected peaks.
 static std::vector<int> detect_peaks(const std::vector<double> &signal,
                                      double threshold_sigma = 2.0) {
   const int n = static_cast<int>(signal.size());
@@ -416,7 +337,6 @@ static std::vector<int> detect_peaks(const std::vector<double> &signal,
     return {};
   }
 
-  // Compute mean and stddev
   double sum = 0.0;
   for (double v : signal) {
     sum += v;
@@ -441,18 +361,25 @@ static std::vector<int> detect_peaks(const std::vector<double> &signal,
   return peaks;
 }
 
+// Helper: Get a StructInstance from the unpacked ParameterMap
+static std::shared_ptr<StructInstance>
+get_struct_instance(const ParameterMap &pm, const std::string &key) {
+  auto it = pm.find(key);
+  if (it == pm.end()) {
+    throw std::runtime_error("Parameter '" + key + "' not found");
+  }
+  if (!std::holds_alternative<std::shared_ptr<StructInstance>>(it->second)) {
+    throw std::runtime_error("Parameter '" + key + "' is not a StructInstance");
+  }
+  return std::get<std::shared_ptr<StructInstance>>(it->second);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Exported FFI functions
-// ─────────────────────────────────────��───────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────
 
 extern "C" {
 
-// ── CollectCurrentDeviceState() -> (DeviceVoltageStates dstates) ─────────────
-//
-// 1. Call device().voltages()  → std::map<string,double>
-// 2. For each gate: create Connection::PlungerGate(name)
-//                   create DeviceVoltageState(conn, voltage_V, Volt)
-// 3. Wrap in DeviceVoltageStates and return.
 void CollectCurrentDeviceState(const FalconParamEntry * /*params*/,
                                int32_t /*param_count*/, FalconResultSlot *out,
                                int32_t *oc) {
@@ -461,11 +388,6 @@ void CollectCurrentDeviceState(const FalconParamEntry * /*params*/,
   pack_dvss(std::move(dvss), out, oc);
 }
 
-// ── CollectCurrentPlungerGates() -> (Array<Connection> gates) ────────────────
-//
-// 1. Call device().gate_names() → vector<string>
-// 2. For each name: create Connection::PlungerGate(name)
-// 3. Return as a DSL Array<Connection>.
 void CollectCurrentPlungerGates(const FalconParamEntry * /*params*/,
                                 int32_t /*param_count*/, FalconResultSlot *out,
                                 int32_t *oc) {
@@ -478,24 +400,15 @@ void CollectCurrentPlungerGates(const FalconParamEntry * /*params*/,
   pack_connection_array(std::move(conns), out, oc);
 }
 
-// ── Ramp(stop: Map<Connection,Quantity>) -> ()
-// ────────────────────────────────────
-//
-// Convert the DSL Map<Connection,Quantity> stop to std::map<string,double>
-// in Volts, then call device().scan_ray(current_voltages, stop, resolution=4).
-// The scan result is discarded — we only want the physical ramp side-effect.
 void Ramp(const FalconParamEntry *params, int32_t param_count,
           FalconResultSlot *out, int32_t *oc) {
-  auto stop_inst = get_map_param(params, param_count, "stop");
+  auto pm = unpack_params(params, param_count);
+  auto stop_inst = get_struct_instance(pm, "stop");
   auto stop_map = dsl_map_to_volt_map(stop_inst);
 
-  // Use current device voltages as the start point of the ramp
   auto start_map = device().voltages();
 
-  // Resolution is fixed at 4 for Ramp
   constexpr int ramp_resolution = 4;
-
-  // scan_ray performs the physical sweep from start to stop
   device().scan_ray(start_map, stop_map, ramp_resolution);
 
   out[0] = {};
@@ -503,46 +416,23 @@ void Ramp(const FalconParamEntry *params, int32_t param_count,
   *oc = 1;
 }
 
-// ── AnalyzeBlips(start, stop, resolution)
-//       -> (int num_blips, Array<DeviceVoltageStates> locations) ──────────────
-//
-// 1. Convert DSL Maps to std::map<string,double> in Volts.
-// 2. Call device().scan_ray(start, stop, resolution).
-// 3. Take ScanResultRay::differentiated_signal (flat [resolution * n_sensors]).
-//    We use the first sensor channel (column 0 of row-major layout).
-// 4. Run peak detection on that channel.
-// 5. For each peak index i:
-//    a. Read ScanResultRay::trajectory[i * n_gates + gate_idx] to get the
-//       applied voltage on each gate at position i along the sweep.
-//       Gate ordering in trajectory matches the key order of `start`.
-//    b. Build a DeviceVoltageStates from those voltages.
-// 6. Return (num_peaks, Array<DeviceVoltageStates>).
-//
-// Multi-return convention: the FAL runtime expects multiple FalconResultSlots.
-// slot[0] = int num_blips
-// slot[1] = Array<DeviceVoltageStates> locations
 void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
                   FalconResultSlot *out, int32_t *oc) {
-  // 1. Decode inputs
-  auto start_inst = get_map_param(params, param_count, "begin");
-  auto stop_inst = get_map_param(params, param_count, "stop");
   auto pm = unpack_params(params, param_count);
+
+  auto start_inst = get_struct_instance(pm, "begin");
+  auto stop_inst = get_struct_instance(pm, "stop");
   int resolution = static_cast<int>(std::get<int64_t>(pm.at("resolution")));
 
   auto start_map = dsl_map_to_volt_map(start_inst);
   auto stop_map = dsl_map_to_volt_map(stop_inst);
 
-  // 2. Run the scan
   auto result = device().scan_ray(start_map, stop_map, resolution);
 
-  // 3. Extract the differentiated signal for the first sensor channel.
-  //    Shape: [resolution * n_sensors], row-major → column 0 per row.
   std::vector<double> signal;
   signal.reserve(static_cast<size_t>(resolution));
 
   if (result.has_sensor && !result.differentiated_signal.empty()) {
-    // n_sensors can be inferred from the shape vector if present, otherwise
-    // from total size / resolution.
     int n_sensors = 1;
     if (!result.differentiated_signal_shape.empty() &&
         result.differentiated_signal_shape.size() >= 2) {
@@ -553,7 +443,7 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
       n_sensors = std::max(n_sensors, 1);
     }
     for (int i = 0; i < resolution; ++i) {
-      auto idx = static_cast<size_t>(i * n_sensors); // column 0 of row i
+      auto idx = static_cast<size_t>(i * n_sensors);
       if (idx < result.differentiated_signal.size()) {
         signal.push_back(result.differentiated_signal[idx]);
       } else {
@@ -561,16 +451,11 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
       }
     }
   } else {
-    // No sensor data — no blips possible
     signal.assign(static_cast<size_t>(resolution), 0.0);
   }
 
-  // 4. Detect peaks (significant local maxima)
   auto peak_indices = detect_peaks(signal);
 
-  // 5. For each peak, reconstruct the voltage state at that sweep position.
-  //    trajectory shape: [resolution * n_gates], row-major.
-  //    Gate order matches the iteration order of start_map (std::map = sorted).
   std::vector<std::string> gate_order;
   gate_order.reserve(start_map.size());
   for (const auto &kv : start_map) {
@@ -603,16 +488,12 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
             dvs_vec)));
   }
 
-  // 6. Pack two return values
   int num_blips = static_cast<int>(peak_indices.size());
 
-  // slot[0]: int num_blips
   out[0] = {};
   out[0].tag = FALCON_TYPE_INT;
   out[0].value.int_val = static_cast<int64_t>(num_blips);
 
-  // slot[1]: Array<DeviceVoltageStates> locations
-  // We call the pack helper but need to write to out[1].
   {
     FalconResultSlot tmp[1];
     int32_t tmp_oc = 0;
@@ -623,22 +504,9 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
   *oc = 2;
 }
 
-// ── EndState(direction, spacing, virtualization, virtualNames)
-//       -> (Point endstate)
-//       ────────────────────────────────────────────────────
-//
-// Algorithm:
-// 1. Create a unit vector where the index corresponding to the `direction`
-//    Connection (as found in virtualNames) is 1.0, all others are 0.0.
-// 2. Multiply this unit vector by the inverse of the virtualization matrix.
-// 3. Scale the result by the spacing Quantity.
-// 4. Get the current device state (DeviceVoltageStates → Point).
-// 5. Add the calculated vector to the current state for matching Connections.
-// 6. Return the resulting Point.
 void EndState(const FalconParamEntry *params, int32_t param_count,
               FalconResultSlot *out, int32_t *oc) {
   try {
-    // Unpack parameters
     auto direction =
         get_opaque_param<Connection>(params, param_count, "direction");
     auto spacing = get_opaque_param<Quantity>(params, param_count, "spacing");
@@ -647,11 +515,9 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
     auto virtual_names_arr =
         get_opaque_param<Connections>(params, param_count, "virtualNames");
 
-    // Extract virtual names as a vector of Connections
     std::vector<ConnectionSP> virtual_names = virtual_names_arr->items();
     const int n_gates = static_cast<int>(virtual_names.size());
 
-    // Step 1: Create a unit vector for the direction
     std::vector<double> unit_vector(n_gates, 0.0);
     bool direction_found = false;
 
@@ -676,31 +542,24 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
           direction->name(), direction->type(), available_names));
     }
 
-    // Step 3: Compute the inverse of the virtualization matrix (using Gaussian
-    // elimination)
-    xt::xarray<double> virt_matrix =
-        virtualization_arr->data(); // shape: {n_gates, n_gates}
-    xt::xarray<double> identity = xt::eye<double>(n_gates); // identity matrix
+    xt::xarray<double> virt_matrix = virtualization_arr->data();
+    xt::xarray<double> identity = xt::eye<double>(n_gates);
     for (int i = 0; i < n_gates; ++i) {
-      // Find pivot
       int pivot_row = i;
       for (int j = i + 1; j < n_gates; ++j) {
         if (std::abs(virt_matrix(j, i)) > std::abs(virt_matrix(pivot_row, i))) {
           pivot_row = j;
         }
       }
-      // Swap rows
       if (pivot_row != i) {
         xt::view(virt_matrix, i) = xt::view(virt_matrix, pivot_row);
         xt::view(virt_matrix, pivot_row) = xt::view(virt_matrix, i);
         xt::view(identity, i) = xt::view(identity, pivot_row);
         xt::view(identity, pivot_row) = xt::view(identity, i);
       }
-      // Check for singular matrix
       if (std::abs(virt_matrix(i, i)) < 1e-10) {
         throw std::runtime_error("Matrix is singular or ill-conditioned");
       }
-      // Eliminate column
       double pivot = virt_matrix(i, i);
       auto row = xt::view(virt_matrix, i, xt::all());
       row = row / pivot;
@@ -720,8 +579,6 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
       }
     }
 
-    // Step 4: Multiply inverse matrix by unit vector
-    // result = inv(virtualization) * unit_vector
     std::vector<double> result_vector(n_gates, 0.0);
     for (int i = 0; i < n_gates; ++i) {
       for (int j = 0; j < n_gates; ++j) {
@@ -729,7 +586,6 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
       }
     }
 
-    // Step 5: Scale by spacing Quantity
     auto volt_unit = SymbolUnit::Volt();
     auto spacing_copy = std::make_shared<Quantity>(*spacing);
     spacing_copy->convert_to(volt_unit);
@@ -739,7 +595,6 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
       v *= spacing_value;
     }
 
-    // Step 6: Get current device state and create adjustment Point
     const auto &current_voltages = device().voltages();
     auto adjustment = std::make_shared<Point>();
 
@@ -749,19 +604,14 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
       adjustment->insert(conn, qty);
     }
 
-    // Step 7: Get current state as Point
     auto current_state = build_dvss_from_volt_map(current_voltages);
     auto current_point = current_state->to_point();
 
-    // Step 8: Add adjustment to current state
-    // Point supports addition operator
     auto final_point = current_point->operator+(adjustment);
 
-    // Pack and return
     pack_point(std::move(final_point), out, oc);
 
   } catch (const std::exception &e) {
-    // Error handling: set error result
     out[0] = {};
     out[0].tag = FALCON_TYPE_NIL;
     *oc = 1;
@@ -805,19 +655,16 @@ void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
     data.assign(resolution * resolution, 0.0);
   }
 
-  // Convert data to 2D PLFLT array
   std::vector<std::vector<PLFLT>> z2d(resolution,
                                       std::vector<PLFLT>(resolution));
   for (int i = 0; i < resolution; ++i)
     for (int j = 0; j < resolution; ++j)
       z2d[i][j] = static_cast<PLFLT>(data[i * resolution + j]);
 
-  // Create pointer-to-pointer for plimage
   std::vector<PLFLT *> zptrs(resolution);
   for (int i = 0; i < resolution; ++i)
     zptrs[i] = z2d[i].data();
 
-  // Set up plplot device and output
   plsetopt("bgcolor", "white");
   plsdev("pngcairo");
   plsfnam(output_filepath.c_str());
@@ -826,10 +673,7 @@ void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
   plenv(-1.0, 1.0, -1.0, 1.0, 0, 0);
   pllab(x_gate.c_str(), y_gate.c_str(), "Stability Diagram");
 
-  // Plot image: arguments are pointer-to-pointer, nx, ny, xmin, xmax, ymin,
-  // ymax, zmin, zmax, Dxmin, Dxmax, Dymin, Dymax
-  plimage(zptrs.data(), resolution, resolution, -1.0, 1.0, -1.0, 1.0, 0.0,
-          1.0, // zmin, zmax (adjust as needed)
+  plimage(zptrs.data(), resolution, resolution, -1.0, 1.0, -1.0, 1.0, 0.0, 1.0,
           -1.0, 1.0, -1.0, 1.0);
 
   plend();
@@ -838,13 +682,12 @@ void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
   out[0].tag = FALCON_TYPE_NIL;
   *oc = 1;
 }
+
 void BuildVirtualizationMatrix(const FalconParamEntry *params,
                                int32_t param_count, FalconResultSlot *out,
                                int32_t *oc) {
-  // Unpack configPath from params
   auto pm = unpack_params(params, param_count);
   std::string config_path = std::get<std::string>(pm.at("configPath"));
-  // Load YAML and extract Cgd
   YAML::Node config = YAML::LoadFile(config_path);
   const YAML::Node &cgd = config["capacitances"]["Cgd"];
   std::vector<double> flat;
@@ -857,9 +700,7 @@ void BuildVirtualizationMatrix(const FalconParamEntry *params,
   }
   auto shape = std::array<std::size_t, 2>{rows, cols};
   xt::xarray<double> arr = xt::adapt(flat, shape);
-  // Pack into FArray<double>
   auto farr = std::make_shared<falcon_core::generic::FArray<double>>(arr);
-  // Pack as FFI result
   out[0] = {};
   out[0].tag = FALCON_TYPE_OPAQUE;
   out[0].value.opaque.type_name = "FArray";

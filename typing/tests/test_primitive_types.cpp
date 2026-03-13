@@ -436,6 +436,72 @@ TEST_F(FfiRoundTripTest, StructArrayRoundTrip) {
   EXPECT_EQ(std::get<int64_t>(out_s2->get_field("x")), 3);
   EXPECT_EQ(std::get<int64_t>(out_s2->get_field("y")), 4);
 }
+TEST_F(FfiRoundTripTest, NonNativeStructRoundTrip) {
+  auto s1 = std::make_shared<StructInstance>("Point");
+  s1->set_field("x", int64_t{1});
+  s1->set_field("y", int64_t{2});
+  ParameterMap params;
+  params["s1"] = s1;
+  auto result = round_trip(params);
+
+  ASSERT_EQ(result.size(), 1u);
+  ASSERT_TRUE(
+      std::holds_alternative<std::shared_ptr<StructInstance>>(result[0]));
+  auto out = std::get<std::shared_ptr<StructInstance>>(result[0]);
+  ASSERT_NE(out, nullptr);
+  EXPECT_EQ(out->type_name, "Point");
+
+  EXPECT_EQ(std::get<int64_t>(out->get_field("x")), 1);
+  EXPECT_EQ(std::get<int64_t>(out->get_field("y")), 2);
+  EXPECT_FALSE(out->is_native());
+}
+TEST_F(FfiRoundTripTest, NonNativeStructArrayRoundTrip) {
+  auto arr = std::make_shared<StructInstance>("StructInstance");
+  auto s1 = std::make_shared<StructInstance>("Point");
+  struct Point {
+    int64_t x;
+    int64_t y;
+    Point(int64_t x, int64_t y) : x(x), y(y) {}
+  };
+  s1->native_handle = std::make_shared<Point>(1, 2);
+  auto s2 = std::make_shared<StructInstance>("Point");
+  s2->native_handle = std::make_shared<Point>(3, 4);
+  arr->fields->insert(
+      std::pair<std::string, std::shared_ptr<StructInstance>>("s1", s1));
+  arr->fields->insert(
+      std::pair<std::string, std::shared_ptr<StructInstance>>("s2", s2));
+
+  ParameterMap params;
+  params["arr"] = arr;
+  auto result = round_trip(params);
+
+  ASSERT_EQ(result.size(), 1u);
+  ASSERT_TRUE(
+      std::holds_alternative<std::shared_ptr<StructInstance>>(result[0]));
+  auto out = std::get<std::shared_ptr<StructInstance>>(result[0]);
+  ASSERT_NE(out, nullptr);
+  EXPECT_EQ(out->type_name, "StructInstance");
+  EXPECT_FALSE(out->is_native());
+  auto out_s1_variant = out->fields->find("s1")->second;
+  auto out_s1 =
+      std::get<std::shared_ptr<falcon::typing::StructInstance>>(out_s1_variant);
+  auto out_s2_variant = out->fields->find("s2")->second;
+  auto out_s2 =
+      std::get<std::shared_ptr<falcon::typing::StructInstance>>(out_s2_variant);
+  ASSERT_NE(out_s1, nullptr);
+  ASSERT_NE(out_s2, nullptr);
+  EXPECT_EQ(out_s1->type_name, "Point");
+  EXPECT_TRUE(out_s1->is_native());
+  EXPECT_TRUE(out_s2->is_native());
+  std::shared_ptr<Point> native_s1 =
+      std::static_pointer_cast<Point>(out_s1->native_handle.value());
+  std::shared_ptr<Point> native_s2 =
+      std::static_pointer_cast<Point>(out_s2->native_handle.value());
+  EXPECT_EQ(native_s1->x, 1);
+  EXPECT_EQ(native_s1->y, 2);
+  EXPECT_EQ(native_s2->x, 3);
+  EXPECT_EQ(native_s2->y, 4);
+}
 
 TEST_F(FfiRoundTripTest, NativeStructArrayRoundTrip) {
   auto arr = std::make_shared<ArrayValue>("StructInstance");
@@ -443,12 +509,11 @@ TEST_F(FfiRoundTripTest, NativeStructArrayRoundTrip) {
   struct Point {
     int64_t x;
     int64_t y;
-    Point(int64_t x, int64_t y) :
-            x(x), y(y) {}
+    Point(int64_t x, int64_t y) : x(x), y(y) {}
   };
-  s1->native_handle = std::make_shared<Point>(1,2);
+  s1->native_handle = std::make_shared<Point>(1, 2);
   auto s2 = std::make_shared<StructInstance>("Point");
-  s2->native_handle = std::make_shared<Point>(3,4);
+  s2->native_handle = std::make_shared<Point>(3, 4);
   arr->elements.push_back(s1);
   arr->elements.push_back(s2);
 
@@ -470,14 +535,40 @@ TEST_F(FfiRoundTripTest, NativeStructArrayRoundTrip) {
   EXPECT_EQ(out_s1->type_name, "Point");
   EXPECT_TRUE(out_s1->is_native());
   EXPECT_TRUE(out_s2->is_native());
-  std::shared_ptr<Point> native_s1= std::static_pointer_cast<Point>(
-        out_s1->native_handle.value());
-  std::shared_ptr<Point> native_s2= std::static_pointer_cast<Point>(
-        out_s2->native_handle.value());
+  std::shared_ptr<Point> native_s1 =
+      std::static_pointer_cast<Point>(out_s1->native_handle.value());
+  std::shared_ptr<Point> native_s2 =
+      std::static_pointer_cast<Point>(out_s2->native_handle.value());
   EXPECT_EQ(native_s1->x, 1);
   EXPECT_EQ(native_s1->y, 2);
   EXPECT_EQ(native_s2->x, 3);
   EXPECT_EQ(native_s2->y, 4);
+}
+TEST_F(FfiRoundTripTest, NativeSingleStructArrayRoundTrip) {
+  auto s1 = std::make_shared<StructInstance>("Point");
+  struct Point {
+    int64_t x;
+    int64_t y;
+    Point(int64_t x, int64_t y) : x(x), y(y) {}
+  };
+  s1->native_handle = std::make_shared<Point>(1, 2);
+
+  ParameterMap params;
+  params["s1"] = s1;
+  auto result = round_trip(params);
+
+  ASSERT_EQ(result.size(), 1u);
+  ASSERT_TRUE(
+      std::holds_alternative<std::shared_ptr<StructInstance>>(result[0]));
+  auto out = std::get<std::shared_ptr<StructInstance>>(result[0]);
+  ASSERT_NE(out, nullptr);
+  EXPECT_EQ(out->type_name, "Point");
+  EXPECT_TRUE(out->is_native());
+  std::shared_ptr<Point> native_s1 =
+      std::static_pointer_cast<Point>(out->native_handle.value());
+
+  EXPECT_EQ(native_s1->x, 1);
+  EXPECT_EQ(native_s1->y, 2);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
