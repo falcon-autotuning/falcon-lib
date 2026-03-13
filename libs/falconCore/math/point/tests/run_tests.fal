@@ -4,6 +4,7 @@ import "../point.fal";
 import "../../../physics/deviceStructures/connection/connection.fal";
 import "../../../physics/units/symbolUnit/symbolUnit.fal";
 import "../../quantity/quantity.fal";
+import "../../../../collections/map/map.fal";
 
 autotuner PointConstruction -> (int passed, int failed) {
     passed = 0; failed = 0;
@@ -19,6 +20,37 @@ autotuner PointConstruction -> (int passed, int failed) {
         SymbolUnit volt = SymbolUnit.Volt();
         Point p = Point.NewFromRaw(Map.New(), volt);
         Error err = t.ExpectTrue(p.IsEmpty(), "NewFromRaw creates empty point");
+        -> __end(runner, t);
+    }
+
+    state test_new_from_quantity_with_data (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        
+        // Create a Map<Connection, Quantity> with one entry
+        Map<Connection, Quantity> m = Map.New();
+        Connection p1 = Connection.NewPlungerGate("P1");
+        Quantity q1 = Quantity.New(0.5, volt);
+        m.Set(p1, q1);
+        
+        // Create Point from the populated map
+        Point p = Point.NewFromQuantity(m);
+        Error err = t.ExpectIntEq(1, p.Size(), "NewFromQuantity preserves map size");
+        -> __end(runner, t);
+    }
+
+    state test_new_from_raw_with_data (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        
+        // Create a Map<Connection, float> with multiple entries
+        Map<Connection, float> m = Map.New();
+        Connection b1 = Connection.NewBarrierGate("B1");
+        Connection p2 = Connection.NewPlungerGate("P2");
+        m.Set(b1, 0.1);
+        m.Set(p2, 0.3);
+        
+        // Create Point from the populated map
+        Point p = Point.NewFromRaw(m, volt);
+        Error err = t.ExpectIntEq(2, p.Size(), "NewFromRaw preserves map size with multiple entries");
         -> __end(runner, t);
     }
 }
@@ -46,6 +78,25 @@ autotuner PointInsert -> (int passed, int failed) {
         Error err = t.ExpectFalse(p.IsEmpty(), "Point not empty after Insert");
         -> __end(runner, t);
     }
+
+    state test_insert_preserves_existing (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        
+        // Start with a map containing one entry
+        Map<Connection, Quantity> m = Map.New();
+        Connection p1 = Connection.NewPlungerGate("P1");
+        Quantity q1 = Quantity.New(0.5, volt);
+        m.Set(p1, q1);
+        Point p = Point.NewFromQuantity(m);
+        
+        // Insert another entry
+        Connection b1 = Connection.NewBarrierGate("B1");
+        Quantity q2 = Quantity.New(0.2, volt);
+        p.Insert(b1, q2);
+        
+        Error err = t.ExpectIntEq(2, p.Size(), "Size increases after Insert preserving existing");
+        -> __end(runner, t);
+    }
 }
 
 autotuner PointEquality -> (int passed, int failed) {
@@ -64,24 +115,68 @@ autotuner PointEquality -> (int passed, int failed) {
         Error err = t.ExpectFalse(a.NotEqual(a), "NotEqual is false for same object");
         -> __end(runner, t);
     }
+
+    state test_equal_with_same_data (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        
+        // Create two identical points
+        Map<Connection, Quantity> m1 = Map.New();
+        Connection p1 = Connection.NewPlungerGate("P1");
+        Quantity q1 = Quantity.New(0.5, volt);
+        m1.Set(p1, q1);
+        Point a = Point.NewFromQuantity(m1);
+        
+        Map<Connection, Quantity> m2 = Map.New();
+        m2.Set(p1, q1);
+        Point b = Point.NewFromQuantity(m2);
+        
+        Error err = t.ExpectTrue(a.Equal(b), "Points with identical data are equal");
+        -> __end(runner, t);
+    }
 }
 
 autotuner PointJSON -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
 
-    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+    state test_to_json_empty (TestRunner runner, TestContext t) {
         Point p = Point.NewFromQuantity(Map.New());
         string json = p.ToJSON();
-        Error err = t.ExpectStrNe("", json, "ToJSON returns non-empty string");
+        Error err = t.ExpectStrNe("", json, "ToJSON returns non-empty string for empty point");
         -> __end(runner, t);
     }
 
-    state test_roundtrip (TestRunner runner, TestContext t) {
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Map<Connection, Quantity> m = Map.New();
+        Connection p1 = Connection.NewPlungerGate("P1");
+        Quantity q = Quantity.New(0.5, volt);
+        m.Set(p1, q);
+        Point p = Point.NewFromQuantity(m);
+        string json = p.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON returns non-empty string for non-empty point");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_empty (TestRunner runner, TestContext t) {
         Point orig = Point.NewFromQuantity(Map.New());
         string json = orig.ToJSON();
         Point rt = Point.FromJSON(json);
-        Error err = t.ExpectTrue(orig.Equal(rt), "JSON round-trip preserves equality");
+        Error err = t.ExpectTrue(orig.Equal(rt), "JSON round-trip preserves equality for empty point");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_with_data (TestRunner runner, TestContext t) {
+        SymbolUnit volt = SymbolUnit.Volt();
+        Map<Connection, Quantity> m = Map.New();
+        Connection p1 = Connection.NewPlungerGate("P1");
+        Quantity q = Quantity.New(0.5, volt);
+        m.Set(p1, q);
+        
+        Point orig = Point.NewFromQuantity(m);
+        string json = orig.ToJSON();
+        Point rt = Point.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(rt), "JSON round-trip preserves equality with data");
         -> __end(runner, t);
     }
 }
