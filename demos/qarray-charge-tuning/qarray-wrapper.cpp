@@ -44,11 +44,14 @@
 #include <yaml-cpp/yaml.h>
 namespace {
 static bool python_initialized = false;
+static std::unique_ptr<pybind11::scoped_interpreter> g_interpreter;
+
 static void ensure_python_interpreter() {
   if (!python_initialized) {
     dlopen("/opt/falcon/lib/libpython3.12.so", RTLD_NOW | RTLD_GLOBAL);
-    static pybind11::scoped_interpreter guard{};
+    g_interpreter = std::make_unique<pybind11::scoped_interpreter>();
     python_initialized = true;
+    spdlog::info("Python interpreter initialized for qarray-wrapper");
   }
 }
 } // namespace
@@ -82,6 +85,32 @@ using QDevice = falcon::qarray::Device;
 static QDevice *g_device = nullptr;
 static std::string current_config_path;
 
+static void initialize_device_internal(const std::string &config_path) {
+  spdlog::info("Initializing device with config: {}", config_path);
+  ensure_python_interpreter();
+
+  if (g_device != nullptr) {
+    spdlog::debug("Deleting existing device instance");
+    delete g_device;
+    g_device = nullptr;
+  }
+
+  try {
+    g_device = new QDevice(config_path);
+    current_config_path = config_path;
+    spdlog::info("Device successfully initialized with {} gates",
+                 g_device->gate_names().size());
+  } catch (const std::exception &e) {
+    spdlog::error("Failed to initialize device with config {}: {}", config_path,
+                  e.what());
+    if (g_device != nullptr) {
+      delete g_device;
+      g_device = nullptr;
+    }
+    throw;
+  }
+}
+
 static void initialize_device() {
   ensure_python_interpreter();
   const char *env_path = std::getenv("QARRAY_CONFIG_PATH");
@@ -89,15 +118,14 @@ static void initialize_device() {
 #define QARRAY_CONFIG "/opt/qarray/device.yaml"
 #endif
   std::string config_path = env_path ? env_path : QARRAY_CONFIG;
+
+  // Only initialize if not already initialized with this path
   if (g_device != nullptr && current_config_path == config_path) {
+    spdlog::debug("Device already initialized with {}", config_path);
     return;
   }
-  if (g_device != nullptr) {
-    delete g_device;
-    g_device = nullptr;
-  }
-  g_device = new QDevice(config_path);
-  current_config_path = config_path;
+
+  initialize_device_internal(config_path);
 }
 
 static QDevice &device() {
@@ -107,29 +135,24 @@ static QDevice &device() {
   return *g_device;
 }
 
-void restart_device(const std::string &config_path) {
-  spdlog::info("The config_path is " + config_path);
-  ensure_python_interpreter();
-  if (g_device != nullptr && current_config_path == config_path) {
-    return;
-  }
-  if (g_device != nullptr) {
-    delete g_device;
-    g_device = nullptr;
-  }
-  g_device = new QDevice(config_path);
-  current_config_path = config_path;
-}
-
 extern "C" void RestartDevice(const FalconParamEntry *params,
                               int32_t param_count, FalconResultSlot *out,
                               int32_t *oc) {
   auto pm = unpack_params(params, param_count);
   std::string config_path = std::get<std::string>(pm.at("configPath"));
-  restart_device(config_path);
-  out[0] = {};
-  out[0].tag = FALCON_TYPE_NIL;
-  *oc = 1;
+
+  try {
+    initialize_device_internal(config_path);
+    out[0] = {};
+    out[0].tag = FALCON_TYPE_NIL;
+    *oc = 1;
+  } catch (const std::exception &e) {
+    spdlog::error("RestartDevice failed: {}", e.what());
+    out[0] = {};
+    out[0].tag = FALCON_TYPE_NIL;
+    *oc = 1;
+    throw;
+  }
 }
 
 // ── pack helpers
@@ -618,6 +641,46 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
   }
 }
 
+void plot_stability_diagram(const std::string &filename,
+                            const std::vector<double> &data, int resolution,
+                            double xmin, double xmax, double ymin, double ymax,
+                            const std::string &xlabel,
+                            const std::string &ylabel) {
+  if (data.empty())
+    return;
+
+  std::vector<std::vector<PLFLT>> z2d(resolution,
+                                      std::vector<PLFLT>(resolution));
+  for (int i = 0; i < resolution; ++i)
+    for (int j = 0; j < resolution; ++j)
+      z2d[i][j] = static_cast<PLFLT>(data[i * resolution + j]);
+
+  std::vector<PLFLT *> zptrs(resolution);
+  for (int i = 0; i < resolution; ++i)
+    zptrs[i] = z2d[i].data();
+
+  plsetopt("bgcolor", "white");
+  plsdev("pngcairo");
+  plsfnam(filename.c_str());
+  plinit();
+  plenv(xmin, xmax, ymin, ymax, 0, 0);
+  pllab(xlabel.c_str(), ylabel.c_str(), "Charge Stability Diagram");
+
+  // Find min/max for scaling
+  double zmin = data[0], zmax = data[0];
+  for (double v : data) {
+    if (v < zmin)
+      zmin = v;
+    if (v > zmax)
+      zmax = v;
+  }
+  if (zmin == zmax)
+    zmax += 1.0;
+
+  plimage(zptrs.data(), resolution, resolution, xmin, xmax, ymin, ymax, zmin,
+          zmax, xmin, xmax, ymin, ymax);
+  plend();
+}
 void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
                           FalconResultSlot *out, int32_t *oc) {
   auto pm = unpack_params(params, param_count);
@@ -632,50 +695,19 @@ void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
   std::string x_gate = gate_names[0];
   std::string y_gate = gate_names[1];
   int resolution = 100;
-  auto result =
-      device().scan_2d(x_gate, y_gate, {-1.0, 1.0}, {-1.0, 1.0}, resolution);
-
+  double plot_range = 2.0;
+  auto result = device().scan_2d(x_gate, y_gate, {-2 * plot_range, plot_range},
+                                 {-plot_range, plot_range}, resolution);
   std::vector<double> data;
   if (result.has_sensor && !result.differentiated_signal.empty()) {
-    int n_sensors = 1;
-    if (!result.differentiated_signal_shape.empty() &&
-        result.differentiated_signal_shape.size() >= 2) {
-      n_sensors = result.differentiated_signal_shape[1];
-    }
-    for (int i = 0; i < resolution * resolution; ++i) {
-      int idx = i * n_sensors;
-      if (idx < result.differentiated_signal.size()) {
-        data.push_back(result.differentiated_signal[idx]);
-      } else {
-        data.push_back(0.0);
-      }
-    }
+    data = result.differentiated_signal;
   } else {
     data.assign(resolution * resolution, 0.0);
   }
 
-  std::vector<std::vector<PLFLT>> z2d(resolution,
-                                      std::vector<PLFLT>(resolution));
-  for (int i = 0; i < resolution; ++i)
-    for (int j = 0; j < resolution; ++j)
-      z2d[i][j] = static_cast<PLFLT>(data[i * resolution + j]);
-
-  std::vector<PLFLT *> zptrs(resolution);
-  for (int i = 0; i < resolution; ++i)
-    zptrs[i] = z2d[i].data();
-
-  plsetopt("bgcolor", "white");
-  plsdev("pngcairo");
-  plsfnam(output_filepath.c_str());
-  plinit();
-
-  plenv(-1.0, 1.0, -1.0, 1.0, 0, 0);
-  pllab(x_gate.c_str(), y_gate.c_str(), "Stability Diagram");
-
-  plimage(zptrs.data(), resolution, resolution, -1.0, 1.0, -1.0, 1.0, 0.0, 1.0,
-          -1.0, 1.0, -1.0, 1.0);
-
-  plend();
+  plot_stability_diagram(output_filepath, data, resolution, -2 * plot_range,
+                         plot_range, -plot_range, plot_range, x_gate + " (V)",
+                         y_gate + " (V)");
 
   out[0] = {};
   out[0].tag = FALCON_TYPE_NIL;

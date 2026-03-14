@@ -149,8 +149,9 @@ struct Device::Impl {
 // Device public API
 // ─────────────────────────────────────────────────────────────────────────────
 
-Device::Device(const std::string &config_path)
-    : impl_(std::make_unique<Impl>(config_path)) {}
+Device::Device(const std::string &config_path, bool accumulation_mode)
+    : impl_(std::make_unique<Impl>(config_path)),
+      accumulation_mode_(accumulation_mode) {}
 
 Device Device::from_config_path(const std::string &yaml_path) {
   return Device(yaml_path);
@@ -162,11 +163,25 @@ Device &Device::operator=(Device &&) noexcept = default;
 
 void Device::set_voltage(const std::string &gate_name, double value) {
   py::gil_scoped_acquire gil;
-  impl_->py_device.attr("set_voltage")(gate_name, value);
+  double set_voltage = value;
+  if (accumulation_mode_) {
+    // In accumulation mode, set_voltage adds to the existing voltage
+    set_voltage = -value;
+  }
+  impl_->py_device.attr("set_voltage")(gate_name, set_voltage);
 }
 
 void Device::set_voltages(const std::map<std::string, double> &voltage_dict) {
   py::gil_scoped_acquire gil;
+  if (accumulation_mode_) {
+    // In accumulation mode, set_voltages adds to the existing voltages
+    std::map<std::string, double> adjusted_dict;
+    for (const auto &[gate, voltage] : voltage_dict) {
+      adjusted_dict[gate] = -voltage;
+    }
+    impl_->py_device.attr("set_voltages")(adjusted_dict);
+    return;
+  }
   impl_->py_device.attr("set_voltages")(voltage_dict);
 }
 
@@ -182,6 +197,16 @@ std::vector<std::string> Device::gate_names() const {
 
 std::map<std::string, double> Device::voltages() const {
   py::gil_scoped_acquire gil;
+  if (accumulation_mode_) {
+    // In accumulation mode, voltages() returns the accumulated voltages
+    std::map<std::string, double> raw_voltages =
+        impl_->py_device.attr("voltages").cast<std::map<std::string, double>>();
+    std::map<std::string, double> adjusted_voltages;
+    for (const auto &[gate, voltage] : raw_voltages) {
+      adjusted_voltages[gate] = -voltage;
+    }
+    return adjusted_voltages;
+  }
   return impl_->py_device.attr("voltages")
       .cast<std::map<std::string, double>>();
 }
@@ -192,9 +217,16 @@ ScanResult2D Device::scan_2d(const std::string &x_gate,
                              std::pair<double, double> y_range,
                              int resolution) {
   py::gil_scoped_acquire gil;
+  std::pair<double, double> temp_x_range = x_range;
+  std::pair<double, double> temp_y_range = y_range;
+  if (accumulation_mode_) {
+    // In accumulation mode, scan_2d returns the accumulated voltages
+    temp_x_range = {-x_range.second, -x_range.first};
+    temp_y_range = {-y_range.second, -y_range.first};
+  }
   py::dict result = impl_->py_device.attr("scan_2d")(
-      x_gate, y_gate, py::make_tuple(x_range.first, x_range.second),
-      py::make_tuple(y_range.first, y_range.second), resolution);
+      x_gate, y_gate, py::make_tuple(temp_x_range.first, temp_x_range.second),
+      py::make_tuple(temp_y_range.first, temp_y_range.second), resolution);
 
   ScanResult2D out;
   out.x_gate = x_gate;
@@ -223,8 +255,14 @@ ScanResult1D Device::scan_1d(const std::string &gate,
                              std::pair<double, double> v_range,
                              int resolution) {
   py::gil_scoped_acquire gil;
+  std::pair<double, double> temp_v_range = v_range;
+  if (accumulation_mode_) {
+    // In accumulation mode, scan_1d returns the accumulated voltages
+    temp_v_range = {-v_range.second, -v_range.first};
+  }
   py::dict result = impl_->py_device.attr("scan_1d")(
-      gate, py::make_tuple(v_range.first, v_range.second), resolution);
+      gate, py::make_tuple(temp_v_range.first, temp_v_range.second),
+      resolution);
 
   ScanResult1D out;
   out.gate = gate;
@@ -251,7 +289,19 @@ ScanResultRay Device::scan_ray(const std::map<std::string, double> &start,
                                const std::map<std::string, double> &end,
                                int resolution) {
   py::gil_scoped_acquire gil;
-  py::dict result = impl_->py_device.attr("scan_ray")(start, end, resolution);
+  std::map<std::string, double> temp_start = start;
+  std::map<std::string, double> temp_end = end;
+  if (accumulation_mode_) {
+    // In accumulation mode, scan_ray returns the accumulated voltages
+    for (const auto &[gate, voltage] : end) {
+      temp_start[gate] = -voltage;
+    }
+    for (const auto &[gate, voltage] : start) {
+      temp_end[gate] = -voltage;
+    }
+  }
+  py::dict result =
+      impl_->py_device.attr("scan_ray")(temp_start, temp_end, resolution);
 
   ScanResultRay out;
   out.start = start;

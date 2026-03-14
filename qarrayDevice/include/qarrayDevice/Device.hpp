@@ -90,7 +90,9 @@ public:
   // ── Construction ──────────────────────────────────────────────────────────
 
   /// Construct from a YAML config file path.
-  explicit Device(const std::string &config_path);
+  /// Accumulation mode is required to signify direction of stability diagram
+  explicit Device(const std::string &config_path,
+                  bool accumulation_mode = true);
 
   /// Construct from a pre-parsed config map (string→variant).
   /// Keys must match the expected YAML keys of device.py.
@@ -132,6 +134,7 @@ public:
 private:
   struct Impl;
   std::unique_ptr<Impl> impl_;
+  bool accumulation_mode_;
 };
 
 } // namespace falcon::qarray

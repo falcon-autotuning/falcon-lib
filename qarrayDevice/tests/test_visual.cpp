@@ -45,7 +45,7 @@ void plot_stability_diagram(const std::string &filename,
                                       std::vector<PLFLT>(resolution));
   for (int i = 0; i < resolution; ++i)
     for (int j = 0; j < resolution; ++j)
-      z2d[i][j] = static_cast<PLFLT>(data[i * resolution + j]);
+      z2d[j][i] = static_cast<PLFLT>(data[i * resolution + j]);
 
   std::vector<PLFLT *> zptrs(resolution);
   for (int i = 0; i < resolution; ++i)
@@ -119,7 +119,9 @@ TEST(DeviceVisual, ChargeStabilityDiagram) {
   falcon::qarray::Device dev(config_path);
 
   int res = 100;
-  auto result = dev.scan_2d("P1", "P2", {-1.0, 1.0}, {-1.0, 1.0}, res);
+  double scale = 2.0;
+  auto result =
+      dev.scan_2d("P1", "P2", {-2 * scale, scale}, {-scale, scale}, res);
 
   std::vector<double> data;
   if (result.has_sensor && !result.differentiated_signal.empty()) {
@@ -130,8 +132,8 @@ TEST(DeviceVisual, ChargeStabilityDiagram) {
 
   std::filesystem::create_directories("plots");
   std::string out_path = "plots/stability_diagram.png";
-  plot_stability_diagram(out_path, data, res, -1.0, 1.0, -1.0, 1.0, "P1 (V)",
-                         "P2 (V)");
+  plot_stability_diagram(out_path, data, res, -scale, scale, -scale, scale,
+                         "P1 (V)", "P2 (V)");
 }
 
 TEST(DeviceVisual, Scan1D) {
