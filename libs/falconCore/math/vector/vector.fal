@@ -2,13 +2,13 @@ import (
 "../../communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
 "../point/point.fal"
 "../../math/quantity/quantity.fal"
-"../../../physics/deviceStructures/connection/connection.fal"
-"../../../physics/units/symbolUnit/symbolUnit.fal"
+"../../physics/deviceStructures/connection/connection.fal"
+"../../physics/units/symbolUnit/symbolUnit.fal"
 )
 ffimport "vector-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
 struct Vector {
-    routine NewFromStart (point::Point start) -> (Vector v)
-    routine New (point::Point start, point::Point end) -> (Vector v)
+    routine NewFromStart (point::Point begin) -> (Vector v)
+    routine New (point::Point begin, point::Point end) -> (Vector v)
     routine EndPoint () -> (point::Point p)
     routine StartPoint () -> (point::Point p)
     routine Connections () -> (array::Array<connection::Connection> conns)
@@ -26,16 +26,16 @@ struct Vector {
     routine NotEqual (Vector other) -> (bool notequal)
     routine FromJSON (string json) -> (Vector dstate)
     routine ToJSON () -> (string json)
-    routine UpdateStartFromStates (deviceVoltageStates::DeviceVoltageStates states) -> (vector::Vector v)
-    routine Translate (Point point) -> (vector::Vector v)
-    routine TranslateToOrigin () -> (vector::Vector v)
-    routine Extend (float extension) -> (vector::Vector v)
-    routine Extend (int extension) -> (vector::Vector v)
-    routine Shrink (float extension) -> (vector::Vector v)
-    routine Shrink (int extension) -> (vector::Vector v)
-    routine UnitVector () -> (vector::Vector v)
-    routine Normalize () -> (vector::Vector v)
-    routine Project (vector::Vector other) -> (vector::Vector v)
+    routine UpdateStartFromStates (deviceVoltageStates::DeviceVoltageStates states) -> (Vector v)
+    routine Translate (Point point) -> (Vector v)
+    routine TranslateToOrigin () -> (Vector v)
+    routine Extend (float extension) -> (Vector v)
+    routine Extend (int extension) -> (Vector v)
+    routine Shrink (float extension) -> (Vector v)
+    routine Shrink (int extension) -> (Vector v)
+    routine UnitVector () -> (Vector v)
+    routine Normalize () -> (Vector v)
+    routine Project (Vector other) -> (Vector v)
     routine UpdateUnit (symbolUnit::SymbolUnit unit) -> ()
     routine Size () -> (int size) {
         size = this.Coordinates().Size();
