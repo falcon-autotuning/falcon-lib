@@ -1,0 +1,10 @@
+site_name: Falcon Lib
+
+nav:
+  - Home: index.md
+  - API Reference: api_reference.md
+  - Guides: guides.md
+  - Tutorials: tutorials.md
+
+theme:
+  name: material
