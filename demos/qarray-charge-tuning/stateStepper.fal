@@ -89,6 +89,7 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
             terminal;
         }
         // Returns to the center
+        // Need to go to the average of the locations[0] and the startingStates
         hub::Ramp(locations[0].ToPoint().Coordinates());
         terminal; 
     }

@@ -410,6 +410,7 @@ void CollectCurrentDeviceState(const FalconParamEntry * /*params*/,
   pack_dvss(std::move(dvss), out, oc);
 }
 
+// We define a plunger gate from this config as a gate beginning with a P
 void CollectCurrentPlungerGates(const FalconParamEntry * /*params*/,
                                 int32_t /*param_count*/, FalconResultSlot *out,
                                 int32_t *oc) {
@@ -417,7 +418,9 @@ void CollectCurrentPlungerGates(const FalconParamEntry * /*params*/,
   std::vector<ConnectionSP> conns;
   conns.reserve(names.size());
   for (const auto &name : names) {
-    conns.push_back(Connection::PlungerGate(name));
+    if (name.find("P") != std::string::npos) {
+      conns.push_back(Connection::PlungerGate(name));
+    }
   }
   pack_connection_array(std::move(conns), out, oc);
 }
@@ -721,13 +724,22 @@ void BuildVirtualizationMatrix(const FalconParamEntry *params,
   std::string config_path = std::get<std::string>(pm.at("configPath"));
   YAML::Node config = YAML::LoadFile(config_path);
   const YAML::Node &cgd = config["capacitances"]["Cgd"];
-  std::vector<double> flat;
+  const YAML::Node &gate_names = config["gate_names"];
+  std::vector<size_t> plunger_indices;
+  for (size_t i = 0; i < gate_names.size(); ++i) {
+    std::string name = gate_names[i].as<std::string>();
+    if (!name.empty() && name[0] == 'P') {
+      plunger_indices.push_back(i);
+    }
+  }
   size_t rows = cgd.size();
-  size_t cols = rows > 0 ? cgd[0].size() : 0;
+  size_t cols = plunger_indices.size();
+  std::vector<double> flat;
   flat.reserve(rows * cols);
   for (const auto &row : cgd) {
-    for (const auto &v : row)
-      flat.push_back(v.as<double>());
+    for (size_t idx : plunger_indices) {
+      flat.push_back(row[idx].as<double>());
+    }
   }
   auto shape = std::array<std::size_t, 2>{rows, cols};
   xt::xarray<double> arr = xt::adapt(flat, shape);
