@@ -160,32 +160,24 @@ install-lsp-framework: install-vcpkg-deps
 
 install-deps: deps install-core install-vcpkg-deps install-lsp-framework
 
-build-all: install-vcpkg-deps
-	@echo "Building all components..."
-	$(MAKE) -C database build-release
-	$(MAKE) -C database install
-	$(MAKE) -C autotuner build-release
-	$(MAKE) -C autotuner install
-	$(MAKE) -C routine build-release
-	$(MAKE) -C routine install
-	@echo "✓ All components built"
-
-test-all:
-	@echo "Testing all components..."
-	$(MAKE) -C database test
-	$(MAKE) -C autotuner test
-	@echo "✓ All tests passed"
-
 install:
 	@echo "Installing all components..."
 	$(MAKE) -C database install
-	$(MAKE) -C autotuner install
+	$(MAKE) -C comms install
+	$(MAKE) -C typing install
+	$(MAKE) -C routine install
+	$(MAKE) -C qarrayDevice install
+	$(MAKE) -C dsl install
 	@echo "✓ All components installed"
 
 clean:
 	@echo "Cleaning all components..."
 	$(MAKE) -C database clean
-	$(MAKE) -C autotuner clean
+	$(MAKE) -C comms clean
+	$(MAKE) -C typing clean
+	$(MAKE) -C routine clean
+	$(MAKE) -C qarrayDevice clean
+	$(MAKE) -C dsl clean
 	rm -rf $(VCPKG_ROOT)
 	rm -rf ./vcpkg_installed/
 	@echo "✓ Clean complete"
@@ -202,8 +194,6 @@ help:
 	@echo "  make install-deps       - Installs all dependencies in order"
 	@echo ""
 	@echo "Build targets:"
-	@echo "  make build-all         - Build all components"
-	@echo "  make test-all          - Test all components"
 	@echo "  make install           - Install all components"
 	@echo "  make clean             - Clean all builds"
 	@echo ""
