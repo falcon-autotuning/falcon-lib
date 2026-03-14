@@ -98,8 +98,8 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
         // Returns to the center
         // Need to go to the average of the locations[0] and the startingStates
         vector::Vector diff = Vector.New(locations[0].ToPoint(), locations[1].ToPoint());
-        diff.Shrink(2.0);
-        hub::Ramp(diff.EndPoint().Coordinates());
+        vector::Vector shrunk = diff.Shrink(2.0);
+        hub::Ramp(shrunk.EndPoint().Coordinates());
         terminal; 
     }
 }

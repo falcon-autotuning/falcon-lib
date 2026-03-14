@@ -47,7 +47,7 @@ class Device:
                 Cds=Cds,
                 Cgs=Cgs,
                 charge_carrier="electrons",
-                T=1.5,
+                T=0.1,
             )
             # self.model.charge_carrier = "electrons"
             # self.model.update_capacitance_matrices(Cdd, Cgd, Cds, Cgs)
@@ -56,7 +56,7 @@ class Device:
                 Cdd=Cdd,
                 Cgd=Cgd,
                 charge_carrier="electron",
-                T=1.5,
+                T=0.1,
             )
 
     def _load_or_generate_capacitances(self, config_dir: Path | dict[str, Any]):

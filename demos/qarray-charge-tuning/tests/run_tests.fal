@@ -39,7 +39,7 @@ autotuner FirstTest -> (int passed, int failed) {
             .SetValue(virtualization.ToJSON());
         database::Insert(dcharVirtualization);
         // 2. Build the resolution variable
-        int resolution = 150;
+        int resolution = 200;
         database::DeviceCharacteristic dcharResolution = database::DeviceCharacteristic.New()
             .SetScope("device")
             .SetName("resolution")
@@ -54,7 +54,7 @@ autotuner FirstTest -> (int passed, int failed) {
             .SetValue(virtualizationNames.ToJSON());
         database::Insert(dcharVirtualizationNames);
         // 4. Build the interdotSpacing variable
-        Quantity interdotSpacing = Quantity.New(2.0, symbolUnit::SymbolUnit.Volt());
+        Quantity interdotSpacing = Quantity.New(1.7, symbolUnit::SymbolUnit.Volt());
         database::DeviceCharacteristic dcharInterdotSpacing = database::DeviceCharacteristic.New()
             .SetScope("device")
             .SetName("interdotSpacing")

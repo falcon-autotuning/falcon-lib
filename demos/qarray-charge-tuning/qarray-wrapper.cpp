@@ -778,7 +778,7 @@ void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
   }
   std::string x_gate = gate_names[0];
   std::string y_gate = gate_names[1];
-  int resolution = 100;
+  int resolution = 200;
   auto result =
       device().scan_2d(x_gate, y_gate, {minx, maxx}, {miny, maxy}, resolution);
   std::vector<double> data;
