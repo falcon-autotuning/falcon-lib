@@ -1,25 +1,13 @@
 # QArray Charge Tuning Demo & Tests
 
-A modern C++ demo for QArray charge tuning, using the Falcon device characteristics database (libpqxx backend).
+A modern demo for QArray charge tuning in FAlCon, using the device characteristics database for global variables (libpqxx backend).
 
-## Features
+This demo only currently runs on Linux, it may support WSL.
 
-- **DeviceCharacteristic** storage with extended metadata (gates, scope, uncertainty)
-- **CRUD operations**: Insert, query by name/hash, delete, clear
-- **Batch operations**: Get many characteristics, hash range queries
-- **JSON snapshotting**: Export/import database state for deployment
-- **JSON Schema**: Documented snapshot format
-- **Charge tuning demo**: Run QArray charge tuning and generate stability diagrams
-- **Comprehensive tests**: Unit and integration tests for demo and database
+The main two autotuners responsible for this measurement are the ChargeConfigurationTuner and the BlipStateStepper.
+The ChargeConfigurationTuner runs the high level autotuning of the charge system, and the StateStepper handles the finer details of how to actually accomplish crossing a charge boundary.
 
-## Dependencies
-
-- CMake >= 3.20
-- C++17 compiler
-- PostgreSQL (libpqxx)
-- nlohmann_json >= 3.2.0
-- matplotplusplus (for plotting)
-- Google Test (for tests)
+We recommend running this demo using the falcon-test CLI. We have setup a psuedotest that sets up the environment for the autotuner and generates a local Charge Stability Diagram of the local area.
 
 ## Setup
 
@@ -31,72 +19,43 @@ Ensure PostgreSQL is running and create the Falcon test database:
 export TEST_DATABASE_URL="postgresql://falcon_test:falcon_test_password@127.0.0.1:5432/falcon_test"
 ```
 
-### 2. Build the demo
+### 2. Run the demo
+
+The log-level lets users customize the amount of logging they want to see when running the CLI.
 
 ```bash
-# From the falcon repository root
-cd demos/qarray-charge-tuning
-
-# First time setup
-make deps
-
-# Build demo and tests
-make dev              # Build debug + run tests
-make release          # Build release + run tests
-
-# Or step by step
-make build-release
-make test
-
-# Clean rebuild
-make clean
-make build-release
+# From the demos/qarray-charge-tuning
+make docker-up
+# this runs the test
+falcon-test ./tests/run_tests.fal --log-level info
 ```
 
-### 3. Run the demo
+### 3. Feel free to customize the measurements
 
-```bash
-./build/qarray_charge_tuning_demo
+As a follow-up to the description in the Arxiv preprint, this demo goes more in detail into the specifics of FAlCon.
+One of the most important details with autotuning systems in general is **Variable scoping**.
+Algorithm writers need to maintain exact management of these variables as they transition in and out of scope.
+The simplest example of something like this
+
+```fal
+autotuner Blip -> (Error err) {
+int autotuner_scope_variable;
+start -> init;
+state init {
+  int state_scope_variable;
+  terminal;
+}
+}
 ```
 
-### 4. Run tests
+where we have explicitly labelled the scope of the variables.
+When inside of a state like the **init** state, you have access to both the autotuner_scope_variable and the state_scope_variable.
+However the autotuner does not know about the state_scope_variable.
 
-```bash
-./build/tests/qarray_charge_tuning_tests
-```
+You could imagine more complex scenarios where you might want to carry variables over through the scope of the outermost autotuner and inject themselves directly when needed.
+A good example of this might be sweep resolution.
+Piping this through all the autotuner layers above is inefficient.
+Instead we can make it appear in thin-air.
 
-## Environment Variables
-
-- `FALCON_DATABASE_URL`: PostgreSQL connection string used by default
-  - Example: `postgresql://user:password@127.0.0.1:5432/dbname`
-  - Can be overridden by passing explicit connection string to constructors
-  - **Connection is lazy** - database connection happens on first operation, not at construction
-
-### Connection String Priority
-
-1. **Explicit constructor parameter** (highest priority)
-2. **FALCON_DATABASE_URL environment variable**
-3. **Error** if neither is provided
-
-### Examples
-
-```cpp
-// Use FALCON_DATABASE_URL environment variable
-auto db = falcon::database::ReadOnlyDatabaseConnection();
-
-// Override with explicit connection string
-auto db = falcon::database::ReadOnlyDatabaseConnection(
-    "postgresql://user:pass@host:port/db");
-
-// Connection is lazy - happens on first operation
-auto result = db.get_by_name("device1"); // Connection established here
-```
-
-### Testing
-
-For tests, use `TEST_DATABASE_URL` environment variable which the test fixtures prioritize:
-
-```bash
-export TEST_DATABASE_URL="postgresql://falcon_test:falcon_test_password@127.0.0.1:5432/falcon_test"
-make test
-```
+This is what we use the PostgreSQL database for.
+There is a CLI that users can use to set this up when running this in real scenarios but for now we construct them in the test.
