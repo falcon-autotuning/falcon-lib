@@ -83,20 +83,21 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
         num_blips, locations = hub::AnalyzeBlips(startingStates.Coordinates(), endstate.Coordinates(), resolution);
         Array<string> substrings = Array.New();
         substrings.PushBack(strings::FromInt(num_blips));
-        string debug = strings::Format("We found {} blips", substrings);
-        log::Info(debug);
         if (num_blips == 0) {
             log::Err("We found no blips");
+            err = errorMsg("Found no blips");
             terminal;
         }
-        if (num_blips > 1) {
-            log::Err("We found more than 1 blip");
+        if (num_blips < 2) {
+            log::Err("We found less than 2 blips");
+            err = errorMsg("Found less than 2 blips");
             terminal;
         }
-        //log::Info(strings::Concat("The blip we found is at ", locations[0].ToJSON()));
+        string debug = strings::Format("We found {} blips", substrings);
+        log::Info(debug);
         // Returns to the center
         // Need to go to the average of the locations[0] and the startingStates
-        vector::Vector diff = Vector.New(startingStates, locations[0].ToPoint());
+        vector::Vector diff = Vector.New(locations[0].ToPoint(), locations[1].ToPoint());
         diff.Shrink(2.0);
         hub::Ramp(diff.EndPoint().Coordinates());
         terminal; 

@@ -404,25 +404,25 @@ static std::vector<int> detect_peaks(const std::vector<double> &signal,
   if (n < 3) {
     return {};
   }
-
+  std::vector<double> abs_signal(n);
+  for (int i = 0; i < n; ++i) {
+    abs_signal[i] = std::abs(signal[i]);
+  }
   double sum = 0.0;
-  for (double v : signal) {
+  for (double v : abs_signal) {
     sum += v;
   }
   double mean = sum / n;
-
   double sq_sum = 0.0;
-  for (double v : signal) {
+  for (double v : abs_signal) {
     sq_sum += (v - mean) * (v - mean);
   }
   double stddev = std::sqrt(sq_sum / n);
-
   double threshold = mean + (threshold_sigma * stddev);
-
   std::vector<int> peaks;
   for (int i = 1; i < n - 1; ++i) {
-    if (signal[i] > signal[i - 1] && signal[i] > signal[i + 1] &&
-        signal[i] > threshold) {
+    if (abs_signal[i] > abs_signal[i - 1] &&
+        abs_signal[i] > abs_signal[i + 1] && abs_signal[i] > threshold) {
       peaks.push_back(i);
     }
   }
@@ -478,9 +478,18 @@ void Ramp(const FalconParamEntry *params, int32_t param_count,
   auto stop_map = dsl_map_to_volt_map(stop_inst);
 
   auto start_map = device().voltages();
+  spdlog::info("Ramp: Start voltages:");
+  for (const auto &kv : start_map) {
+    spdlog::info("  {}: {}", kv.first, kv.second);
+  }
+  spdlog::info("Ramp: Stop voltages:");
+  for (const auto &kv : stop_map) {
+    spdlog::info("  {}: {}", kv.first, kv.second);
+  }
 
   constexpr int ramp_resolution = 4;
   device().scan_ray(start_map, stop_map, ramp_resolution);
+  device().set_voltages(stop_map);
 
   out[0] = {};
   out[0].tag = FALCON_TYPE_NIL;
@@ -497,8 +506,17 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
 
   auto start_map = dsl_map_to_volt_map(start_inst);
   auto stop_map = dsl_map_to_volt_map(stop_inst);
+  spdlog::info("AnalyzeBlips: Start voltages:");
+  for (const auto &kv : start_map) {
+    spdlog::info("  {}: {}", kv.first, kv.second);
+  }
+  spdlog::info("AnalyzeBlips: Stop voltages:");
+  for (const auto &kv : stop_map) {
+    spdlog::info("  {}: {}", kv.first, kv.second);
+  }
 
   auto result = device().scan_ray(start_map, stop_map, resolution);
+  device().set_voltages(stop_map);
 
   std::vector<double> signal;
   signal.reserve(static_cast<size_t>(resolution));
@@ -542,21 +560,27 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
   for (int peak_idx : peak_indices) {
     std::vector<DeviceVoltageStateSP> dvs_vec;
     dvs_vec.reserve(static_cast<size_t>(n_gates));
-
     for (int g = 0; g < n_gates; ++g) {
-      double v = 0.0;
-      auto traj_idx = static_cast<size_t>((peak_idx * n_gates) + g);
-      if (!result.trajectory.empty() && traj_idx < result.trajectory.size()) {
-        v = result.trajectory[traj_idx];
-      }
-      auto conn = Connection::PlungerGate(gate_order[static_cast<size_t>(g)]);
+      const std::string &gate = gate_order[g];
+      double start_v = start_map.at(gate);
+      double end_v = stop_map.at(gate);
+      double frac =
+          static_cast<double>(peak_idx) / static_cast<double>(resolution - 1);
+      double v = start_v + ((end_v - start_v) * frac);
+      auto conn = Connection::PlungerGate(gate);
       dvs_vec.push_back(
           std::make_shared<DeviceVoltageState>(conn, v, volt_unit));
     }
-
     locations.push_back(std::make_shared<DeviceVoltageStates>(
         std::make_shared<falcon_core::generic::List<DeviceVoltageState>>(
             dvs_vec)));
+  }
+  for (size_t i = 0; i < locations.size(); ++i) {
+    auto dvss = locations[i];
+    spdlog::info("AnalyzeBlips: Peak {} voltages:", i);
+    for (const auto &dvs : dvss->items()) {
+      spdlog::info("  {}: {}", dvs->connection()->name(), dvs->voltage());
+    }
   }
 
   int num_blips = static_cast<int>(peak_indices.size());
@@ -592,6 +616,7 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
 void EndState(const FalconParamEntry *params, int32_t param_count,
               FalconResultSlot *out, int32_t *oc) {
   try {
+    // Extract parameters
     auto direction =
         get_opaque_param<Connection>(params, param_count, "direction");
     auto spacing = get_opaque_param<Quantity>(params, param_count, "spacing");
@@ -599,13 +624,12 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
         get_opaque_param<FArray>(params, param_count, "virtualization");
     auto virtual_names_arr =
         get_opaque_param<Connections>(params, param_count, "virtualNames");
-
     std::vector<ConnectionSP> virtual_names = virtual_names_arr->items();
     const int n_gates = static_cast<int>(virtual_names.size());
 
+    // Build unit vector for the virtual direction
     std::vector<double> unit_vector(n_gates, 0.0);
     bool direction_found = false;
-
     for (int i = 0; i < n_gates; ++i) {
       if (virtual_names[i]->name() == direction->name() &&
           virtual_names[i]->type() == direction->type()) {
@@ -614,21 +638,22 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
         break;
       }
     }
-
     if (!direction_found) {
       std::string available_names;
       for (const auto &conn : virtual_names) {
         available_names += fmt::format("[{}:{}] ", conn->name(), conn->type());
       }
-      throw std::runtime_error(fmt::format(
-          "EndState: direction Connection not found in virtualNames. The "
-          "current direction is {} and the type is {}. The virtualNames that "
-          "are available are {}",
-          direction->name(), direction->type(), available_names));
+      throw std::runtime_error(
+          fmt::format("EndState: direction Connection not found in "
+                      "virtualNames. The current direction is {} and the type "
+                      "is {}. The virtualNames that are available are {}",
+                      direction->name(), direction->type(), available_names));
     }
 
+    // Invert virtualization matrix (Gaussian elimination)
     xt::xarray<double> virt_matrix = virtualization_arr->data();
     xt::xarray<double> identity = xt::eye<double>(n_gates);
+    constexpr double kEpsilon = 1e-10;
     for (int i = 0; i < n_gates; ++i) {
       int pivot_row = i;
       for (int j = i + 1; j < n_gates; ++j) {
@@ -642,28 +667,24 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
         xt::view(identity, i) = xt::view(identity, pivot_row);
         xt::view(identity, pivot_row) = xt::view(identity, i);
       }
-      if (std::abs(virt_matrix(i, i)) < 1e-10) {
+      if (std::abs(virt_matrix(i, i)) < kEpsilon) {
         throw std::runtime_error("Matrix is singular or ill-conditioned");
       }
       double pivot = virt_matrix(i, i);
-      auto row = xt::view(virt_matrix, i, xt::all());
-      row = row / pivot;
-      auto id_row = xt::view(identity, i, xt::all());
-      id_row = id_row / pivot;
+      xt::view(virt_matrix, i, xt::all()) /= pivot;
+      xt::view(identity, i, xt::all()) /= pivot;
       for (int j = 0; j < n_gates; ++j) {
         if (i != j) {
           double factor = virt_matrix(j, i);
-          auto row_j = xt::view(virt_matrix, j, xt::all());
-          auto row_i = xt::view(virt_matrix, i, xt::all());
-          row_j = row_j - factor * row_i;
-
-          auto id_row_j = xt::view(identity, j, xt::all());
-          auto id_row_i = xt::view(identity, i, xt::all());
-          id_row_j = id_row_j - factor * id_row_i;
+          xt::view(virt_matrix, j, xt::all()) -=
+              factor * xt::view(virt_matrix, i, xt::all());
+          xt::view(identity, j, xt::all()) -=
+              factor * xt::view(identity, i, xt::all());
         }
       }
     }
 
+    // Compute physical gate voltages for the virtual step
     std::vector<double> result_vector(n_gates, 0.0);
     for (int i = 0; i < n_gates; ++i) {
       for (int j = 0; j < n_gates; ++j) {
@@ -674,28 +695,24 @@ void EndState(const FalconParamEntry *params, int32_t param_count,
     auto volt_unit = SymbolUnit::Volt();
     auto spacing_copy = std::make_shared<Quantity>(*spacing);
     spacing_copy->convert_to(volt_unit);
-    double spacing_value = spacing_copy->value();
-
+    // twice the spacing ensures seeing 2 peaks
+    double spacing_value = 2 * spacing_copy->value();
     for (double &v : result_vector) {
       v *= spacing_value;
     }
-
-    const auto &current_voltages = device().voltages();
     auto adjustment = std::make_shared<Point>();
-
     for (int i = 0; i < n_gates; ++i) {
       auto conn = virtual_names[i];
       auto qty = std::make_shared<Quantity>(result_vector[i], volt_unit);
       adjustment->insert(conn, qty);
     }
 
-    auto current_state = build_dvss_from_volt_map(current_voltages);
-    auto current_point = current_state->to_point();
-
+    // Apply adjustment to current device state
+    auto current_point =
+        build_dvss_from_volt_map(device().voltages())->to_point();
     auto final_point = current_point->operator+(adjustment);
 
     pack_point(std::move(final_point), out, oc);
-
   } catch (const std::exception &e) {
     out[0] = {};
     out[0].tag = FALCON_TYPE_NIL;

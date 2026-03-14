@@ -4,10 +4,11 @@ import (
 "./hub.fal"
 )
 // (n,m) indicates the x,y axis count
-autotuner ChargeConfigurationTuner (int n, int m) -> (deviceVoltageStates::DeviceVoltageStates dstates) {
+autotuner ChargeConfigurationTuner (int n, int m) -> (deviceVoltageStates::DeviceVoltageStates dstates, Error err) {
     // this autotuner starts the device tuned at (0,0)
     int current_n=0;
     int current_m=0;
+    err = nil;
     // the gate corresponding to the up direction of the stability diagram
     Connection up = hub::CollectCurrentPlungerGates()[0];
     // the gate corresponding to the right direction of the stability diagram
@@ -16,7 +17,6 @@ autotuner ChargeConfigurationTuner (int n, int m) -> (deviceVoltageStates::Devic
     Connection startingDirection = up;
     start -> tuning (startingDirection);
     state tuning (Connection direction) {
-        Error err = nil;
         err = stateStepper::BlipStateStepper(direction);
         if (err != nil) {
             log::Err("The Blip State Stepper has broken");
