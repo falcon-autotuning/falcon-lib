@@ -16,7 +16,7 @@ autotuner ChargeConfigurationTuner (int n, int m) -> (deviceVoltageStates::Devic
     Connection startingDirection = up;
     start -> tuning (startingDirection);
     state tuning (Connection direction) {
-        Error err;
+        Error err = nil;
         err = stateStepper::BlipStateStepper(direction);
         if (err != nil) {
             log::Err("The Blip State Stepper has broken");

@@ -34,7 +34,7 @@ routine EndState(connection::Connection direction, quantity::Quantity spacing, f
 // Allows restarting of the qarray simlator from the tester
 routine RestartDevice(string configPath) -> ()
 // Makes a stablity diagram plot of the device 
-routine MakeStabilityDiagram(string outputFilepath) -> ()
+routine MakeStabilityDiagram(string outputFilepath, float minx, float maxx, float miny, float maxy) -> ()
 // Builds a virtualization matrix for the device given a set of plunger gates and a set of virtual gates
 routine BuildVirtualizationMatrix(string configPath) -> (farray::FArray virtualization)
 

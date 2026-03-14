@@ -250,25 +250,9 @@ ScanResult2D Device::scan_2d(const std::string &x_gate,
 
   auto [charge_states, charge_states_shape] =
       numpy_int_to_double_vector(result["charge_states"]);
-
-  // DEBUG: Log the shape
-  std::cout << "charge_states_shape.size() = " << charge_states_shape.size()
-            << std::endl;
-  if (charge_states_shape.size() > 0) {
-    std::cout << "charge_states_shape[0] = " << charge_states_shape[0]
-              << std::endl;
-    if (charge_states_shape.size() > 1) {
-      std::cout << "charge_states_shape[1] = " << charge_states_shape[1]
-                << std::endl;
-    }
-  }
-  std::cout << "accumulation_mode_ = " << accumulation_mode_ << std::endl;
-
   if (accumulation_mode_ && charge_states_shape.size() == 3) {
-    std::cout << "Applying 180-degree rotation..." << std::endl;
     out.charge_states = rotate_180_antidiagonal(charge_states);
   } else {
-    std::cout << "NOT applying rotation" << std::endl;
     out.charge_states = std::move(charge_states);
   }
   out.charge_states_shape = std::move(charge_states_shape);

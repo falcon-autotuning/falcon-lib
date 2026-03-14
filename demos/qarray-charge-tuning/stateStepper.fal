@@ -7,6 +7,7 @@ import (
 "../../libs/falconCore/physics/deviceStructures/connections/connections.fal"
 "../../libs/falconCore/communications/voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
 "../../libs/falconCore/math/point/point.fal"
+"../../libs/falconCore/math/vector/vector.fal"
 )
 // direction indicates the direction to travel for the cell center, either up or right
 autotuner BlipStateStepper (Connection direction) -> (Error err) {
@@ -17,7 +18,7 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
     connections::Connections virtualizationNames;
     int resolution;
     Map<Connection, Quantity> interdotSpacing = Map.New();
-
+    err = nil;
     start -> checkDatabaseEntries;
     // moves in the direction till experiencing blip
     state checkDatabaseEntries {
@@ -92,9 +93,12 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
             log::Err("We found more than 1 blip");
             terminal;
         }
+        //log::Info(strings::Concat("The blip we found is at ", locations[0].ToJSON()));
         // Returns to the center
         // Need to go to the average of the locations[0] and the startingStates
-        hub::Ramp(locations[0].ToPoint().Coordinates());
+        vector::Vector diff = Vector.New(startingStates, locations[0].ToPoint());
+        diff.Shrink(2.0);
+        hub::Ramp(diff.EndPoint().Coordinates());
         terminal; 
     }
 }

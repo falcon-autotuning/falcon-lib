@@ -27,6 +27,7 @@
 #include <falcon_core/math/Quantity.hpp>
 #include <falcon_core/physics/device_structures/Connection.hpp>
 #include <falcon_core/physics/device_structures/Connections.hpp>
+#include <filesystem>
 #include <memory>
 #include <plplot/plplot.h>
 #include <plplot/plplotP.h>
@@ -43,10 +44,10 @@
 #include <xtensor/xadapt.hpp>
 #include <yaml-cpp/yaml.h>
 namespace {
-static bool python_initialized = false;
-static std::unique_ptr<pybind11::scoped_interpreter> g_interpreter;
+bool python_initialized = false;
+std::unique_ptr<pybind11::scoped_interpreter> g_interpreter;
 
-static void ensure_python_interpreter() {
+void ensure_python_interpreter() {
   if (!python_initialized) {
     dlopen("/opt/falcon/lib/libpython3.12.so", RTLD_NOW | RTLD_GLOBAL);
     g_interpreter = std::make_unique<pybind11::scoped_interpreter>();
@@ -117,7 +118,7 @@ static void initialize_device() {
 #ifndef QARRAY_CONFIG
 #define QARRAY_CONFIG "/opt/qarray/device.yaml"
 #endif
-  std::string config_path = env_path ? env_path : QARRAY_CONFIG;
+  std::string config_path = (env_path != nullptr) ? env_path : QARRAY_CONFIG;
 
   // Only initialize if not already initialized with this path
   if (g_device != nullptr && current_config_path == config_path) {
@@ -133,6 +134,51 @@ static QDevice &device() {
     initialize_device();
   }
   return *g_device;
+}
+static void plot_1d(const std::string &filename, const std::vector<double> &x,
+                    const std::vector<double> &y, const std::string &xlabel,
+                    const std::string &ylabel, const std::string &title,
+                    const std::vector<int> &blip_indices = {}) {
+  if (x.empty() || y.empty()) {
+    return;
+  }
+  plsetopt("bgcolor", "white");
+  plsdev("pngcairo");
+  plsfnam(filename.c_str());
+  plinit();
+  double xmin = x[0], xmax = x[0], ymin = y[0], ymax = y[0];
+  for (double val : x) {
+    if (val < xmin)
+      xmin = val;
+    xmax = std::max(val, xmax);
+  }
+  for (double val : y) {
+    if (val < ymin)
+      ymin = val;
+    if (val > ymax)
+      ymax = val;
+  }
+  if (ymin == ymax) {
+    ymin -= 0.5;
+    ymax += 0.5;
+  }
+  if (xmin == xmax) {
+    xmin -= 0.5;
+    xmax += 0.5;
+  }
+  plenv(xmin, xmax, ymin, ymax, 0, 0);
+  pllab(xlabel.c_str(), ylabel.c_str(), title.c_str());
+  plline(x.size(), x.data(), y.data());
+  // Draw vertical lines at blip indices
+  for (int idx : blip_indices) {
+    if (idx >= 0 && static_cast<size_t>(idx) < x.size()) {
+      double x_blip = x[idx];
+      plcol0(4); // Change color for blip lines (optional)
+      plline(2, (PLFLT[]){x_blip, x_blip}, (PLFLT[]){ymin, ymax});
+      plcol0(1); // Reset color
+    }
+  }
+  plend();
 }
 
 extern "C" void RestartDevice(const FalconParamEntry *params,
@@ -514,6 +560,20 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
   }
 
   int num_blips = static_cast<int>(peak_indices.size());
+  // Debug plot: save the signal as a 1D plot
+  std::vector<double> x(signal.size());
+  for (size_t i = 0; i < signal.size(); ++i)
+    x[i] = static_cast<double>(i);
+
+  std::filesystem::create_directories("plots");
+  auto now = std::chrono::system_clock::now();
+  auto micros = std::chrono::duration_cast<std::chrono::microseconds>(
+                    now.time_since_epoch())
+                    .count();
+  std::string debug_plot_name =
+      "plots/analyze_blips_signal_" + std::to_string(micros) + ".png";
+  plot_1d(debug_plot_name, x, signal, "Index", "Differentiated Signal",
+          "AnalyzeBlips Signal", peak_indices);
 
   out[0] = {};
   out[0].tag = FALCON_TYPE_INT;
@@ -656,7 +716,7 @@ void plot_stability_diagram(const std::string &filename,
                                       std::vector<PLFLT>(resolution));
   for (int i = 0; i < resolution; ++i)
     for (int j = 0; j < resolution; ++j)
-      z2d[i][j] = static_cast<PLFLT>(data[i * resolution + j]);
+      z2d[j][i] = static_cast<PLFLT>(data[i * resolution + j]);
 
   std::vector<PLFLT *> zptrs(resolution);
   for (int i = 0; i < resolution; ++i)
@@ -688,6 +748,10 @@ void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
                           FalconResultSlot *out, int32_t *oc) {
   auto pm = unpack_params(params, param_count);
   std::string output_filepath = std::get<std::string>(pm.at("outputFilepath"));
+  double minx = std::get<double>(pm.at("minx"));
+  double miny = std::get<double>(pm.at("miny"));
+  double maxx = std::get<double>(pm.at("maxx"));
+  double maxy = std::get<double>(pm.at("maxy"));
   auto gate_names = device().gate_names();
   if (gate_names.size() < 2) {
     out[0] = {};
@@ -698,9 +762,8 @@ void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
   std::string x_gate = gate_names[0];
   std::string y_gate = gate_names[1];
   int resolution = 100;
-  double plot_range = 2.0;
-  auto result = device().scan_2d(x_gate, y_gate, {-2 * plot_range, plot_range},
-                                 {-plot_range, plot_range}, resolution);
+  auto result =
+      device().scan_2d(x_gate, y_gate, {minx, maxx}, {miny, maxy}, resolution);
   std::vector<double> data;
   if (result.has_sensor && !result.differentiated_signal.empty()) {
     data = result.differentiated_signal;
@@ -708,9 +771,8 @@ void MakeStabilityDiagram(const FalconParamEntry *params, int32_t param_count,
     data.assign(resolution * resolution, 0.0);
   }
 
-  plot_stability_diagram(output_filepath, data, resolution, -2 * plot_range,
-                         plot_range, -plot_range, plot_range, x_gate + " (V)",
-                         y_gate + " (V)");
+  plot_stability_diagram(output_filepath, data, resolution, minx, maxx, miny,
+                         maxy, x_gate + " (V)", y_gate + " (V)");
 
   out[0] = {};
   out[0].tag = FALCON_TYPE_NIL;

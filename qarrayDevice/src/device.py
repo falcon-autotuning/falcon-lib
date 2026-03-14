@@ -282,11 +282,11 @@ class Device:
             ).reshape(-1, 1)
             for connection in vector
         }
-        print(f"The dvs are {dvs}")
+        # print(f"The dvs are {dvs}")
 
         result = {"start": start, "end": end, "resolution": resolution}
-        print(f"this is the vg_all {vg_all}")
-        print(f"this is the result dict {result}")
+        # print(f"this is the vg_all {vg_all}")
+        # print(f"this is the result dict {result}")
         if self.sensor_config:
             sensor_output, charge_states = self.model.charge_sensor_open(vg_all)
             result["sensor_output"] = sensor_output
@@ -297,14 +297,14 @@ class Device:
                 [direction[conn] * dz / dvs[conn] for conn in vector],
                 axis=0,
             )
-            print(f"The shape of dz is {dz.shape}")
-            print(f"The shape of dvs is {[dv.shape for dv in dvs.values()]}")
-            print(f"The shape of dz_dv is {dz_dv.shape}")
+            # print(f"The shape of dz is {dz.shape}")
+            # print(f"The shape of dvs is {[dv.shape for dv in dvs.values()]}")
+            # print(f"The shape of dz_dv is {dz_dv.shape}")
             result["differentiated_signal"] = dz_dv
-            print("did a charge sensed thing in rays")
+            # print("did a charge sensed thing in rays")
         else:
             charge_states = self.model.ground_state_open(vg_all)
             result["charge_states"] = charge_states
-            print("did a not charge sensed thing in rays")
+            # print("did a not charge sensed thing in rays")
         result["trajectory"] = vg_all  # Include the trajectory for inspection
         return result
