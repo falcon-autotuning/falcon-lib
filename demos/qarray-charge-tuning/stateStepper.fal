@@ -75,11 +75,15 @@ autotuner BlipStateStepper (Connection direction) -> (Error err) {
     state performStep {
         point::Point startingStates = hub::CollectCurrentDeviceState().ToPoint();
         Quantity spacing = interdotSpacing.Get(direction);
-        log::Warn(strings::Concat("After unserialization in performStep the first named Connection is ", virtualizationNames[0].Name()));
+        log::Info(strings::Concat("After unserialization in performStep the first named Connection is ", virtualizationNames[0].Name()));
         point::Point endstate = hub::EndState(direction, spacing, virtualization, virtualizationNames);
         int num_blips;
         Array<deviceVoltageStates::DeviceVoltageStates> locations;
         num_blips, locations = hub::AnalyzeBlips(startingStates.Coordinates(), endstate.Coordinates(), resolution);
+        Array<string> substrings = Array.New();
+        substrings.PushBack(strings::FromInt(num_blips));
+        string debug = strings::Format("We found {} blips", substrings);
+        log::Info(debug);
         if (num_blips == 0) {
             log::Err("We found no blips");
             terminal;

@@ -1,8 +1,9 @@
 #include <algorithm>
 #include <falcon-typing/FFIHelpers.hpp>
+#include <fmt/core.h>
+#include <iostream>
 #include <memory>
 #include <regex>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -394,4 +395,85 @@ void RegexReplace(const FalconParamEntry *p, int32_t pc, FalconResultSlot *out,
   pack_results(FunctionResult{result}, out, 16, oc);
 }
 
-} // extern "C"
+static std::shared_ptr<ArrayValue>
+get_array_from_params(const FalconParamEntry *entries, int32_t count,
+                      const char *key) {
+  for (int32_t i = 0; i < count; ++i) {
+    if (std::strcmp(entries[i].key, key) != 0) {
+      continue;
+    }
+
+    const FalconParamEntry &e = entries[i];
+    if (e.tag != FALCON_TYPE_OPAQUE) {
+      throw std::runtime_error(
+          std::string("strings::Format: parameter '") + key +
+          "' is not OPAQUE (tag=" + std::to_string(e.tag) + ")");
+    }
+
+    std::string tn = e.value.opaque.type_name ? e.value.opaque.type_name : "";
+
+    if (tn == "Array") {
+      auto sv = *static_cast<std::shared_ptr<void> *>(e.value.opaque.ptr);
+      return std::static_pointer_cast<ArrayValue>(sv);
+    }
+    if (tn == "ArrayValue") {
+      return *static_cast<std::shared_ptr<ArrayValue> *>(e.value.opaque.ptr);
+    }
+
+    throw std::runtime_error(std::string("strings::Format: parameter '") + key +
+                             "' has unexpected opaque type_name='" + tn + "'");
+  }
+  throw std::runtime_error(std::string("strings::Format: parameter '") + key +
+                           "' not found");
+}
+
+// Format(string fmt, Array<string> args) -> (string result)
+void Format(const FalconParamEntry *params, int32_t param_count,
+            FalconResultSlot *out, int32_t *oc) {
+  auto pm = unpack_params(params, param_count);
+  auto fmt_str = std::get<std::string>(pm.at("fmt"));
+  auto arr_val = get_array_from_params(params, param_count, "args");
+  std::vector<std::string> args_vec;
+  args_vec.reserve(arr_val->elements.size());
+  for (const auto &elem : arr_val->elements) {
+    if (!std::holds_alternative<std::string>(elem)) {
+      std::cerr << "Format: array element type is not string\n";
+      throw std::runtime_error("Format: array element is not a string");
+    }
+    args_vec.push_back(std::get<std::string>(elem));
+  }
+  std::string result;
+  try {
+    switch (args_vec.size()) {
+    case 0:
+      result = fmt::format(fmt_str);
+      break;
+    case 1:
+      result = fmt::format(fmt_str, args_vec[0]);
+      break;
+    case 2:
+      result = fmt::format(fmt_str, args_vec[0], args_vec[1]);
+      break;
+    case 3:
+      result = fmt::format(fmt_str, args_vec[0], args_vec[1], args_vec[2]);
+      break;
+    case 4:
+      result = fmt::format(fmt_str, args_vec[0], args_vec[1], args_vec[2],
+                           args_vec[3]);
+      break;
+    case 5:
+      result = fmt::format(fmt_str, args_vec[0], args_vec[1], args_vec[2],
+                           args_vec[3], args_vec[4]);
+      break;
+    default:
+      throw std::runtime_error(
+          "Format: too many arguments for fmt::format (max 5)");
+    }
+  } catch (const std::exception &e) {
+    pack_results(FunctionResult{nullptr, ErrorObject{e.what(), false}}, out, 16,
+                 oc);
+    return;
+  }
+  pack_results(FunctionResult{result}, out, 16, oc);
+}
+}

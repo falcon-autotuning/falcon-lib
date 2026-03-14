@@ -1,4 +1,5 @@
-ffimport "strings-wrapper.cpp" ("/opt/falcon/include/") ()
+import "../collections/array/array.fal";
+ffimport "strings-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib/" "-lfmt")
 
 // ── Predicates ────────────────────────────────────────────────────────────────
 
@@ -92,3 +93,7 @@ routine RegexTest    (string pattern, string text)      -> (bool matched)
 // Replace all matches of `pattern` in `s` with `replacement`.
 // Standard ECMAScript/POSIX regex syntax; `$1`, `$2` back-references are supported.
 routine RegexReplace (string s, string pattern, string replacement) -> (string result)
+
+// Format a string using {}-substitution for each argument in the array.
+// Example: Format("Hello, {}!", ["world"]) -> "Hello, world!"
+routine Format(string fmt, Array<string> args) -> (string result)
