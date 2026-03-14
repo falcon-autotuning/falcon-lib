@@ -192,7 +192,7 @@ build-release: configure-release
 # ── Test ──────────────────────────────────────────────────────────────────────
 test: build-release
 	@echo "Running release tests..."
-	cd $(BUILD_DIR_RELEASE) && ctest --output-on-failure -C Release
+	cd $(BUILD_DIR_RELEASE) && ctest --output-on-failure -C Release -V
 	@echo "✓ Tests passed"
 
 test-debug: build-debug

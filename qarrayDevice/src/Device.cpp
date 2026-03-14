@@ -1,6 +1,7 @@
 #include "qarrayDevice/Device.hpp"
 
 #include <cstdlib>
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -220,14 +221,12 @@ ScanResult2D Device::scan_2d(const std::string &x_gate,
   std::pair<double, double> temp_x_range = x_range;
   std::pair<double, double> temp_y_range = y_range;
   if (accumulation_mode_) {
-    // In accumulation mode, scan_2d returns the accumulated voltages
     temp_x_range = {-x_range.second, -x_range.first};
     temp_y_range = {-y_range.second, -y_range.first};
   }
   py::dict result = impl_->py_device.attr("scan_2d")(
       x_gate, y_gate, py::make_tuple(temp_x_range.first, temp_x_range.second),
       py::make_tuple(temp_y_range.first, temp_y_range.second), resolution);
-
   ScanResult2D out;
   out.x_gate = x_gate;
   out.y_gate = y_gate;
@@ -235,18 +234,65 @@ ScanResult2D Device::scan_2d(const std::string &x_gate,
   out.y_range = y_range;
   out.resolution = resolution;
 
-  auto [cs, cs_s] = numpy_int_to_double_vector(result["charge_states"]);
-  out.charge_states = std::move(cs);
-  out.charge_states_shape = std::move(cs_s);
+  // Helper lambda to rotate 180 degrees about the anti-diagonal (x=-y)
+  auto rotate_180_antidiagonal =
+      [resolution](const std::vector<double> &input) -> std::vector<double> {
+    std::vector<double> rotated(input.size());
+    for (int i = 0; i < resolution; ++i) {
+      for (int j = 0; j < resolution; ++j) {
+        // 180-degree rotation: (i,j) -> (resolution-1-i, resolution-1-j)
+        rotated[(resolution - 1 - i) * resolution + (resolution - 1 - j)] =
+            input[i * resolution + j];
+      }
+    }
+    return rotated;
+  };
+
+  auto [charge_states, charge_states_shape] =
+      numpy_int_to_double_vector(result["charge_states"]);
+
+  // DEBUG: Log the shape
+  std::cout << "charge_states_shape.size() = " << charge_states_shape.size()
+            << std::endl;
+  if (charge_states_shape.size() > 0) {
+    std::cout << "charge_states_shape[0] = " << charge_states_shape[0]
+              << std::endl;
+    if (charge_states_shape.size() > 1) {
+      std::cout << "charge_states_shape[1] = " << charge_states_shape[1]
+                << std::endl;
+    }
+  }
+  std::cout << "accumulation_mode_ = " << accumulation_mode_ << std::endl;
+
+  if (accumulation_mode_ && charge_states_shape.size() == 3) {
+    std::cout << "Applying 180-degree rotation..." << std::endl;
+    out.charge_states = rotate_180_antidiagonal(charge_states);
+  } else {
+    std::cout << "NOT applying rotation" << std::endl;
+    out.charge_states = std::move(charge_states);
+  }
+  out.charge_states_shape = std::move(charge_states_shape);
 
   if (result.contains("sensor_output")) {
     out.has_sensor = true;
-    auto [so, so_s] = numpy_to_vector(result["sensor_output"]);
-    out.sensor_output = std::move(so);
-    out.sensor_output_shape = std::move(so_s);
-    auto [ds, ds_s] = numpy_to_vector(result["differentiated_signal"]);
-    out.differentiated_signal = std::move(ds);
-    out.differentiated_signal_shape = std::move(ds_s);
+    auto [sensor_output, sensor_output_shape] =
+        numpy_to_vector(result["sensor_output"]);
+    if (accumulation_mode_ && sensor_output_shape.size() == 3) {
+      out.sensor_output = rotate_180_antidiagonal(sensor_output);
+    } else {
+      out.sensor_output = std::move(sensor_output);
+    }
+    out.sensor_output_shape = std::move(sensor_output_shape);
+
+    auto [differentiated_signal, differentiated_signal_shape] =
+        numpy_to_vector(result["differentiated_signal"]);
+    if (accumulation_mode_ && differentiated_signal_shape.size() == 3) {
+      out.differentiated_signal =
+          rotate_180_antidiagonal(differentiated_signal);
+    } else {
+      out.differentiated_signal = std::move(differentiated_signal);
+    }
+    out.differentiated_signal_shape = std::move(differentiated_signal_shape);
   }
   return out;
 }
@@ -257,7 +303,6 @@ ScanResult1D Device::scan_1d(const std::string &gate,
   py::gil_scoped_acquire gil;
   std::pair<double, double> temp_v_range = v_range;
   if (accumulation_mode_) {
-    // In accumulation mode, scan_1d returns the accumulated voltages
     temp_v_range = {-v_range.second, -v_range.first};
   }
   py::dict result = impl_->py_device.attr("scan_1d")(
@@ -269,18 +314,31 @@ ScanResult1D Device::scan_1d(const std::string &gate,
   out.v_range = v_range;
   out.resolution = resolution;
 
-  auto [cs, cs_s] = numpy_int_to_double_vector(result["charge_states"]);
-  out.charge_states = std::move(cs);
-  out.charge_states_shape = std::move(cs_s);
+  auto [charge_states, charge_states_shape] =
+      numpy_int_to_double_vector(result["charge_states"]);
+  if (accumulation_mode_) {
+    std::reverse(charge_states.begin(), charge_states.end());
+  }
+  out.charge_states = std::move(charge_states);
+  out.charge_states_shape = std::move(charge_states_shape);
 
   if (result.contains("sensor_output")) {
     out.has_sensor = true;
-    auto [so, so_s] = numpy_to_vector(result["sensor_output"]);
-    out.sensor_output = std::move(so);
-    out.sensor_output_shape = std::move(so_s);
-    auto [ds, ds_s] = numpy_to_vector(result["differentiated_signal"]);
-    out.differentiated_signal = std::move(ds);
-    out.differentiated_signal_shape = std::move(ds_s);
+    auto [sensor_output, sensor_output_shape] =
+        numpy_to_vector(result["sensor_output"]);
+    if (accumulation_mode_) {
+      std::reverse(sensor_output.begin(), sensor_output.end());
+    }
+    out.sensor_output = std::move(sensor_output);
+    out.sensor_output_shape = std::move(sensor_output_shape);
+
+    auto [differentiated_signal, differentiated_signal_shape] =
+        numpy_to_vector(result["differentiated_signal"]);
+    if (accumulation_mode_) {
+      std::reverse(differentiated_signal.begin(), differentiated_signal.end());
+    }
+    out.differentiated_signal = std::move(differentiated_signal);
+    out.differentiated_signal_shape = std::move(differentiated_signal_shape);
   }
   return out;
 }
@@ -292,7 +350,6 @@ ScanResultRay Device::scan_ray(const std::map<std::string, double> &start,
   std::map<std::string, double> temp_start = start;
   std::map<std::string, double> temp_end = end;
   if (accumulation_mode_) {
-    // In accumulation mode, scan_ray returns the accumulated voltages
     for (const auto &[gate, voltage] : end) {
       temp_start[gate] = -voltage;
     }
@@ -302,28 +359,42 @@ ScanResultRay Device::scan_ray(const std::map<std::string, double> &start,
   }
   py::dict result =
       impl_->py_device.attr("scan_ray")(temp_start, temp_end, resolution);
-
   ScanResultRay out;
   out.start = start;
   out.end = end;
   out.resolution = resolution;
+  auto [charge_states, charge_states_shape] =
+      numpy_int_to_double_vector(result["charge_states"]);
+  if (accumulation_mode_) {
+    std::reverse(charge_states.begin(), charge_states.end());
+  }
+  out.charge_states = std::move(charge_states);
+  out.charge_states_shape = std::move(charge_states_shape);
 
-  auto [cs, cs_s] = numpy_int_to_double_vector(result["charge_states"]);
-  out.charge_states = std::move(cs);
-  out.charge_states_shape = std::move(cs_s);
-
-  auto [traj, traj_s] = numpy_to_vector(result["trajectory"]);
-  out.trajectory = std::move(traj);
-  out.trajectory_shape = std::move(traj_s);
+  auto [trajectory, trajectory_shape] = numpy_to_vector(result["trajectory"]);
+  if (accumulation_mode_) {
+    std::reverse(trajectory.begin(), trajectory.end());
+  }
+  out.trajectory = std::move(trajectory);
+  out.trajectory_shape = std::move(trajectory_shape);
 
   if (result.contains("sensor_output")) {
     out.has_sensor = true;
-    auto [so, so_s] = numpy_to_vector(result["sensor_output"]);
-    out.sensor_output = std::move(so);
-    out.sensor_output_shape = std::move(so_s);
-    auto [ds, ds_s] = numpy_to_vector(result["differentiated_signal"]);
-    out.differentiated_signal = std::move(ds);
-    out.differentiated_signal_shape = std::move(ds_s);
+    auto [sensor_output, sensor_output_shape] =
+        numpy_to_vector(result["sensor_output"]);
+    if (accumulation_mode_) {
+      std::reverse(sensor_output.begin(), sensor_output.end());
+    }
+    out.sensor_output = std::move(sensor_output);
+    out.sensor_output_shape = std::move(sensor_output_shape);
+
+    auto [differentiated_signal, differentiated_signal_shape] =
+        numpy_to_vector(result["differentiated_signal"]);
+    if (accumulation_mode_) {
+      std::reverse(differentiated_signal.begin(), differentiated_signal.end());
+    }
+    out.differentiated_signal = std::move(differentiated_signal);
+    out.differentiated_signal_shape = std::move(differentiated_signal_shape);
   }
   return out;
 }

@@ -121,7 +121,7 @@ TEST(DeviceVisual, ChargeStabilityDiagram) {
   int res = 100;
   double scale = 2.0;
   auto result =
-      dev.scan_2d("P1", "P2", {-2 * scale, scale}, {-scale, scale}, res);
+      dev.scan_2d("P1", "P2", {-scale, 2 * scale}, {-scale, scale}, res);
 
   std::vector<double> data;
   if (result.has_sensor && !result.differentiated_signal.empty()) {
