@@ -132,7 +132,7 @@ TEST(DeviceVisual, ChargeStabilityDiagram) {
 
   std::filesystem::create_directories("plots");
   std::string out_path = "plots/stability_diagram.png";
-  plot_stability_diagram(out_path, data, res, -scale, scale, -scale, scale,
+  plot_stability_diagram(out_path, data, res, -scale, 2 * scale, -scale, scale,
                          "P1 (V)", "P2 (V)");
 }
 
@@ -141,11 +141,11 @@ TEST(DeviceVisual, Scan1D) {
   falcon::qarray::Device dev(config_path);
 
   int res = 200;
-  auto result = dev.scan_1d("P1", {-1.5, 1.5}, res);
+  auto result = dev.scan_1d("P1", {-3.0, 3.0}, res);
 
   std::vector<double> x(res);
   for (int i = 0; i < res; ++i) {
-    x[i] = -1.5 + (3.0 * i) / (res - 1);
+    x[i] = -3.0 + (6.0 * i) / (res - 1);
   }
 
   std::vector<double> y;
@@ -158,4 +158,30 @@ TEST(DeviceVisual, Scan1D) {
   std::filesystem::create_directories("plots");
   std::string out_path = "plots/scan_1d.png";
   plot_1d(out_path, x, y, "P1 (V)", "Sensor Output", "1D Gate Scan");
+}
+
+TEST(DeviceVisual, ScanRay) {
+  auto config_path = write_temp_config_visual(VISUAL_CONFIG);
+  falcon::qarray::Device dev(config_path);
+
+  int res = 200;
+  std::map<std::string, double> start = {{"P1", -2.0}, {"P2", -2.0}};
+  std::map<std::string, double> end = {{"P1", 2.0}, {"P2", 2.0}};
+  auto result = dev.scan_ray(start, end, res);
+
+  std::vector<double> x(res);
+  for (int i = 0; i < res; ++i) {
+    x[i] = -2.0 + (4.0 * i) / (res - 1);
+  }
+
+  std::vector<double> y;
+  if (result.has_sensor) {
+    y = result.sensor_output;
+  } else {
+    y.assign(res, 0.0);
+  }
+
+  std::filesystem::create_directories("plots");
+  std::string out_path = "plots/scan_ray.png";
+  plot_1d(out_path, x, y, "Scan Progress", "Sensor Output", "Scan Ray");
 }
