@@ -1,0 +1,25 @@
+struct Quantity {
+    int a_;
+    routine New (int a) -> (Quantity q) {
+        q.a_ = a;
+    }
+    routine Value  -> (int value) {
+        value = a_;
+    }
+}
+
+autotuner QuantityStruct (int a, int b) -> (int sum) {
+  sum = 0;
+  
+  start -> calculate;
+  
+  state calculate {
+    Quantity q = Quantity.New(a);
+    sum = q.Value() + b;
+    -> done;
+  }
+  
+  state done {
+    terminal;
+  }
+}

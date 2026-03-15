@@ -1,0 +1,22 @@
+autotuner ComparisonTest (int a, int b) -> (bool gt, bool lt, bool eq, bool gte, bool lte) {
+  gt = false;
+  lt = false;
+  eq = false;
+  gte = false;
+  lte = false;
+  
+  start -> compare;
+  
+  state compare {
+    gt = a > b;
+    lt = a < b;
+    eq = a == b;
+    gte = a >= b;
+    lte = a <= b;
+    -> done;
+  }
+  
+  state done {
+    terminal;
+  }
+}

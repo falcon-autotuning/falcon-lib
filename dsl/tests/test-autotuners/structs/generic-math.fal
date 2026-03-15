@@ -1,0 +1,25 @@
+// Tests a generic accumulator struct used with int arithmetic.
+
+struct Accumulator <T> {
+    T total;
+    routine New (T init) -> (Accumulator<T> acc) {
+        acc.total = init;
+    }
+    routine Add (T delta) -> (T new_total) {
+        total = total + delta;
+        new_total = total;
+    }
+    routine Value -> (T v) {
+        v = this.total;
+    }
+}
+
+autotuner GenericMath (int start_val, int add_val) -> (int result) {
+    result = 0;
+    start -> run;
+    state run {
+        Accumulator<int> acc = Accumulator.New(start_val);
+        result = acc.Add(add_val);
+        terminal;
+    }
+}

@@ -1,0 +1,21 @@
+ffimport "QuantityW.cpp" () ()
+struct Quantity {
+    routine New (int a, int b) -> (Quantity q)
+    routine Value  -> (int value)
+}
+
+autotuner QuantityStruct (int a, int b) -> (int sum) {
+  sum = 0;
+  
+  start -> calculate;
+  
+  state calculate {
+    Quantity q = Quantity.New(a, b);
+    sum = q.Value() + b;
+    -> done;
+  }
+  
+  state done {
+    terminal;
+  }
+}

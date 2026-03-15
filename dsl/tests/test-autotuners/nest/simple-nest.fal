@@ -1,0 +1,43 @@
+autotuner ErrorViewer -> (bool outer_completed, bool inner_completed) {
+
+  outer_completed = false;
+  inner_completed = false;
+  
+  start -> init;
+  
+  state init {
+      outer_completed = DoNothing();
+      -> done;
+  }
+  state done {
+      Error err = nil;
+      inner_completed, err = FatalOtherError();
+      -> exit;
+  }
+  state exit {
+      terminal;
+  }
+}
+  
+autotuner DoNothing -> (bool completed) {
+  completed = true;
+  
+  start -> init;
+  
+  state init {
+      terminal; 
+  }
+  
+}
+autotuner FatalOtherError() -> (bool completed, Error err) {
+  completed = false;
+  err = nil;
+  
+  start -> init;
+  
+  state init {
+      err = fatalErrorMsg("We are really broken :(");
+      terminal;
+  }
+  
+}

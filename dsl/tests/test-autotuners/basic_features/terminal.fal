@@ -1,0 +1,19 @@
+autotuner Terminal() -> (int steps) {
+  steps = 0;
+  
+  start -> step1;
+  
+  state step1 {
+    steps = 1;
+    -> step2;
+  }
+  
+  state step2 {
+    steps = 2;
+    -> finish;
+  }
+  
+  state finish {
+    terminal;
+  }
+}

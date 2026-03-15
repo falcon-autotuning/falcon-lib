@@ -1,0 +1,9 @@
+struct quantity {
+    int a;
+    routine New (int a) -> (quantity q) {
+        q.a = a;
+    }
+    routine Value  -> (int value) {
+        value = this.a;
+    }
+}

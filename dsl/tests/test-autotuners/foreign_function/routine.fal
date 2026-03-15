@@ -1,0 +1,24 @@
+ffimport "MathW.cpp" () ()
+routine Adder (int a, int b) -> (int add)
+routine Multiplier (int a, int b) -> (int mult)
+
+autotuner ConditionalNest (int a, int b) -> (int out) {
+  out = 0;
+
+  start -> init;
+  
+  state init {
+      int add = 0;
+      add = Adder(a,b);
+      -> multiplication(add);
+  }
+  state multiplication (int c) {
+      int multiplication = 0;
+      multiplication = Multiplier(c, b);
+      -> done(multiplication);
+  }
+  state done (int out_inside) {
+      out = out_inside;
+      terminal;
+  }
+}

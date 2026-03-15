@@ -1,0 +1,3 @@
+routine Foo() -> () { }
+routine Foo(int x) -> () { }
+autotuner Main() -> () { }

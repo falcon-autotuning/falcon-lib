@@ -1,0 +1,29 @@
+autotuner SimpleSweep (float begin, float end, float step) -> (int count, float final_value) {
+  float current = 0.0;
+  count = 0;
+  final_value = 0.0;
+  
+  start -> init;
+  
+  state init {
+    current = begin;
+    -> sweep;
+  }
+  
+  state sweep {
+    count = count + 1;
+    final_value = current;
+    current = current + step;
+    
+    if (current <= end) {
+        -> sweep;
+    }
+    else {
+      -> done;
+    }
+  }
+  
+  state done {
+    terminal;
+  }
+}

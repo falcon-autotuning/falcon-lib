@@ -1,0 +1,9 @@
+struct connection {
+    string name;
+    routine New (string name) -> (connection c) {
+        c.name = name;
+    }
+    routine Name -> (string name) {
+        name = this.name;
+    }
+}

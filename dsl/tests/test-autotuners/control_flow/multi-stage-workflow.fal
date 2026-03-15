@@ -1,0 +1,46 @@
+autotuner MultiStageWorkflow -> (string stage, bool initialized) {
+  initialized = false;
+  stage = "none";
+  
+  start -> initialize;
+  
+  state initialize {
+    initialized = true;
+    stage = "init";
+    -> process;
+  }
+  
+  state process {
+    if (initialized == true) {
+      stage = "processing";
+      -> validate;
+    }
+    else {
+        -> error_state;
+    }
+  }
+  
+  state validate {
+    if (stage == "processing") {
+      stage = "validated";
+      -> finalize;
+    }
+    else {
+        -> error_state;
+    }
+  }
+  
+  state finalize {
+    stage = "completed";
+    -> done;
+  }
+  
+  state done {
+    terminal;
+  }
+  
+  state error_state {
+    stage = "error";
+    terminal;
+  }
+}

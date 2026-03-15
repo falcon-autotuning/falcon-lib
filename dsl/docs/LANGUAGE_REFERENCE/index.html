@@ -1,0 +1,6004 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Quantum device autotuning framework with DSL, database, and hardware integration">
+      
+      
+      
+        <link rel="canonical" href="https://falcon-autotuning.github.io/falcon-lib/dsl/docs/LANGUAGE_REFERENCE/">
+      
+      
+        <link rel="prev" href="../TUTORIAL/">
+      
+      
+        <link rel="next" href="../CLI/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/icons/icon-256.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>Language Reference - Falcon Lib</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#falcon-dsl-language-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Falcon Lib" class="md-header__button md-logo" aria-label="Falcon Lib" data-md-component="logo">
+      
+  <img src="../../../assets/icons/icon-256.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Falcon Lib
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Language Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/falcon-autotuning/falcon-lib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    falcon-lib
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../index.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../OVERVIEW/" class="md-tabs__link">
+          
+  
+  
+  DSL (Domain-Specific Language)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../database/" class="md-tabs__link">
+          
+  
+  
+  Database
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../typing/" class="md-tabs__link">
+          
+  
+  
+  FFI (Foreign Function Interface)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../qarrayDevice/" class="md-tabs__link">
+          
+  
+  
+  Hardware Integration
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../libs/collections/array/" class="md-tabs__link">
+          
+  
+  
+  Library Bindings
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../ARCHITECTURE/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Falcon Lib" class="md-nav__button md-logo" aria-label="Falcon Lib" data-md-component="logo">
+      
+  <img src="../../../assets/icons/icon-256.png" alt="logo">
+
+    </a>
+    Falcon Lib
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/falcon-autotuning/falcon-lib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    falcon-lib
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSL (Domain-Specific Language)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    DSL (Domain-Specific Language)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../OVERVIEW/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../TUTORIAL/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language Reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#syntax-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Syntax Rules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Syntax Rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#case-sensitivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case sensitivity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#naming-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Naming conventions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delimiters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delimiters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comments
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#primitive-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Primitive types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#struct-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Struct types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nil" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nil
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#autotuner-declaration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Autotuner Declaration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Autotuner Declaration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#full-syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input-and-output-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input and output parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#variable-declarations-in-the-autotuner-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variable declarations in the autotuner body
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#variable-declarations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variable Declarations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Variable Declarations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scoping-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scoping rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        States
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="States">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#state-without-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State without parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#state-with-input-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State with input parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#terminal-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terminal state
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#statements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Statements
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Statements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#variable-declaration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variable declaration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assignment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#function-routine-call-as-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function / routine call as statement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#terminal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terminal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conditional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conditional
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transitions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Transitions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unconditional-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unconditional transition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transition-with-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transition with arguments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cross-module-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-module transition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#control-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Control Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Control Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#if-elif-else" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        if / elif / else
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#looping-via-self-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Looping via self-transition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Expressions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Expressions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arithmetic-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arithmetic operators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparison-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison operators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logical-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logical operators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#operator-precedence-high-to-low" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator precedence (high to low)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#function-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function calls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#member-access-and-indexing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Member access and indexing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#literals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Literals
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#routines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routines
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Routines">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calling-routines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calling routines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#routines-from-imported-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routines from imported modules
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#structs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Structs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#syntax_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#field-declarations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field declarations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#member-routines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Member routines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constructing-structs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constructing structs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calling-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calling methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#struct-field-assignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Struct field assignment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generic-structs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generic Structs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Generic Structs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#definition-syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Definition syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instantiation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instantiation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-generic-types-as-parameters-and-return-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using generic types as parameters and return types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arity-checking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arity checking
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-structs-in-struct-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generic structs in struct fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#imports-and-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Imports and Modules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Imports and Modules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single import
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-path-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-path import
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#module-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualified-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Qualified calls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#importing-structs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Importing structs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ffi-foreign-function-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FFI (Foreign Function Interface)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FFI (Foreign Function Interface)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#syntax_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writing-the-wrapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing the wrapper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-ffimport-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full ffimport example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-1-simple-sequential-autotuner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 1: Simple sequential autotuner
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2-iteration-looping-via-self-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 2: Iteration (looping via self-transition)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-3-conditional-chain-with-elif" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 3: Conditional chain with elif
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-4-sweep-with-float-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 4: Sweep with float parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-5-state-input-parameters-passing-values-between-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 5: State input parameters (passing values between states)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-6-routines-and-module-imports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 6: Routines and module imports
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-7-non-generic-struct-with-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 7: Non-generic struct with methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-8-generic-struct-accumulator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 8: Generic struct — Accumulator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-9-generic-struct-two-type-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 9: Generic struct — two type parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-10-cross-module-namespacing-and-transitive-imports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 10: Cross-module namespacing and transitive imports
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Mistakes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Mistakes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-using-the-removed-uses-clause" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Using the removed uses clause
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-using-old-requires-syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Using old requires: syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-using-old-params-temp-block-syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Using old params {} / temp {} block syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-wrong-number-of-generic-type-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Wrong number of generic type arguments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-using-bracket-var-transition-syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Using bracket [var] transition syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-using-else-if-instead-of-elif" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Using else if instead of elif
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-omitting-braces-from-ifelse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Omitting braces from if/else
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-assigning-to-a-read-only-input-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Assigning to a read-only input parameter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-using-a-variable-before-it-is-declared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Using a variable before it is declared
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-using-measurement-keyword" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Using measurement: keyword
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#grammar-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grammar Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLI/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PACKAGE_MANAGER/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package Manager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../treesitter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TreeSitter (Syntax Highlighting)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_7" id="__nav_2_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LSP (Language Server)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    LSP (Language Server)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../LSP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup & Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lsp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Editor Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Database
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FFI (Foreign Function Interface)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    FFI (Foreign Function Interface)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../typing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Typing & C ABI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../qarrayDevice/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    qArray Device
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Library Bindings
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Library Bindings
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1" id="__nav_6_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    collections
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    collections
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/collections/array/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Array
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/collections/map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    falconCore
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    falconCore
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/physics/deviceStructures/connection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/physics/deviceStructures/connections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/physics/units/symbolUnit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SymbolUnit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/vector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vector
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/unitSpace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UnitSpace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/quantity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quantity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/domains/domain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Domain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/domains/labelledDomain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LabelledDomain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/discreteSpaces/discretizer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discretizer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/discreteSpaces/discreteSpace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DiscreteSpace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/axes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Axes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/arrays/controlArray/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ControlArray
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/arrays/controlArray1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ControlArray1D
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/arrays/increasingAlignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IncreasingAlignment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/arrays/labelledControlArray/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LabelledControlArray
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/arrays/labelledControlArray1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LabelledControlArray1D
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/arrays/labelledMeasuredArray/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LabelledMeasuredArray
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/arrays/labelledMeasuredArray1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LabelledMeasuredArray1D
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/arrays/measuredArray/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeasuredArray
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/arrays/measuredArray1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeasuredArray1D
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/math/analyticFunction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AnalyticFunction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/instrumentInterfaces/portTransforms/portTransform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PortTransform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/instrumentInterfaces/portTransforms/portTransforms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PortTransforms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/instrumentInterfaces/names/ports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/instrumentInterfaces/names/instrumentPort/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    InstrumentPort
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/instrumentInterfaces/names/instrument/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instrument
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/communications/voltageStates/deviceVoltageStates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DeviceVoltageStates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/falconCore/communications/voltageStates/deviceVoltageState/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DeviceVoltageState
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    io
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/strings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    strings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../libs/database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    database
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#syntax-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Syntax Rules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Syntax Rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#case-sensitivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case sensitivity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#naming-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Naming conventions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delimiters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delimiters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comments
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#primitive-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Primitive types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#struct-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Struct types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nil" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nil
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#autotuner-declaration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Autotuner Declaration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Autotuner Declaration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#full-syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input-and-output-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input and output parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#variable-declarations-in-the-autotuner-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variable declarations in the autotuner body
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#variable-declarations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variable Declarations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Variable Declarations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scoping-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scoping rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        States
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="States">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#state-without-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State without parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#state-with-input-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State with input parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#terminal-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terminal state
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#statements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Statements
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Statements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#variable-declaration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variable declaration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assignment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#function-routine-call-as-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function / routine call as statement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#terminal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terminal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conditional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conditional
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transitions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Transitions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unconditional-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unconditional transition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transition-with-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transition with arguments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cross-module-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-module transition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#control-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Control Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Control Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#if-elif-else" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        if / elif / else
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#looping-via-self-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Looping via self-transition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Expressions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Expressions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arithmetic-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arithmetic operators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparison-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison operators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logical-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logical operators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#operator-precedence-high-to-low" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator precedence (high to low)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#function-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function calls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#member-access-and-indexing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Member access and indexing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#literals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Literals
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#routines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routines
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Routines">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calling-routines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calling routines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#routines-from-imported-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routines from imported modules
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#structs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Structs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#syntax_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#field-declarations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field declarations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#member-routines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Member routines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constructing-structs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constructing structs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calling-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calling methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#struct-field-assignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Struct field assignment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generic-structs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generic Structs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Generic Structs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#definition-syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Definition syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instantiation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instantiation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-generic-types-as-parameters-and-return-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using generic types as parameters and return types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arity-checking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arity checking
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-structs-in-struct-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generic structs in struct fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#imports-and-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Imports and Modules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Imports and Modules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single import
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-path-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-path import
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#module-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#qualified-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Qualified calls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#importing-structs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Importing structs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ffi-foreign-function-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FFI (Foreign Function Interface)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FFI (Foreign Function Interface)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#syntax_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writing-the-wrapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing the wrapper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-ffimport-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full ffimport example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-1-simple-sequential-autotuner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 1: Simple sequential autotuner
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2-iteration-looping-via-self-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 2: Iteration (looping via self-transition)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-3-conditional-chain-with-elif" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 3: Conditional chain with elif
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-4-sweep-with-float-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 4: Sweep with float parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-5-state-input-parameters-passing-values-between-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 5: State input parameters (passing values between states)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-6-routines-and-module-imports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 6: Routines and module imports
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-7-non-generic-struct-with-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 7: Non-generic struct with methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-8-generic-struct-accumulator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 8: Generic struct — Accumulator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-9-generic-struct-two-type-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 9: Generic struct — two type parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-10-cross-module-namespacing-and-transitive-imports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 10: Cross-module namespacing and transitive imports
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Mistakes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Mistakes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-using-the-removed-uses-clause" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Using the removed uses clause
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-using-old-requires-syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Using old requires: syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-using-old-params-temp-block-syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Using old params {} / temp {} block syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-wrong-number-of-generic-type-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Wrong number of generic type arguments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-using-bracket-var-transition-syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Using bracket [var] transition syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-using-else-if-instead-of-elif" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Using else if instead of elif
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-omitting-braces-from-ifelse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Omitting braces from if/else
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-assigning-to-a-read-only-input-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Assigning to a read-only input parameter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-using-a-variable-before-it-is-declared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Using a variable before it is declared
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-using-measurement-keyword" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Using measurement: keyword
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#grammar-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grammar Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="falcon-dsl-language-reference">Falcon DSL Language Reference<a class="headerlink" href="#falcon-dsl-language-reference" title="Permanent link">&para;</a></h1>
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#file-structure">File Structure</a></li>
+<li><a href="#syntax-rules">Syntax Rules</a></li>
+<li><a href="#types">Types</a></li>
+<li><a href="#autotuner-declaration">Autotuner Declaration</a></li>
+<li><a href="#variable-declarations">Variable Declarations</a></li>
+<li><a href="#states">States</a></li>
+<li><a href="#statements">Statements</a></li>
+<li><a href="#transitions">Transitions</a></li>
+<li><a href="#control-flow">Control Flow</a></li>
+<li><a href="#expressions">Expressions</a></li>
+<li><a href="#routines">Routines</a></li>
+<li><a href="#structs">Structs</a></li>
+<li><a href="#generic-structs">Generic Structs</a></li>
+<li><a href="#imports-and-modules">Imports and Modules</a></li>
+<li><a href="#ffi-foreign-function-interface">FFI (Foreign Function Interface)</a></li>
+<li><a href="#complete-examples">Complete Examples</a></li>
+<li><a href="#common-mistakes">Common Mistakes</a></li>
+<li><a href="#grammar-summary">Grammar Summary</a></li>
+</ol>
+<hr />
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The Falcon DSL (<code>.fal</code>) is a domain-specific language for defining state machines used in quantum device autotuning. A <code>.fal</code> file is parsed by the Falcon compiler and executed by the <code>AutotunerEngine</code> runtime.</p>
+<p>Key design principles:</p>
+<ul>
+<li><strong>Typed inputs and outputs</strong> — autotuners and routines declare explicit typed signatures</li>
+<li><strong>State machine control flow</strong> — execution is a sequence of named states; transitions are explicit</li>
+<li><strong>Composability</strong> — routines and structs can be defined in separate files and imported</li>
+<li><strong>Generic structs</strong> — structs can be parameterised by type, enabling reusable data structures</li>
+<li><strong>FFI</strong> — C++ hardware routines can be bound and called directly from <code>.fal</code> code</li>
+</ul>
+<hr />
+<h2 id="file-structure">File Structure<a class="headerlink" href="#file-structure" title="Permanent link">&para;</a></h2>
+<p>A <code>.fal</code> file may contain, in order:</p>
+<ol>
+<li>Zero or more <code>import</code> statements</li>
+<li>Zero or more <code>ffimport</code> declarations</li>
+<li>Any mix of <code>struct</code>, <code>routine</code>, and <code>autotuner</code> declarations</li>
+</ol>
+<div class="language-text highlight"><pre><span></span><code>// 1. Imports (must come first)
+import &quot;shared/types.fal&quot;;
+
+// 2. FFI bindings (optional)
+ffimport &quot;hardware.cpp&quot; (&quot;-I/opt/hw/include&quot;) (&quot;-lhardware&quot;)
+
+// 3. Struct definitions (may be generic)
+struct Config {
+    float threshold = 0.5;
+}
+
+struct Box &lt;T&gt; {
+    T value;
+    routine New (T v) -&gt; (Box&lt;T&gt; b) { b.value = v; }
+    routine Get  -&gt; (T out)         { out = this.value; }
+}
+
+// 4. Routine definitions
+routine clamp (float v, float lo, float hi) -&gt; (float out) {
+    if (v &lt; lo) { out = lo; }
+    elif (v &gt; hi) { out = hi; }
+    else { out = v; }
+}
+
+// 5. Autotuner definitions
+autotuner MyAutotuner (float input) -&gt; (float result) {
+    result = 0.0;
+    start -&gt; run;
+
+    state run {
+        result = clamp(input, 0.0, 1.0);
+        -&gt; done;
+    }
+
+    state done { terminal; }
+}
+</code></pre></div>
+<hr />
+<h2 id="syntax-rules">Syntax Rules<a class="headerlink" href="#syntax-rules" title="Permanent link">&para;</a></h2>
+<h3 id="case-sensitivity">Case sensitivity<a class="headerlink" href="#case-sensitivity" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Keywords are lowercase: <code>autotuner</code>, <code>routine</code>, <code>struct</code>, <code>state</code>, <code>start</code>, <code>terminal</code>, <code>if</code>, <code>elif</code>, <code>else</code>, <code>import</code>, <code>ffimport</code>, <code>this</code>, <code>nil</code></li>
+<li>Identifiers are case-sensitive: <code>myState ≠ MyState</code></li>
+</ul>
+<blockquote>
+<p><strong>Note:</strong> <code>uses</code> is <strong>no longer a keyword</strong> and must not appear in <code>.fal</code> source. Cross-module routines are called directly with their qualified name — no declaration is needed.</p>
+</blockquote>
+<h3 id="naming-conventions">Naming conventions<a class="headerlink" href="#naming-conventions" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Thing</th>
+<th>Convention</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Autotuner names</td>
+<td>PascalCase</td>
+<td><code>VoltageSweep</code>, <code>ChargeStability</code></td>
+</tr>
+<tr>
+<td>State names</td>
+<td>snake_case</td>
+<td><code>initialize</code>, <code>sweep_loop</code></td>
+</tr>
+<tr>
+<td>Variable/param names</td>
+<td>snake_case</td>
+<td><code>min_voltage</code>, <code>step_count</code></td>
+</tr>
+<tr>
+<td>Routine names</td>
+<td>PascalCase or snake_case</td>
+<td><code>Clamp</code>, <code>area_square</code></td>
+</tr>
+<tr>
+<td>Struct names</td>
+<td>PascalCase</td>
+<td><code>SweepConfig</code>, <code>DeviceState</code></td>
+</tr>
+<tr>
+<td>Generic type params</td>
+<td>single uppercase letter or short PascalCase</td>
+<td><code>T</code>, <code>K</code>, <code>V</code>, <code>Elem</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="delimiters">Delimiters<a class="headerlink" href="#delimiters" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Statements end with <code>;</code></li>
+<li>Blocks use <code>{ }</code></li>
+<li>Parameter lists use <code>( )</code></li>
+<li>Generic type argument lists use <code>&lt; &gt;</code></li>
+<li>Transition argument lists use <code>( )</code></li>
+</ul>
+<h3 id="comments">Comments<a class="headerlink" href="#comments" title="Permanent link">&para;</a></h3>
+<p>Only single-line comments are supported:</p>
+<div class="language-text highlight"><pre><span></span><code>// This is a comment
+float x = 0.0;  // inline comment
+</code></pre></div>
+<hr />
+<h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
+<h3 id="primitive-types">Primitive types<a class="headerlink" href="#primitive-types" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+<th>Literals</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>int</code></td>
+<td>64-bit signed integer</td>
+<td><code>0</code>, <code>-5</code>, <code>1000</code></td>
+</tr>
+<tr>
+<td><code>float</code></td>
+<td>Double-precision float</td>
+<td><code>0.0</code>, <code>-3.14</code>, <code>1e-9</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td>Boolean</td>
+<td><code>true</code>, <code>false</code></td>
+</tr>
+<tr>
+<td><code>string</code></td>
+<td>String</td>
+<td><code>"hello"</code>, <code>""</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="struct-types">Struct types<a class="headerlink" href="#struct-types" title="Permanent link">&para;</a></h3>
+<p>Any declared struct name is a valid type (see <a href="#structs">Structs</a> and <a href="#generic-structs">Generic Structs</a>). Generic structs must be instantiated with concrete type arguments: <code>Box&lt;int&gt;</code>, <code>Pair&lt;string, float&gt;</code>.</p>
+<p>Struct types from imported modules are referenced as <code>ModuleName::StructName</code> or just <code>StructName</code> if unambiguous.</p>
+<h3 id="nil">Nil<a class="headerlink" href="#nil" title="Permanent link">&para;</a></h3>
+<p>The literal <code>nil</code> represents a null/absent value and can appear in expressions.</p>
+<hr />
+<h2 id="autotuner-declaration">Autotuner Declaration<a class="headerlink" href="#autotuner-declaration" title="Permanent link">&para;</a></h2>
+<p>An autotuner is the top-level execution unit — a named state machine with typed inputs and outputs.</p>
+<h3 id="full-syntax">Full syntax<a class="headerlink" href="#full-syntax" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>autotuner Name (input_type input_name, ...) -&gt; (output_type output_name, ...) {
+    // 1. Variable declarations and initialisation (the &quot;body&quot; before start)
+    output_name = default_value;
+    type local_var = value;
+
+    // 2. Entry state declaration
+    start -&gt; first_state_name;
+
+    // 3. State definitions
+    state first_state_name { ... }
+    state another_state   { ... }
+}
+</code></pre></div>
+<h3 id="input-and-output-parameters">Input and output parameters<a class="headerlink" href="#input-and-output-parameters" title="Permanent link">&para;</a></h3>
+<p>Input parameters are <strong>read-only</strong> within the autotuner. Output parameters must be declared in the signature and initialised in the body before <code>start</code>.</p>
+<div class="language-text highlight"><pre><span></span><code>autotuner Adder (int a, int b) -&gt; (int sum) {
+    sum = 0;               // initialise output
+    start -&gt; compute;
+
+    state compute {
+        sum = a + b;
+        -&gt; done;
+    }
+
+    state done { terminal; }
+}
+</code></pre></div>
+<p>An autotuner with no inputs omits the input list entirely:</p>
+<div class="language-text highlight"><pre><span></span><code>autotuner NoInput -&gt; (string result) {
+    result = &quot;&quot;;
+    start -&gt; run;
+    state run { result = &quot;ok&quot;; terminal; }
+}
+</code></pre></div>
+<h3 id="variable-declarations-in-the-autotuner-body">Variable declarations in the autotuner body<a class="headerlink" href="#variable-declarations-in-the-autotuner-body" title="Permanent link">&para;</a></h3>
+<p>Variables declared before <code>start</code> are <strong>autotuner-scoped</strong> — available in all states:</p>
+<div class="language-text highlight"><pre><span></span><code>autotuner Counter -&gt; (int count) {
+    count = 0;
+    int limit = 10;   // autotuner-scoped local variable
+    start -&gt; loop;
+
+    state loop {
+        count = count + 1;
+        if (count &lt; limit) { -&gt; loop; }
+        else               { -&gt; done; }
+    }
+
+    state done { terminal; }
+}
+</code></pre></div>
+<hr />
+<h2 id="variable-declarations">Variable Declarations<a class="headerlink" href="#variable-declarations" title="Permanent link">&para;</a></h2>
+<p>Variables must be declared with an explicit type before use. A declaration may optionally include an initialiser.</p>
+<div class="language-text highlight"><pre><span></span><code>int counter;              // declared, not yet initialised
+int counter = 0;          // declared and initialised
+float voltage = 0.0;
+bool enabled = true;
+string label = &quot;sweep&quot;;
+Box&lt;int&gt; b = Box.New(42); // generic struct instance
+</code></pre></div>
+<p><strong>Redeclaration is an error.</strong> You cannot declare the same name twice in the same scope.</p>
+<h3 id="scoping-rules">Scoping rules<a class="headerlink" href="#scoping-rules" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Where declared</th>
+<th>Visible in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Autotuner scope</td>
+<td>Autotuner body (before <code>start</code>) + output params</td>
+<td>All states</td>
+</tr>
+<tr>
+<td>Input params</td>
+<td>Autotuner signature <code>(...)</code></td>
+<td>All states — read-only</td>
+</tr>
+<tr>
+<td>State-local</td>
+<td>Inside a state body</td>
+<td>That state only</td>
+</tr>
+<tr>
+<td>State input params</td>
+<td>State signature <code>state Name (...)</code></td>
+<td>That state — read-only</td>
+</tr>
+<tr>
+<td>Struct field</td>
+<td>Inside <code>struct</code> body</td>
+<td>All routines of that struct — via bare name or <code>this.field</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="states">States<a class="headerlink" href="#states" title="Permanent link">&para;</a></h2>
+<p>A state is a named block of statements. Every autotuner must have at least one state, and every execution path must eventually reach a <code>terminal</code> statement.</p>
+<h3 id="state-without-parameters">State without parameters<a class="headerlink" href="#state-without-parameters" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>state my_state {
+    // statements
+    -&gt; next_state;
+}
+</code></pre></div>
+<h3 id="state-with-input-parameters">State with input parameters<a class="headerlink" href="#state-with-input-parameters" title="Permanent link">&para;</a></h3>
+<p>States can receive typed values from the calling transition. These parameters are <strong>read-only</strong> inside the state.</p>
+<div class="language-text highlight"><pre><span></span><code>state process (int value, bool flag) {
+    int local = value + 1;
+    if (flag == true) { -&gt; done(local); }
+    else              { -&gt; error; }
+}
+</code></pre></div>
+<p>Transitions to a parametrised state must pass matching expressions:</p>
+<div class="language-text highlight"><pre><span></span><code>-&gt; process(42, true);
+-&gt; process(computed_val, my_flag);
+</code></pre></div>
+<h3 id="terminal-state">Terminal state<a class="headerlink" href="#terminal-state" title="Permanent link">&para;</a></h3>
+<p><code>terminal;</code> ends the autotuner's execution. It can appear anywhere in a state body:</p>
+<div class="language-text highlight"><pre><span></span><code>state done {
+    count = count + 1;  // still runs
+    terminal;
+}
+</code></pre></div>
+<p>A minimal terminal state:</p>
+<div class="language-text highlight"><pre><span></span><code>state done { terminal; }
+</code></pre></div>
+<hr />
+<h2 id="statements">Statements<a class="headerlink" href="#statements" title="Permanent link">&para;</a></h2>
+<p>Inside a state (or routine) body, the following statements are valid:</p>
+<h3 id="variable-declaration">Variable declaration<a class="headerlink" href="#variable-declaration" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>int x;
+float y = 3.14;
+MyStruct obj = MyStruct.New(args);
+Box&lt;int&gt; b = Box.New(99);
+</code></pre></div>
+<h3 id="assignment">Assignment<a class="headerlink" href="#assignment" title="Permanent link">&para;</a></h3>
+<p>Assign to any <strong>non-read-only</strong> variable in scope:</p>
+<div class="language-text highlight"><pre><span></span><code>counter = counter + 1;
+voltage = 0.0;
+label = &quot;done&quot;;
+</code></pre></div>
+<p>Struct field assignment:</p>
+<div class="language-text highlight"><pre><span></span><code>config.threshold = 0.8;
+this.field = value;        // inside a struct routine
+</code></pre></div>
+<p>Multi-target assignment (assigns the same expression to multiple variables):</p>
+<div class="language-text highlight"><pre><span></span><code>a, b = some_expr;
+</code></pre></div>
+<h3 id="function-routine-call-as-statement">Function / routine call as statement<a class="headerlink" href="#function-routine-call-as-statement" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>some_routine(arg1, arg2);
+Module::routine(arg);
+obj.method(args);
+</code></pre></div>
+<h3 id="transition">Transition<a class="headerlink" href="#transition" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>-&gt; state_name;
+-&gt; state_name(expr1, expr2);
+</code></pre></div>
+<h3 id="terminal">Terminal<a class="headerlink" href="#terminal" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>terminal;
+</code></pre></div>
+<h3 id="conditional">Conditional<a class="headerlink" href="#conditional" title="Permanent link">&para;</a></h3>
+<p>See <a href="#control-flow">Control Flow</a>.</p>
+<hr />
+<h2 id="transitions">Transitions<a class="headerlink" href="#transitions" title="Permanent link">&para;</a></h2>
+<p>Transitions move execution from the current state to another state.</p>
+<h3 id="unconditional-transition">Unconditional transition<a class="headerlink" href="#unconditional-transition" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>-&gt; next_state;
+</code></pre></div>
+<h3 id="transition-with-arguments">Transition with arguments<a class="headerlink" href="#transition-with-arguments" title="Permanent link">&para;</a></h3>
+<p>Pass values to a state's input parameters:</p>
+<div class="language-text highlight"><pre><span></span><code>-&gt; process(result, true);
+</code></pre></div>
+<p>Arguments are positional and must match the target state's parameter list in type and order.</p>
+<h3 id="cross-module-transition">Cross-module transition<a class="headerlink" href="#cross-module-transition" title="Permanent link">&para;</a></h3>
+<p>Call a state in an autotuner loaded from an imported module:</p>
+<div class="language-text highlight"><pre><span></span><code>-&gt; ModuleName::autotuner_state;
+-&gt; ModuleName::autotuner_state(arg1, arg2);
+</code></pre></div>
+<hr />
+<h2 id="control-flow">Control Flow<a class="headerlink" href="#control-flow" title="Permanent link">&para;</a></h2>
+<h3 id="if-elif-else">if / elif / else<a class="headerlink" href="#if-elif-else" title="Permanent link">&para;</a></h3>
+<p>All branches must use braces <code>{ }</code>. The <code>elif</code> keyword (not <code>else if</code>) is used for chained conditions.</p>
+<div class="language-text highlight"><pre><span></span><code>if (x &lt; 0) {
+    -&gt; negative;
+}
+elif (x == 0) {
+    -&gt; zero;
+}
+elif (x &lt; 100) {
+    -&gt; small;
+}
+else {
+    -&gt; large;
+}
+</code></pre></div>
+<h3 id="looping-via-self-transition">Looping via self-transition<a class="headerlink" href="#looping-via-self-transition" title="Permanent link">&para;</a></h3>
+<p>The language has no explicit loop construct. Looping is expressed as a self-transition:</p>
+<div class="language-text highlight"><pre><span></span><code>autotuner IterationTest (int max_iterations) -&gt; (int counter) {
+    counter = 0;
+    start -&gt; loop;
+
+    state loop {
+        counter = counter + 1;
+        if (counter &lt; max_iterations) { -&gt; loop; }
+        else                          { -&gt; done; }
+    }
+
+    state done { terminal; }
+}
+</code></pre></div>
+<hr />
+<h2 id="expressions">Expressions<a class="headerlink" href="#expressions" title="Permanent link">&para;</a></h2>
+<h3 id="arithmetic-operators">Arithmetic operators<a class="headerlink" href="#arithmetic-operators" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>a + b
+a - b
+a * b
+a / b
+-a      // unary negation
+</code></pre></div>
+<h3 id="comparison-operators">Comparison operators<a class="headerlink" href="#comparison-operators" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>a == b
+a != b
+a &lt; b
+a &gt; b
+a &lt;= b
+a &gt;= b
+</code></pre></div>
+<h3 id="logical-operators">Logical operators<a class="headerlink" href="#logical-operators" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>a &amp;&amp; b    // AND
+a || b    // OR
+!a        // NOT
+</code></pre></div>
+<h3 id="operator-precedence-high-to-low">Operator precedence (high to low)<a class="headerlink" href="#operator-precedence-high-to-low" title="Permanent link">&para;</a></h3>
+<ol>
+<li><code>.</code> <code>[...]</code> <code>(...)</code> <code>::</code> — member access, index, call, scope</li>
+<li><code>!</code> unary <code>-</code></li>
+<li><code>*</code> <code>/</code></li>
+<li><code>+</code> <code>-</code></li>
+<li><code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code></li>
+<li><code>==</code> <code>!=</code></li>
+<li><code>&amp;&amp;</code></li>
+<li><code>||</code></li>
+</ol>
+<h3 id="function-calls">Function calls<a class="headerlink" href="#function-calls" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>add(a, b)                  // plain call
+math_utils::add(a, b)      // module-qualified call
+obj.Value()                // method call
+Struct.Constructor(args)   // static-style constructor call
+</code></pre></div>
+<p>Call arguments are positional:</p>
+<div class="language-text highlight"><pre><span></span><code>clamp(val, 0.0, 1.0)
+</code></pre></div>
+<h3 id="member-access-and-indexing">Member access and indexing<a class="headerlink" href="#member-access-and-indexing" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>obj.field           // struct field read
+obj[index]          // index expression
+this.field          // inside a struct routine
+</code></pre></div>
+<h3 id="literals">Literals<a class="headerlink" href="#literals" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>42        // int
+3.14      // float
+true      // bool
+false     // bool
+&quot;hello&quot;   // string
+nil       // null value
+</code></pre></div>
+<hr />
+<h2 id="routines">Routines<a class="headerlink" href="#routines" title="Permanent link">&para;</a></h2>
+<p>Routines are top-level (or struct-member) pure functions with typed inputs and outputs. They do not have states or transitions.</p>
+<h3 id="syntax">Syntax<a class="headerlink" href="#syntax" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>routine Name (type param1, type param2) -&gt; (type out1, type out2) {
+    // statements — same as a state body, minus transitions and terminal
+    out1 = param1 + param2;
+}
+</code></pre></div>
+<ul>
+<li>Input params are read-only.</li>
+<li>Output params must be assigned before the routine returns.</li>
+<li>Routines may call other routines.</li>
+</ul>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<p><strong>Single output:</strong></p>
+<div class="language-text highlight"><pre><span></span><code>routine Adder (int a, int b) -&gt; (int add) {
+    add = a + b;
+}
+</code></pre></div>
+<p><strong>No input params</strong> (empty <code>()</code> or omitted):</p>
+<div class="language-text highlight"><pre><span></span><code>routine get_version -&gt; (string ver) {
+    ver = &quot;1.0.0&quot;;
+}
+</code></pre></div>
+<p><strong>Multiple outputs:</strong></p>
+<div class="language-text highlight"><pre><span></span><code>routine divmod (int a, int b) -&gt; (int quotient, int remainder) {
+    quotient  = a / b;
+    remainder = a - (quotient * b);
+}
+</code></pre></div>
+<p><strong>With conditionals:</strong></p>
+<div class="language-text highlight"><pre><span></span><code>routine clamp (float val, float lo, float hi) -&gt; (float out) {
+    if (val &lt; lo)      { out = lo; }
+    elif (val &gt; hi)    { out = hi; }
+    else               { out = val; }
+}
+</code></pre></div>
+<h3 id="calling-routines">Calling routines<a class="headerlink" href="#calling-routines" title="Permanent link">&para;</a></h3>
+<p>Routines are called like functions. Their return values can be assigned to variables:</p>
+<div class="language-text highlight"><pre><span></span><code>int result = Adder(3, 4);
+float safe = clamp(input, 0.0, 1.0);
+</code></pre></div>
+<p>Multi-output routines: the language currently supports capturing the first output via assignment. Use struct returns or state parameters for multiple values.</p>
+<h3 id="routines-from-imported-modules">Routines from imported modules<a class="headerlink" href="#routines-from-imported-modules" title="Permanent link">&para;</a></h3>
+<p>Cross-module routines are called directly with their qualified name — no declaration is required:</p>
+<div class="language-text highlight"><pre><span></span><code>int sum  = math_utils::add(a, b);
+float ar = geometry::area_square(5.0);
+</code></pre></div>
+<hr />
+<h2 id="structs">Structs<a class="headerlink" href="#structs" title="Permanent link">&para;</a></h2>
+<p>Structs define composite data types. They may have fields with optional defaults and member routines.</p>
+<h3 id="syntax_1">Syntax<a class="headerlink" href="#syntax_1" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>struct TypeName {
+    type field_name;
+    type field_with_default = value;
+
+    routine MethodName (type param) -&gt; (type out) {
+        // body — can access fields via this.field or bare field name
+    }
+}
+</code></pre></div>
+<h3 id="field-declarations">Field declarations<a class="headerlink" href="#field-declarations" title="Permanent link">&para;</a></h3>
+<p>Fields are declared exactly like variable declarations, with optional defaults:</p>
+<div class="language-text highlight"><pre><span></span><code>struct SweepConfig {
+    float start  = 0.0;
+    float stop   = 1.0;
+    float step   = 0.01;
+    int   repeat = 1;
+}
+</code></pre></div>
+<p>Fields without defaults must be initialised before use (typically in a <code>New</code> constructor routine).</p>
+<h3 id="member-routines">Member routines<a class="headerlink" href="#member-routines" title="Permanent link">&para;</a></h3>
+<p>Struct routines follow the same <code>routine</code> syntax. Inside a struct routine, fields can be accessed as bare names <strong>or</strong> via <code>this.field</code>. Both forms are equivalent:</p>
+<div class="language-text highlight"><pre><span></span><code>struct Quantity {
+    int value;
+
+    routine New (int v) -&gt; (Quantity q) {
+        q.value = v;       // assign field on the returned instance
+    }
+
+    routine Get -&gt; (int out) {
+        out = this.value;  // read via this
+    }
+
+    routine Double -&gt; (int out) {
+        out = value * 2;   // bare field name also works
+    }
+}
+</code></pre></div>
+<h3 id="constructing-structs">Constructing structs<a class="headerlink" href="#constructing-structs" title="Permanent link">&para;</a></h3>
+<p>The conventional pattern is a static-style factory routine:</p>
+<div class="language-text highlight"><pre><span></span><code>Quantity q = Quantity.New(42);
+</code></pre></div>
+<p><code>Quantity.New(42)</code> calls the <code>New</code> routine on the <code>Quantity</code> type, which returns a <code>Quantity</code> value.</p>
+<h3 id="calling-methods">Calling methods<a class="headerlink" href="#calling-methods" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>int v = q.Get();
+int d = q.Double();
+</code></pre></div>
+<h3 id="struct-field-assignment">Struct field assignment<a class="headerlink" href="#struct-field-assignment" title="Permanent link">&para;</a></h3>
+<p>From outside the struct:</p>
+<div class="language-text highlight"><pre><span></span><code>q.value = 10;
+config.step = 0.05;
+</code></pre></div>
+<p>From inside a struct routine:</p>
+<div class="language-text highlight"><pre><span></span><code>this.value = 10;   // explicit
+value = 10;        // bare name — identical
+</code></pre></div>
+<hr />
+<h2 id="generic-structs">Generic Structs<a class="headerlink" href="#generic-structs" title="Permanent link">&para;</a></h2>
+<p>Structs can be parameterised with one or more type parameters. The type parameters are listed in angle brackets after the struct name in the definition, and replaced with concrete types at the use site.</p>
+<h3 id="definition-syntax">Definition syntax<a class="headerlink" href="#definition-syntax" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>struct Name &lt;T&gt; {
+    T field;
+    routine New (T v) -&gt; (Name&lt;T&gt; out) { out.field = v; }
+    routine Get -&gt; (T out)             { out = field; }
+}
+</code></pre></div>
+<p>Multiple type parameters:</p>
+<div class="language-text highlight"><pre><span></span><code>struct Pair &lt;K, V&gt; {
+    K key;
+    V value;
+    routine New (K k, V v) -&gt; (Pair&lt;K,V&gt; p) {
+        p.key   = k;
+        p.value = v;
+    }
+}
+</code></pre></div>
+<h3 id="instantiation">Instantiation<a class="headerlink" href="#instantiation" title="Permanent link">&para;</a></h3>
+<p>Replace the type parameters with concrete types at the use site:</p>
+<div class="language-text highlight"><pre><span></span><code>Box&lt;int&gt;         b = Box.New(42);
+Box&lt;float&gt;       f = Box.New(3.14);
+Pair&lt;string,int&gt; p = Pair.New(&quot;x&quot;, 10);
+</code></pre></div>
+<p>The interpreter resolves the concrete type at runtime (monomorphisation-on-demand). Each distinct instantiation is a separate type at runtime.</p>
+<h3 id="using-generic-types-as-parameters-and-return-types">Using generic types as parameters and return types<a class="headerlink" href="#using-generic-types-as-parameters-and-return-types" title="Permanent link">&para;</a></h3>
+<p>Generic struct types can appear anywhere a type is valid — in routine signatures, state parameters, autotuner inputs/outputs, and field declarations:</p>
+<div class="language-text highlight"><pre><span></span><code>struct Accumulator &lt;T&gt; {
+    T total;
+
+    routine New (T init) -&gt; (Accumulator&lt;T&gt; acc) {
+        acc.total = init;
+    }
+
+    routine Add (T delta) -&gt; (T new_total) {
+        total = total + delta;   // bare field name inside routine
+        new_total = total;
+    }
+
+    routine Value -&gt; (T v) {
+        v = this.total;
+    }
+}
+
+autotuner GenericMath (int start_val, int add_val) -&gt; (int result) {
+    result = 0;
+    start -&gt; run;
+    state run {
+        Accumulator&lt;int&gt; acc = Accumulator.New(start_val);
+        result = acc.Add(add_val);
+        terminal;
+    }
+}
+</code></pre></div>
+<h3 id="arity-checking">Arity checking<a class="headerlink" href="#arity-checking" title="Permanent link">&para;</a></h3>
+<p>Passing the wrong number of type arguments is a parse-time error:</p>
+<div class="language-text highlight"><pre><span></span><code>// WRONG — Box expects 1 type argument, not 2
+Box&lt;int, float&gt; b = Box.New(x);
+// ERROR: Struct &#39;Box&#39; expects 1 type argument(s) but got 2
+</code></pre></div>
+<h3 id="generic-structs-in-struct-fields">Generic structs in struct fields<a class="headerlink" href="#generic-structs-in-struct-fields" title="Permanent link">&para;</a></h3>
+<p>A generic struct may have fields whose type is one of its own type parameters, or another concrete/generic struct:</p>
+<div class="language-text highlight"><pre><span></span><code>struct Wrapper &lt;T&gt; {
+    T inner;
+    Box&lt;T&gt; boxed;
+
+    routine New (T v) -&gt; (Wrapper&lt;T&gt; w) {
+        w.inner = v;
+        w.boxed = Box.New(v);
+    }
+}
+</code></pre></div>
+<hr />
+<h2 id="imports-and-modules">Imports and Modules<a class="headerlink" href="#imports-and-modules" title="Permanent link">&para;</a></h2>
+<h3 id="single-import">Single import<a class="headerlink" href="#single-import" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>import &quot;path/to/file.fal&quot;;
+</code></pre></div>
+<h3 id="multi-path-import">Multi-path import<a class="headerlink" href="#multi-path-import" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>import (
+    &quot;./Adder.fal&quot;
+    &quot;./Multiplier.fal&quot;
+    &quot;./types/Config.fal&quot;
+)
+</code></pre></div>
+<p>Paths are relative to the importing file. Imports must appear at the very top of the file, before any declarations.</p>
+<h3 id="module-names">Module names<a class="headerlink" href="#module-names" title="Permanent link">&para;</a></h3>
+<p>When a file is imported, its filename (without <code>.fal</code>) becomes its module name. All routines, structs, and autotuners from that file are accessible via <code>ModuleName::symbol</code>:</p>
+<div class="language-text highlight"><pre><span></span><code>import &quot;geometry.fal&quot;;
+// now geometry::area_square is accessible
+
+import &quot;math_utils.fal&quot;;
+// now math_utils::add is accessible
+</code></pre></div>
+<h3 id="qualified-calls">Qualified calls<a class="headerlink" href="#qualified-calls" title="Permanent link">&para;</a></h3>
+<p>Cross-module routines are called directly with their qualified name; no prior declaration is required:</p>
+<div class="language-text highlight"><pre><span></span><code>float a = geometry::area_square(5.0);
+int   s = math_utils::add(x, y);
+</code></pre></div>
+<p>Transitive imports work — if <code>geometry.fal</code> imports <code>math_utils.fal</code>, then <code>math_utils::get_version()</code> is reachable from the file that imports geometry.</p>
+<h3 id="importing-structs">Importing structs<a class="headerlink" href="#importing-structs" title="Permanent link">&para;</a></h3>
+<p>Structs from an imported file are usable as types once imported:</p>
+<div class="language-text highlight"><pre><span></span><code>import &quot;./Quantity.fal&quot;;
+import &quot;./Connection.fal&quot;;
+
+autotuner MultipleStruct (int a, int b) -&gt; (int sum, string name) {
+    sum  = 0;
+    name = &quot;&quot;;
+    start -&gt; calculate;
+
+    state calculate {
+        Quantity   q = Quantity::quantity.New(a);
+        Connection c = Connection::connection.New(&quot;test&quot;);
+        sum  = q.Value() + b;
+        name = c.Name();
+        -&gt; done;
+    }
+
+    state done { terminal; }
+}
+</code></pre></div>
+<hr />
+<h2 id="ffi-foreign-function-interface">FFI (Foreign Function Interface)<a class="headerlink" href="#ffi-foreign-function-interface" title="Permanent link">&para;</a></h2>
+<p><code>ffimport</code> binds a C++ source file to <code>.fal</code> symbols. The engine compiles the wrapper on first use via the C ABI and caches the resulting <code>.so</code> — <strong>no manual CMake step is required</strong>.</p>
+<h3 id="syntax_2">Syntax<a class="headerlink" href="#syntax_2" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>ffimport &quot;wrapper.cpp&quot;
+    (&quot;-I/path/to/headers&quot; &quot;-I/other/path&quot;)
+    (&quot;-lmylibrary&quot; &quot;-L/path/to/lib&quot;)
+</code></pre></div>
+<ul>
+<li>First <code>( )</code> — compiler <code>-I</code> include flags (can be empty <code>()</code>)</li>
+<li>Second <code>( )</code> — linker flags and <code>-l</code> libraries (can be empty <code>()</code>)</li>
+</ul>
+<h3 id="writing-the-wrapper">Writing the wrapper<a class="headerlink" href="#writing-the-wrapper" title="Permanent link">&para;</a></h3>
+<p>All wrapper functions must be <code>extern "C"</code> and follow the Falcon C ABI:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="c1">// hardware_wrapper.cpp</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;falcon-typing/falcon_ffi.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;falcon-typing/FFIHelpers.hpp&gt;</span>
+
+<span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">measure_iv</span><span class="p">(</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">FalconParamEntry</span><span class="o">*</span><span class="w"> </span><span class="n">in</span><span class="p">,</span><span class="w">  </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">in_count</span><span class="p">,</span>
+<span class="w">    </span><span class="n">FalconResultSlot</span><span class="o">*</span><span class="w">       </span><span class="n">out</span><span class="p">,</span><span class="w"> </span><span class="kt">int32_t</span><span class="o">*</span><span class="w"> </span><span class="n">out_count</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">params</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">falcon</span><span class="o">::</span><span class="n">typing</span><span class="o">::</span><span class="n">ffi</span><span class="o">::</span><span class="n">engine</span><span class="o">::</span><span class="n">unpack_params</span><span class="p">(</span><span class="n">in</span><span class="p">,</span><span class="w"> </span><span class="n">in_count</span><span class="p">);</span>
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">voltage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">(</span><span class="n">params</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="s">&quot;voltage&quot;</span><span class="p">));</span>
+
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">current</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MyHardware</span><span class="o">::</span><span class="n">measure</span><span class="p">(</span><span class="n">voltage</span><span class="p">);</span>
+<span class="w">    </span><span class="n">falcon</span><span class="o">::</span><span class="n">typing</span><span class="o">::</span><span class="n">ffi</span><span class="o">::</span><span class="n">engine</span><span class="o">::</span><span class="n">set_result</span><span class="p">(</span><span class="n">out</span><span class="p">,</span><span class="w"> </span><span class="n">out_count</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">current</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The engine compiles the <code>.cpp</code> automatically when the <code>.fal</code> file is loaded. You do <strong>not</strong> need to write a CMakeLists.txt, run <code>cmake</code>, or link manually.</p>
+<p>Struct methods use the <code>STRUCTTypeName</code> prefix convention:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">STRUCTDeviceNew</span><span class="p">(</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">FalconParamEntry</span><span class="o">*</span><span class="w"> </span><span class="n">in</span><span class="p">,</span><span class="w">  </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">in_count</span><span class="p">,</span>
+<span class="w">    </span><span class="n">FalconResultSlot</span><span class="o">*</span><span class="w">       </span><span class="n">out</span><span class="p">,</span><span class="w"> </span><span class="kt">int32_t</span><span class="o">*</span><span class="w"> </span><span class="n">out_count</span><span class="p">)</span>
+<span class="p">{</span><span class="w"> </span><span class="cm">/* constructor body */</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h3 id="full-ffimport-example">Full ffimport example<a class="headerlink" href="#full-ffimport-example" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>ffimport &quot;hardware_wrapper.cpp&quot;
+    (&quot;-I/opt/mydevice/include&quot;)
+    (&quot;-lmydevice&quot;)
+
+autotuner HardwareSweep (float start_v, float stop_v) -&gt; (float peak) {
+    peak = 0.0;
+    float current_v = start_v;
+    start -&gt; sweep;
+
+    state sweep {
+        float measured = measure_iv(current_v);
+        if (measured &gt; peak) { peak = measured; }
+        current_v = current_v + 0.01;
+        if (current_v &lt; stop_v) { -&gt; sweep; }
+        else                    { -&gt; done;  }
+    }
+
+    state done { terminal; }
+}
+</code></pre></div>
+<hr />
+<h2 id="complete-examples">Complete Examples<a class="headerlink" href="#complete-examples" title="Permanent link">&para;</a></h2>
+<h3 id="example-1-simple-sequential-autotuner">Example 1: Simple sequential autotuner<a class="headerlink" href="#example-1-simple-sequential-autotuner" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>autotuner SequentialTest -&gt; (int step) {
+    step = 0;
+    start -&gt; state1;
+
+    state state1 { step = 1; -&gt; state2; }
+    state state2 { step = 2; -&gt; state3; }
+    state state3 { step = 3; -&gt; done;   }
+    state done   { terminal; }
+}
+</code></pre></div>
+<hr />
+<h3 id="example-2-iteration-looping-via-self-transition">Example 2: Iteration (looping via self-transition)<a class="headerlink" href="#example-2-iteration-looping-via-self-transition" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>autotuner IterationTest (int max_iterations) -&gt; (int counter) {
+    counter = 0;
+    start -&gt; loop;
+
+    state loop {
+        counter = counter + 1;
+        if (counter &lt; max_iterations) { -&gt; loop; }
+        else                          { -&gt; done; }
+    }
+
+    state done { terminal; }
+}
+</code></pre></div>
+<hr />
+<h3 id="example-3-conditional-chain-with-elif">Example 3: Conditional chain with elif<a class="headerlink" href="#example-3-conditional-chain-with-elif" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>autotuner ConditionalChain (int value) -&gt; (string category) {
+    category = &quot;&quot;;
+    start -&gt; classify;
+
+    state classify {
+        if (value &lt; 0)    { -&gt; negative; }
+        elif (value == 0) { -&gt; zero;     }
+        elif (value &lt; 10) { -&gt; small;    }
+        elif (value &lt; 100){ -&gt; medium;   }
+        else              { -&gt; large;    }
+    }
+
+    state negative { category = &quot;negative&quot;; terminal; }
+    state zero     { category = &quot;zero&quot;;     terminal; }
+    state small    { category = &quot;small&quot;;    terminal; }
+    state medium   { category = &quot;medium&quot;;   terminal; }
+    state large    { category = &quot;large&quot;;    terminal; }
+}
+</code></pre></div>
+<hr />
+<h3 id="example-4-sweep-with-float-parameters">Example 4: Sweep with float parameters<a class="headerlink" href="#example-4-sweep-with-float-parameters" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>autotuner SimpleSweep (float begin, float end, float step) -&gt; (int count, float final_value) {
+    float current = 0.0;
+    count = 0;
+    final_value = 0.0;
+    start -&gt; init;
+
+    state init {
+        current = begin;
+        -&gt; sweep;
+    }
+
+    state sweep {
+        count = count + 1;
+        final_value = current;
+        current = current + step;
+        if (current &lt;= end) { -&gt; sweep; }
+        else                { -&gt; done;  }
+    }
+
+    state done { terminal; }
+}
+</code></pre></div>
+<hr />
+<h3 id="example-5-state-input-parameters-passing-values-between-states">Example 5: State input parameters (passing values between states)<a class="headerlink" href="#example-5-state-input-parameters-passing-values-between-states" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>routine Adder      (int a, int b) -&gt; (int add)  { add  = a + b; }
+routine Multiplier (int a, int b) -&gt; (int mult) { mult = a * b; }
+
+autotuner ConditionalNest (int a, int b) -&gt; (int out) {
+    out = 0;
+    start -&gt; init;
+
+    state init {
+        int add = Adder(a, b);
+        -&gt; multiplication(add);
+    }
+
+    state multiplication (int c) {
+        int result = Multiplier(c, b);
+        -&gt; done(result);
+    }
+
+    state done (int out_inside) {
+        out = out_inside;
+        terminal;
+    }
+}
+</code></pre></div>
+<hr />
+<h3 id="example-6-routines-and-module-imports">Example 6: Routines and module imports<a class="headerlink" href="#example-6-routines-and-module-imports" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>// Adder.fal
+routine adder (int a, int b) -&gt; (int add) { add = a + b; }
+
+// Multiplier.fal
+routine multiplier (int a, int b) -&gt; (int mult) { mult = a * b; }
+
+// main.fal
+import (
+    &quot;./Adder.fal&quot;
+    &quot;./Multiplier.fal&quot;
+)
+
+autotuner ConditionalNest (int a, int b) -&gt; (int out) {
+    out = 0;
+    start -&gt; init;
+
+    state init {
+        int add = Adder::adder(a, b);       // qualified cross-module call
+        -&gt; multiplication(add);
+    }
+
+    state multiplication (int c) {
+        int result = Multiplier::multiplier(c, b);
+        -&gt; done(result);
+    }
+
+    state done (int out_inside) {
+        out = out_inside;
+        terminal;
+    }
+}
+</code></pre></div>
+<p><strong>Note:</strong> No <code>uses</code> clause is required. Cross-module calls work directly via the <code>Module::symbol</code> qualified syntax.</p>
+<hr />
+<h3 id="example-7-non-generic-struct-with-methods">Example 7: Non-generic struct with methods<a class="headerlink" href="#example-7-non-generic-struct-with-methods" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>struct Quantity {
+    int a_;
+
+    routine New (int a) -&gt; (Quantity q) {
+        q.a_ = a;
+    }
+
+    routine Value -&gt; (int value) {
+        value = a_;        // bare field name (no this needed)
+    }
+}
+
+autotuner QuantityStruct (int a, int b) -&gt; (int sum) {
+    sum = 0;
+    start -&gt; calculate;
+
+    state calculate {
+        Quantity q = Quantity.New(a);
+        sum = q.Value() + b;
+        -&gt; done;
+    }
+
+    state done { terminal; }
+}
+</code></pre></div>
+<hr />
+<h3 id="example-8-generic-struct-accumulator">Example 8: Generic struct — Accumulator<a class="headerlink" href="#example-8-generic-struct-accumulator" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>struct Accumulator &lt;T&gt; {
+    T total;
+
+    routine New (T init) -&gt; (Accumulator&lt;T&gt; acc) {
+        acc.total = init;
+    }
+
+    routine Add (T delta) -&gt; (T new_total) {
+        total     = total + delta;   // bare field — updates the struct&#39;s own state
+        new_total = total;
+    }
+
+    routine Value -&gt; (T v) {
+        v = this.total;
+    }
+}
+
+autotuner GenericMath (int start_val, int add_val) -&gt; (int result) {
+    result = 0;
+    start -&gt; run;
+    state run {
+        Accumulator&lt;int&gt; acc = Accumulator.New(start_val);
+        result = acc.Add(add_val);
+        terminal;
+    }
+}
+</code></pre></div>
+<hr />
+<h3 id="example-9-generic-struct-two-type-parameters">Example 9: Generic struct — two type parameters<a class="headerlink" href="#example-9-generic-struct-two-type-parameters" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>struct Pair &lt;K, V&gt; {
+    K key;
+    V value;
+
+    routine New (K k, V v) -&gt; (Pair&lt;K,V&gt; p) {
+        p.key   = k;
+        p.value = v;
+    }
+
+    routine GetKey   -&gt; (K out) { out = key; }
+    routine GetValue -&gt; (V out) { out = value; }
+}
+
+autotuner PairDemo (string label, int data) -&gt; (string k, int v) {
+    k = &quot;&quot;; v = 0;
+    start -&gt; run;
+    state run {
+        Pair&lt;string,int&gt; p = Pair.New(label, data);
+        k = p.GetKey();
+        v = p.GetValue();
+        terminal;
+    }
+}
+</code></pre></div>
+<hr />
+<h3 id="example-10-cross-module-namespacing-and-transitive-imports">Example 10: Cross-module namespacing and transitive imports<a class="headerlink" href="#example-10-cross-module-namespacing-and-transitive-imports" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>// math_utils.fal
+routine add (int a, int b) -&gt; (int sum) { sum = a + b; }
+routine get_version -&gt; (string ver)     { ver = &quot;1.0.0&quot;; }
+
+// geometry.fal
+import &quot;math_utils.fal&quot;;
+routine area_square (float side) -&gt; (float res) { res = side * side; }
+
+// main.fal
+import &quot;geometry.fal&quot;;
+
+autotuner NamespacingTest (int a, int b) -&gt; (int sum, float area, string version) {
+    start -&gt; run;
+    state run {
+        sum     = math_utils::add(a, b);           // transitive: geometry imports math_utils
+        area    = geometry::area_square(5.0);
+        version = math_utils::get_version();
+        terminal;
+    }
+}
+</code></pre></div>
+<hr />
+<h2 id="common-mistakes">Common Mistakes<a class="headerlink" href="#common-mistakes" title="Permanent link">&para;</a></h2>
+<h3 id="1-using-the-removed-uses-clause">1. Using the removed <code>uses</code> clause<a class="headerlink" href="#1-using-the-removed-uses-clause" title="Permanent link">&para;</a></h3>
+<p><code>uses</code> is no longer a keyword and will cause a parse error.</p>
+<div class="language-text highlight"><pre><span></span><code>// WRONG — uses is not a valid keyword
+autotuner Bad (int x) -&gt; (int y) {
+    uses Adder::adder;
+    ...
+}
+
+// CORRECT — call cross-module routines directly by qualified name
+autotuner Good (int x) -&gt; (int y) {
+    y = 0;
+    start -&gt; run;
+    state run {
+        y = Adder::adder(x, 1);
+        terminal;
+    }
+}
+</code></pre></div>
+<h3 id="2-using-old-requires-syntax">2. Using old <code>requires:</code> syntax<a class="headerlink" href="#2-using-old-requires-syntax" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>// WRONG — requires: was never part of the language
+autotuner Bad {
+    requires: [OtherAutotuner];
+    ...
+}
+
+// CORRECT — no declaration needed; call cross-module symbols directly
+autotuner Good (int x) -&gt; (int y) {
+    y = 0;
+    start -&gt; run;
+    state run { y = x + 1; terminal; }
+}
+</code></pre></div>
+<h3 id="3-using-old-params-temp-block-syntax">3. Using old <code>params {}</code> / <code>temp {}</code> block syntax<a class="headerlink" href="#3-using-old-params-temp-block-syntax" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>// WRONG — there is no params {} block
+autotuner Bad {
+    params { int x = 0; }
+}
+
+// CORRECT — declare outputs in the signature, vars inline before start
+autotuner Good -&gt; (int x) {
+    x = 0;
+    start -&gt; run;
+    state run { x = 1; terminal; }
+}
+</code></pre></div>
+<h3 id="4-wrong-number-of-generic-type-arguments">4. Wrong number of generic type arguments<a class="headerlink" href="#4-wrong-number-of-generic-type-arguments" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>// WRONG — Box expects 1 type argument
+Box&lt;int, float&gt; b = Box.New(x);
+// ERROR: Struct &#39;Box&#39; expects 1 type argument(s) but got 2
+
+// CORRECT
+Box&lt;int&gt; b = Box.New(x);
+</code></pre></div>
+<h3 id="5-using-bracket-var-transition-syntax">5. Using bracket <code>[var]</code> transition syntax<a class="headerlink" href="#5-using-bracket-var-transition-syntax" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>// WRONG — brackets are not used for transitions
+-&gt; next_state[voltage];
+
+// CORRECT — pass values as positional arguments
+-&gt; next_state(voltage);
+</code></pre></div>
+<p>And the receiving state must declare the parameter:</p>
+<div class="language-text highlight"><pre><span></span><code>state next_state (float voltage) {
+    terminal;
+}
+</code></pre></div>
+<h3 id="6-using-else-if-instead-of-elif">6. Using <code>else if</code> instead of <code>elif</code><a class="headerlink" href="#6-using-else-if-instead-of-elif" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>// WRONG
+if (x &lt; 0) { -&gt; neg; }
+else if (x == 0) { -&gt; zero; }
+
+// CORRECT
+if (x &lt; 0) { -&gt; neg; }
+elif (x == 0) { -&gt; zero; }
+</code></pre></div>
+<h3 id="7-omitting-braces-from-ifelse">7. Omitting braces from if/else<a class="headerlink" href="#7-omitting-braces-from-ifelse" title="Permanent link">&para;</a></h3>
+<p>Every <code>if</code>, <code>elif</code>, and <code>else</code> branch <strong>must</strong> use braces:</p>
+<div class="language-text highlight"><pre><span></span><code>// WRONG
+if (x &lt; 0) -&gt; neg;
+
+// CORRECT
+if (x &lt; 0) { -&gt; neg; }
+</code></pre></div>
+<h3 id="8-assigning-to-a-read-only-input-parameter">8. Assigning to a read-only input parameter<a class="headerlink" href="#8-assigning-to-a-read-only-input-parameter" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>autotuner Bad (int input) -&gt; (int out) {
+    input = 5;  // ERROR: cannot assign to input parameter
+    ...
+}
+</code></pre></div>
+<h3 id="9-using-a-variable-before-it-is-declared">9. Using a variable before it is declared<a class="headerlink" href="#9-using-a-variable-before-it-is-declared" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>state check {
+    result = 1;        // ERROR: &#39;result&#39; not declared
+    int result = 0;    // declaration must come first
+}
+</code></pre></div>
+<h3 id="10-using-measurement-keyword">10. Using <code>measurement:</code> keyword<a class="headerlink" href="#10-using-measurement-keyword" title="Permanent link">&para;</a></h3>
+<p>There is no <code>measurement:</code> keyword. Call functions directly as statements or in expressions:</p>
+<div class="language-text highlight"><pre><span></span><code>// WRONG
+measurement: do_work(arg);
+
+// CORRECT
+do_work(arg);
+int r = do_work(arg);
+</code></pre></div>
+<hr />
+<h2 id="grammar-summary">Grammar Summary<a class="headerlink" href="#grammar-summary" title="Permanent link">&para;</a></h2>
+<div class="language-ebnf highlight"><pre><span></span><code><span class="k">program          </span><span class="err">:</span><span class="o">=</span> <span class="k">import_list program_item</span><span class="err">*</span>
+
+<span class="k">import_list      </span><span class="err">:=</span> <span class="k">import_stmt</span><span class="err">*</span>
+
+<span class="k">import_stmt      </span><span class="err">:=</span> <span class="s2">&quot;import&quot;</span> <span class="k">STRING </span><span class="s2">&quot;;&quot;</span>
+                  <span class="p">|</span> <span class="s2">&quot;import&quot;</span> <span class="s2">&quot;(&quot;</span> <span class="k">STRING</span><span class="err">+</span> <span class="s2">&quot;)&quot;</span>
+
+<span class="k">ffimport_decl    </span><span class="err">:=</span> <span class="s2">&quot;ffimport&quot;</span> <span class="k">STRING</span>
+                    <span class="s2">&quot;(&quot;</span> <span class="k">STRING</span><span class="err">*</span> <span class="s2">&quot;)&quot;</span>
+                    <span class="s2">&quot;(&quot;</span> <span class="k">STRING</span><span class="err">*</span> <span class="s2">&quot;)&quot;</span>
+
+<span class="k">program_item     </span><span class="err">:=</span> <span class="k">struct_decl</span>
+                  <span class="p">|</span> <span class="k">routine_decl</span>
+                  <span class="p">|</span> <span class="k">autotuner_decl</span>
+                  <span class="p">|</span> <span class="k">ffimport_decl</span>
+
+<span class="k">struct_decl      </span><span class="err">:=</span> <span class="s2">&quot;struct&quot;</span> <span class="k">IDENTIFIER </span><span class="s2">&quot;{&quot;</span> <span class="k">struct_field</span><span class="err">*</span> <span class="k">routine_decl</span><span class="err">*</span> <span class="s2">&quot;}&quot;</span>
+                  <span class="p">|</span> <span class="s2">&quot;struct&quot;</span> <span class="k">IDENTIFIER </span><span class="s2">&quot;&lt;&quot;</span> <span class="k">generic_param_list </span><span class="s2">&quot;&gt;&quot;</span> <span class="s2">&quot;{&quot;</span> <span class="k">struct_field</span><span class="err">*</span> <span class="k">routine_decl</span><span class="err">*</span> <span class="s2">&quot;}&quot;</span>
+
+<span class="k">generic_param_list </span><span class="err">:=</span> <span class="k">IDENTIFIER </span><span class="p">(</span><span class="s2">&quot;,&quot;</span> <span class="k">IDENTIFIER</span><span class="p">)</span><span class="err">*</span>
+
+<span class="k">struct_field     </span><span class="err">:=</span> <span class="k">type_spec IDENTIFIER </span><span class="s2">&quot;;&quot;</span>
+                  <span class="p">|</span> <span class="k">type_spec IDENTIFIER </span><span class="s2">&quot;=&quot;</span> <span class="k">expr </span><span class="s2">&quot;;&quot;</span>
+
+<span class="k">routine_decl     </span><span class="err">:=</span> <span class="s2">&quot;routine&quot;</span> <span class="k">IDENTIFIER input_params </span><span class="s2">&quot;-&gt;&quot;</span> <span class="k">output_params routine_body</span>
+
+<span class="k">routine_body     </span><span class="err">:=</span> <span class="s2">&quot;{&quot;</span> <span class="k">stmt</span><span class="err">*</span> <span class="s2">&quot;}&quot;</span>
+                  <span class="p">|</span> <span class="err">%</span><span class="k">empty            </span><span class="err">//</span> <span class="k">empty body </span><span class="err">=</span> <span class="k">FFI stub</span>
+
+<span class="k">autotuner_decl   </span><span class="err">:=</span> <span class="s2">&quot;autotuner&quot;</span> <span class="k">IDENTIFIER input_params</span><span class="err">?</span> <span class="s2">&quot;-&gt;&quot;</span> <span class="k">output_params </span><span class="s2">&quot;{&quot;</span>
+                      <span class="k">stmt</span><span class="err">*</span>           <span class="err">//</span> <span class="k">variable decls and initialisations</span>
+                      <span class="k">entry_state</span>
+                      <span class="k">state_decl</span><span class="err">+</span>
+                    <span class="s2">&quot;}&quot;</span>
+
+<span class="k">input_params     </span><span class="err">:=</span> <span class="s2">&quot;(&quot;</span> <span class="k">param_list </span><span class="s2">&quot;)&quot;</span>  <span class="p">|</span> <span class="s2">&quot;()&quot;</span> <span class="p">|</span> <span class="err">%</span><span class="k">empty</span>
+<span class="k">output_params    </span><span class="err">:=</span> <span class="s2">&quot;(&quot;</span> <span class="k">param_list </span><span class="s2">&quot;)&quot;</span>  <span class="p">|</span> <span class="s2">&quot;()&quot;</span>
+
+<span class="k">param_list       </span><span class="err">:=</span> <span class="k">param_decl </span><span class="p">(</span><span class="s2">&quot;,&quot;</span> <span class="k">param_decl</span><span class="p">)</span><span class="err">*</span>
+
+<span class="k">param_decl       </span><span class="err">:=</span> <span class="k">type_spec IDENTIFIER</span>
+                  <span class="p">|</span> <span class="k">type_spec IDENTIFIER </span><span class="s2">&quot;=&quot;</span> <span class="k">expr</span>
+
+<span class="k">entry_state      </span><span class="err">:=</span> <span class="s2">&quot;start&quot;</span> <span class="s2">&quot;-&gt;&quot;</span> <span class="k">IDENTIFIER </span><span class="s2">&quot;;&quot;</span>
+
+<span class="k">state_decl       </span><span class="err">:=</span> <span class="s2">&quot;state&quot;</span> <span class="k">IDENTIFIER state_params </span><span class="s2">&quot;{&quot;</span> <span class="k">stmt</span><span class="err">*</span> <span class="s2">&quot;}&quot;</span>
+
+<span class="k">state_params     </span><span class="err">:=</span> <span class="s2">&quot;(&quot;</span> <span class="k">param_list </span><span class="s2">&quot;)&quot;</span>  <span class="p">|</span> <span class="s2">&quot;()&quot;</span> <span class="p">|</span> <span class="err">%</span><span class="k">empty</span>
+
+<span class="k">stmt             </span><span class="err">:=</span> <span class="k">var_decl_stmt</span>
+                  <span class="p">|</span> <span class="k">assign_target_list </span><span class="s2">&quot;=&quot;</span> <span class="k">expr </span><span class="s2">&quot;;&quot;</span>
+                  <span class="p">|</span> <span class="k">IDENTIFIER </span><span class="s2">&quot;.&quot;</span> <span class="k">IDENTIFIER </span><span class="s2">&quot;=&quot;</span> <span class="k">expr </span><span class="s2">&quot;;&quot;</span>
+                  <span class="p">|</span> <span class="s2">&quot;this&quot;</span> <span class="s2">&quot;.&quot;</span> <span class="k">IDENTIFIER </span><span class="s2">&quot;=&quot;</span> <span class="k">expr </span><span class="s2">&quot;;&quot;</span>
+                  <span class="p">|</span> <span class="s2">&quot;-&gt;&quot;</span> <span class="k">IDENTIFIER </span><span class="s2">&quot;;&quot;</span>
+                  <span class="p">|</span> <span class="s2">&quot;-&gt;&quot;</span> <span class="k">IDENTIFIER </span><span class="s2">&quot;(&quot;</span> <span class="k">expr_list </span><span class="s2">&quot;)&quot;</span> <span class="s2">&quot;;&quot;</span>
+                  <span class="p">|</span> <span class="s2">&quot;terminal&quot;</span> <span class="s2">&quot;;&quot;</span>
+                  <span class="p">|</span> <span class="s2">&quot;if&quot;</span> <span class="s2">&quot;(&quot;</span> <span class="k">expr </span><span class="s2">&quot;)&quot;</span> <span class="s2">&quot;{&quot;</span> <span class="k">stmt</span><span class="err">*</span> <span class="s2">&quot;}&quot;</span> <span class="k">elif_chain</span>
+                  <span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;;&quot;</span>
+
+<span class="k">elif_chain       </span><span class="err">:=</span> <span class="err">%</span><span class="k">empty</span>
+                  <span class="p">|</span> <span class="s2">&quot;else&quot;</span> <span class="s2">&quot;{&quot;</span> <span class="k">stmt</span><span class="err">*</span> <span class="s2">&quot;}&quot;</span>
+                  <span class="p">|</span> <span class="s2">&quot;elif&quot;</span> <span class="s2">&quot;(&quot;</span> <span class="k">expr </span><span class="s2">&quot;)&quot;</span> <span class="s2">&quot;{&quot;</span> <span class="k">stmt</span><span class="err">*</span> <span class="s2">&quot;}&quot;</span> <span class="k">elif_chain</span>
+
+<span class="k">var_decl_stmt    </span><span class="err">:=</span> <span class="k">type_spec IDENTIFIER </span><span class="s2">&quot;;&quot;</span>
+                  <span class="p">|</span> <span class="k">type_spec IDENTIFIER </span><span class="s2">&quot;=&quot;</span> <span class="k">expr </span><span class="s2">&quot;;&quot;</span>
+
+<span class="k">type_spec        </span><span class="err">:=</span> <span class="s2">&quot;int&quot;</span> <span class="p">|</span> <span class="s2">&quot;float&quot;</span> <span class="p">|</span> <span class="s2">&quot;bool&quot;</span> <span class="p">|</span> <span class="s2">&quot;string&quot;</span>
+                  <span class="p">|</span> <span class="k">qualified_name</span>
+                  <span class="p">|</span> <span class="k">qualified_name </span><span class="s2">&quot;&lt;&quot;</span> <span class="k">type_arg_list </span><span class="s2">&quot;&gt;&quot;</span>
+
+<span class="k">type_arg_list    </span><span class="err">:=</span> <span class="k">type_spec </span><span class="p">(</span><span class="s2">&quot;,&quot;</span> <span class="k">type_spec</span><span class="p">)</span><span class="err">*</span>
+
+<span class="k">qualified_name   </span><span class="err">:=</span> <span class="k">IDENTIFIER </span><span class="s2">&quot;::&quot;</span> <span class="k">IDENTIFIER  </span><span class="p">|</span>  <span class="k">IDENTIFIER</span>
+
+<span class="k">expr             </span><span class="err">:=</span> <span class="k">literal</span>
+                  <span class="p">|</span> <span class="k">IDENTIFIER</span>
+                  <span class="p">|</span> <span class="k">qualified_name</span>
+                  <span class="p">|</span> <span class="s2">&quot;this&quot;</span>
+                  <span class="p">|</span> <span class="s2">&quot;nil&quot;</span>
+                  <span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;+&quot;</span> <span class="k">expr  </span><span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;-&quot;</span> <span class="k">expr</span>
+                  <span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;*&quot;</span> <span class="k">expr  </span><span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;/&quot;</span> <span class="k">expr</span>
+                  <span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;==&quot;</span> <span class="k">expr </span><span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;!=&quot;</span> <span class="k">expr</span>
+                  <span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;&lt;&quot;</span> <span class="k">expr  </span><span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;&gt;&quot;</span> <span class="k">expr</span>
+                  <span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;&lt;=&quot;</span> <span class="k">expr </span><span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;&gt;=&quot;</span> <span class="k">expr</span>
+                  <span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;&amp;&amp;&quot;</span> <span class="k">expr </span><span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;||&quot;</span> <span class="k">expr</span>
+                  <span class="p">|</span> <span class="s2">&quot;!&quot;</span> <span class="k">expr  </span><span class="p">|</span>  <span class="s2">&quot;-&quot;</span> <span class="k">expr</span>
+                  <span class="p">|</span> <span class="s2">&quot;(&quot;</span> <span class="k">expr </span><span class="s2">&quot;)&quot;</span>
+                  <span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;.&quot;</span> <span class="k">IDENTIFIER                       </span><span class="err">//</span> <span class="k">member access</span>
+                  <span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;.&quot;</span> <span class="k">IDENTIFIER </span><span class="s2">&quot;(&quot;</span> <span class="k">call_arg_list </span><span class="s2">&quot;)&quot;</span> <span class="err">//</span> <span class="k">method call</span>
+                  <span class="p">|</span> <span class="k">expr </span><span class="s2">&quot;[&quot;</span> <span class="k">expr </span><span class="s2">&quot;]&quot;</span>                         <span class="err">//</span> <span class="k">index</span>
+                  <span class="p">|</span> <span class="k">IDENTIFIER </span><span class="s2">&quot;(&quot;</span> <span class="k">call_arg_list </span><span class="s2">&quot;)&quot;</span>          <span class="err">//</span> <span class="k">function call</span>
+                  <span class="p">|</span> <span class="k">qualified_name </span><span class="s2">&quot;(&quot;</span> <span class="k">call_arg_list </span><span class="s2">&quot;)&quot;</span>      <span class="err">//</span> <span class="k">qualified call</span>
+
+<span class="k">call_arg         </span><span class="err">:=</span> <span class="k">expr</span>
+
+<span class="k">literal          </span><span class="err">:=</span> <span class="k">INTEGER </span><span class="p">|</span> <span class="k">DOUBLE </span><span class="p">|</span> <span class="k">STRING </span><span class="p">|</span> <span class="s2">&quot;true&quot;</span> <span class="p">|</span> <span class="s2">&quot;false&quot;</span> <span class="p">|</span> <span class="s2">&quot;nil&quot;</span>
+</code></pre></div>
+<hr />
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../CLI/">CLI.md</a> — <code>falcon-run</code> and <code>falcon-test</code> command-line reference</li>
+<li><a href="../LSP/">LSP.md</a> — Editor integration</li>
+<li><a href="../PACKAGE_MANAGER/">PACKAGE_MANAGER.md</a> — Package management</li>
+<li><a href="../libs/testing/README.md">../libs/testing/README.md</a> — Testing library reference</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

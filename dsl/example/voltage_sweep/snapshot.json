@@ -1,0 +1,8 @@
+{
+  "min_voltage": 0.0,
+  "max_voltage": 1.0,
+  "step": 0.2,
+  "current_voltage": 0.0,
+  "current_threshold": 5e-7,
+  "measurement_count": 0
+}

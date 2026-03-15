@@ -1,0 +1,22 @@
+autotuner GenericIterationTest (Gname gname) -> (int counter) {
+  int counter = 0;
+  Connections PlungerGates = Config::get_group_plunger_gates(gname);
+  Connection PlungerGate = PlungerGates[0];
+  int max_iterations = PlungerGates.size(); 
+  
+  start -> loop (PlungerGate);
+  
+  state loop (Connection plunger_gate) {
+    log::info("The current plunger-gate is {}", plunger_gate.name());
+    if (counter < max_iterations) {
+        counter = counter + 1;
+      -> loop (PlungerGates[counter]);
+    else {
+      -> done;
+    }
+  }
+  
+  state done {
+    terminal;
+  }
+}

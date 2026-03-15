@@ -13,7 +13,35 @@
          <lastmod>2026-03-15</lastmod>
     </url>
     <url>
+         <loc>https://falcon-autotuning.github.io/falcon-lib/dsl/docs/CLI/</loc>
+         <lastmod>2026-03-15</lastmod>
+    </url>
+    <url>
+         <loc>https://falcon-autotuning.github.io/falcon-lib/dsl/docs/LANGUAGE_REFERENCE/</loc>
+         <lastmod>2026-03-15</lastmod>
+    </url>
+    <url>
+         <loc>https://falcon-autotuning.github.io/falcon-lib/dsl/docs/LSP/</loc>
+         <lastmod>2026-03-15</lastmod>
+    </url>
+    <url>
+         <loc>https://falcon-autotuning.github.io/falcon-lib/dsl/docs/OVERVIEW/</loc>
+         <lastmod>2026-03-15</lastmod>
+    </url>
+    <url>
+         <loc>https://falcon-autotuning.github.io/falcon-lib/dsl/docs/PACKAGE_MANAGER/</loc>
+         <lastmod>2026-03-15</lastmod>
+    </url>
+    <url>
+         <loc>https://falcon-autotuning.github.io/falcon-lib/dsl/docs/TUTORIAL/</loc>
+         <lastmod>2026-03-15</lastmod>
+    </url>
+    <url>
          <loc>https://falcon-autotuning.github.io/falcon-lib/dsl/lsp/</loc>
+         <lastmod>2026-03-15</lastmod>
+    </url>
+    <url>
+         <loc>https://falcon-autotuning.github.io/falcon-lib/dsl/treesitter/</loc>
          <lastmod>2026-03-15</lastmod>
     </url>
     <url>

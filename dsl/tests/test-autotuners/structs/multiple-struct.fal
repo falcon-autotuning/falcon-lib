@@ -1,0 +1,37 @@
+struct Quantity {
+    int a;
+    routine New (int a) -> (Quantity q) {
+        q.a = a;
+    }
+    routine Value  -> (int value) {
+        value = this.a;
+    }
+}
+struct Connection {
+    string name;
+    routine New (string name) -> (Connection c) {
+        c.name = name;
+    }
+    routine Name -> (string name) {
+        name = this.name;
+    }
+}
+
+autotuner MultipleStruct (int a, int b) -> (int sum, string name) {
+  sum = 0;
+  name = "";
+  
+  start -> calculate;
+  
+  state calculate {
+    Quantity q = Quantity.New(a);
+    Connection c = Connection.New("test");
+    sum = q.Value() + b;
+    name = c.Name();
+    -> done;
+  }
+  
+  state done {
+    terminal;
+  }
+}

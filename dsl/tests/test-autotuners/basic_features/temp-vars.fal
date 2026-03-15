@@ -1,0 +1,16 @@
+autotuner TempVars() -> (int final_value) {
+  final_value = 0;
+  
+  start -> compute;
+  
+  state compute {
+    int intermediate = 0;
+    intermediate = 42;
+    final_value = intermediate;
+    -> done;
+  }
+  
+  state done {
+    terminal;
+  }
+}

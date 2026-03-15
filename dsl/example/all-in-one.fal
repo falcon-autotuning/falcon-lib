@@ -1,0 +1,47 @@
+import (
+"log"
+"io"
+"config"
+)
+struct DeviceConnection {
+    string name_;
+    routine New(string name) -> (DeviceConnection conn) {
+        name_ = name;
+    }
+    routine Name() -> (string name) {
+        name = this.name_;
+    }
+}
+autotuner CheckPlungerGates (Array<DeviceConnection> connections,
+                             Config config) -> (Error err) {
+    int index = 0;
+    Error err = nil;
+    DeviceConnection connection = connections[index];
+    start -> loop (connection);
+    state loop (DeviceConnection conn) {
+        io::println("DeviceConnection name: " + conn.Name());
+        if (!config.get_plunger_gates().contains(conn)) {
+            log::warn("DeviceConnection " + conn.Name() +
+                      " is not in plunger gates.");
+            -> missing_plunger_gate;
+        }
+        elif (index < connections.size()) {
+            index = index + 1;
+            -> loop(connections[index]);
+        }
+        else {
+            -> exit;
+        }
+    }
+    state missing_plunger_gate {
+        err = Error("DeviceConnection " + conn.Name() +
+                    " is missing a plunger gate.");
+        -> exit;
+    }
+    state exit {
+        log::info("Finished processing connections.");
+        terminal;
+    }
+}
+
+
