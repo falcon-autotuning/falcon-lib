@@ -15,6 +15,9 @@ Falcon Lib is organized into several key components:
 
 ## Quick Start
 
+Currently this application only works on Linux. This may work on windows with WSL2.
+Windows support is currently in the works for better instrument support.
+
 ### For Users: Run the Demo
 
 ```bash
@@ -30,7 +33,7 @@ See [demos](https://github.com/falcon-autotuning/falcon-lib/demos/qarray-charge-
 Prerequisites
 
 - CMake >= 3.20
-- C++17 compiler
+- C++20 compiler
 - PostgreSQL (for database support)
 - Bison  >= 3.8
 - Docker (optional, for running services)
@@ -61,14 +64,7 @@ Each major component has its own build instructions:
 - Database: **cd database && make install**
 - Comms: **cd comms && make install**
 - Typing: **cd typing && make install**
-
-## Key Documentation
-
-| Component      | Documentation                                      | Description                        |
-|----------------|----------------------------------------------------|------------------------------------|
-| Falcon DSL     | dsl/README.md                                      | Language reference, CLI tools, interpreter |
-| Database       | database/README.md                                 | C++ PostgreSQL implementation      |
-| QArray Demo    | demos/qarray-charge-tuning/README.md               | Complete working example           |
+- qarrayDevice: **cd typing && make install**
 
 ## Main Features
 
@@ -82,12 +78,12 @@ Each major component has its own build instructions:
 
 🧪 Built-in Testing: Test runner with setup/teardown fixtures and detailed diagnostics
 
-📚 Language Server: IDE support via LSP for .fal files (VS Code, Neovim)
+📚 Language Server: IDE support via LSP for .fal files (Neovim)
 
 ## Next Steps
 
-- Get Started: Read dsl/README.md for the DSL tutorial
-- Try the Demo: Run the QArray charge tuning demo
+- Get Started: Read [dsl/README.md](/dsl/README.md) for the introduction to the language
+- Try the Demo: Run the QArray charge tuning [demo](/demos/qarray-charge-tuning/README.md)
 - Develop: Check individual component READMEs for build and API details
 - Online Docs: Visit our Falcon Lib website for interactive documentation
 
