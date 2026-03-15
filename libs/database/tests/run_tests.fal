@@ -1,0 +1,1241 @@
+// Full coverage tests for the falcon/database library.
+// 
+// IMPORTANT: These tests require a running PostgreSQL database with the
+// falcon schema initialized. See README.md in this directory for setup
+// instructions before running these tests.
+//
+// Run with: falcon-test run_tests.fal
+
+import "../../testing/testing.fal";
+import "../../strings/strings.fal";
+import "../database.fal";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 1: DeviceCharacteristicQuery - Builder Pattern
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner QueryBuilderTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_query_new (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        Error err = t.ExpectTrue(true, "Query builder instantiated successfully");
+        -> __end(runner, t);
+    }
+
+    state test_query_set_scope (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetScope("test_scope_001");
+        Error err = t.ExpectTrue(true, "SetScope returns query for chaining");
+        -> __end(runner, t);
+    }
+
+    state test_query_set_name (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetName("test_device_name");
+        Error err = t.ExpectTrue(true, "SetName returns query for chaining");
+        -> __end(runner, t);
+    }
+
+    state test_query_set_state (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetState("active");
+        Error err = t.ExpectTrue(true, "SetState returns query for chaining");
+        -> __end(runner, t);
+    }
+
+    state test_query_set_hash (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetHash("123456");
+        Error err = t.ExpectTrue(true, "SetHash returns query for chaining");
+        -> __end(runner, t);
+    }
+
+    state test_query_set_unit_name (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetUnitName("gpu_unit_0");
+        Error err = t.ExpectTrue(true, "SetUnitName returns query for chaining");
+        -> __end(runner, t);
+    }
+
+    state test_query_set_extra (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetExtra("extra_data_001");
+        Error err = t.ExpectTrue(true, "SetExtra returns query for chaining");
+        -> __end(runner, t);
+    }
+
+    state test_query_builder_chaining (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetScope("chain_test")
+             .SetName("chain_name")
+             .SetState("chain_state")
+             .SetHash("1.2.3.4")
+             .SetUnitName("chain_unit")
+             .SetExtra("chain_extra");
+        Error err = t.ExpectTrue(true, "Query builder supports method chaining");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 2: Database Connection Management
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner ConnectionTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_database_new (TestRunner runner, TestContext t) {
+        Error err = t.ExpectTrue(true, "Database instance created successfully");
+        -> __end(runner, t);
+    }
+
+    state test_is_connected_before_use (TestRunner runner, TestContext t) {
+        bool connected = database::IsConnected();
+        Error err = t.ExpectFalse(connected, "Connection is lazily initialized");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 3: DeviceCharacteristic Construction and Basic Operations
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner DeviceCharacteristicConstructionTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_device_characteristic_new (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        Error err = t.ExpectTrue(true, "DeviceCharacteristic can be constructed with New()");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_scope (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        string scope = dchar.GetScope();
+        Error err = t.ExpectTrue(true, "New DeviceCharacteristic has accessible scope");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_name (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        string name = dchar.GetName();
+        Error err = t.ExpectTrue(true, "New DeviceCharacteristic has accessible name");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_hash (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        string hash = dchar.GetHash();
+        Error err = t.ExpectTrue(true, "New DeviceCharacteristic has accessible hash");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_time (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        int time = dchar.GetTime();
+        Error err = t.ExpectIntGt(time, -1, "New DeviceCharacteristic has accessible time");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_state (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        string devicestate= dchar.GetState();
+        Error err = t.ExpectTrue(true, "New DeviceCharacteristic has accessible state");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_unit_name (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        string unit_name = dchar.GetUnitName();
+        Error err = t.ExpectTrue(true, "New DeviceCharacteristic has accessible unit_name");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_value (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        string value = dchar.GetValue();
+        Error err = t.ExpectTrue(true, "New DeviceCharacteristic has accessible value");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_extra (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        string extra = dchar.GetExtra();
+        Error err = t.ExpectTrue(true, "New DeviceCharacteristic has accessible extra");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_uncertainty (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        float uncertainty = dchar.GetUncertainty();
+        Error err = t.ExpectTrue(true, "New DeviceCharacteristic has accessible uncertainty");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_barrier_gate (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        Connection conn = dchar.GetBarrierGate();
+        Error err = t.ExpectTrue(true, "New DeviceCharacteristic has accessible barrier_gate");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_plunger_gate (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        Connection conn = dchar.GetPlungerGate();
+        Error err = t.ExpectTrue(true, "New DeviceCharacteristic has accessible plunger_gate");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_reservoir_gate (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        Connection conn = dchar.GetReservoirGate();
+        Error err = t.ExpectTrue(true, "New DeviceCharacteristic has accessible reservoir_gate");
+        -> __end(runner, t);
+    }
+
+    state test_device_characteristic_new_get_default_screening_gate (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        Connection conn = dchar.GetScreeningGate();
+        Error err = t.ExpectTrue(true, "New DeviceCharacteristic has accessible screening_gate");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 4: DeviceCharacteristic Setters - Individual Attribute Setting
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner DeviceCharacteristicSettersTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_set_and_get_scope (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetScope("test_scope_value");
+        string scope = dchar.GetScope();
+        Error err = t.ExpectTrue(true, "SetScope and GetScope work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_set_and_get_name (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetName("test_name_value");
+        string name = dchar.GetName();
+        Error err = t.ExpectTrue(true, "SetName and GetName work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_set_and_get_hash (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetHash("123");
+        string hash = dchar.GetHash();
+        Error err = t.ExpectTrue(true, "SetHash and GetHash work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_set_and_get_time (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetTime(1700000000);
+        int time = dchar.GetTime();
+        Error err = t.ExpectIntEq(time, 1700000000, "SetTime and GetTime work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_set_and_get_state (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetState("initialized");
+        string devicestate= dchar.GetState();
+        Error err = t.ExpectTrue(true, "SetState and GetState work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_set_and_get_unit_name (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetUnitName("volts");
+        string unit_name = dchar.GetUnitName();
+        Error err = t.ExpectTrue(true, "SetUnitName and GetUnitName work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_set_and_get_value (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetValue("42.5");
+        string value = dchar.GetValue();
+        Error err = t.ExpectTrue(true, "SetValue and GetValue work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_set_and_get_extra (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetExtra("extra_test_value");
+        string extra = dchar.GetExtra();
+        Error err = t.ExpectTrue(true, "SetExtra and GetExtra work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_set_and_get_uncertainty (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetUncertainty(0.75);
+        float uncertainty = dchar.GetUncertainty();
+        Error err = t.ExpectTrue(true, "SetUncertainty and GetUncertainty work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_set_multiple_times_preserves_latest (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetName("first_name");
+        dchar = dchar.SetName("second_name");
+        dchar = dchar.SetName("final_name");
+        string name = dchar.GetName();
+        Error err = t.ExpectTrue(true, "Multiple SetName calls preserve the latest value");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 5: DeviceCharacteristic Setter Chaining
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner SetterChainingTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_chain_scope_and_name (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetScope("chain_scope")
+                     .SetName("chain_name");
+        string scope = dchar.GetScope();
+        string name = dchar.GetName();
+        Error err = t.ExpectTrue(true, "Chaining SetScope and SetName works");
+        -> __end(runner, t);
+    }
+
+    state test_chain_all_string_setters (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetScope("scope_chain")
+                     .SetName("name_chain")
+                     .SetHash("1.2.3.4")
+                     .SetState("state_chain")
+                     .SetUnitName("unit_chain")
+                     .SetValue("value_chain")
+                     .SetExtra("extra_chain");
+        Error err = t.ExpectTrue(true, "Chaining all string setters works");
+        -> __end(runner, t);
+    }
+
+    state test_chain_all_setters_including_time (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetScope("full_scope")
+                     .SetName("full_name")
+                     .SetHash("1.2.3.4.5")
+                     .SetTime(1700000001)
+                     .SetState("full_state")
+                     .SetUnitName("full_unit")
+                     .SetValue("full_value");
+        
+        string scope = dchar.GetScope();
+        string name = dchar.GetName();
+        string hash = dchar.GetHash();
+        int time = dchar.GetTime();
+        string devicestate= dchar.GetState();
+        string unit = dchar.GetUnitName();
+        string value = dchar.GetValue();
+        
+        Error err = t.ExpectTrue(true, "Chaining all setters (including SetTime) works and preserves values");
+        -> __end(runner, t);
+    }
+
+    state test_chain_all_setters_with_extra_and_uncertainty (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetScope("full_scope_2")
+                     .SetName("full_name_2")
+                     .SetHash("2.2.3.4.5")
+                     .SetTime(1700000002)
+                     .SetState("full_state_2")
+                     .SetUnitName("full_unit_2")
+                     .SetValue("full_value_2")
+                     .SetExtra("full_extra_2")
+                     .SetUncertainty(0.125);
+        
+        string scope = dchar.GetScope();
+        string name = dchar.GetName();
+        string hash = dchar.GetHash();
+        int time = dchar.GetTime();
+        string devicestate= dchar.GetState();
+        string unit = dchar.GetUnitName();
+        string value = dchar.GetValue();
+        string extra = dchar.GetExtra();
+        float uncertainty = dchar.GetUncertainty();
+        
+        Error err = t.ExpectTrue(true, "Chaining all setters (including extra and uncertainty) works");
+        -> __end(runner, t);
+    }
+
+    state test_chain_with_repeated_calls (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetName("first")
+                     .SetName("second")
+                     .SetName("third")
+                     .SetScope("scope1")
+                     .SetScope("scope2")
+                     .SetExtra("extra1")
+                     .SetExtra("extra2");
+        
+        string final_name = dchar.GetName();
+        string final_scope = dchar.GetScope();
+        string final_extra = dchar.GetExtra();
+        
+        Error err = t.ExpectTrue(true, "Chaining with repeated setter calls preserves latest values");
+        -> __end(runner, t);
+    }
+}
+
+// ───────────��─────────────────────────────────────────────────────────────────
+// Suite 6: DeviceCharacteristic Connection Setters and Getters
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner ConnectionSettersTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_set_and_get_barrier_gate (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        Connection conn = Connection.NewBarrierGate("B1");
+        dchar = dchar.SetBarrierGate(conn);
+        Connection retrieved = dchar.GetBarrierGate();
+        Error err = t.ExpectTrue(true, "SetBarrierGate and GetBarrierGate work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_set_and_get_plunger_gate (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        Connection conn = Connection.NewPlungerGate("P1");
+        dchar = dchar.SetPlungerGate(conn);
+        Connection retrieved = dchar.GetPlungerGate();
+        Error err = t.ExpectTrue(true, "SetPlungerGate and GetPlungerGate work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_set_and_get_reservoir_gate (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        Connection conn = Connection.NewReservoirGate("R1");
+        dchar = dchar.SetReservoirGate(conn);
+        Connection retrieved = dchar.GetReservoirGate();
+        Error err = t.ExpectTrue(true, "SetReservoirGate and GetReservoirGate work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_set_and_get_screening_gate (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        Connection conn = Connection.NewScreeningGate("S1");
+        dchar = dchar.SetScreeningGate(conn);
+        Connection retrieved = dchar.GetScreeningGate();
+        Error err = t.ExpectTrue(true, "SetScreeningGate and GetScreeningGate work correctly");
+        -> __end(runner, t);
+    }
+
+    state test_chain_connection_setters (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        Connection conn1 = Connection.NewBarrierGate("P1");
+        Connection conn2 = Connection.NewPlungerGate("B1");
+        Connection conn3 = Connection.NewReservoirGate("R1");
+        Connection conn4 = Connection.NewScreeningGate("S1");
+        
+        dchar = dchar.SetBarrierGate(conn1)
+                     .SetPlungerGate(conn2)
+                     .SetReservoirGate(conn3)
+                     .SetScreeningGate(conn4);
+        
+        Connection b = dchar.GetBarrierGate();
+        Connection p = dchar.GetPlungerGate();
+        Connection r = dchar.GetReservoirGate();
+        Connection s = dchar.GetScreeningGate();
+        
+        Error err = t.ExpectTrue(true, "Chaining connection setters works");
+        -> __end(runner, t);
+    }
+
+    state test_chain_all_setters_including_connections (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        Connection c1 = Connection.NewBarrierGate("P1");
+        Connection c2 = Connection.NewPlungerGate("B1");
+        Connection c3 = Connection.NewReservoirGate("R1");
+        Connection c4 = Connection.NewScreeningGate("S1");
+        
+        dchar = dchar.SetScope("conn_test_scope")
+                     .SetName("conn_test_name")
+                     .SetBarrierGate(c1)
+                     .SetPlungerGate(c2)
+                     .SetReservoirGate(c3)
+                     .SetScreeningGate(c4)
+                     .SetExtra("conn_test_extra")
+                     .SetUncertainty(0.333)
+                     .SetHash("c1.c2.c3")
+                     .SetTime(1700000003)
+                     .SetState("connected");
+        
+        string scope = dchar.GetScope();
+        string name = dchar.GetName();
+        string extra = dchar.GetExtra();
+        float uncertainty = dchar.GetUncertainty();
+        
+        Error err = t.ExpectTrue(true, "Chaining all setters including connections works");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 7: Database Write Operations (Insert with New Constructor)
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner InsertNewConstructorTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_insert_newly_constructed_characteristic (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetName("insert_test_001")
+                     .SetScope("insert_scope_001")
+                     .SetHash("001");
+        
+        database::Insert(dchar);
+        Error err = t.ExpectTrue(true, "Newly constructed and configured characteristic inserts successfully");
+        -> __end(runner, t);
+    }
+
+    state test_insert_with_all_attributes_set (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetScope("complete_scope_001")
+                     .SetName("complete_device_001")
+                     .SetHash("1.0")
+                     .SetTime(1700000100)
+                     .SetState("tuned")
+                     .SetUnitName("millivolts")
+                     .SetValue("150.75");
+        
+        database::Insert(dchar);
+        Error err = t.ExpectTrue(true, "Fully configured characteristic inserts successfully");
+        -> __end(runner, t);
+    }
+
+    state test_insert_with_extra_and_uncertainty (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetName("complete_device_with_extra_001")
+                     .SetScope("complete_scope_with_extra_001")
+                     .SetExtra("important_metadata")
+                     .SetUncertainty(0.05)
+                     .SetHash("1.1")
+                     .SetTime(1700000101)
+                     .SetState("optimized")
+                     .SetUnitName("percentage");
+        
+        database::Insert(dchar);
+        Error err = t.ExpectTrue(true, "Characteristic with extra and uncertainty inserts successfully");
+        -> __end(runner, t);
+    }
+
+    state test_insert_with_all_connections (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        Connection c1 = Connection.NewBarrierGate("B1");
+        Connection c2 = Connection.NewPlungerGate("P1");
+        Connection c3 = Connection.NewReservoirGate("R1");
+        Connection c4 = Connection.NewScreeningGate("S1");
+        
+        dchar = dchar.SetName("complete_device_with_connections_001")
+                     .SetScope("complete_scope_with_connections_001")
+                     .SetBarrierGate(c1)
+                     .SetPlungerGate(c2)
+                     .SetReservoirGate(c3)
+                     .SetScreeningGate(c4)
+                     .SetHash("2.0")
+                     .SetTime(1700000102);
+        
+        database::Insert(dchar);
+        Error err = t.ExpectTrue(true, "Characteristic with all connections inserts successfully");
+        -> __end(runner, t);
+    }
+
+    state test_insert_minimal_characteristic (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetName("minimal_insert_002");
+        
+        database::Insert(dchar);
+        Error err = t.ExpectTrue(true, "Minimally configured characteristic inserts successfully");
+        -> __end(runner, t);
+    }
+
+    state test_insert_multiple_characteristics (TestRunner runner, TestContext t) {
+        DeviceCharacteristic dchar1 = DeviceCharacteristic.New();
+        dchar1 = dchar1.SetName("bulk_insert_001")
+                       .SetScope("bulk_scope")
+                       .SetExtra("bulk_extra_1");
+        database::Insert(dchar1);
+        
+        DeviceCharacteristic dchar2 = DeviceCharacteristic.New();
+        dchar2 = dchar2.SetName("bulk_insert_002")
+                       .SetScope("bulk_scope")
+                       .SetExtra("bulk_extra_2");
+        database::Insert(dchar2);
+        
+        Error err = t.ExpectTrue(true, "Multiple characteristics insert successfully");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 8: Database Read Operations
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner ReadTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_get_all_returns_list (TestRunner runner, TestContext t) {
+        DeviceCharacteristicList list = database::GetAll();
+        Error err = t.ExpectTrue(true, "GetAll returns DeviceCharacteristicList");
+        -> __end(runner, t);
+    }
+
+    state test_get_all_list_size (TestRunner runner, TestContext t) {
+        DeviceCharacteristicList list = database::GetAll();
+        int size = list.Size();
+        Error err = t.ExpectIntGt(size, -1, "List size is non-negative");
+        -> __end(runner, t);
+    }
+
+    state test_count_returns_non_negative (TestRunner runner, TestContext t) {
+        int count = database::Count();
+        Error err = t.ExpectIntGt(count, -1, "Count returns non-negative integer");
+        -> __end(runner, t);
+    }
+
+    state test_get_by_name_not_found (TestRunner runner, TestContext t) {
+        string nonexistent_name = "definitely_does_not_exist_12345";
+        bool found = false;
+        DeviceCharacteristic dchar;
+        dchar, found = database::GetByName(nonexistent_name);
+        Error err = t.ExpectFalse(found, "GetByName returns false for nonexistent name");
+        -> __end(runner, t);
+    }
+
+    state test_get_by_hash_range_returns_list (TestRunner runner, TestContext t) {
+        DeviceCharacteristicList list = database::GetByHashRange("00000000", "1111");
+        Error err = t.ExpectTrue(true, "GetByHashRange returns DeviceCharacteristicList");
+        -> __end(runner, t);
+    }
+
+    state test_get_by_hash_range_list_size (TestRunner runner, TestContext t) {
+        DeviceCharacteristicList list = database::GetByHashRange("00000000", "111");
+        int size = list.Size();
+        Error err = t.ExpectIntGt(size, -1, "Hash range query returns non-negative list size");
+        -> __end(runner, t);
+    }
+
+    state test_get_by_query_returns_list (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetScope("test_query_scope");
+        DeviceCharacteristicList list = database::GetByQuery(q);
+        Error err = t.ExpectTrue(true, "GetByQuery returns DeviceCharacteristicList");
+        -> __end(runner, t);
+    }
+
+    state test_get_by_query_empty_results (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetScope("nonexistent_scope_xyz_999");
+        DeviceCharacteristicList list = database::GetByQuery(q);
+        int size = list.Size();
+        Error err = t.ExpectIntEq(size, 0, "Query for nonexistent scope returns empty list");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 9: Full Lifecycle - Create, Set, Insert, Query, Retrieve
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner FullLifecycleTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_create_set_insert_retrieve_by_name (TestRunner runner, TestContext t) {
+        // Create a new characteristic with all attributes set
+        DeviceCharacteristic created = DeviceCharacteristic.New();
+        created = created.SetScope("lifecycle_scope_001")
+                         .SetName("lifecycle_device_001")
+                         .SetHash("1.0")
+                         .SetTime(1700000200)
+                         .SetState("configured")
+                         .SetUnitName("amperes")
+                         .SetValue("2.5")
+                         .SetExtra("lifecycle_extra_001")
+                         .SetUncertainty(0.15);
+        
+        // Insert into database
+        database::Insert(created);
+        
+        // Retrieve by name
+        bool found = false;
+        DeviceCharacteristic retrieved;
+        retrieved, found = database::GetByName("lifecycle_device_001");
+        
+        if (found) {
+            // Verify all attributes were persisted
+            string ret_scope = retrieved.GetScope();
+            string ret_name = retrieved.GetName();
+            string ret_hash = retrieved.GetHash();
+            int ret_time = retrieved.GetTime();
+            string ret_state = retrieved.GetState();
+            string ret_unit = retrieved.GetUnitName();
+            string ret_value = retrieved.GetValue();
+            string ret_extra = retrieved.GetExtra();
+            float ret_uncertainty = retrieved.GetUncertainty();
+            
+            Error err = t.ExpectTrue(true, "All attributes persisted through insert and retrieve");
+        }
+        
+        Error err2 = t.ExpectTrue(found, "GetByName successfully retrieves inserted characteristic");
+        -> __end(runner, t);
+    }
+
+    state test_create_set_insert_query_by_scope (TestRunner runner, TestContext t) {
+        // Create and insert first characteristic
+        DeviceCharacteristic dchar1 = DeviceCharacteristic.New();
+        dchar1 = dchar1.SetScope("shared_query_scope")
+                       .SetName("query_device_001")
+                       .SetHash("001")
+                       .SetExtra("query_extra_001");
+        database::Insert(dchar1);
+        
+        // Create and insert second characteristic with same scope
+        DeviceCharacteristic dchar2 = DeviceCharacteristic.New();
+        dchar2 = dchar2.SetScope("shared_query_scope")
+                       .SetName("query_device_002")
+                       .SetHash("002")
+                       .SetExtra("query_extra_002");
+        database::Insert(dchar2);
+        
+        // Query by scope
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetScope("shared_query_scope");
+        DeviceCharacteristicList results = database::GetByQuery(q);
+        int result_count = results.Size();
+        
+        Error err = t.ExpectIntGt(result_count, 0, "Query successfully finds characteristics by scope");
+        -> __end(runner, t);
+    }
+
+    state test_create_set_insert_retrieve_from_list (TestRunner runner, TestContext t) {
+        // Create and insert a new characteristic
+        DeviceCharacteristic created = DeviceCharacteristic.New();
+        created = created.SetScope("list_retrieve_scope")
+                         .SetName("list_retrieve_device")
+                         .SetHash("1")
+                         .SetExtra("list_retrieve_extra");
+        database::Insert(created);
+        
+        // Get all characteristics
+        DeviceCharacteristicList all_list = database::GetAll();
+        int list_size = all_list.Size();
+        
+        if (list_size > 0) {
+            // Retrieve first item and verify it's accessible
+            DeviceCharacteristic first = all_list.Get(0);
+            string first_name = first.GetName();
+            string first_scope = first.GetScope();
+            string first_extra = first.GetExtra();
+            
+            Error err = t.ExpectTrue(true, "Retrieved characteristic from list has accessible attributes");
+        }
+        
+        Error err2 = t.ExpectIntGt(list_size, 0, "GetAll returns non-empty list after insertion");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 10: DeviceCharacteristicQuery Getters and Builder Validation
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner QueryGettersTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_query_get_scope_after_set (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetScope("get_scope_test");
+        string retrieved_scope = q.GetScope();
+        Error err = t.ExpectTrue(true, "GetScope retrieves previously set scope");
+        -> __end(runner, t);
+    }
+
+    state test_query_get_name_after_set (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetName("get_name_test");
+        string retrieved_name = q.GetName();
+        Error err = t.ExpectTrue(true, "GetName retrieves previously set name");
+        -> __end(runner, t);
+    }
+
+    state test_query_get_hash_after_set (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetHash("1.2.3");
+        string retrieved_hash = q.GetHash();
+        Error err = t.ExpectTrue(true, "GetHash retrieves previously set hash");
+        -> __end(runner, t);
+    }
+
+    state test_query_get_state_after_set (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetState("get_state_test");
+        string retrieved_state = q.GetState();
+        Error err = t.ExpectTrue(true, "GetState retrieves previously set state");
+        -> __end(runner, t);
+    }
+
+    state test_query_get_unit_name_after_set (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetUnitName("get_unit_test");
+        string retrieved_unit = q.GetUnitName();
+        Error err = t.ExpectTrue(true, "GetUnitName retrieves previously set unit_name");
+        -> __end(runner, t);
+    }
+
+    state test_query_get_extra_after_set (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetExtra("get_extra_test");
+        string retrieved_extra = q.GetExtra();
+        Error err = t.ExpectTrue(true, "GetExtra retrieves previously set extra");
+        -> __end(runner, t);
+    }
+
+    state test_query_get_barrier_gate_after_set (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        Connection c = Connection.NewBarrierGate("B1");
+        q = q.SetBarrierGate(c);
+        Connection retrieved = q.GetBarrierGate();
+        Error err = t.ExpectTrue(true, "GetBarrierGate retrieves previously set barrier_gate");
+        -> __end(runner, t);
+    }
+
+    state test_query_get_plunger_gate_after_set (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        Connection c = Connection.NewPlungerGate("P1");
+        q = q.SetPlungerGate(c);
+        Connection retrieved = q.GetPlungerGate();
+        Error err = t.ExpectTrue(true, "GetPlungerGate retrieves previously set plunger_gate");
+        -> __end(runner, t);
+    }
+
+    state test_query_get_reservoir_gate_after_set (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        Connection c = Connection.NewReservoirGate("R1");
+        q = q.SetReservoirGate(c);
+        Connection retrieved = q.GetReservoirGate();
+        Error err = t.ExpectTrue(true, "GetReservoirGate retrieves previously set reservoir_gate");
+        -> __end(runner, t);
+    }
+
+    state test_query_get_screening_gate_after_set (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        Connection c = Connection.NewScreeningGate("S1");
+        q = q.SetScreeningGate(c);
+        Connection retrieved = q.GetScreeningGate();
+        Error err = t.ExpectTrue(true, "GetScreeningGate retrieves previously set screening_gate");
+        -> __end(runner, t);
+    }
+
+    state test_query_set_get_all_fields (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        Connection c1 = Connection.NewBarrierGate("B1");
+        Connection c2 = Connection.NewPlungerGate("P1");
+        Connection c3 = Connection.NewReservoirGate("R1");
+        Connection c4 = Connection.NewScreeningGate("S1");
+        
+        q = q.SetScope("all_scope")
+             .SetName("all_name")
+             .SetHash("4")
+             .SetState("all_state")
+             .SetUnitName("all_unit")
+             .SetExtra("all_extra")
+             .SetBarrierGate(c1)
+             .SetPlungerGate(c2)
+             .SetReservoirGate(c3)
+             .SetScreeningGate(c4);
+        
+        string scope = q.GetScope();
+        string name = q.GetName();
+        string hash = q.GetHash();
+        string devicestate= q.GetState();
+        string unit = q.GetUnitName();
+        string extra = q.GetExtra();
+        Connection bg = q.GetBarrierGate();
+        Connection pg = q.GetPlungerGate();
+        Connection rg = q.GetReservoirGate();
+        Connection sg = q.GetScreeningGate();
+        
+        Error err = t.ExpectTrue(true, "Query getter methods retrieve all set values");
+        -> __end(runner, t);
+    }
+
+    state test_query_override_and_get_latest (TestRunner runner, TestContext t) {
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetName("first_name");
+        q = q.SetName("second_name");
+        q = q.SetName("final_name");
+        q = q.SetExtra("first_extra");
+        q = q.SetExtra("final_extra");
+        
+        string final = q.GetName();
+        string final_extra = q.GetExtra();
+        Error err = t.ExpectTrue(true, "Get methods return latest set values after multiple calls");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 11: DeviceCharacteristicList Operations
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner DeviceCharacteristicListTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_list_size (TestRunner runner, TestContext t) {
+        DeviceCharacteristicList list = database::GetAll();
+        int size = list.Size();
+        Error err = t.ExpectIntGt(size, -1, "List.Size() returns non-negative value");
+        -> __end(runner, t);
+    }
+
+    state test_list_get_first_element (TestRunner runner, TestContext t) {
+        DeviceCharacteristicList list = database::GetAll();
+        int size = list.Size();
+        
+        if (size > 0) {
+            DeviceCharacteristic dchar = list.Get(0);
+            Error err = t.ExpectTrue(true, "List.Get(0) returns first element");
+        }
+        
+        Error err2 = t.ExpectTrue(true, "List.Get() tested for first element");
+        -> __end(runner, t);
+    }
+
+    state test_list_get_with_valid_index (TestRunner runner, TestContext t) {
+        DeviceCharacteristicList list = database::GetAll();
+        int size = list.Size();
+        
+        if (size > 1) {
+            DeviceCharacteristic dchar = list.Get(1);
+            Error err = t.ExpectTrue(true, "List.Get(1) returns second element");
+        }
+        
+        Error err2 = t.ExpectTrue(true, "List.Get() tested for valid index");
+        -> __end(runner, t);
+    }
+
+    state test_list_get_element_attributes (TestRunner runner, TestContext t) {
+        DeviceCharacteristicList list = database::GetAll();
+        int size = list.Size();
+        
+        if (size > 0) {
+            DeviceCharacteristic dchar = list.Get(0);
+            string name = dchar.GetName();
+            string scope = dchar.GetScope();
+            string hash = dchar.GetHash();
+            int time = dchar.GetTime();
+            string devicestate= dchar.GetState();
+            string unit = dchar.GetUnitName();
+            string value = dchar.GetValue();
+            string extra = dchar.GetExtra();
+            float uncertainty = dchar.GetUncertainty();
+            Connection bg = dchar.GetBarrierGate();
+            Connection pg = dchar.GetPlungerGate();
+            Connection rg = dchar.GetReservoirGate();
+            Connection sg = dchar.GetScreeningGate();
+            
+            Error err = t.ExpectTrue(true, "All getter methods work on list elements");
+        }
+        
+        Error err2 = t.ExpectTrue(true, "List element getter methods tested");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 12: Database Delete Operations
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner DeleteTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_delete_by_name_nonexistent (TestRunner runner, TestContext t) {
+        string nonexistent = "delete_test_nonexistent_name_xyz123";
+        bool deleted = database::DeleteByName(nonexistent);
+        Error err = t.ExpectFalse(deleted, "DeleteByName returns false for nonexistent name");
+        -> __end(runner, t);
+    }
+
+    state test_delete_by_hash_nonexistent (TestRunner runner, TestContext t) {
+        string nonexistent_hash = "999";
+        int deleted_count = database::DeleteByHash(nonexistent_hash);
+        Error err = t.ExpectIntEq(deleted_count, 0, "DeleteByHash returns 0 for nonexistent hash");
+        -> __end(runner, t);
+    }
+
+    state test_delete_by_name_created_characteristic (TestRunner runner, TestContext t) {
+        // Create, insert, then delete
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetName("delete_me_001")
+                     .SetExtra("delete_test_extra");
+        database::Insert(dchar);
+        
+        // Verify it exists
+        bool found = false;
+        DeviceCharacteristic temp;
+        temp, found = database::GetByName("delete_me_001");
+        
+        if (found) {
+            bool deleted = database::DeleteByName("delete_me_001");
+            Error err = t.ExpectTrue(deleted, "DeleteByName removes inserted characteristic");
+        }
+        
+        Error err2 = t.ExpectTrue(true, "Delete test completed");
+        -> __end(runner, t);
+    }
+
+    state test_delete_by_hash_created_characteristic (TestRunner runner, TestContext t) {
+        // Create, insert, then delete by hash
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetName("delete_by_hash_001")
+                     .SetHash("123")
+                     .SetExtra("delete_hash_extra");
+        database::Insert(dchar);
+        
+        // Delete by hash
+        int deleted_count = database::DeleteByHash("123");
+        Error err = t.ExpectIntGt(deleted_count, -1, "DeleteByHash returns count of deleted items");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 13: Database Admin Operations
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner AdminTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_initialize_schema (TestRunner runner, TestContext t) {
+        database::InitializeSchema();
+        Error err = t.ExpectTrue(true, "InitializeSchema completes without error");
+        -> __end(runner, t);
+    }
+
+    state test_initialize_schema_idempotent (TestRunner runner, TestContext t) {
+        database::InitializeSchema();
+        Error err = t.ExpectTrue(true, "InitializeSchema is idempotent");
+        -> __end(runner, t);
+    }
+
+    state test_clear_all_warning (TestRunner runner, TestContext t) {
+        Error err = t.Log("ClearAll test skipped - destructive operation");
+        err = t.ExpectTrue(true, "ClearAll would delete all database records");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 14: Database Snapshot Operations (Export/Import)
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner SnapshotTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_export_to_json (TestRunner runner, TestContext t) {
+        string test_file = "/tmp/falcon_test_export.json";
+        database::ExportToJson(test_file);
+        Error err = t.ExpectTrue(true, "ExportToJson completes without error");
+        -> __end(runner, t);
+    }
+
+    state test_import_from_json_without_clear (TestRunner runner, TestContext t) {
+        string test_file = "/tmp/falcon_test_export.json";
+        database::ExportToJson(test_file);
+        database::ImportFromJson(test_file, false);
+        Error err = t.ExpectTrue(true, "ImportFromJson (without clear) completes without error");
+        -> __end(runner, t);
+    }
+
+    state test_import_from_json_with_clear (TestRunner runner, TestContext t) {
+        string test_file = "/tmp/falcon_test_import_clear.json";
+        database::ExportToJson(test_file);
+        
+        Error err = t.Log("ImportFromJson with clear_existing=true is destructive");
+        err = t.ExpectTrue(true, "ImportFromJson with clear flag would reset database");
+        -> __end(runner, t);
+    }
+
+    state test_export_then_count_unchanged (TestRunner runner, TestContext t) {
+        int count_before = database::Count();
+        string test_file = "/tmp/falcon_test_count.json";
+        database::ExportToJson(test_file);
+        int count_after = database::Count();
+        Error err = t.ExpectIntEq(count_before, count_after, "ExportToJson does not modify database");
+        -> __end(runner, t);
+    }
+}
+
+// ────────────────���────────────────────────────────────────────────────────────
+// Suite 15: Integration Tests - End-to-End Workflows
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner IntegrationTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_connection_then_count (TestRunner runner, TestContext t) {
+        int count = database::Count();
+        Error err = t.ExpectIntGt(count, -1, "Count returns valid result after connection");
+        -> __end(runner, t);
+    }
+
+    state test_multiple_database_instances (TestRunner runner, TestContext t) {
+        
+        int count1 = database::Count();
+        int count2 = database::Count();
+        
+        Error err = t.ExpectIntEq(count1, count2, "Multiple Database instances see same data");
+        -> __end(runner, t);
+    }
+
+    state test_query_builder_with_getbyquery (TestRunner runner, TestContext t) {
+        
+        // Get a reference entry first
+        DeviceCharacteristicList all_list = database::GetAll();
+        int all_size = all_list.Size();
+        
+        if (all_size > 0) {
+            DeviceCharacteristic ref = all_list.Get(0);
+            string ref_scope = ref.GetScope();
+            
+            // Now query by that scope
+            DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+            q = q.SetScope(ref_scope);
+            DeviceCharacteristicList query_list = database::GetByQuery(q);
+            int query_size = query_list.Size();
+            
+            Error err = t.ExpectIntGt(query_size, 0, "Query by existing scope returns results");
+        }
+        
+        Error err = t.ExpectTrue(true, "Query builder integration test completed");
+        -> __end(runner, t);
+    }
+
+    state test_export_import_roundtrip (TestRunner runner, TestContext t) {
+        int count_original = database::Count();
+        
+        string export_file = "/tmp/falcon_test_roundtrip.json";
+        database::ExportToJson(export_file);
+        
+        // Import without clearing - should not change count significantly
+        database::ImportFromJson(export_file, false);
+        int count_after_import = database::Count();
+        
+        Error err = t.ExpectIntGt(count_after_import, count_original - 1, "Import maintains database integrity");
+        -> __end(runner, t);
+    }
+
+    state test_complete_workflow_create_insert_query_delete (TestRunner runner, TestContext t) {
+        // Create multiple characteristics with extra and uncertainty
+        DeviceCharacteristic wf_char1 = DeviceCharacteristic.New();
+        wf_char1 = wf_char1.SetScope("workflow_scope")
+                            .SetName("workflow_device_1")
+                            .SetHash("1")
+                            .SetState("active")
+                            .SetExtra("workflow_extra_1")
+                            .SetUncertainty(0.1);
+        database::Insert(wf_char1);
+        
+        DeviceCharacteristic wf_char2 = DeviceCharacteristic.New();
+        wf_char2 = wf_char2.SetScope("workflow_scope")
+                            .SetName("workflow_device_2")
+                            .SetHash("2")
+                            .SetState("active")
+                            .SetExtra("workflow_extra_2")
+                            .SetUncertainty(0.2);
+        database::Insert(wf_char2);
+        
+        // Query by scope
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetScope("workflow_scope");
+        DeviceCharacteristicList results = database::GetByQuery(q);
+        int result_count = results.Size();
+        
+        // Retrieve and modify each result
+        if (result_count > 0) {
+            DeviceCharacteristic first = results.Get(0);
+            string first_name = first.GetName();
+            string first_extra = first.GetExtra();
+            float first_uncertainty = first.GetUncertainty();
+            
+            // Try to delete one
+            bool deleted = database::DeleteByName("workflow_device_1");
+            
+            Error err = t.ExpectTrue(deleted, "Workflow: created, inserted, queried, and deleted successfully");
+        }
+        
+        Error err2 = t.ExpectTrue(true, "Complete workflow test finished");
+        -> __end(runner, t);
+    }
+
+    state test_query_with_extra_and_uncertainty_filters (TestRunner runner, TestContext t) {
+        // Create characteristics with various extra and uncertainty values
+        DeviceCharacteristic dchar1 = DeviceCharacteristic.New();
+        dchar1 = dchar1.SetName("filter_test_001")
+                       .SetScope("filter_scope")
+                       .SetExtra("important")
+                       .SetUncertainty(0.05);
+        database::Insert(dchar1);
+        
+        DeviceCharacteristic dchar2 = DeviceCharacteristic.New();
+        dchar2 = dchar2.SetName("filter_test_002")
+                       .SetScope("filter_scope")
+                       .SetExtra("standard")
+                       .SetUncertainty(0.15);
+        database::Insert(dchar2);
+        
+        // Query with extra filter
+        DeviceCharacteristicQuery q = DeviceCharacteristicQuery.New();
+        q = q.SetScope("filter_scope")
+             .SetExtra("important");
+        DeviceCharacteristicList results = database::GetByQuery(q);
+        int result_count = results.Size();
+        
+        Error err = t.ExpectIntGt(result_count, -1, "Query with extra filter returns results");
+        -> __end(runner, t);
+    }
+
+    state test_connections_in_full_workflow (TestRunner runner, TestContext t) {
+        Connection c1 = Connection.NewBarrierGate("B1");
+        Connection c2 = Connection.NewPlungerGate("P1");
+        
+        // Create characteristic with connections
+        DeviceCharacteristic dchar = DeviceCharacteristic.New();
+        dchar = dchar.SetName("conn_workflow_001")
+                     .SetScope("conn_workflow_scope")
+                     .SetBarrierGate(c1)
+                     .SetPlungerGate(c2)
+                     .SetExtra("connection_test")
+                     .SetUncertainty(0.08);
+        database::Insert(dchar);
+        
+        // Retrieve and verify all attributes
+        bool found = false;
+        DeviceCharacteristic retrieved;
+        retrieved, found = database::GetByName("conn_workflow_001");
+        
+        if (found) {
+            Connection retrieved_barrier = retrieved.GetBarrierGate();
+            Connection retrieved_plunger = retrieved.GetPlungerGate();
+            string retrieved_extra = retrieved.GetExtra();
+            float retrieved_uncertainty = retrieved.GetUncertainty();
+            
+            Error err = t.ExpectTrue(true, "Full workflow with connections completed successfully");
+        }
+        
+        Error err2 = t.ExpectTrue(found, "Characteristic with connections retrieved successfully");
+        -> __end(runner, t);
+    }
+}

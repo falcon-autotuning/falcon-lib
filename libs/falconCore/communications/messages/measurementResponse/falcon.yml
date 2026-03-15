@@ -1,0 +1,14 @@
+name: measurementResponse
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: labelledArrays
+    version: "1.0.0"
+    local_path: "../../../math/arrays/labelledArrays/"
+  - name: labelledMeasuredArray
+    version: "1.0.0"
+    local_path: "../../../math/arrays/labelledMeasuredArray/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"

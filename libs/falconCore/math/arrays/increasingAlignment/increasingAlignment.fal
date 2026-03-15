@@ -1,0 +1,9 @@
+ffimport "increasing-alignment-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct IncreasingAlignment {
+    routine New (bool alignment) -> (IncreasingAlignment inc)
+    routine Alignment () -> (bool alignment)
+    routine Equal (IncreasingAlignment other) -> (bool equal)
+    routine NotEqual (IncreasingAlignment other) -> (bool notequal)
+    routine FromJSON (string json) -> (IncreasingAlignment farray)
+    routine ToJSON () -> (string json)
+}

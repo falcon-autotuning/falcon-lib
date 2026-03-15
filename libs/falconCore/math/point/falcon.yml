@@ -1,0 +1,23 @@
+name: point
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: quantity
+    version: "1.0.0"
+    local_path: "../quantity/"
+  - name: connection
+    version: "1.0.0"
+    local_path: "../../physics/deviceStructures/connection/"
+  - name: symbolUnit
+    version: "1.0.0"
+    local_path: "../../physics/units/symbolUnit/"
+  - name: array
+    version: "1.0.0"
+    local_path: "../../../collections/array/"
+  - name: map
+    version: "1.0.0"
+    local_path: "../../../collections/map/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../testing/"

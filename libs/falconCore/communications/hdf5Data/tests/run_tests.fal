@@ -1,0 +1,39 @@
+// Tests for falconCore/communications/hdf5Data
+// Run with: falcon-test run_tests.fal
+import "../../../../testing/testing.fal";
+import "../hdf5Data.fal";
+
+// ── JSON round-trip ───────────────────────────────────────────────────────────
+
+autotuner HDF5DataJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_from_json_roundtrip (TestRunner runner, TestContext t) {
+        // Deserialise a minimal JSON blob and verify it round-trips back.
+        string json = hdf5Data::HDF5Data.ToJSON(hdf5Data::HDF5Data.FromJSON("{}"));
+        Error err = t.ExpectStrNe("", json, "ToJSON(FromJSON) round-trip is non-empty");
+        -> __end(runner, t);
+    }
+}
+
+// ── Equality ──────────────────────────────────────────────────────────────────
+
+autotuner HDF5DataEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same_json (TestRunner runner, TestContext t) {
+        hdf5Data::HDF5Data a = hdf5Data::HDF5Data.FromJSON("{}");
+        hdf5Data::HDF5Data b = hdf5Data::HDF5Data.FromJSON("{}");
+        Error err = t.ExpectTrue(a.Equal(b), "Two HDF5Data from same JSON are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_false (TestRunner runner, TestContext t) {
+        hdf5Data::HDF5Data a = hdf5Data::HDF5Data.FromJSON("{}");
+        hdf5Data::HDF5Data b = hdf5Data::HDF5Data.FromJSON("{}");
+        Error err = t.ExpectFalse(a.NotEqual(b), "NotEqual is false for equal objects");
+        -> __end(runner, t);
+    }
+}

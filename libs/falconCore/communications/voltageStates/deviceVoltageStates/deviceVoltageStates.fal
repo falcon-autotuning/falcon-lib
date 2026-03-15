@@ -1,0 +1,25 @@
+import (
+"../../../physics/deviceStructures/connection/connection.fal"
+"../../../physics/units/symbolUnit/symbolUnit.fal"
+"../../../math/point/point.fal"
+"../../../../collections/array/array.fal"
+"../deviceVoltageState/deviceVoltageState.fal"
+)
+ffimport "device-voltage-states-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct DeviceVoltageStates {
+    routine New (Array<DeviceVoltageState> dstates) -> (DeviceVoltageStates states)
+    routine AddState (DeviceVoltageState dstate) -> ()
+    routine FindState (connection::Connection conn) -> (DeviceVoltageState dstate)
+    routine ToPoint () -> (point::Point point) 
+    routine Connection -> (connection::Connection conn)
+    routine Insert (deviceVoltageState::DeviceVoltageState dstate, int location) -> ()
+    routine Size () -> (int size)
+    routine Empty () -> (bool isEmpty)
+    routine Voltage -> (float voltage)
+    routine Contains (deviceVoltageState::DeviceVoltageState dstate) -> (bool contains)
+    routine Equal (DeviceVoltageStates other) -> (bool equal)
+    routine NotEqual (DeviceVoltageStates other) -> (bool notequal)
+    routine Clear () -> ()
+    routine FromJSON (string json) -> (DeviceVoltageStates states)
+    routine ToJSON () -> (string json)
+}

@@ -1,0 +1,85 @@
+// Tests for falconCore/math/unitSpace
+import "../../../../testing/testing.fal";
+import "../unitSpace.fal";
+import "../../domains/domain/domain.fal";
+
+autotuner UnitSpaceConstruction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_cartesian1d (TestRunner runner, TestContext t) {
+        Domain d = Domain.New(0.0, 1.0, true, true);
+        UnitSpace us = UnitSpace.Cartesian1DSpace(0.1, d);
+        Error err = t.ExpectTrue(us.Equal(us), "Cartesian1DSpace creates valid UnitSpace");
+        -> __end(runner, t);
+    }
+
+    state test_ray_space (TestRunner runner, TestContext t) {
+        Domain d = Domain.New(0.0, 1.0, true, true);
+        UnitSpace us = UnitSpace.RaySpace(0.1, 0.05, d);
+        Error err = t.ExpectTrue(us.Equal(us), "RaySpace creates valid UnitSpace");
+        -> __end(runner, t);
+    }
+}
+
+autotuner UnitSpaceAccessors -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_dimension_cartesian1d (TestRunner runner, TestContext t) {
+        Domain d = Domain.New(0.0, 1.0, true, true);
+        UnitSpace us = UnitSpace.Cartesian1DSpace(0.1, d);
+        int dim = us.Dimension();
+        Error err = t.ExpectIntEq(1, dim, "Cartesian1DSpace has dimension 1");
+        -> __end(runner, t);
+    }
+
+    state test_domain_accessor (TestRunner runner, TestContext t) {
+        Domain d = Domain.New(0.0, 2.0, true, true);
+        UnitSpace us = UnitSpace.Cartesian1DSpace(0.1, d);
+        Domain got = us.Domain();
+        Error err = t.ExpectFloatEq(2.0, got.GreaterBound(), "Domain GreaterBound matches");
+        -> __end(runner, t);
+    }
+}
+
+autotuner UnitSpaceEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        Domain d = Domain.New(0.0, 1.0, true, true);
+        UnitSpace us = UnitSpace.Cartesian1DSpace(0.1, d);
+        Error err = t.ExpectTrue(us.Equal(us), "UnitSpace equals itself");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_false_for_same (TestRunner runner, TestContext t) {
+        Domain d = Domain.New(0.0, 1.0, true, true);
+        UnitSpace us = UnitSpace.Cartesian1DSpace(0.1, d);
+        Error err = t.ExpectFalse(us.NotEqual(us), "NotEqual is false for same space");
+        -> __end(runner, t);
+    }
+}
+
+autotuner UnitSpaceJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Domain d = Domain.New(0.0, 1.0, true, true);
+        UnitSpace us = UnitSpace.Cartesian1DSpace(0.1, d);
+        string json = us.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON returns non-empty string");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        Domain d = Domain.New(0.0, 1.0, true, true);
+        UnitSpace orig = UnitSpace.Cartesian1DSpace(0.1, d);
+        string json = orig.ToJSON();
+        UnitSpace rt = UnitSpace.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(rt), "JSON round-trip preserves equality");
+        -> __end(runner, t);
+    }
+}

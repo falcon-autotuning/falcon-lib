@@ -1,0 +1,23 @@
+import (
+"../../../../collections/array/array.fal"
+"../channel/channel.fal"
+)
+ffimport "channels-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct Channels {
+    routine New (array::Array<Channel> array) -> (Channels channels)
+    routine Equal (Channels other) -> (bool equal)
+    routine NotEqual (Channels other) -> (bool notequal)
+    routine FromJSON (string json) -> (Channels channel)
+    routine ToJSON () -> (string json)
+    routine Size () -> (int size)
+    routine IsEmpty () -> (bool empty)
+    routine GetIndex (int index) -> (channel::Channel value)
+    routine SetIndex (int index, channel::Channel value) -> ()
+    routine PushBack (channel::Channel value) -> ()
+    routine PopBack () -> (channel::Channel value)
+    routine Insert (int index, channel::Channel value) -> ()
+    routine Erase (int index) -> ()
+    routine Clear () -> ()
+    routine Contains (channel::Channel value) -> (bool found)
+    routine IndexOf (channel::Channel value) -> (int index)
+}

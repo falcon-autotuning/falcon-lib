@@ -1,0 +1,116 @@
+// Tests for instrumentInterfaces/portTransforms/portTransforms
+import "../../../../../testing/testing.fal";
+import "../portTransforms.fal";
+import "../../../names/instrumentPort/instrumentPort.fal";
+import "../../portTransform/portTransform.fal";
+import "../../../../math/analyticFunction/analyticFunction.fal";
+import "../../../../physics/deviceStructures/connection/connection.fal";
+import "../../../names/instrument/instrument.fal";
+import "../../../../physics/units/symbolUnit/symbolUnit.fal";
+
+autotuner PortTransformsConstruction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_empty (TestRunner runner, TestContext t) {
+        Array<PortTransform> arr = Array.New();
+        PortTransforms pts = PortTransforms.New(arr);
+        Error err = t.ExpectTrue(pts.IsEmpty(), "new from empty array is empty");
+        -> __end(runner, t);
+    }
+
+    state test_new_with_one (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewPlungerGate("P1");
+        Instrument inst = Instrument.DCVoltageSource();
+        SymbolUnit v = SymbolUnit.Volt();
+        InstrumentPort port = InstrumentPort.NewKnob("P1", c, inst, v, "test");
+        PortTransform pt = PortTransform.IdentityTranform(port);
+        Array<PortTransform> arr = Array.New();
+        arr.PushBack(pt);
+        PortTransforms pts = PortTransforms.New(arr);
+        Error err = t.ExpectIntEq(1, pts.Size(), "size is 1 after adding one");
+        -> __end(runner, t);
+    }
+}
+
+autotuner PortTransformsListOps -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_push_back (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewPlungerGate("P1");
+        Instrument inst = Instrument.DCVoltageSource();
+        SymbolUnit v = SymbolUnit.Volt();
+        InstrumentPort port = InstrumentPort.NewKnob("P1", c, inst, v, "test");
+        PortTransform pt = PortTransform.IdentityTranform(port);
+        Array<PortTransform> arr = Array.New();
+        PortTransforms pts = PortTransforms.New(arr);
+        pts.PushBack(pt);
+        Error err = t.ExpectIntEq(1, pts.Size(), "size is 1 after push");
+        -> __end(runner, t);
+    }
+
+    state test_get_index (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewPlungerGate("P1");
+        Instrument inst = Instrument.DCVoltageSource();
+        SymbolUnit v = SymbolUnit.Volt();
+        InstrumentPort port = InstrumentPort.NewKnob("P1", c, inst, v, "test");
+        PortTransform pt = PortTransform.ConstantTransform(port, 1.5);
+        Array<PortTransform> arr = Array.New();
+        arr.PushBack(pt);
+        PortTransforms pts = PortTransforms.New(arr);
+        PortTransform got = pts.GetIndex(0);
+        Error err = t.ExpectTrue(pt.Equal(got), "GetIndex returns same transform");
+        -> __end(runner, t);
+    }
+}
+
+autotuner PortTransformsEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_empty (TestRunner runner, TestContext t) {
+        Array<PortTransform> arr = Array.New();
+        PortTransforms a = PortTransforms.New(arr);
+        PortTransforms b = PortTransforms.New(arr);
+        Error err = t.ExpectTrue(a.Equal(b), "two empty PortTransforms are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewPlungerGate("P1");
+        Instrument inst = Instrument.DCVoltageSource();
+        SymbolUnit v = SymbolUnit.Volt();
+        InstrumentPort port = InstrumentPort.NewKnob("P1", c, inst, v, "test");
+        PortTransform pt = PortTransform.ConstantTransform(port, 1.0);
+        Array<PortTransform> arr1 = Array.New();
+        arr1.PushBack(pt);
+        Array<PortTransform> arr2 = Array.New();
+        PortTransforms a = PortTransforms.New(arr1);
+        PortTransforms b = PortTransforms.New(arr2);
+        Error err = t.ExpectTrue(a.NotEqual(b), "different PortTransforms are not equal");
+        -> __end(runner, t);
+    }
+}
+
+autotuner PortTransformsJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Array<PortTransform> arr = Array.New();
+        PortTransforms pts = PortTransforms.New(arr);
+        string json = pts.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON returns non-empty string");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        Array<PortTransform> arr = Array.New();
+        PortTransforms orig = PortTransforms.New(arr);
+        string json = orig.ToJSON();
+        PortTransforms restored = PortTransforms.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "roundtrip empty PortTransforms");
+        -> __end(runner, t);
+    }
+}

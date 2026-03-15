@@ -1,0 +1,23 @@
+import (
+"../../../instrumentInterfaces/names/instrument/instrument.fal"
+"../../../instrumentInterfaces/names/instrumentPort/instrumentPort.fal"
+"../../../physics/deviceStructures/connection/connection.fal"
+"../../../physics/units/symbolUnit/symbolUnit.fal"
+"../measurementContext/measurementContext.fal"
+)
+ffimport "acquisition-context-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct AcquisitionContext {
+    routine New (connection::Connection conn, instrument::Instrument inst, symbolUnit::SymbolUnit unit) -> (AcquisitionContext context)
+    routine NewFromContext (measurementContext::MeasurementContext context, symbolUnit::SymbolUnit unit) -> (AcquisitionContext context)
+    routine Connection -> (connection::Connection conn) 
+    routine Instrument -> (instrument::Instrument inst)
+    routine Units -> (symbolUnit::SymbolUnit unit)
+    routine Division (AcquisitionContext other) -> (AcquisitionContext out)
+    routine Division (symbolUnit::SymbolUnit other) -> (AcquisitionContext out)
+    routine MatchConnection (connection::Connection other) -> (bool match)
+    routine MatchInstrumentType (instrument::Instrument other) -> (bool match)
+    routine Equal (AcquisitionContext other) -> (bool equal)
+    routine NotEqual (AcquisitionContext other) -> (bool notequal)
+    routine FromJSON (string json) -> (AcquisitionContext context)
+    routine ToJSON () -> (string json)
+}

@@ -1,0 +1,27 @@
+import (
+"../../physics/deviceStructures/connection/connection.fal"
+"../../physics/units/symbolUnit/symbolUnit.fal"
+)
+ffimport "quantity-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct Quantity {
+    routine New (float value, symbolUnit::SymbolUnit unit) -> (Quantity q)
+    routine Value () -> (float out)
+    routine Unit () -> (symbolUnit::SymbolUnit unit)
+    routine Equal (Quantity other) -> (bool equal)
+    routine NotEqual (Quantity other) -> (bool notequal)
+    routine Unit -> (symbolUnit::SymbolUnit unit)
+    routine ConvertToUnit (symbolUnit::SymbolUnit new_unit) -> (Quantity converted_state)
+    routine Times (float factor) -> (Quantity scaled_state)
+    routine Times (int factor) -> (Quantity scaled_state)
+    routine Times (Quantity factor) -> (Quantity scaled_state)
+    routine Divides (float divisor) -> (Quantity scaled_state)
+    routine Divides (int divisor) -> (Quantity scaled_state)
+    routine Divides (Quantity divisor) -> (Quantity scaled_state)
+    routine Power (float exponent) -> (Quantity powered_state)
+    routine Add (Quantity other) -> (Quantity sum_state)
+    routine Subtract (Quantity other) -> (Quantity difference_state)
+    routine Negate -> (Quantity negated_state)
+    routine Abs -> (Quantity absolute_state)
+    routine FromJSON (string json) -> (Quantity dstate)
+    routine ToJSON () -> (string json)
+}

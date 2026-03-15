@@ -1,0 +1,33 @@
+import "../domain/domain.fal";
+import "../../../physics/deviceStructures/connection/connection.fal";
+import "../../../instrumentInterfaces/names/instrument/instrument.fal";
+import "../../../physics/units/symbolUnit/symbolUnit.fal";
+import "../../../instrumentInterfaces/names/instrumentPort/instrumentPort.fal";
+ffimport "labelled-domain-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct LabelledDomain {
+    routine NewFromKnob (string defaultName, float min, float max, connection::Connection psuedoName, instrument::Instrument instrumentType, bool lesserBoundContained, bool greaterBoundContained, symbolUnit::SymbolUnit units, string description) -> (LabelledDomain d)
+    routine FromPort (float max, float min, instrumentPort::InstrumentPort port, bool lesserboundContainer, bool greaterBoundContained) -> (LabelledDomain d)
+    routine FromPortAndDomain (instrumentPort::InstrumentPort port, domain::Domain domain) -> (LabelledDomain d)
+    routine FromDomain (domain::Domain domain, string defaultName, connection::Connection psuedoName, instrument::Instrument instrumentType, symbolUnit::SymbolUnit units, string description) -> (LabelledDomain d)
+    routine Port -> (instrumentPort::InstrumentPort port)
+    routine Domain -> (domain::Domain domain)
+    routine MatchingPort (instrumentPort::InstrumentPort port) -> (bool matches)
+    routine LesserBound -> (float min)
+    routine GreaterBound -> (float max)
+    routine LesserBoundContained -> (bool contained)
+    routine GreaterBoundContained -> (bool contained)
+    routine In(float value) -> (bool contains)
+    routine Range -> (float range)
+    routine GetCenter -> (float center)
+    routine Intersection (LabelledDomain other) -> (LabelledDomain result)
+    routine Union (LabelledDomain other) -> (LabelledDomain result)
+    routine IsEmpty -> (bool empty)
+    routine ContainsDomain (LabelledDomain other) -> (bool contains)
+    routine Shift (float offset) -> (LabelledDomain shifted)
+    routine Scaled (float offset) -> (LabelledDomain scaled)
+    routine Transform (LabelledDomain other, float value) -> (float scale)
+    routine Equal (LabelledDomain other) -> (bool equal)
+    routine NotEqual (LabelledDomain other) -> (bool notequal)
+    routine FromJSON (string json) -> (LabelledDomain dstate)
+    routine ToJSON () -> (string json)
+}

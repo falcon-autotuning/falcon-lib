@@ -1,0 +1,3234 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Quantum device autotuning framework with DSL, database, and hardware integration">
+      
+      
+      
+        <link rel="canonical" href="https://falcon-autotuning.github.io/falcon-lib/libs/testing/">
+      
+      
+        <link rel="prev" href="../strings/">
+      
+      
+        <link rel="next" href="../database/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/icons/icon-256.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>testing - Falcon Lib</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#falcontesting" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Falcon Lib" class="md-header__button md-logo" aria-label="Falcon Lib" data-md-component="logo">
+      
+  <img src="../../assets/icons/icon-256.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Falcon Lib
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              testing
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/falcon-autotuning/falcon-lib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    falcon-lib
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../index.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dsl/docs/OVERVIEW.md" class="md-tabs__link">
+          
+  
+  
+  DSL (Domain-Specific Language)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../database/" class="md-tabs__link">
+          
+  
+  
+  Database
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../typing/" class="md-tabs__link">
+          
+  
+  
+  FFI (Foreign Function Interface)
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../qarrayDevice/" class="md-tabs__link">
+          
+  
+  
+  Hardware Integration
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../collections/array/" class="md-tabs__link">
+          
+  
+  
+  Library Bindings
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../ARCHITECTURE/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Falcon Lib" class="md-nav__button md-logo" aria-label="Falcon Lib" data-md-component="logo">
+      
+  <img src="../../assets/icons/icon-256.png" alt="logo">
+
+    </a>
+    Falcon Lib
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/falcon-autotuning/falcon-lib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    falcon-lib
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DSL (Domain-Specific Language)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    DSL (Domain-Specific Language)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dsl/docs/OVERVIEW.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dsl/docs/TUTORIAL.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dsl/docs/LANGUAGE_REFERENCE.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dsl/docs/CLI.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dsl/docs/PACKAGE_MANAGER.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package Manager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dsl/treesitter/README.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TreeSitter (Syntax Highlighting)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_7" id="__nav_2_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LSP (Language Server)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    LSP (Language Server)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dsl/docs/LSP.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup & Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dsl/lsp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Editor Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Database
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FFI (Foreign Function Interface)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    FFI (Foreign Function Interface)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../typing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Typing & C ABI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardware Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Hardware Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../qarrayDevice/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    qArray Device
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Library Bindings
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Library Bindings
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_1" id="__nav_6_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    collections
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    collections
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../collections/array/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Array
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../collections/map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    falconCore
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    falconCore
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/physics/deviceStructures/connection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/physics/deviceStructures/connections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/physics/units/symbolUnit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SymbolUnit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/vector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vector
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/unitSpace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UnitSpace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/quantity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quantity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/domains/domain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Domain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/domains/labelledDomain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LabelledDomain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/discreteSpaces/discretizer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discretizer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/discreteSpaces/discreteSpace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DiscreteSpace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/axes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Axes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/arrays/controlArray/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ControlArray
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/arrays/controlArray1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ControlArray1D
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/arrays/increasingAlignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IncreasingAlignment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/arrays/labelledControlArray/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LabelledControlArray
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/arrays/labelledControlArray1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LabelledControlArray1D
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/arrays/labelledMeasuredArray/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LabelledMeasuredArray
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/arrays/labelledMeasuredArray1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LabelledMeasuredArray1D
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/arrays/measuredArray/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeasuredArray
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/arrays/measuredArray1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeasuredArray1D
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/math/analyticFunction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AnalyticFunction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/instrumentInterfaces/portTransforms/portTransform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PortTransform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/instrumentInterfaces/portTransforms/portTransforms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PortTransforms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/instrumentInterfaces/names/ports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/instrumentInterfaces/names/instrumentPort/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    InstrumentPort
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/instrumentInterfaces/names/instrument/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instrument
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/communications/voltageStates/deviceVoltageStates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DeviceVoltageStates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../falconCore/communications/voltageStates/deviceVoltageState/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DeviceVoltageState
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    io
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    strings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    testing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-a-test-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing a test file
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing a test file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minimal-test-no-fixture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal test (no fixture)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#with-setup-and-teardown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        With setup and teardown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-step-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-step tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiple-suites-in-one-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multiple suites in one file
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testcontext-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TestContext API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testrunner-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TestRunner API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#terminal-output-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terminal output format
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-the-dependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding the dependency
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#self-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Self-tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    database
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-a-test-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing a test file
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing a test file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minimal-test-no-fixture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal test (no fixture)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#with-setup-and-teardown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        With setup and teardown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-step-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-step tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiple-suites-in-one-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multiple suites in one file
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testcontext-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TestContext API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testrunner-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TestRunner API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#terminal-output-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terminal output format
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adding-the-dependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding the dependency
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#self-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Self-tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="falcontesting">falcon/testing<a class="headerlink" href="#falcontesting" title="Permanent link">&para;</a></h1>
+<p>A native Falcon testing library providing a fixture-aware, gtest-style test harness for writing and running tests entirely within the Falcon DSL. It binds a C++ backend via the FFI and is driven by the <code>falcon-test</code> CLI.</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#how-it-works">How it works</a></li>
+<li><a href="#writing-a-test-file">Writing a test file</a></li>
+<li><a href="#minimal-test-no-fixture">Minimal test (no fixture)</a></li>
+<li><a href="#with-setup-and-teardown">With setup and teardown</a></li>
+<li><a href="#multi-step-tests">Multi-step tests</a></li>
+<li><a href="#multiple-suites-in-one-file">Multiple suites in one file</a></li>
+<li><a href="#running-tests">Running tests</a></li>
+<li><a href="#testcontext-api">TestContext API</a></li>
+<li><a href="#testrunner-api">TestRunner API</a></li>
+<li><a href="#terminal-output-format">Terminal output format</a></li>
+<li><a href="#adding-the-dependency">Adding the dependency</a></li>
+<li><a href="#self-tests">Self-tests</a></li>
+</ul>
+<hr />
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The library exposes two structs:</p>
+<ul>
+<li><strong><code>TestContext</code></strong> — analogous to Go's <code>*testing.T</code>. One instance per test. Accumulates assertion failures without aborting execution so all failures within a single test are reported together.</li>
+<li><strong><code>TestRunner</code></strong> — manages the test loop, index tracking, and all terminal output. Created and owned entirely by the generated harness; user code never constructs one directly.</li>
+</ul>
+<p>The <code>falcon-test</code> CLI reads a user test file, injects the loop-management harness states into each suite autotuner, writes a temporary transformed <code>.fal</code> alongside the original (so <code>import</code> resolution continues to work), loads it through <code>AutotunerEngine</code>, and runs every discovered suite in sequence.</p>
+<hr />
+<h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
+<p>A test suite is an <code>autotuner</code> block with the signature <code>-&gt; (int passed, int failed)</code>. <code>falcon-test</code> scans for these, discovers every <code>state test_*</code> body inside each one, and synthesises five hidden harness states:</p>
+<table>
+<thead>
+<tr>
+<th>Generated state</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>__init</code></td>
+<td>Registers all test names with <code>TestRunner</code>, prints the header, enters the loop</td>
+</tr>
+<tr>
+<td><code>__loop</code></td>
+<td>Calls <code>HasNext</code>; branches to <code>setup</code> (or <code>__begin</code>) or <code>__finish</code></td>
+</tr>
+<tr>
+<td><code>__begin</code></td>
+<td>Calls <code>BeginCurrent</code> to create a fresh <code>TestContext</code>, then dispatches</td>
+</tr>
+<tr>
+<td><code>__dispatch</code></td>
+<td>One <code>if</code> branch per <code>test_*</code> name — routes to the correct user state</td>
+</tr>
+<tr>
+<td><code>__end</code></td>
+<td>Calls <code>EndCurrent</code>, prints pass/fail line, returns to <code>__loop</code></td>
+</tr>
+<tr>
+<td><code>__finish</code></td>
+<td>Calls <code>PrintSummary</code>, writes <code>passed</code>/<code>failed</code> outputs, <code>terminal</code></td>
+</tr>
+</tbody>
+</table>
+<p>Users see none of this machinery.</p>
+<hr />
+<h2 id="writing-a-test-file">Writing a test file<a class="headerlink" href="#writing-a-test-file" title="Permanent link">&para;</a></h2>
+<h3 id="minimal-test-no-fixture">Minimal test (no fixture)<a class="headerlink" href="#minimal-test-no-fixture" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>import &quot;/opt/falcon/libs/testing/testing.fal&quot;;
+
+autotuner MathTests -&gt; (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -&gt; __init;           // required entry point
+
+    state test_addition (TestRunner runner, TestContext t) {
+        Error err = t.ExpectIntEq(2 + 2, 4, &quot;2+2=4&quot;);
+        -&gt; __end(runner, t);   // hand back to the harness
+    }
+
+    state test_subtraction (TestRunner runner, TestContext t) {
+        Error err = t.ExpectIntEq(10 - 3, 7, &quot;10-3=7&quot;);
+        -&gt; __end(runner, t);
+    }
+}
+</code></pre></div>
+<p>That is the complete file. No registration. No dispatch table. No loop logic.</p>
+<h3 id="with-setup-and-teardown">With setup and teardown<a class="headerlink" href="#with-setup-and-teardown" title="Permanent link">&para;</a></h3>
+<p><code>setup</code> runs <strong>before every test</strong>. <code>teardown</code> runs <strong>after every test</strong>. Both are optional; omit either or both if you don't need them.</p>
+<div class="language-text highlight"><pre><span></span><code>import &quot;/opt/falcon/libs/testing/testing.fal&quot;;
+
+autotuner DeviceTests -&gt; (int passed, int failed) {
+    passed = 0; failed = 0;
+    int device_state = 0;          // shared environment variable
+    start -&gt; __init;
+
+    // Runs before each test — MUST end with -&gt; __begin(runner);
+    state setup (TestRunner runner) {
+        device_state = 42;          // reset to known state
+        -&gt; __begin(runner);
+    }
+
+    // Runs after each test — MUST end with -&gt; __end(runner, t);
+    state teardown (TestRunner runner, TestContext t) {
+        Error err = t.Log(&quot;teardown: device_state was reset&quot;);
+        -&gt; __end(runner, t);
+    }
+
+    state test_reads_clean_state (TestRunner runner, TestContext t) {
+        Error err = t.ExpectIntEq(device_state, 42, &quot;setup ran: state is 42&quot;);
+        -&gt; teardown(runner, t);     // route through teardown before __end
+    }
+
+    state test_dirties_state (TestRunner runner, TestContext t) {
+        device_state = 999;
+        Error err = t.ExpectIntEq(device_state, 999, &quot;dirtied to 999&quot;);
+        -&gt; teardown(runner, t);
+    }
+
+    state test_clean_again (TestRunner runner, TestContext t) {
+        // setup ran again before this test, so device_state is 42 again
+        Error err = t.ExpectIntEq(device_state, 42, &quot;setup reset it to 42&quot;);
+        -&gt; teardown(runner, t);
+    }
+}
+</code></pre></div>
+<blockquote>
+<p><strong>Convention summary</strong></p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Terminal transition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>setup</code></td>
+<td><code>-&gt; __begin(runner);</code></td>
+</tr>
+<tr>
+<td><code>teardown</code></td>
+<td><code>-&gt; __end(runner, t);</code></td>
+</tr>
+<tr>
+<td><code>test_*</code> (with teardown)</td>
+<td><code>-&gt; teardown(runner, t);</code></td>
+</tr>
+<tr>
+<td><code>test_*</code> (no teardown)</td>
+<td><code>-&gt; __end(runner, t);</code></td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<h3 id="multi-step-tests">Multi-step tests<a class="headerlink" href="#multi-step-tests" title="Permanent link">&para;</a></h3>
+<p>A test can span multiple states by threading <code>t</code> through intermediate states. Only the first state in the chain is registered and dispatched; continuing states are named freely but should <strong>not</strong> start with <code>test_</code> (otherwise they would be registered as independent tests).</p>
+<div class="language-text highlight"><pre><span></span><code>    state test_device_sequence (TestRunner runner, TestContext t) {
+        Error err = t.Log(&quot;phase 1: initialise&quot;);
+        err = t.ExpectIntEq(device_state, 42, &quot;phase 1: state clean&quot;);
+        -&gt; test_device_sequence_phase2(runner, t);
+    }
+
+    state test_device_sequence_phase2 (TestRunner runner, TestContext t) {
+        Error err = t.Log(&quot;phase 2: operate&quot;);
+        err = t.ExpectTrue(true, &quot;phase 2: operation ok&quot;);
+        -&gt; teardown(runner, t);
+    }
+</code></pre></div>
+<p><code>falcon-test</code> detects that <code>test_device_sequence_phase2</code> is a <strong>transition target</strong> of another <code>test_*</code> state and therefore treats it as a continuation rather than an entry point. It is not registered or dispatched independently.</p>
+<h3 id="multiple-suites-in-one-file">Multiple suites in one file<a class="headerlink" href="#multiple-suites-in-one-file" title="Permanent link">&para;</a></h3>
+<p>Any number of suite autotuners can coexist in a single file. Each is run independently and gets its own header/summary block in the output. All imports are shared.</p>
+<div class="language-text highlight"><pre><span></span><code>import &quot;/opt/falcon/libs/testing/testing.fal&quot;;
+import &quot;my_device.fal&quot;;
+
+autotuner UnitTests -&gt; (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -&gt; __init;
+    // ... unit test states ...
+}
+
+autotuner IntegrationTests -&gt; (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -&gt; __init;
+    // ... integration test states using MyDevice struct from my_device.fal ...
+}
+</code></pre></div>
+<hr />
+<h2 id="running-tests">Running tests<a class="headerlink" href="#running-tests" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Run a single test file</span>
+falcon-test<span class="w"> </span>my_tests.fal
+
+<span class="c1"># Run multiple files — all suites discovered, combined exit code</span>
+falcon-test<span class="w"> </span>unit_tests.fal<span class="w"> </span>integration_tests.fal
+
+<span class="c1"># Debug: print the generated .fal source without running</span>
+falcon-test<span class="w"> </span>my_tests.fal<span class="w"> </span>--dump
+
+<span class="c1"># Quieter engine output</span>
+falcon-test<span class="w"> </span>my_tests.fal<span class="w"> </span>--log-level<span class="w"> </span>error
+</code></pre></div>
+<p><code>falcon-test</code> exits <code>0</code> if every test in every suite passed, <code>3</code> if any test failed.</p>
+<hr />
+<h2 id="testcontext-api">TestContext API<a class="headerlink" href="#testcontext-api" title="Permanent link">&para;</a></h2>
+<p>Write assertions against the <code>TestContext t</code> received by each test state. Assertions are <strong>non-aborting</strong> — execution continues after a failure and all failures within a single test are reported together.</p>
+<table>
+<thead>
+<tr>
+<th>Routine</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>New(string name) -&gt; (TestContext ctx)</code></td>
+<td><em>(Used internally by the harness)</em> Create a named context</td>
+</tr>
+<tr>
+<td><code>Name -&gt; (string name)</code></td>
+<td>Return the test name</td>
+</tr>
+<tr>
+<td><code>Passed -&gt; (bool passed)</code></td>
+<td><code>true</code> if no failures recorded</td>
+</tr>
+<tr>
+<td><code>FailureCount -&gt; (int count)</code></td>
+<td>Number of recorded failures</td>
+</tr>
+<tr>
+<td><code>ExpectTrue(bool condition, string msg) -&gt; (Error err)</code></td>
+<td>Fail if <code>condition</code> is <code>false</code></td>
+</tr>
+<tr>
+<td><code>ExpectFalse(bool condition, string msg) -&gt; (Error err)</code></td>
+<td>Fail if <code>condition</code> is <code>true</code></td>
+</tr>
+<tr>
+<td><code>ExpectIntEq(int expected, int actual, string msg) -&gt; (Error err)</code></td>
+<td>Fail if <code>expected != actual</code>; prints both values</td>
+</tr>
+<tr>
+<td><code>ExpectIntNe(int expected, int actual, string msg) -&gt; (Error err)</code></td>
+<td>Fail if <code>expected == actual</code></td>
+</tr>
+<tr>
+<td><code>ExpectIntLt(int a, int b, string msg) -&gt; (Error err)</code></td>
+<td>Fail if <code>!(a &lt; b)</code></td>
+</tr>
+<tr>
+<td><code>ExpectIntGt(int a, int b, string msg) -&gt; (Error err)</code></td>
+<td>Fail if <code>!(a &gt; b)</code></td>
+</tr>
+<tr>
+<td><code>ExpectFloatEq(float expected, float actual, float tol, string msg) -&gt; (Error err)</code></td>
+<td>Fail if <code>|expected - actual| &gt; tol</code></td>
+</tr>
+<tr>
+<td><code>ExpectStrEq(string expected, string actual, string msg) -&gt; (Error err)</code></td>
+<td>Fail if strings differ; prints both values</td>
+</tr>
+<tr>
+<td><code>ExpectStrNe(string expected, string actual, string msg) -&gt; (Error err)</code></td>
+<td>Fail if strings are equal</td>
+</tr>
+<tr>
+<td><code>Fail(string msg) -&gt; (Error err)</code></td>
+<td>Unconditionally record a failure</td>
+</tr>
+<tr>
+<td><code>Log(string msg) -&gt; (Error err)</code></td>
+<td>Print an informational line immediately (<code>[ INFO     ]</code>)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="testrunner-api">TestRunner API<a class="headerlink" href="#testrunner-api" title="Permanent link">&para;</a></h2>
+<p><code>TestRunner</code> is managed entirely by the generated harness. You should not need to call these methods directly, but they are documented for completeness.</p>
+<table>
+<thead>
+<tr>
+<th>Routine</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>New(string suite_name) -&gt; (TestRunner runner)</code></td>
+<td>Create a new runner for the named suite</td>
+</tr>
+<tr>
+<td><code>Register(string test_name) -&gt; (Error err)</code></td>
+<td>Register a test name (called by <code>__init</code>)</td>
+</tr>
+<tr>
+<td><code>PrintHeader -&gt; (Error err)</code></td>
+<td>Print the <code>[==========] Running N test(s)</code> header</td>
+</tr>
+<tr>
+<td><code>BeginCurrent -&gt; (TestContext ctx)</code></td>
+<td>Print <code>[ RUN      ]</code>, return a fresh <code>TestContext</code></td>
+</tr>
+<tr>
+<td><code>EndCurrent(TestContext ctx) -&gt; (Error err)</code></td>
+<td>Print <code>[       OK ]</code> or <code>[  FAILED  ]</code>, advance index</td>
+</tr>
+<tr>
+<td><code>HasNext -&gt; (bool has_next)</code></td>
+<td><code>true</code> while tests remain</td>
+</tr>
+<tr>
+<td><code>CurrentName -&gt; (string name)</code></td>
+<td>Name of the currently-running test</td>
+</tr>
+<tr>
+<td><code>PrintSummary -&gt; (Error err)</code></td>
+<td>Print the final pass/fail summary block</td>
+</tr>
+<tr>
+<td><code>PassedCount -&gt; (int count)</code></td>
+<td>Number of passing tests (available after run)</td>
+</tr>
+<tr>
+<td><code>FailedCount -&gt; (int count)</code></td>
+<td>Number of failing tests (available after run)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="terminal-output-format">Terminal output format<a class="headerlink" href="#terminal-output-format" title="Permanent link">&para;</a></h2>
+<p>Output mirrors gtest's coloured format:</p>
+<div class="language-text highlight"><pre><span></span><code>falcon-test: my_tests.fal
+  suite [MathTests]  2 test(s)
+
+[==========] Running 2 test(s) from MathTests
+[----------] Global test environment set-up.
+[ RUN      ] MathTests.test_addition
+[       OK ] MathTests.test_addition
+[ RUN      ] MathTests.test_fail_example
+             ✗ 1 != 2 — mismatch should be reported (expected=1 actual=2)
+[  FAILED  ] MathTests.test_fail_example
+
+[==========] 2 test(s) from MathTests
+[----------] Global test environment tear-down.
+[  PASSED  ] test_addition
+[  FAILED  ] test_fail_example
+             ✗ 1 != 2 — mismatch should be reported (expected=1 actual=2)
+[----------]
+[  PASSED  ] 1 test(s)
+[  FAILED  ] 1 test(s)
+[==========] 2 test(s) ran.
+</code></pre></div>
+<p><code>[ INFO     ]</code> lines from <code>t.Log(...)</code> appear inline as a test runs:</p>
+<div class="language-text highlight"><pre><span></span><code>[ RUN      ] DeviceTests.test_device_sequence
+[ INFO     ] test_device_sequence: phase 1: initialise
+[ INFO     ] test_device_sequence: phase 2: operate
+[       OK ] DeviceTests.test_device_sequence
+</code></pre></div>
+<hr />
+<h2 id="adding-the-dependency">Adding the dependency<a class="headerlink" href="#adding-the-dependency" title="Permanent link">&para;</a></h2>
+<p>In your <code>falcon.yml</code>:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">dependencies</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">testing</span>
+</code></pre></div>
+<p>Then import in your <code>.fal</code> file:</p>
+<div class="language-text highlight"><pre><span></span><code>import &quot;/opt/falcon/libs/testing/testing.fal&quot;;
+</code></pre></div>
+<hr />
+<h2 id="self-tests">Self-tests<a class="headerlink" href="#self-tests" title="Permanent link">&para;</a></h2>
+<p>The library ships two test files in <code>libs/testing/tests/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>run_tests.fal</code></td>
+<td>All assertions pass — verifies every assertion routine works correctly</td>
+</tr>
+<tr>
+<td><code>error_detection.fal</code></td>
+<td>Intentional failures — verifies the framework <strong>detects and reports</strong> failures; expected output is 3 passed / 3 failed in <code>ErrorDetection</code> and 1 passed / 2 failed in <code>MultipleFailuresPerTest</code></td>
+</tr>
+</tbody>
+</table>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Run the passing suite (exit code 0)</span>
+falcon-test<span class="w"> </span>libs/testing/tests/run_tests.fal
+
+<span class="c1"># Run the failure-detection suite (exit code 3 — failures are expected and correct)</span>
+falcon-test<span class="w"> </span>libs/testing/tests/error_detection.fal
+
+<span class="c1"># Run both together</span>
+falcon-test<span class="w"> </span>libs/testing/tests/run_tests.fal<span class="w"> </span>libs/testing/tests/error_detection.fal
+</code></pre></div>
+<p>To verify the error-detection suite is working correctly in CI, check that <code>failed</code> equals the expected count rather than checking the exit code:</p>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># The error_detection suite should report exactly 5 total failures (3 + 2).</span>
+<span class="c1"># Exit code 3 is expected and correct — it means the framework is catching them.</span>
+falcon-test<span class="w"> </span>libs/testing/tests/error_detection.fal<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">true</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

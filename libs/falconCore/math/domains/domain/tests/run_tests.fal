@@ -1,0 +1,243 @@
+import "../../../../../testing/testing.fal";
+import "../domain.fal";
+
+autotuner DomainConstructor -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_lesser_bound (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, true, true);
+        Error  err = t.ExpectTrue(d.LesserBound() == 0.0, "LesserBound is 0.0");
+        -> __end(runner, t);
+    }
+
+    state test_greater_bound (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, true, true);
+        Error  err = t.ExpectTrue(d.GreaterBound() == 1.0, "GreaterBound is 1.0");
+        -> __end(runner, t);
+    }
+
+    state test_lesser_bound_contained_true (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, true, true);
+        Error  err = t.ExpectTrue(d.LesserBoundContained(), "LesserBoundContained is true");
+        -> __end(runner, t);
+    }
+
+    state test_lesser_bound_contained_false (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, false, true);
+        Error  err = t.ExpectFalse(d.LesserBoundContained(), "LesserBoundContained is false");
+        -> __end(runner, t);
+    }
+
+    state test_greater_bound_contained_true (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, true, true);
+        Error  err = t.ExpectTrue(d.GreaterBoundContained(), "GreaterBoundContained is true");
+        -> __end(runner, t);
+    }
+
+    state test_greater_bound_contained_false (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, true, false);
+        Error  err = t.ExpectFalse(d.GreaterBoundContained(), "GreaterBoundContained is false");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DomainQueries -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_in_contained_value (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, true, true);
+        Error  err = t.ExpectTrue(d.In(0.5), "0.5 is in [0.0, 1.0]");
+        -> __end(runner, t);
+    }
+
+    state test_in_lower_bound_closed (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, true, true);
+        Error  err = t.ExpectTrue(d.In(0.0), "0.0 is in closed [0.0, 1.0]");
+        -> __end(runner, t);
+    }
+
+    state test_in_upper_bound_closed (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, true, true);
+        Error  err = t.ExpectTrue(d.In(1.0), "1.0 is in closed [0.0, 1.0]");
+        -> __end(runner, t);
+    }
+
+    state test_in_outside_value (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, true, true);
+        Error  err = t.ExpectFalse(d.In(2.0), "2.0 is not in [0.0, 1.0]");
+        -> __end(runner, t);
+    }
+
+    state test_range (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, true, true);
+        Error  err = t.ExpectTrue(d.Range() == 1.0, "Range of [0.0, 1.0] is 1.0");
+        -> __end(runner, t);
+    }
+
+    state test_get_center (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, true, true);
+        Error  err = t.ExpectTrue(d.GetCenter() == 0.5, "Center of [0.0, 1.0] is 0.5");
+        -> __end(runner, t);
+    }
+
+    state test_is_not_empty (TestRunner runner, TestContext t) {
+        Domain d   = Domain.New(0.0, 1.0, true, true);
+        Error  err = t.ExpectFalse(d.IsEmpty(), "[0.0, 1.0] is not empty");
+        -> __end(runner, t);
+    }
+
+    state test_contains_domain (TestRunner runner, TestContext t) {
+        Domain outer = Domain.New(0.0, 2.0, true, true);
+        Domain inner = Domain.New(0.5, 1.5, true, true);
+        Error  err   = t.ExpectTrue(outer.ContainsDomain(inner), "Outer domain contains inner");
+        -> __end(runner, t);
+    }
+
+    state test_not_contains_domain (TestRunner runner, TestContext t) {
+        Domain small = Domain.New(0.0, 1.0, true, true);
+        Domain large = Domain.New(0.0, 2.0, true, true);
+        Error  err   = t.ExpectFalse(small.ContainsDomain(large), "Small domain does not contain larger");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DomainSetOperations -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_intersection_bounds (TestRunner runner, TestContext t) {
+        Domain d1     = Domain.New(0.0, 1.0, true, true);
+        Domain d2     = Domain.New(0.5, 1.5, true, true);
+        Domain inter  = d1.Intersection(d2);
+        Error  err    = t.ExpectTrue(inter.LesserBound() == 0.5, "Intersection lesser bound is 0.5");
+        -> __end(runner, t);
+    }
+
+    state test_intersection_upper (TestRunner runner, TestContext t) {
+        Domain d1    = Domain.New(0.0, 1.0, true, true);
+        Domain d2    = Domain.New(0.5, 1.5, true, true);
+        Domain inter = d1.Intersection(d2);
+        Error  err   = t.ExpectTrue(inter.GreaterBound() == 1.0, "Intersection greater bound is 1.0");
+        -> __end(runner, t);
+    }
+
+    state test_union_bounds (TestRunner runner, TestContext t) {
+        Domain d1    = Domain.New(0.0, 1.0, true, true);
+        Domain d2    = Domain.New(0.5, 1.5, true, true);
+        Domain u     = d1.Union(d2);
+        Error  err   = t.ExpectTrue(u.LesserBound() == 0.0, "Union lesser bound is 0.0");
+        -> __end(runner, t);
+    }
+
+    state test_union_upper (TestRunner runner, TestContext t) {
+        Domain d1  = Domain.New(0.0, 1.0, true, true);
+        Domain d2  = Domain.New(0.5, 1.5, true, true);
+        Domain u   = d1.Union(d2);
+        Error  err = t.ExpectTrue(u.GreaterBound() == 1.5, "Union greater bound is 1.5");
+        -> __end(runner, t);
+    }
+
+    state test_shift (TestRunner runner, TestContext t) {
+        Domain d       = Domain.New(0.0, 1.0, true, true);
+        Domain shifted = d.Shift(1.0);
+        Error  err     = t.ExpectTrue(shifted.LesserBound() == 1.0, "Shifted lesser bound is 1.0");
+        -> __end(runner, t);
+    }
+
+    state test_shift_upper (TestRunner runner, TestContext t) {
+        Domain d       = Domain.New(0.0, 1.0, true, true);
+        Domain shifted = d.Shift(1.0);
+        Error  err     = t.ExpectTrue(shifted.GreaterBound() == 2.0, "Shifted greater bound is 2.0");
+        -> __end(runner, t);
+    }
+
+    state test_scaled (TestRunner runner, TestContext t) {
+        Domain d      = Domain.New(0.0, 1.0, true, true);
+        Domain scaled = d.Scaled(2.0);
+        Error  err    = t.ExpectTrue(scaled.Range() == 2.0, "Scaled domain has range 2.0");
+        -> __end(runner, t);
+    }
+
+    state test_transform (TestRunner runner, TestContext t) {
+        Domain d1  = Domain.New(0.0, 1.0, true, true);
+        Domain d2  = Domain.New(0.0, 2.0, true, true);
+        float  val = d1.Transform(d2, 0.5);
+        Error  err = t.ExpectTrue(val == 0.25, "Transform maps 0.5 in [0,2] to 0.25 in [0,2]");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DomainEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        Domain a   = Domain.New(0.0, 1.0, true, true);
+        Domain b   = Domain.New(0.0, 1.0, true, true);
+        Error  err = t.ExpectTrue(a.Equal(b), "Identical domains are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_bounds (TestRunner runner, TestContext t) {
+        Domain a   = Domain.New(0.0, 1.0, true, true);
+        Domain b   = Domain.New(0.0, 2.0, true, true);
+        Error  err = t.ExpectTrue(a.NotEqual(b), "Domains with different bounds are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_containment (TestRunner runner, TestContext t) {
+        Domain a   = Domain.New(0.0, 1.0, true, true);
+        Domain b   = Domain.New(0.0, 1.0, false, true);
+        Error  err = t.ExpectTrue(a.NotEqual(b), "Domains with different containment are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_for_different (TestRunner runner, TestContext t) {
+        Domain a   = Domain.New(0.0, 1.0, true, true);
+        Domain b   = Domain.New(1.0, 2.0, true, true);
+        Error  err = t.ExpectFalse(a.Equal(b), "Equal returns false for different domains");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DomainJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Domain d    = Domain.New(0.0, 1.0, true, true);
+        string json = d.ToJSON();
+        Error  err  = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        Domain orig     = Domain.New(0.0, 1.0, true, true);
+        string json     = orig.ToJSON();
+        Domain restored = Domain.FromJSON(json);
+        Error  err      = t.ExpectTrue(orig.Equal(restored), "Domain JSON roundtrip preserves equality");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_bounds (TestRunner runner, TestContext t) {
+        Domain orig     = Domain.New(-1.0, 3.5, false, true);
+        string json     = orig.ToJSON();
+        Domain restored = Domain.FromJSON(json);
+        Error  err      = t.ExpectTrue(
+            orig.LesserBound() == restored.LesserBound(),
+            "Roundtrip preserves lesser bound");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_containment (TestRunner runner, TestContext t) {
+        Domain orig     = Domain.New(0.0, 1.0, false, true);
+        string json     = orig.ToJSON();
+        Domain restored = Domain.FromJSON(json);
+        Error  err      = t.ExpectFalse(
+            restored.LesserBoundContained(),
+            "Roundtrip preserves lesser bound containment");
+        -> __end(runner, t);
+    }
+}

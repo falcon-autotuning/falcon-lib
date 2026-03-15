@@ -1,0 +1,111 @@
+import "../../../collections/array/array.fal";
+
+ffimport "axes-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+// ---------------------------------------------------------------------------
+// Axes<T> — a generic, dynamically-typed ordered list.
+//
+// Type parameter T is the element type (int, float, bool, string, or any
+// struct type).
+//
+// Usage:
+//   import "libs/collections/array/array.fal";
+//
+//   Axes<int> axes = Axes.New();
+//   axes.PushBack(10);
+//   axes.PushBack(20);
+//   int first = axes.GetIndex(0);
+//   int sz    = axes.Size();
+// ---------------------------------------------------------------------------
+struct Axes <T> {
+    Array<T> arr_;
+    // ── Construction ─────────────────────────────────────────────────────────
+
+    // New() -> empty Axes<T>
+    routine New () -> (Axes<T> axes) {
+        arr_ = Array.New();
+    }
+
+    // NewFrom(T a, T b, T c) — convenience 1–8 element constructors are in
+    // the wrapper; use PushBack for arbitrary-length construction.
+
+    // ── Capacity ─────────────────────────────────────────────────────────────
+
+    // Returns the number of elements currently in the array.
+    routine Size () -> (int size) {
+        size = arr_.Size();
+    }
+
+    // Returns true if the array contains no elements.
+    routine IsEmpty () -> (bool empty) {
+        empty = arr_.IsEmpty();
+    }
+
+    // ── Element access ────────────────────────────────────────────────────────
+
+    // GetIndex(int index) -> (T value)
+    // Returns the element at position `index` (0-based).
+    // Throws a runtime error on out-of-bounds access.
+    routine GetIndex (int index) -> (T value) {
+        value = arr_.GetIndex(index);
+    }
+
+    // SetIndex(int index, T value) -> ()
+    // Replaces the element at position `index` with `value`.
+    // Throws a runtime error on out-of-bounds access.
+    routine SetIndex (int index, T value) -> () {
+        arr_.SetIndex(index, value);
+    }
+
+    // ── Mutation ──────────────────────────────────────────────────────────────
+
+    // PushBack(T value) -> ()
+    // Appends `value` to the end of the array.
+    routine PushBack (T value) -> () {
+        arr_.PushBack(value);
+    }
+
+    // PopBack() -> (T value)
+    // Removes and returns the last element.
+    // Throws a runtime error if the array is empty.
+    routine PopBack () -> (T value) {
+        value = arr_.PopBack();
+    }
+
+    // Insert(int index, T value) -> ()
+    // Inserts `value` before the element at `index`.
+    // index == Size() is valid (appends to the end).
+    routine Insert (int index, T value) -> () {
+        arr_.Insert(index, value);
+    }
+
+    // Erase(int index) -> ()
+    // Removes the element at `index`.
+    routine Erase (int index) -> () {
+        arr_.Erase(index);
+    }
+
+    // Clear() -> ()
+    // Removes all elements from the array.
+    routine Clear () -> () {
+        arr_.Clear();
+    }
+
+    // ── Search ────────────────────────────────────────────────────────────────
+
+    // Contains(T value) -> (bool found)
+    // Returns true if any element equals `value`.
+    routine Contains (T value) -> (bool found) {
+        found = arr_.Contains(value);
+    }
+
+    // IndexOf(T value) -> (int index)
+    // Returns the 0-based index of the first occurrence of `value`,
+    // or -1 if not found.
+    routine IndexOf (T value) -> (int index) {
+        index = arr_.IndexOf(value);
+    }
+    routine Equal (Axes<T> other) -> (bool equal)
+    routine NotEqual (Axes<T> other) -> (bool notequal)
+    routine FromJSON (string json) -> (Axes<T> axes)
+    routine ToJSON -> (string json)
+}

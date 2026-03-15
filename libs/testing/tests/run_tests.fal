@@ -1,0 +1,112 @@
+// Self-tests for the falcon/testing library.
+// Run with:  falcon-test run_tests.fal
+import "../testing.fal";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 1: Core assertion primitives
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner CoreAssertions -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    // No setup or teardown needed for pure assertion tests.
+
+    state test_expect_true (TestRunner runner, TestContext t) {
+        Error err = t.ExpectTrue(true, "true should pass");
+        -> __end(runner, t);
+    }
+
+    state test_expect_false (TestRunner runner, TestContext t) {
+        Error err = t.ExpectFalse(false, "false should pass ExpectFalse");
+        -> __end(runner, t);
+    }
+
+    state test_int_eq (TestRunner runner, TestContext t) {
+        Error err = t.ExpectIntEq(42, 42, "42 == 42");
+        -> __end(runner, t);
+    }
+
+    state test_int_ne (TestRunner runner, TestContext t) {
+        Error err = t.ExpectIntNe(1, 2, "1 != 2");
+        -> __end(runner, t);
+    }
+
+    state test_int_lt (TestRunner runner, TestContext t) {
+        Error err = t.ExpectIntLt(1, 2, "1 < 2");
+        -> __end(runner, t);
+    }
+
+    state test_int_gt (TestRunner runner, TestContext t) {
+        Error err = t.ExpectIntGt(5, 3, "5 > 3");
+        -> __end(runner, t);
+    }
+
+    state test_float_eq (TestRunner runner, TestContext t) {
+        Error err = t.ExpectFloatEq(3.14, 3.14, 0.001, "pi == pi");
+        -> __end(runner, t);
+    }
+
+    state test_str_eq (TestRunner runner, TestContext t) {
+        Error err = t.ExpectStrEq("falcon", "falcon", "strings equal");
+        -> __end(runner, t);
+    }
+
+    state test_str_ne (TestRunner runner, TestContext t) {
+        Error err = t.ExpectStrNe("falcon", "hawk", "strings differ");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 2: Fixture / environment reset
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner FixtureTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    int env_value = 0;       // shared env variable — reset in setup
+    start -> __init;
+
+    // setup: runs before EVERY test — reset shared state here.
+    // Must end with -> __begin(runner);
+    state setup (TestRunner runner) {
+        env_value = 42;
+        -> __begin(runner);
+    }
+
+    // teardown: runs after EVERY test — cleanup here.
+    // Must end with -> __end(runner, t);
+    state teardown (TestRunner runner, TestContext t) {
+        Error err = t.Log("teardown");
+        -> __end(runner, t);
+    }
+
+    // Verifies setup ran and env_value is 42.
+    state test_env_set (TestRunner runner, TestContext t) {
+        Error err = t.ExpectIntEq(env_value, 42, "env_value reset to 42 by setup");
+        -> teardown(runner, t);
+    }
+
+    // Dirties env_value; the next test's setup must reset it.
+    state test_env_dirty_then_reset (TestRunner runner, TestContext t) {
+        env_value = 999;
+        Error err = t.ExpectIntEq(env_value, 999, "env dirtied to 999");
+        -> teardown(runner, t);
+    }
+
+    // This should still see 42 because setup ran again before it.
+    state test_env_still_clean (TestRunner runner, TestContext t) {
+        Error err = t.ExpectIntEq(env_value, 42, "env reset again by setup");
+        -> teardown(runner, t);
+    }
+
+    // Multi-step: thread t through intermediate states.
+    state test_multistep (TestRunner runner, TestContext t) {
+        Error err = t.Log("step 1");
+        err = t.ExpectIntEq(1, 1, "step 1: 1==1");
+        -> test_multistep_b(runner, t);
+    }
+    state test_multistep_b (TestRunner runner, TestContext t) {
+        Error err = t.Log("step 2");
+        err = t.ExpectStrEq("ok", "ok", "step 2: ok==ok");
+        -> teardown(runner, t);
+    }
+}

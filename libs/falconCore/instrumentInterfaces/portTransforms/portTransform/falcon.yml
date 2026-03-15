@@ -1,0 +1,14 @@
+name: portTransform
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: instrumentPort
+    version: "1.0.0"
+    local_path: "../../../names/instrumentPort/"
+  - name: analyticFunction
+    version: "1.0.0"
+    local_path: "../../../../math/analyticFunction/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"

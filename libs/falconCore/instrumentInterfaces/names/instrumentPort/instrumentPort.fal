@@ -1,0 +1,24 @@
+import (
+"../../../physics/deviceStructures/connection/connection.fal"
+"../../../physics/units/symbolUnit/symbolUnit.fal"
+"../instrument/instrument.fal"
+)
+ffimport "instrument-port-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct InstrumentPort {
+    routine NewKnob (string default_name, connection::Connection conn = nil, instrument::Instrument type, symbolUnit::SymbolUnit units, string description) -> (InstrumentPort port)
+    routine NewMeter (string default_name, connection::Connection conn = nil, instrument::Instrument type, symbolUnit::SymbolUnit units, string description) -> (InstrumentPort port)
+    routine NewTimer -> ()
+    routine NewExecutionClock -> ()
+    routine DefaultName -> (string default_name)
+    routine PsuedoName -> (connection::Connection conn)
+    routine InstrumentType -> (instrument::Instrument type)
+    routine Units -> (symbolUnit::SymbolUnit units)
+    routine Description -> (string description)
+    routine InstrumentFacingName -> (string facing_name)
+    routine IsKnob -> (bool is_knob)
+    routine IsMeter -> (bool is_meter)
+    routine Equal (InstrumentPort other) -> (bool equal)
+    routine NotEqual (InstrumentPort other) -> (bool notequal)
+    routine FromJSON (string json) -> (InstrumentPort port)
+    routine ToJSON () -> (string json)
+}

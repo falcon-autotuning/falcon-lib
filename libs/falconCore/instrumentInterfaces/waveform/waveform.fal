@@ -1,0 +1,31 @@
+import (
+"../../collections/map/map.fal"
+"../instrumentInterfaces/portTransforms/portTransforms/portTransforms.fal"
+"../math/domains/coupledLabelledDomain/coupledLabelledDomain.fal"
+)
+ffimport "waveform-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct Waveform  { 
+    routine New (discreteSpace::DiscreteSpace space, array::Array<portTransform::PortTransform> transforms) -> (Waveform waveform)
+    routine NewCartesianWaveform (axes::Axes<int> divisions, axes::Axes<coupledLabelledDomain::CoupledLabelledDomain> axes, axes::Axes<map::Map<string, bool>> increasing, array::Array<portTransform::PortTransform> transforms, domain::Domain domain) -> (Waveform waveform)
+    routine NewCartesianIdentityWaveform (axes::Axes<int> divisions, axes::Axes<coupledLabelledDomain::CoupledLabelledDomain> axes, axes::Axes<map::Map<string, bool>> increasing, domain::Domain domain) -> (Waveform waveform)
+    routine NewCartesianWaveform2D (axes::Axes<int> divisions, axes::Axes<coupledLabelledDomain::CoupledLabelledDomain> axes, axes::Axes<map::Map<string, bool>> increasing, array::Array<portTransform::PortTransform> transforms, domain::Domain domain) -> (Waveform waveform)
+    routine NewCartesianIdentityWaveform2D (axes::Axes<int> divisions, axes::Axes<coupledLabelledDomain::CoupledLabelledDomain> axes, axes::Axes<map::Map<string, bool>> increasing, domain::Domain domain) -> (Waveform waveform)
+    routine NewCartesianWaveform1D (int division, axes::Axes<coupledLabelledDomain::CoupledLabelledDomain> axes, axes::Axes<map::Map<string, bool>> increasing, array::Array<portTransform::PortTransform> transforms, domain::Domain domain) -> (Waveform waveform)
+    routine NewCartesianIdentityWaveform1D (int division, axes::Axes<coupledLabelledDomain::CoupledLabelledDomain> axes, axes::Axes<map::Map<string, bool>> increasing, domain::Domain domain) -> (Waveform waveform)
+    routine Space -> (discreteSpace::DiscreteSpace space)
+    routine Equal (Waveform other) -> (bool equal)
+    routine NotEqual (Waveform other) -> (bool notequal)
+    routine FromJSON (string json) -> (Waveform transforms)
+    routine ToJSON -> (string json)
+    routine Size () -> (int size)
+    routine IsEmpty () -> (bool empty)
+    routine GetIndex (int index) -> (portTransform::PortTransform value)
+    routine SetIndex (int index, portTransform::PortTransform value) -> ()
+    routine PushBack (portTransform::PortTransform value) -> ()
+    routine PopBack () -> (portTransform::PortTransform value)
+    routine Insert (int index, portTransform::PortTransform value) -> ()
+    routine Erase (int index) -> ()
+    routine Clear () -> ()
+    routine Contains (portTransform::PortTransform value) -> (bool found)
+    routine IndexOf (portTransform::PortTransform value) -> (int index)
+}

@@ -1,0 +1,27 @@
+import (
+"../messages/measurementRequest/measurementRequest.fal"
+"../messages/measurementResponse/measurementResponse.fal"
+"../voltageStates/deviceVoltageStates/deviceVoltageStates.fal"
+"../../../collections/map/map.fal"
+"../../math/axes/axes.fal"
+"../../math/arrays/controlArray/controlArray.fal"
+"../../math/arrays/labelledArrays/labelledArrays.fal"
+"../../math/domains/labelledDomain/labelledDomain.fal"
+)
+ffimport "hdf5-data-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct HDF5Data { 
+    routine New (axes::Axes<int> shape, axes::Axes<controlArray::ControlArray> unitDomain, axes::Axes<coupledLabelledDomain::CoupledLabelledDomain> domainLabels, labelledArrays::LabelledArrays<labelledMeasuredArray::LabelledMeasuredArray> ranges, map::Map<string, string> metadata, string measurementTitle, int uniqueID, int timestamp) -> (HDF5Data data)
+    routine FromCommunications (measurementRequest::MeasurementRequest request, measurementResponse::MeasurementResponse response, deviceVoltageStates::DeviceVoltageStates deviceStates, int uuid, string measurementTitle, int uniqueID, int timestamp) -> (HDF5Data data)
+    routine Shape -> (axes::Axes<int> shape)
+    routine UnitDomain -> (axes::Axes<controlArray::ControlArray domain)
+    routine DomainLabels -> (axes::Axes<coupledLabelledDomain::CoupledLabelledDomain labels)
+    routine Ranges -> (labelledArrays::LabelledArrays<labelledMeasuredArray::LabelledMeasuredArray> ranges)
+    routine Metadata -> (map::Map<string, string> metadata)
+    routine MeasurementTitle -> (string title)
+    routine UniqueID -> (int id)
+    routine Timestamp -> (int time)
+    routine Equal (HDF5Data other) -> (bool equal)
+    routine NotEqual (HDF5Data other) -> (bool notequal)
+    routine FromJSON (string json) -> (HDF5Data data)
+    routine ToJSON -> (string json)
+}

@@ -1,0 +1,10 @@
+ffimport "gname-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct Gname {
+    routine New (string name) -> (Gname gname)
+    routine New (int name) -> (Gname gname)
+    routine gname -> (string out)
+    routine Equal (Gname other) -> (bool equal)
+    routine NotEqual (Gname other) -> (bool notequal)
+    routine FromJSON (string json) -> (Gname gname)
+    routine ToJSON () -> (string json)
+}

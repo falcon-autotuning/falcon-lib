@@ -1,0 +1,15 @@
+import (
+"../../../instrumentInterfaces/names/instrument/instrument.fal"
+"../../../instrumentInterfaces/names/instrumentPort/instrumentPort.fal"
+"../../../physics/deviceStructures/connection/connection.fal"
+)
+ffimport "measurement-context-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct MeasurementContext {
+    routine New (connection::Connection conn, instrument::Instrument inst) -> (MeasurementContext context)
+    routine Connection -> (connection::Connection conn) 
+    routine Instrument -> (instrument::Instrument inst)
+    routine Equal (MeasurementContext other) -> (bool equal)
+    routine NotEqual (MeasurementContext other) -> (bool notequal)
+    routine FromJSON (string json) -> (MeasurementContext context)
+    routine ToJSON () -> (string json)
+}

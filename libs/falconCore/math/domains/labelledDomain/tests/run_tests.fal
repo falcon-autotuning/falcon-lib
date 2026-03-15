@@ -1,0 +1,133 @@
+// Tests for falconCore/math/domains/labelledDomain
+import "../../../../../testing/testing.fal";
+import "../labelledDomain.fal";
+import "../../../../physics/deviceStructures/connection/connection.fal";
+import "../../../../physics/units/symbolUnit/symbolUnit.fal";
+import "../../../../instrumentInterfaces/names/instrument/instrument.fal";
+import "../../../../instrumentInterfaces/names/instrumentPort/instrumentPort.fal";
+
+autotuner LabelledDomainConstruction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_lesser_bound (TestRunner runner, TestContext t) {
+        Connection p1     = Connection.NewPlungerGate("P1");
+        SymbolUnit volt   = SymbolUnit.Volt();
+        string dc         = Instrument.DCVoltageSource();
+        LabelledDomain ld = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, true, volt, "plunger gate");
+        Error err = t.ExpectFloatEq(-0.5, ld.LesserBound(), 1e-9, "LesserBound is -0.5");
+        -> __end(runner, t);
+    }
+
+    state test_greater_bound (TestRunner runner, TestContext t) {
+        Connection p1     = Connection.NewPlungerGate("P1");
+        SymbolUnit volt   = SymbolUnit.Volt();
+        string dc         = Instrument.DCVoltageSource();
+        LabelledDomain ld = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, true, volt, "plunger gate");
+        Error err = t.ExpectFloatEq(0.5, ld.GreaterBound(), 1e-9, "GreaterBound is 0.5");
+        -> __end(runner, t);
+    }
+
+    state test_lesser_bound_contained (TestRunner runner, TestContext t) {
+        Connection p1     = Connection.NewPlungerGate("P1");
+        SymbolUnit volt   = SymbolUnit.Volt();
+        string dc         = Instrument.DCVoltageSource();
+        LabelledDomain ld = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, false, volt, "plunger gate");
+        Error err = t.ExpectTrue(ld.LesserBoundContained(), "LesserBoundContained is true");
+        -> __end(runner, t);
+    }
+
+    state test_greater_bound_not_contained (TestRunner runner, TestContext t) {
+        Connection p1     = Connection.NewPlungerGate("P1");
+        SymbolUnit volt   = SymbolUnit.Volt();
+        string dc         = Instrument.DCVoltageSource();
+        LabelledDomain ld = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, false, volt, "plunger gate");
+        Error err = t.ExpectFalse(ld.GreaterBoundContained(), "GreaterBoundContained is false");
+        -> __end(runner, t);
+    }
+
+    state test_in_value (TestRunner runner, TestContext t) {
+        Connection p1     = Connection.NewPlungerGate("P1");
+        SymbolUnit volt   = SymbolUnit.Volt();
+        string dc         = Instrument.DCVoltageSource();
+        LabelledDomain ld = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, true, volt, "plunger gate");
+        Error err = t.ExpectTrue(ld.In(0.0), "0.0 is in [-0.5, 0.5]");
+        -> __end(runner, t);
+    }
+}
+
+autotuner LabelledDomainPort -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_port_default_name (TestRunner runner, TestContext t) {
+        Connection p1     = Connection.NewPlungerGate("P1");
+        SymbolUnit volt   = SymbolUnit.Volt();
+        string dc         = Instrument.DCVoltageSource();
+        LabelledDomain ld = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, true, volt, "plunger gate");
+        InstrumentPort port = ld.Port();
+        Error err = t.ExpectStrEq("P1", port.DefaultName(), "Port default name is P1");
+        -> __end(runner, t);
+    }
+
+    state test_matching_port_true (TestRunner runner, TestContext t) {
+        Connection p1       = Connection.NewPlungerGate("P1");
+        SymbolUnit volt     = SymbolUnit.Volt();
+        string dc           = Instrument.DCVoltageSource();
+        LabelledDomain ld   = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, true, volt, "plunger gate");
+        InstrumentPort port = ld.Port();
+        Error err = t.ExpectTrue(ld.MatchingPort(port), "MatchingPort returns true for own port");
+        -> __end(runner, t);
+    }
+}
+
+autotuner LabelledDomainEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        Connection p1      = Connection.NewPlungerGate("P1");
+        SymbolUnit volt    = SymbolUnit.Volt();
+        string dc          = Instrument.DCVoltageSource();
+        LabelledDomain a   = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, true, volt, "plunger gate");
+        LabelledDomain b   = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, true, volt, "plunger gate");
+        Error err = t.ExpectTrue(a.Equal(b), "Same LabelledDomains are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_bounds (TestRunner runner, TestContext t) {
+        Connection p1      = Connection.NewPlungerGate("P1");
+        SymbolUnit volt    = SymbolUnit.Volt();
+        string dc          = Instrument.DCVoltageSource();
+        LabelledDomain a   = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, true, volt, "plunger gate");
+        LabelledDomain b   = LabelledDomain.NewFromKnob("P1", -1.0, 1.0, p1, dc, true, true, volt, "plunger gate");
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different bounds are not equal");
+        -> __end(runner, t);
+    }
+}
+
+autotuner LabelledDomainJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Connection p1     = Connection.NewPlungerGate("P1");
+        SymbolUnit volt   = SymbolUnit.Volt();
+        string dc         = Instrument.DCVoltageSource();
+        LabelledDomain ld = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, true, volt, "plunger gate");
+        string json = ld.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        Connection p1        = Connection.NewPlungerGate("P1");
+        SymbolUnit volt      = SymbolUnit.Volt();
+        string dc            = Instrument.DCVoltageSource();
+        LabelledDomain orig  = LabelledDomain.NewFromKnob("P1", -0.5, 0.5, p1, dc, true, true, volt, "plunger gate");
+        string json          = orig.ToJSON();
+        LabelledDomain res   = LabelledDomain.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(res), "ToJSON/FromJSON round-trips");
+        -> __end(runner, t);
+    }
+}

@@ -1,0 +1,9 @@
+ffimport "standard-request-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct StandardRequest { 
+    routine New (string message) -> (StandardRequest request)
+    routine Equal (StandardRequest other) -> (bool equal)
+    routine NotEqual (StandardRequest other) -> (bool notequal)
+    routine FromJSON (string json) -> (StandardRequest request)
+    routine ToJSON -> (string json)
+    routine Message -> (string message)
+}

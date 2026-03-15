@@ -1,0 +1,20 @@
+{
+  "grammars": [
+    {
+      "name": "falcon",
+      "scope": "source.falcon",
+      "file-types": [
+        "falcon"
+      ],
+      "path": ".",
+      "highlights": "queries/highlights.scm"
+    }
+  ],
+  "metadata": {
+    "license": "MPL",
+    "maintainers": [
+      "Tyler Kovach"
+    ],
+    "version": "1.0.0"
+  }
+}

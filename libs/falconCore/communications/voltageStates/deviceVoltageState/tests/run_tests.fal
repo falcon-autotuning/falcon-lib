@@ -1,0 +1,251 @@
+// Tests for falcon_core/communications/voltageStates/deviceVoltageState
+// Run with: falcon-test run_tests.fal
+import "../../../../../testing/testing.fal";
+import "../deviceVoltageState.fal";
+import "../../../../physics/deviceStructures/connection/connection.fal";
+import "../../../../physics/units/symbolUnit/symbolUnit.fal";
+
+autotuner DeviceVoltageStateConstruction -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_voltage (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 0.5, volt);
+        Error err = t.ExpectFloatEq(0.5, dvs.Voltage(), 1.0e-9, "Voltage is 0.5");
+        -> __end(runner, t);
+    }
+
+    state test_connection_name (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 1.0, volt);
+        Connection got = dvs.Connection();
+        Error err = t.ExpectStrEq("P1", got.Name(), "Connection name is P1");
+        -> __end(runner, t);
+    }
+
+    state test_unit_symbol (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 1.0, volt);
+        SymbolUnit got = dvs.Unit();
+        Error err = t.ExpectStrEq("V", got.Symbol(), "Unit symbol is V");
+        -> __end(runner, t);
+    }
+
+    state test_zero_voltage (TestRunner runner, TestContext t) {
+        Connection b1          = Connection.NewBarrierGate("B1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(b1, 0.0, volt);
+        Error err = t.ExpectFloatEq(0.0, dvs.Voltage(), 1e-9, "Zero voltage");
+        -> __end(runner, t);
+    }
+
+    state test_negative_voltage (TestRunner runner, TestContext t) {
+        Connection p2          = Connection.NewPlungerGate("P2");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p2, -1.5, volt);
+        Error err = t.ExpectFloatEq(-1.5, dvs.Voltage(), 1e-9, "Negative voltage");
+        -> __end(runner, t);
+    }
+
+    state test_barrier_gate_connection (TestRunner runner, TestContext t) {
+        Connection b1          = Connection.NewBarrierGate("B1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(b1, 2.0, volt);
+        Connection got = dvs.Connection();
+        Error err = t.ExpectStrEq("B1", got.Name(), "BarrierGate connection name");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DeviceVoltageStateEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState a   = DeviceVoltageState.New(p1, 1.0, volt);
+        DeviceVoltageState b   = DeviceVoltageState.New(p1, 1.0, volt);
+        Error err = t.ExpectTrue(a.Equal(b), "Same DVS are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_diff_voltage (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState a   = DeviceVoltageState.New(p1, 1.0, volt);
+        DeviceVoltageState b   = DeviceVoltageState.New(p1, 2.0, volt);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different voltages are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_diff_connection (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        Connection p2          = Connection.NewPlungerGate("P2");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState a   = DeviceVoltageState.New(p1, 1.0, volt);
+        DeviceVoltageState b   = DeviceVoltageState.New(p2, 1.0, volt);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different connections are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_for_different (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState a   = DeviceVoltageState.New(p1, 0.5, volt);
+        DeviceVoltageState b   = DeviceVoltageState.New(p1, 1.0, volt);
+        Error err = t.ExpectFalse(a.Equal(b), "Equal is false for different voltages");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DeviceVoltageStateArithmetic -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_times_float (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 2.0, volt);
+        DeviceVoltageState res = dvs.Times(3.0);
+        Error err = t.ExpectFloatEq(6.0, res.Voltage(), 1e-9, "2.0 * 3.0 = 6.0");
+        -> __end(runner, t);
+    }
+
+    state test_times_int (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 3.0, volt);
+        DeviceVoltageState res = dvs.Times(4);
+        Error err = t.ExpectFloatEq(12.0, res.Voltage(), 1e-9, "3.0 * 4 = 12.0");
+        -> __end(runner, t);
+    }
+
+    state test_divides_float (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 6.0, volt);
+        DeviceVoltageState res = dvs.Divides(2.0);
+        Error err = t.ExpectFloatEq(3.0, res.Voltage(), 1e-9, "6.0 / 2.0 = 3.0");
+        -> __end(runner, t);
+    }
+
+    state test_divides_int (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 10.0, volt);
+        DeviceVoltageState res = dvs.Divides(5);
+        Error err = t.ExpectFloatEq(2.0, res.Voltage(), 1e-9, "10.0 / 5 = 2.0");
+        -> __end(runner, t);
+    }
+
+    state test_power (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 3.0, volt);
+        DeviceVoltageState res = dvs.Power(2);
+        Error err = t.ExpectFloatEq(9.0, res.Voltage(), 1e-9, "3.0 ^ 2 = 9.0");
+        -> __end(runner, t);
+    }
+
+    state test_add_dvs (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState a   = DeviceVoltageState.New(p1, 1.0, volt);
+        DeviceVoltageState b   = DeviceVoltageState.New(p1, 2.0, volt);
+        DeviceVoltageState res = a.Add(b);
+        Error err = t.ExpectFloatEq(3.0, res.Voltage(), 1e-9, "1.0 + 2.0 = 3.0");
+        -> __end(runner, t);
+    }
+
+    state test_subtract_dvs (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState a   = DeviceVoltageState.New(p1, 5.0, volt);
+        DeviceVoltageState b   = DeviceVoltageState.New(p1, 2.0, volt);
+        DeviceVoltageState res = a.Subtract(b);
+        Error err = t.ExpectFloatEq(3.0, res.Voltage(), 1e-9, "5.0 - 2.0 = 3.0");
+        -> __end(runner, t);
+    }
+
+    state test_negate (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 2.5, volt);
+        DeviceVoltageState res = dvs.Negate();
+        Error err = t.ExpectFloatEq(-2.5, res.Voltage(), 1e-9, "Negate(2.5) = -2.5");
+        -> __end(runner, t);
+    }
+
+    state test_abs_negative (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, -3.0, volt);
+        DeviceVoltageState res = dvs.Abs();
+        Error err = t.ExpectFloatEq(3.0, res.Voltage(), 1e-9, "Abs(-3.0) = 3.0");
+        -> __end(runner, t);
+    }
+
+    state test_abs_positive (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 3.0, volt);
+        DeviceVoltageState res = dvs.Abs();
+        Error err = t.ExpectFloatEq(3.0, res.Voltage(), 1e-9, "Abs(3.0) = 3.0");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DeviceVoltageStateUnitConversion -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_convert_volt_to_millivolt (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        SymbolUnit mv          = SymbolUnit.Miilivolt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 1.0, volt);
+        DeviceVoltageState res = dvs.ConvertToUnit(mv);
+        Error err = t.ExpectFloatEq(1000.0, res.Voltage(), 1e-6, "1.0 V = 1000.0 mV");
+        -> __end(runner, t);
+    }
+
+    state test_converted_unit_symbol (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        SymbolUnit mv          = SymbolUnit.Miilivolt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 0.5, volt);
+        DeviceVoltageState res = dvs.ConvertToUnit(mv);
+        SymbolUnit got_unit    = res.Unit();
+        Error err = t.ExpectStrEq("mV", got_unit.Symbol(), "Converted unit symbol is mV");
+        -> __end(runner, t);
+    }
+}
+
+autotuner DeviceVoltageStateJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Connection p1          = Connection.NewPlungerGate("P1");
+        SymbolUnit volt        = SymbolUnit.Volt();
+        DeviceVoltageState dvs = DeviceVoltageState.New(p1, 1.0, volt);
+        string json = dvs.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        Connection p1           = Connection.NewPlungerGate("P1");
+        SymbolUnit volt         = SymbolUnit.Volt();
+        DeviceVoltageState orig = DeviceVoltageState.New(p1, 0.75, volt);
+        string json             = orig.ToJSON();
+        DeviceVoltageState res  = DeviceVoltageState.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(res), "FromJSON(ToJSON(dvs)) round-trips");
+        -> __end(runner, t);
+    }
+}

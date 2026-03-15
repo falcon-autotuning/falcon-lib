@@ -1,0 +1,6 @@
+ffimport "log-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lspdlog")
+
+routine Info(string message) -> (Error err)
+routine Debug(string message) -> (Error err)
+routine Warn(string message) -> (Error err)
+routine Err(string message) -> (Error err)

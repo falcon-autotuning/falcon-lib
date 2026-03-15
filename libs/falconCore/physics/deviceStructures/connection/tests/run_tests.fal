@@ -1,0 +1,208 @@
+// Tests for falcon_core/physics/deviceStructures/connection
+// Run with: falcon-test run_tests.fal
+import "../../../../../testing/testing.fal";
+import "../connection.fal";
+
+autotuner ConnectionConstructors -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_plunger_gate_name (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewPlungerGate("P1");
+        Error err = t.ExpectStrEq("P1", c.Name(), "PlungerGate name is P1");
+        -> __end(runner, t);
+    }
+
+    state test_barrier_gate_name (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewBarrierGate("B1");
+        Error err = t.ExpectStrEq("B1", c.Name(), "BarrierGate name is B1");
+        -> __end(runner, t);
+    }
+
+    state test_reservoir_gate_name (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewReservoirGate("R1");
+        Error err = t.ExpectStrEq("R1", c.Name(), "ReservoirGate name is R1");
+        -> __end(runner, t);
+    }
+
+    state test_screening_gate_name (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewScreeningGate("SC1");
+        Error err = t.ExpectStrEq("SC1", c.Name(), "ScreeningGate name is SC1");
+        -> __end(runner, t);
+    }
+
+    state test_ohmic_name (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewOhmic("S1");
+        Error err = t.ExpectStrEq("S1", c.Name(), "Ohmic name is S1");
+        -> __end(runner, t);
+    }
+}
+
+autotuner ConnectionType -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_plunger_type_string (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewPlungerGate("P1");
+        Error err = t.ExpectStrNe("", c.Type(), "PlungerGate type is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_barrier_type_string (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewBarrierGate("B1");
+        Error err = t.ExpectStrNe("", c.Type(), "BarrierGate type is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_ohmic_type_string (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewOhmic("S1");
+        Error err = t.ExpectStrNe("", c.Type(), "Ohmic type is non-empty");
+        -> __end(runner, t);
+    }
+}
+
+autotuner ConnectionPredicates -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_plunger_is_plunger (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewPlungerGate("P1");
+        Error err = t.ExpectTrue(c.IsPlungerGate(), "PlungerGate.IsPlungerGate");
+        -> __end(runner, t);
+    }
+
+    state test_plunger_is_dot_gate (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewPlungerGate("P1");
+        Error err = t.ExpectTrue(c.IsDotGate(), "PlungerGate.IsDotGate");
+        -> __end(runner, t);
+    }
+
+    state test_plunger_is_gate (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewPlungerGate("P1");
+        Error err = t.ExpectTrue(c.IsGate(), "PlungerGate.IsGate");
+        -> __end(runner, t);
+    }
+
+    state test_plunger_not_barrier (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewPlungerGate("P1");
+        Error err = t.ExpectFalse(c.IsBarrierGate(), "PlungerGate.IsBarrierGate is false");
+        -> __end(runner, t);
+    }
+
+    state test_plunger_not_ohmic (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewPlungerGate("P1");
+        Error err = t.ExpectFalse(c.IsOhmic(), "PlungerGate.IsOhmic is false");
+        -> __end(runner, t);
+    }
+
+    state test_barrier_is_barrier (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewBarrierGate("B1");
+        Error err = t.ExpectTrue(c.IsBarrierGate(), "BarrierGate.IsBarrierGate");
+        -> __end(runner, t);
+    }
+
+    state test_barrier_is_dot_gate (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewBarrierGate("B1");
+        Error err = t.ExpectTrue(c.IsDotGate(), "BarrierGate.IsDotGate");
+        -> __end(runner, t);
+    }
+
+    state test_reservoir_is_reservoir (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewReservoirGate("R1");
+        Error err = t.ExpectTrue(c.IsReservoirGate(), "ReservoirGate.IsReservoirGate");
+        -> __end(runner, t);
+    }
+
+    state test_reservoir_not_dot_gate (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewReservoirGate("R1");
+        Error err = t.ExpectFalse(c.IsDotGate(), "ReservoirGate.IsDotGate is false");
+        -> __end(runner, t);
+    }
+
+    state test_screening_is_screening (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewScreeningGate("SC1");
+        Error err = t.ExpectTrue(c.IsScreeningGate(), "ScreeningGate.IsScreeningGate");
+        -> __end(runner, t);
+    }
+
+    state test_ohmic_is_ohmic (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewOhmic("S1");
+        Error err = t.ExpectTrue(c.IsOhmic(), "Ohmic.IsOhmic");
+        -> __end(runner, t);
+    }
+
+    state test_ohmic_not_gate (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewOhmic("S1");
+        Error err = t.ExpectFalse(c.IsGate(), "Ohmic.IsGate is false");
+        -> __end(runner, t);
+    }
+}
+
+autotuner ConnectionEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same_type_and_name (TestRunner runner, TestContext t) {
+        Connection a = Connection.NewPlungerGate("P1");
+        Connection b = Connection.NewPlungerGate("P1");
+        Error err = t.ExpectTrue(a.Equal(b), "Same name+type connections are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_name (TestRunner runner, TestContext t) {
+        Connection a = Connection.NewPlungerGate("P1");
+        Connection b = Connection.NewPlungerGate("P2");
+        Error err = t.ExpectTrue(a.NotEqual(b), "Different names are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_type (TestRunner runner, TestContext t) {
+        Connection a = Connection.NewPlungerGate("G1");
+        Connection b = Connection.NewBarrierGate("G1");
+        Error err = t.ExpectTrue(a.NotEqual(b), "Same name different type are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_false_for_different (TestRunner runner, TestContext t) {
+        Connection a = Connection.NewOhmic("S1");
+        Connection b = Connection.NewOhmic("S2");
+        Error err = t.ExpectFalse(a.Equal(b), "Different ohmic names are not equal");
+        -> __end(runner, t);
+    }
+}
+
+autotuner ConnectionJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Connection c = Connection.NewPlungerGate("P1");
+        string json  = c.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_plunger (TestRunner runner, TestContext t) {
+        Connection orig     = Connection.NewPlungerGate("P1");
+        string json         = orig.ToJSON();
+        Connection restored = Connection.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "PlungerGate round-trip");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_ohmic (TestRunner runner, TestContext t) {
+        Connection orig     = Connection.NewOhmic("S2");
+        string json         = orig.ToJSON();
+        Connection restored = Connection.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "Ohmic round-trip");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_barrier (TestRunner runner, TestContext t) {
+        Connection orig     = Connection.NewBarrierGate("B3");
+        string json         = orig.ToJSON();
+        Connection restored = Connection.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "BarrierGate round-trip");
+        -> __end(runner, t);
+    }
+}

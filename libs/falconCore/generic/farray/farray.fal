@@ -1,0 +1,23 @@
+// import "../../math/quantity/quantity.fal";
+ffimport "farray-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct FArray {
+    routine Equal (FArray other) -> (bool equal)
+    routine NotEqual (FArray other) -> (bool notequal)
+    routine Times (float factor) -> (FArray farray)
+    routine Times (int factor) -> (FArray farray)
+    // TODO: implement routine Times (quantity::Quantity factor) -> (FArray farray)
+    routine Divides (float divisor) -> (FArray farray)
+    routine Divides (int divisor) -> (FArray farray)
+    // TODO: implement routine Divides (quantity::Quantity divisor) -> (FArray farray)
+    routine Power (float exponent) -> (FArray farray)
+    routine Add (FArray other) -> (FArray farray)
+    routine Add (int other) -> (FArray farray)
+    routine Add (float other) -> (FArray farray)
+    routine Subtract (FArray other) -> (FArray farray)
+    routine Subtract (int other) -> (FArray farray)
+    routine Subtract (float other) -> (FArray farray)
+    routine Negate -> (FArray farray)
+    routine Abs -> (FArray farray)
+    routine FromJSON (string json) -> (FArray farray)
+    routine ToJSON () -> (string json)
+}

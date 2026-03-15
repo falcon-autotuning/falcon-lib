@@ -1,0 +1,211 @@
+// Tests for the falcon/strings library.
+import "../../testing/testing.fal";
+import "../strings.fal";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 1: Predicates
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner PredicateTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_contains_true (TestRunner runner, TestContext t) {
+        bool found = Contains("hello world", "world");
+        Error err  = t.ExpectTrue(found, "Contains: 'world' in 'hello world'");
+        -> __end(runner, t);
+    }
+
+    state test_contains_false (TestRunner runner, TestContext t) {
+        bool found = Contains("hello world", "xyz");
+        Error err  = t.ExpectFalse(found, "Contains: 'xyz' not in 'hello world'");
+        -> __end(runner, t);
+    }
+
+    state test_starts_with_true (TestRunner runner, TestContext t) {
+        bool ok   = StartsWith("falcon-lib", "falcon");
+        Error err = t.ExpectTrue(ok, "StartsWith: falcon-lib starts with falcon");
+        -> __end(runner, t);
+    }
+
+    state test_starts_with_false (TestRunner runner, TestContext t) {
+        bool ok   = StartsWith("falcon-lib", "hawk");
+        Error err = t.ExpectFalse(ok, "StartsWith: falcon-lib does not start with hawk");
+        -> __end(runner, t);
+    }
+
+    state test_ends_with_true (TestRunner runner, TestContext t) {
+        bool ok   = EndsWith("run_tests.fal", ".fal");
+        Error err = t.ExpectTrue(ok, "EndsWith: .fal suffix");
+        -> __end(runner, t);
+    }
+
+    state test_ends_with_false (TestRunner runner, TestContext t) {
+        bool ok   = EndsWith("run_tests.fal", ".cpp");
+        Error err = t.ExpectFalse(ok, "EndsWith: not .cpp");
+        -> __end(runner, t);
+    }
+
+    state test_length (TestRunner runner, TestContext t) {
+        int n     = Length("hello");
+        Error err = t.ExpectIntEq(n, 5, "Length of 'hello' is 5");
+        -> __end(runner, t);
+    }
+
+    state test_length_empty (TestRunner runner, TestContext t) {
+        int n     = Length("");
+        Error err = t.ExpectIntEq(n, 0, "Length of empty string is 0");
+        -> __end(runner, t);
+    }
+
+    state test_is_empty_true (TestRunner runner, TestContext t) {
+        bool e    = IsEmpty("");
+        Error err = t.ExpectTrue(e, "IsEmpty: empty string");
+        -> __end(runner, t);
+    }
+
+    state test_is_empty_false (TestRunner runner, TestContext t) {
+        bool e    = IsEmpty("x");
+        Error err = t.ExpectFalse(e, "IsEmpty: non-empty string");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 2: Transformations
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner TransformTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_upper (TestRunner runner, TestContext t) {
+        string r  = ToUpper("falcon");
+        Error err = t.ExpectStrEq(r, "FALCON", "ToUpper: falcon -> FALCON");
+        -> __end(runner, t);
+    }
+
+    state test_to_lower (TestRunner runner, TestContext t) {
+        string r  = ToLower("FALCON");
+        Error err = t.ExpectStrEq(r, "falcon", "ToLower: FALCON -> falcon");
+        -> __end(runner, t);
+    }
+
+    state test_trim_space (TestRunner runner, TestContext t) {
+        string r  = TrimSpace("  hello\n");
+        Error err = t.ExpectStrEq(r, "hello\n", "TrimSpace strips whitespace");
+        -> __end(runner, t);
+    }
+
+    state test_trim_space_empty (TestRunner runner, TestContext t) {
+        string r  = TrimSpace("   ");
+        Error err = t.ExpectStrEq(r, "", "TrimSpace of all-whitespace yields empty");
+        -> __end(runner, t);
+    }
+
+    state test_replace_first (TestRunner runner, TestContext t) {
+        string r  = Replace("aababc", "ab", "X");
+        Error err = t.ExpectStrEq(r, "aXabc", "Replace: first occurrence only");
+        -> __end(runner, t);
+    }
+
+    state test_replace_all (TestRunner runner, TestContext t) {
+        string r  = ReplaceAll("aababc", "ab", "X");
+        Error err = t.ExpectStrEq(r, "aXXc", "ReplaceAll: all occurrences");
+        -> __end(runner, t);
+    }
+
+    state test_concat (TestRunner runner, TestContext t) {
+        string r  = Concat("foo", "bar");
+        Error err = t.ExpectStrEq(r, "foobar", "Concat: foo + bar");
+        -> __end(runner, t);
+    }
+
+    state test_substring (TestRunner runner, TestContext t) {
+        string r  = Substring("hello world", 6, 5);
+        Error err = t.ExpectStrEq(r, "world", "Substring: bytes 6..10");
+        -> __end(runner, t);
+    }
+
+    state test_index_of_found (TestRunner runner, TestContext t) {
+        int i     = IndexOf("hello world", "world");
+        Error err = t.ExpectIntEq(i, 6, "IndexOf: 'world' at offset 6");
+        -> __end(runner, t);
+    }
+
+    state test_index_of_not_found (TestRunner runner, TestContext t) {
+        int i     = IndexOf("hello world", "xyz");
+        Error err = t.ExpectIntEq(i, -1, "IndexOf: 'xyz' returns -1");
+        -> __end(runner, t);
+    }
+
+    state test_strip_ansi (TestRunner runner, TestContext t) {
+        string raw    = "\033[32m[  PASSED  ]\033[0m MyTest";
+        string plain  = StripAnsi(raw);
+        bool   has_no = Contains(plain, "\033");
+        Error err     = t.ExpectFalse(has_no, "StripAnsi removes escape codes");
+        err           = t.ExpectTrue(Contains(plain, "PASSED"), "StripAnsi keeps text");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite 3: Regex
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner RegexTests -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_regex_test_true (TestRunner runner, TestContext t) {
+        bool ok   = RegexTest("\\d+", "abc123");
+        Error err = t.ExpectTrue(ok, "RegexTest: digits found");
+        -> __end(runner, t);
+    }
+
+    state test_regex_test_false (TestRunner runner, TestContext t) {
+        bool ok   = RegexTest("\\d+", "abcdef");
+        Error err = t.ExpectFalse(ok, "RegexTest: no digits");
+        -> __end(runner, t);
+    }
+
+    state test_regex_match_matched (TestRunner runner, TestContext t) {
+        RegexMatch m = RegexMatch.New("(\\w+)@(\\w+)", "user@example");
+        bool ok      = m.Matched();
+        Error err    = t.ExpectTrue(ok, "RegexMatch: email pattern matches");
+        -> __end(runner, t);
+    }
+
+    state test_regex_match_full (TestRunner runner, TestContext t) {
+        RegexMatch m  = RegexMatch.New("(\\w+)@(\\w+)", "user@example");
+        string full   = m.Full();
+        Error err     = t.ExpectStrEq(full, "user@example", "RegexMatch.Full()");
+        -> __end(runner, t);
+    }
+
+    state test_regex_match_groups (TestRunner runner, TestContext t) {
+        RegexMatch m = RegexMatch.New("(\\w+)@(\\w+)", "user@example");
+        string g1    = m.Group(1);
+        string g2    = m.Group(2);
+        Error err    = t.ExpectStrEq(g1, "user",    "RegexMatch.Group(1)");
+        err          = t.ExpectStrEq(g2, "example", "RegexMatch.Group(2)");
+        -> __end(runner, t);
+    }
+
+    state test_regex_match_group_count (TestRunner runner, TestContext t) {
+        RegexMatch m = RegexMatch.New("(\\w+)@(\\w+)", "user@example");
+        int gc       = m.GroupCount();
+        Error err    = t.ExpectIntEq(gc, 2, "RegexMatch.GroupCount() == 2");
+        -> __end(runner, t);
+    }
+
+    state test_regex_no_match (TestRunner runner, TestContext t) {
+        RegexMatch m = RegexMatch.New("\\d{4}", "no digits here");
+        bool ok      = m.Matched();
+        Error err    = t.ExpectFalse(ok, "RegexMatch: no match");
+        -> __end(runner, t);
+    }
+
+    state test_regex_replace (TestRunner runner, TestContext t) {
+        string r  = RegexReplace("hello world", "o", "0");
+        Error err = t.ExpectStrEq(r, "hell0 w0rld", "RegexReplace: o -> 0 globally");
+        -> __end(runner, t);
+    }
+}

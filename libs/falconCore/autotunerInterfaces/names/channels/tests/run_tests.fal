@@ -1,0 +1,177 @@
+// Tests for falcon_core/autotunerInterfaces/names/channels
+// Run with: falcon-test run_tests.fal
+import "../../../../../testing/testing.fal";
+import "../channel/channel.fal";
+import "../channels/channels.fal";
+
+autotuner ChannelsConstructor -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_new_empty (TestRunner runner, TestContext t) {
+        Channels chs = Channels.New([]);
+        Error err = t.ExpectTrue(chs.IsEmpty(), "New([]) creates empty Channels");
+        -> __end(runner, t);
+    }
+
+    state test_new_with_elements (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channel c2 = Channel.New("ch2");
+        Channels chs = Channels.New([c1, c2]);
+        Error err = t.ExpectIntEq(2, chs.Size(), "New with two elements has size 2");
+        -> __end(runner, t);
+    }
+}
+
+autotuner ChannelsListOps -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_push_back (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channels chs = Channels.New([]);
+        chs.PushBack(c1);
+        Error err = t.ExpectIntEq(1, chs.Size(), "PushBack increases size");
+        -> __end(runner, t);
+    }
+
+    state test_get_index (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channel c2 = Channel.New("ch2");
+        Channels chs = Channels.New([c1, c2]);
+        Channel got = chs.GetIndex(0);
+        Error err = t.ExpectTrue(c1.Equal(got), "GetIndex(0) returns first element");
+        -> __end(runner, t);
+    }
+
+    state test_set_index (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channel c2 = Channel.New("ch2");
+        Channels chs = Channels.New([c1]);
+        chs.SetIndex(0, c2);
+        Channel got = chs.GetIndex(0);
+        Error err = t.ExpectTrue(c2.Equal(got), "SetIndex replaces element");
+        -> __end(runner, t);
+    }
+
+    state test_pop_back_returns_last (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channel c2 = Channel.New("ch2");
+        Channels chs = Channels.New([c1, c2]);
+        Channel popped = chs.PopBack();
+        Error err = t.ExpectTrue(c2.Equal(popped), "PopBack returns last element");
+        -> __end(runner, t);
+    }
+
+    state test_pop_back_reduces_size (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channel c2 = Channel.New("ch2");
+        Channels chs = Channels.New([c1, c2]);
+        Channel popped = chs.PopBack();
+        Error err = t.ExpectIntEq(1, chs.Size(), "PopBack reduces size by one");
+        -> __end(runner, t);
+    }
+
+    state test_insert (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channel c2 = Channel.New("ch2");
+        Channel c3 = Channel.New("ch3");
+        Channels chs = Channels.New([c1, c3]);
+        chs.Insert(1, c2);
+        Channel got = chs.GetIndex(1);
+        Error err = t.ExpectTrue(c2.Equal(got), "Insert places element at correct position");
+        -> __end(runner, t);
+    }
+
+    state test_erase (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channel c2 = Channel.New("ch2");
+        Channels chs = Channels.New([c1, c2]);
+        chs.Erase(0);
+        Error err = t.ExpectIntEq(1, chs.Size(), "Erase reduces size by one");
+        -> __end(runner, t);
+    }
+
+    state test_clear (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channels chs = Channels.New([c1]);
+        chs.Clear();
+        Error err = t.ExpectTrue(chs.IsEmpty(), "Clear empties the collection");
+        -> __end(runner, t);
+    }
+
+    state test_contains_present (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channels chs = Channels.New([c1]);
+        Error err = t.ExpectTrue(chs.Contains(c1), "Contains returns true for present element");
+        -> __end(runner, t);
+    }
+
+    state test_contains_absent (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channel c2 = Channel.New("ch2");
+        Channels chs = Channels.New([c1]);
+        Error err = t.ExpectFalse(chs.Contains(c2), "Contains returns false for absent element");
+        -> __end(runner, t);
+    }
+
+    state test_index_of (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channel c2 = Channel.New("ch2");
+        Channels chs = Channels.New([c1, c2]);
+        Error err = t.ExpectIntEq(1, chs.IndexOf(c2), "IndexOf returns correct position");
+        -> __end(runner, t);
+    }
+}
+
+autotuner ChannelsEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same_contents (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channels a = Channels.New([c1]);
+        Channels b = Channels.New([c1]);
+        Error err = t.ExpectTrue(a.Equal(b), "Channels with same contents are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_contents (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channel c2 = Channel.New("ch2");
+        Channels a = Channels.New([c1]);
+        Channels b = Channels.New([c2]);
+        Error err = t.ExpectTrue(a.NotEqual(b), "Channels with different contents are not equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_empty (TestRunner runner, TestContext t) {
+        Channels a = Channels.New([]);
+        Channels b = Channels.New([]);
+        Error err = t.ExpectTrue(a.Equal(b), "Two empty Channels are equal");
+        -> __end(runner, t);
+    }
+}
+
+autotuner ChannelsJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channels chs = Channels.New([c1]);
+        string json  = chs.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip (TestRunner runner, TestContext t) {
+        Channel c1 = Channel.New("ch1");
+        Channel c2 = Channel.New("ch2");
+        Channels orig     = Channels.New([c1, c2]);
+        string json       = orig.ToJSON();
+        Channels restored = Channels.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(restored), "Channels JSON roundtrip preserves equality");
+        -> __end(runner, t);
+    }
+}

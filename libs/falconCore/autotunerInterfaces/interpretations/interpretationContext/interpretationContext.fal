@@ -1,0 +1,16 @@
+ffimport "interpretation-context-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct InterpretationContext {
+    routine New (axes::Axes<measurementContext::MeasurementContext> independantVariables, array::Array<measurementContext::MeasurementContext> dependantVariables, symbolUnit::SymbolUnit unit) -> (interpretationContext::InterpretationContext context)
+    routine IndependentVariables -> (axes::Axes<measurementContext::MeasurementContext> contexts)
+    routine DependentVariables -> (array::Array<measurementContext::MeasurementContext> contexts)
+    routine Unit -> (symbolUnit::SymbolUnit unit)
+    routine Dimension -> (int size)
+    routine AddDependentVariable (measurementContext::MeasurementContext context) -> ()
+    routine ReplaceDependantVariable (int index, measurementContext::MeasurementContext context) -> ()
+    routine GetIndependentVariable (int index) -> (measurementContext::MeasurementContext context)
+    routine WithUnit (symbolUnit::SymbolUnit unit) -> (interpretationContext::InterpretationContext context)
+    routine Equal (InterpretationContext other) -> (bool equal)
+    routine NotEqual (InterpretationContext other) -> (bool notequal)
+    routine FromJSON (string json) -> (InterpretationContext context)
+    routine ToJSON () -> (string json)
+}

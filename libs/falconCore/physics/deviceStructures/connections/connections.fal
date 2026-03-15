@@ -1,0 +1,30 @@
+import (
+"../../../../collections/array/array.fal"
+"../connection/connection.fal"
+)
+ffimport "connections-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct Connections {
+    routine New (Array<Connection> conns) -> (Connections c)
+    routine IsGates () -> (bool IsGates)
+    routine IsOhmics () -> (bool IsOhmics)
+    routine IsDotGates () -> (bool IsDotGates)
+    routine IsPlungerGates () -> (bool IsPlungerGates)
+    routine IsBarrierGates () -> (bool IsBarrierGates)
+    routine IsReservoirGates () -> (bool IsReservoirGates)
+    routine IsScreeningGates () -> (bool IsScreeningGates)
+    routine Intersection (Connections other) -> (Connections out)
+    routine Equal (Connections other) -> (bool equal)
+    routine NotEqual (Connections other) -> (bool notequal)
+    routine FromJSON (string json) -> (Connections conn)
+    routine ToJSON () -> (string json)
+    routine Size () -> (int size)
+    routine IsEmpty () -> (bool empty)
+    routine GetIndex (int index) -> (Connection value)
+    routine PushBack (Connection value) -> ()
+    routine Insert (int index, Connection value) -> ()
+    routine Contains (Connection value) -> (bool found)
+    routine Index (Connection value) -> (int index)
+    routine Items () -> (Array<Connection> items)
+    routine Clear () -> ()
+    routine Erase (int index) -> ()
+}

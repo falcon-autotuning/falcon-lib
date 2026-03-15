@@ -1,0 +1,170 @@
+// Tests for falconCore/math/arrays/labelledArrays
+// Run with: falcon-test run_tests.fal
+import "../../../../../testing/testing.fal";
+import "../labelledArrays.fal";
+import "../../labelledMeasuredArray/labelledMeasuredArray.fal";
+import "../../labelledControlArray/labelledControlArray.fal";
+import "../../../../generic/farray/tests/farray-test-helpers.fal";
+
+routine FA (Array<float> vals) -> (farray::FArray arr) {
+    arr = FArrayTestHelpers.NewFromFloats(vals);
+}
+
+routine LMA (Array<float> vals) -> (labelledMeasuredArray::LabelledMeasuredArray lma) {
+    farray::FArray fa = FA(vals);
+    lma = labelledMeasuredArray::LabelledMeasuredArray.New(fa);
+}
+
+routine LCA (Array<float> vals) -> (labelledControlArray::LabelledControlArray lca) {
+    farray::FArray fa = FA(vals);
+    lca = labelledControlArray::LabelledControlArray.New(fa);
+}
+
+// ── Empty construction ────────────────────────────────────────────────────────
+
+autotuner LabelledArraysEmpty -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_empty_measured_is_measured (TestRunner runner, TestContext t) {
+        Array<labelledMeasuredArray::LabelledMeasuredArray> empty;
+        labelledArrays::LabelledArrays la = labelledArrays::LabelledArrays.NewLabelledMeasuredArrays(empty);
+        Error err = t.ExpectTrue(la.IsMeasuredArrays(), "Empty LabelledMeasuredArrays.IsMeasuredArrays is true");
+        -> __end(runner, t);
+    }
+
+    state test_empty_measured_is_empty (TestRunner runner, TestContext t) {
+        Array<labelledMeasuredArray::LabelledMeasuredArray> empty;
+        labelledArrays::LabelledArrays la = labelledArrays::LabelledArrays.NewLabelledMeasuredArrays(empty);
+        Error err = t.ExpectTrue(la.IsEmpty(), "Empty LabelledMeasuredArrays.IsEmpty is true");
+        -> __end(runner, t);
+    }
+
+    state test_empty_control_is_control (TestRunner runner, TestContext t) {
+        Array<labelledControlArray::LabelledControlArray> empty;
+        labelledArrays::LabelledArrays la = labelledArrays::LabelledArrays.NewLabelledControlArrays(empty);
+        Error err = t.ExpectTrue(la.IsControlArrays(), "Empty LabelledControlArrays.IsControlArrays is true");
+        -> __end(runner, t);
+    }
+
+    state test_empty_control_is_empty (TestRunner runner, TestContext t) {
+        Array<labelledControlArray::LabelledControlArray> empty;
+        labelledArrays::LabelledArrays la = labelledArrays::LabelledArrays.NewLabelledControlArrays(empty);
+        Error err = t.ExpectTrue(la.IsEmpty(), "Empty LabelledControlArrays.IsEmpty is true");
+        -> __end(runner, t);
+    }
+
+    state test_empty_measured_not_control (TestRunner runner, TestContext t) {
+        Array<labelledMeasuredArray::LabelledMeasuredArray> empty;
+        labelledArrays::LabelledArrays la = labelledArrays::LabelledArrays.NewLabelledMeasuredArrays(empty);
+        Error err = t.ExpectFalse(la.IsControlArrays(), "LabelledMeasuredArrays.IsControlArrays is false");
+        -> __end(runner, t);
+    }
+
+    state test_empty_control_not_measured (TestRunner runner, TestContext t) {
+        Array<labelledControlArray::LabelledControlArray> empty;
+        labelledArrays::LabelledArrays la = labelledArrays::LabelledArrays.NewLabelledControlArrays(empty);
+        Error err = t.ExpectFalse(la.IsMeasuredArrays(), "LabelledControlArrays.IsMeasuredArrays is false");
+        -> __end(runner, t);
+    }
+}
+
+// ── Construction with elements ────────────────────────────────────────────────
+
+autotuner LabelledArraysWithElements -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_measured_size_one (TestRunner runner, TestContext t) {
+        Array<float> vals; vals.pushback(1.0); vals.pushback(2.0);
+        labelledMeasuredArray::LabelledMeasuredArray lma = LMA(vals);
+        Array<labelledMeasuredArray::LabelledMeasuredArray> arr;
+        arr.pushback(lma);
+        labelledArrays::LabelledArrays la = labelledArrays::LabelledArrays.NewLabelledMeasuredArrays(arr);
+        Error err = t.ExpectIntEq(1, la.Size(), "LabelledMeasuredArrays with one element has size 1");
+        -> __end(runner, t);
+    }
+
+    state test_control_size_one (TestRunner runner, TestContext t) {
+        Array<float> vals; vals.pushback(1.0); vals.pushback(2.0);
+        labelledControlArray::LabelledControlArray lca = LCA(vals);
+        Array<labelledControlArray::LabelledControlArray> arr;
+        arr.pushback(lca);
+        labelledArrays::LabelledArrays la = labelledArrays::LabelledArrays.NewLabelledControlArrays(arr);
+        Error err = t.ExpectIntEq(1, la.Size(), "LabelledControlArrays with one element has size 1");
+        -> __end(runner, t);
+    }
+}
+
+// ── Equality ──────────────────────────────────────────────────────────────────
+
+autotuner LabelledArraysEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_empty_measured (TestRunner runner, TestContext t) {
+        Array<labelledMeasuredArray::LabelledMeasuredArray> empty;
+        labelledArrays::LabelledArrays a = labelledArrays::LabelledArrays.NewLabelledMeasuredArrays(empty);
+        labelledArrays::LabelledArrays b = labelledArrays::LabelledArrays.NewLabelledMeasuredArrays(empty);
+        Error err = t.ExpectTrue(a.Equal(b), "Two empty LabelledMeasuredArrays are equal");
+        -> __end(runner, t);
+    }
+
+    state test_equal_empty_control (TestRunner runner, TestContext t) {
+        Array<labelledControlArray::LabelledControlArray> empty;
+        labelledArrays::LabelledArrays a = labelledArrays::LabelledArrays.NewLabelledControlArrays(empty);
+        labelledArrays::LabelledArrays b = labelledArrays::LabelledArrays.NewLabelledControlArrays(empty);
+        Error err = t.ExpectTrue(a.Equal(b), "Two empty LabelledControlArrays are equal");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_measured_vs_control (TestRunner runner, TestContext t) {
+        Array<labelledMeasuredArray::LabelledMeasuredArray> emptyM;
+        Array<labelledControlArray::LabelledControlArray>   emptyC;
+        labelledArrays::LabelledArrays a = labelledArrays::LabelledArrays.NewLabelledMeasuredArrays(emptyM);
+        labelledArrays::LabelledArrays b = labelledArrays::LabelledArrays.NewLabelledControlArrays(emptyC);
+        Error err = t.ExpectTrue(a.NotEqual(b), "LabelledMeasuredArrays and LabelledControlArrays are not equal");
+        -> __end(runner, t);
+    }
+}
+
+// ── JSON ──────────────────────────────────────────────────────────────────────
+
+autotuner LabelledArraysJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_to_json_non_empty_measured (TestRunner runner, TestContext t) {
+        Array<labelledMeasuredArray::LabelledMeasuredArray> empty;
+        labelledArrays::LabelledArrays la = labelledArrays::LabelledArrays.NewLabelledMeasuredArrays(empty);
+        string json = la.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON of empty LabelledMeasuredArrays is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_to_json_non_empty_control (TestRunner runner, TestContext t) {
+        Array<labelledControlArray::LabelledControlArray> empty;
+        labelledArrays::LabelledArrays la = labelledArrays::LabelledArrays.NewLabelledControlArrays(empty);
+        string json = la.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON of empty LabelledControlArrays is non-empty");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_measured (TestRunner runner, TestContext t) {
+        Array<labelledMeasuredArray::LabelledMeasuredArray> empty;
+        labelledArrays::LabelledArrays orig = labelledArrays::LabelledArrays.NewLabelledMeasuredArrays(empty);
+        string json                         = orig.ToJSON();
+        labelledArrays::LabelledArrays rt   = labelledArrays::LabelledArrays.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(rt), "FromJSON(ToJSON(la)) round-trips for LabelledMeasuredArrays");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_control (TestRunner runner, TestContext t) {
+        Array<labelledControlArray::LabelledControlArray> empty;
+        labelledArrays::LabelledArrays orig = labelledArrays::LabelledArrays.NewLabelledControlArrays(empty);
+        string json                         = orig.ToJSON();
+        labelledArrays::LabelledArrays rt   = labelledArrays::LabelledArrays.FromJSON(json);
+        Error err = t.ExpectTrue(orig.Equal(rt), "FromJSON(ToJSON(la)) round-trips for LabelledControlArrays");
+        -> __end(runner, t);
+    }
+}

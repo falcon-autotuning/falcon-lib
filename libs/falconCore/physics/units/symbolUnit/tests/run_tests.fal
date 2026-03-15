@@ -1,0 +1,401 @@
+// Tests for falcon_core/physics/units/symbolUnit
+// Run with: falcon-test run_tests.fal
+import "../../../../../testing/testing.fal";
+import "../symbolUnit.fal";
+
+autotuner SymbolUnitConstructors -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_meter (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Meter();
+        Error err = t.ExpectStrEq("m", u.Symbol(), "Meter symbol is m");
+        err = t.ExpectStrEq("meter", u.Name(), "Meter name is meter");
+        -> __end(runner, t);
+    }
+
+    state test_kilogram (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Kilogram();
+        Error err = t.ExpectStrEq("kg", u.Symbol(), "Kilogram symbol is kg");
+        -> __end(runner, t);
+    }
+
+    state test_second (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Second();
+        Error err = t.ExpectStrEq("s", u.Symbol(), "Second symbol is s");
+        -> __end(runner, t);
+    }
+
+    state test_ampere (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Ampere();
+        Error err = t.ExpectStrEq("A", u.Symbol(), "Ampere symbol is A");
+        -> __end(runner, t);
+    }
+
+    state test_kelvin (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Kelvin();
+        Error err = t.ExpectStrEq("K", u.Symbol(), "Kelvin symbol is K");
+        -> __end(runner, t);
+    }
+
+    state test_mole (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Mole();
+        Error err = t.ExpectStrEq("mol", u.Symbol(), "Mole symbol is mol");
+        -> __end(runner, t);
+    }
+
+    state test_candela (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Candela();
+        Error err = t.ExpectStrEq("cd", u.Symbol(), "Candela symbol is cd");
+        -> __end(runner, t);
+    }
+
+    state test_hertz (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Hertz();
+        Error err = t.ExpectStrEq("Hz", u.Symbol(), "Hertz symbol is Hz");
+        -> __end(runner, t);
+    }
+
+    state test_newton (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Newton();
+        Error err = t.ExpectStrEq("N", u.Symbol(), "Newton symbol is N");
+        -> __end(runner, t);
+    }
+
+    state test_pascal (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Pascal();
+        Error err = t.ExpectStrEq("Pa", u.Symbol(), "Pascal symbol is Pa");
+        -> __end(runner, t);
+    }
+
+    state test_joule (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Joule();
+        Error err = t.ExpectStrEq("J", u.Symbol(), "Joule symbol is J");
+        -> __end(runner, t);
+    }
+
+    state test_watt (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Watt();
+        Error err = t.ExpectStrEq("W", u.Symbol(), "Watt symbol is W");
+        -> __end(runner, t);
+    }
+
+    state test_coulomb (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Coulomb();
+        Error err = t.ExpectStrEq("C", u.Symbol(), "Coulomb symbol is C");
+        -> __end(runner, t);
+    }
+
+    state test_volt (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Volt();
+        Error err = t.ExpectStrEq("V", u.Symbol(), "Volt symbol is V");
+        -> __end(runner, t);
+    }
+
+    state test_farad (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Farad();
+        Error err = t.ExpectStrEq("F", u.Symbol(), "Farad symbol is F");
+        -> __end(runner, t);
+    }
+
+    state test_ohm (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Ohm();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Ohm has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_siemens (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Siemens();
+        Error err = t.ExpectStrEq("S", u.Symbol(), "Siemens symbol is S");
+        -> __end(runner, t);
+    }
+
+    state test_weber (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Weber();
+        Error err = t.ExpectStrEq("Wb", u.Symbol(), "Weber symbol is Wb");
+        -> __end(runner, t);
+    }
+
+    state test_tesla (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Tesla();
+        Error err = t.ExpectStrEq("T", u.Symbol(), "Tesla symbol is T");
+        -> __end(runner, t);
+    }
+
+    state test_henry (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Henry();
+        Error err = t.ExpectStrEq("H", u.Symbol(), "Henry symbol is H");
+        -> __end(runner, t);
+    }
+
+    state test_minute (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Minute();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Minute has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_hour (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Hour();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Hour has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_electronvolt (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.ElectronVolt();
+        Error err = t.ExpectStrEq("eV", u.Symbol(), "ElectronVolt symbol is eV");
+        -> __end(runner, t);
+    }
+
+    state test_celsius (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Celsius();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Celsius has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_fahrenheit (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Fahrenheit();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Fahrenheit has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_dimensionless (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Dimensionless();
+        Error err = t.ExpectStrEq("", u.Name(), "Dimensionless has a name");
+        -> __end(runner, t);
+    }
+
+    state test_percent (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Percent();
+        Error err = t.ExpectStrEq("%", u.Symbol(), "Percent symbol is %");
+        -> __end(runner, t);
+    }
+
+    state test_radian (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Radian();
+        Error err = t.ExpectStrEq("rad", u.Symbol(), "Radian symbol is rad");
+        -> __end(runner, t);
+    }
+
+    state test_kilometer (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Kilometer();
+        Error err = t.ExpectStrEq("km", u.Symbol(), "Kilometer symbol is km");
+        -> __end(runner, t);
+    }
+
+    state test_millimeter (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Millimeter();
+        Error err = t.ExpectStrEq("mm", u.Symbol(), "Millimeter symbol is mm");
+        -> __end(runner, t);
+    }
+
+    state test_millivolt (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Millivolt();
+        Error err = t.ExpectStrEq("mV", u.Symbol(), "Millivolt symbol is mV");
+        -> __end(runner, t);
+    }
+
+    state test_kilovolt (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Kilovolt();
+        Error err = t.ExpectStrEq("kV", u.Symbol(), "Kilovolt symbol is kV");
+        -> __end(runner, t);
+    }
+
+    state test_milliampere (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Milliampere();
+        Error err = t.ExpectStrEq("mA", u.Symbol(), "Milliampere symbol is mA");
+        -> __end(runner, t);
+    }
+
+    state test_microampere (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Microampere();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Microampere has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_nanoampere (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Nanoampere();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Nanoampere has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_picoampere (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Picoampere();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Picoampere has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_millisecond (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Millisecond();
+        Error err = t.ExpectStrEq("ms", u.Symbol(), "Millisecond symbol is ms");
+        -> __end(runner, t);
+    }
+
+    state test_microsecond (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Microsecond();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Microsecond has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_nanosecond (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Nanosecond();
+        Error err = t.ExpectStrEq("ns", u.Symbol(), "Nanosecond symbol is ns");
+        -> __end(runner, t);
+    }
+
+    state test_picosecond (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Picosecond();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Picosecond has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_milliohm (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Milliohm();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Milliohm has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_kiloohm (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Kiloohm();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Kiloohm has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_megaohm (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Megaohm();
+        Error err = t.ExpectStrNe("", u.Symbol(), "Megaohm has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_millihertz (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Millihertz();
+        Error err = t.ExpectStrEq("mHz", u.Symbol(), "Millihertz symbol is mHz");
+        -> __end(runner, t);
+    }
+
+    state test_kilohertz (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Kilohertz();
+        Error err = t.ExpectStrEq("kHz", u.Symbol(), "Kilohertz symbol is kHz");
+        -> __end(runner, t);
+    }
+
+    state test_megahertz (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Megahertz();
+        Error err = t.ExpectStrEq("MHz", u.Symbol(), "Megahertz symbol is MHz");
+        -> __end(runner, t);
+    }
+
+    state test_gigahertz (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Gigahertz();
+        Error err = t.ExpectStrEq("GHz", u.Symbol(), "Gigahertz symbol is GHz");
+        -> __end(runner, t);
+    }
+
+    state test_meterspersecond (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Meterspersecond();
+        Error err = t.ExpectStrNe("", u.Symbol(), "MetersPerSecond has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_meterspersecond_squared (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.MeterspersecondSquared();
+        Error err = t.ExpectStrNe("", u.Symbol(), "MetersPerSecondSquared has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_newtonmeter (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Newtonmeter();
+        Error err = t.ExpectStrNe("", u.Symbol(), "NewtonMeter has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_newtonpermeter (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Newtonpermeter();
+        Error err = t.ExpectStrNe("", u.Symbol(), "NewtonPerMeter has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_voltspermeter (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Voltspermeter();
+        Error err = t.ExpectStrNe("", u.Symbol(), "VoltsPerMeter has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_voltspersecond (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Voltspersecond();
+        Error err = t.ExpectStrNe("", u.Symbol(), "VoltsPerSecond has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_amperespermeter (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Amperespermeter();
+        Error err = t.ExpectStrNe("", u.Symbol(), "AmperesPerMeter has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_voltsperampere (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Voltsperampere();
+        Error err = t.ExpectStrNe("", u.Symbol(), "VoltsPerAmpere has a symbol");
+        -> __end(runner, t);
+    }
+
+    state test_wattspermeterkelvin (TestRunner runner, TestContext t) {
+        SymbolUnit u = SymbolUnit.Wattspermeterkelvin();
+        Error err = t.ExpectStrNe("", u.Symbol(), "WattsPerMeterKelvin has a symbol");
+        -> __end(runner, t);
+    }
+}
+
+autotuner SymbolUnitEquality -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_equal_same_unit (TestRunner runner, TestContext t) {
+        SymbolUnit a = SymbolUnit.Volt();
+        SymbolUnit b = SymbolUnit.Volt();
+        Error err = t.ExpectTrue(a.IsEqual(b), "Volt == Volt");
+        -> __end(runner, t);
+    }
+
+    state test_not_equal_different_units (TestRunner runner, TestContext t) {
+        SymbolUnit a = SymbolUnit.Volt();
+        SymbolUnit b = SymbolUnit.Ampere();
+        Error err = t.ExpectTrue(a.IsNotEqual(b), "Volt != Ampere");
+        -> __end(runner, t);
+    }
+
+    state test_is_equal_false_for_different (TestRunner runner, TestContext t) {
+        SymbolUnit a = SymbolUnit.Hertz();
+        SymbolUnit b = SymbolUnit.Second();
+        Error err = t.ExpectFalse(a.IsEqual(b), "Hertz != Second");
+        -> __end(runner, t);
+    }
+
+    state test_is_not_equal_false_for_same (TestRunner runner, TestContext t) {
+        SymbolUnit a = SymbolUnit.Kilogram();
+        SymbolUnit b = SymbolUnit.Kilogram();
+        Error err = t.ExpectFalse(a.IsNotEqual(b), "Kilogram == Kilogram so IsNotEqual is false");
+        -> __end(runner, t);
+    }
+}
+
+autotuner SymbolUnitJSON -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    state test_roundtrip_volt (TestRunner runner, TestContext t) {
+        SymbolUnit orig = SymbolUnit.Volt();
+        string json     = orig.ToJSON();
+        Error err = t.ExpectStrNe("", json, "ToJSON returns non-empty string");
+        SymbolUnit restored = SymbolUnit.FromJSON(json);
+        err = t.ExpectTrue(orig.IsEqual(restored), "FromJSON(ToJSON(Volt)) == Volt");
+        -> __end(runner, t);
+    }
+
+    state test_roundtrip_milliampere (TestRunner runner, TestContext t) {
+        SymbolUnit orig = SymbolUnit.Milliampere();
+        string json     = orig.ToJSON();
+        SymbolUnit restored = SymbolUnit.FromJSON(json);
+        Error err = t.ExpectTrue(orig.IsEqual(restored), "mA round-trip");
+        -> __end(runner, t);
+    }
+}

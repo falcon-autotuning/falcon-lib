@@ -1,0 +1,8 @@
+// Test-only bindings for FArray construction — NOT for production use.
+// Exposes NewFromFloats so tests can create FArray instances without needing
+// a general public constructor (which does not exist in the .fal interface).
+import "../../../../collections/array/array.fal";
+ffimport "../farray-wrapper.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
+struct FArrayTestHelpers {
+    routine NewFromFloats (Array<float> values) -> (farray::FArray arr)
+}

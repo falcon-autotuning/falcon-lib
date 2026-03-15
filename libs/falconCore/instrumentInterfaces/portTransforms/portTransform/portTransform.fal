@@ -1,0 +1,17 @@
+import (
+"../../names/instrumentPort/instrumentPort.fal"
+"../../../math/analyticFunction/analyticFunction.fal"
+)
+
+ffimport "port-transform-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct PortTransform  { 
+    routine New (instrumentPort::InstrumentPort port, analyticFunction::AnalyticFunction func) -> (PortTransform transform)
+    routine ConstantTransform (instrumentPort::InstrumentPort port, float value) -> (PortTransform transform)
+    routine IdentityTranform (instrumentPort::InstrumentPort port) -> (PortTransform transform)
+    routine Port () -> (instrumentPort::InstrumentPort port)
+    routine Equal (PortTransform other) -> (bool equal)
+    routine NotEqual (PortTransform other) -> (bool notequal)
+    routine FromJSON (string json) -> (PortTransform transform)
+    routine ToJSON -> (string json)
+    routine Labels () -> (Array<string> variables)
+}

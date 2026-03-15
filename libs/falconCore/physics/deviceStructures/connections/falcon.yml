@@ -1,0 +1,14 @@
+name: connections
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: connection
+    version: "1.0.0"
+    local_path: "../connection/"
+  - name: array
+    version: "1.0.0"
+    local_path: "../../../../collections/array/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../../testing/"

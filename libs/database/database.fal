@@ -1,0 +1,83 @@
+import "../falconCore/physics/deviceStructures/connection/connection.fal";
+ffimport "database-wrapper.cpp" ("-I/opt/falcon/include/" "-std=c++20") ("-L/opt/falcon/lib" "-lfalcon-database" "-lpqxx")
+
+// ── DeviceCharacteristic ──────────────────────────────────────────────────────
+
+struct DeviceCharacteristic {
+    routine New()                             -> (DeviceCharacteristic d)
+    routine GetScope()                        -> (string scope)
+    routine GetName()                         -> (string name)
+    routine GetHash()                         -> (string hash)
+    routine GetTime()                         -> (int time)
+    routine GetState()                        -> (string state_val)
+    routine GetUnitName()                     -> (string unit_name)
+    routine GetValue()                        -> (string value)
+    routine GetBarrierGate ()                 -> (Connection conn)
+    routine GetPlungerGate ()                 -> (Connection conn)
+    routine GetReservoirGate()                -> (Connection conn)
+    routine GetScreeningGate()                -> (Connection conn)
+    routine GetExtra ()                       -> (string extra)
+    routine GetUncertainty()                  -> (float uncertainty)
+    routine SetScope(string scope)            -> (DeviceCharacteristic d)
+    routine SetName(string name)              -> (DeviceCharacteristic d)
+    routine SetBarrierGate (Connection conn)  -> (DeviceCharacteristic d)
+    routine SetPlungerGate (Connection conn)  -> (DeviceCharacteristic d)
+    routine SetReservoirGate(Connection conn) -> (DeviceCharacteristic d)
+    routine SetScreeningGate(Connection conn) -> (DeviceCharacteristic d)
+    routine SetExtra (string extra)           -> (DeviceCharacteristic d)
+    routine SetUncertainty(float uncertainty) -> (DeviceCharacteristic d)
+    routine SetHash(string hash)              -> (DeviceCharacteristic d)
+    routine SetState(string state_val)        -> (DeviceCharacteristic d)
+    routine SetUnitName(string unit_name)     -> (DeviceCharacteristic d)
+    routine SetValue(string characteristic)   -> (DeviceCharacteristic d)
+    routine SetTime(int time)                 -> (DeviceCharacteristic d)
+}
+
+struct DeviceCharacteristicList {
+    routine Size()          -> (int count)
+    routine Get(int index)  -> (DeviceCharacteristic dchar)
+}
+
+struct DeviceCharacteristicQuery {
+    routine New()                             -> (DeviceCharacteristicQuery q)
+    routine SetScope(string scope)            -> (DeviceCharacteristicQuery q)
+    routine SetName(string name)              -> (DeviceCharacteristicQuery q)
+    routine SetState(string state_val)        -> (DeviceCharacteristicQuery q)
+    routine SetHash(string hash)              -> (DeviceCharacteristicQuery q)
+    routine SetUnitName(string unit_name)     -> (DeviceCharacteristicQuery q)
+    routine SetBarrierGate (Connection conn)  -> (DeviceCharacteristic d)
+    routine SetPlungerGate (Connection conn)  -> (DeviceCharacteristic d)
+    routine SetReservoirGate(Connection conn) -> (DeviceCharacteristic d)
+    routine SetScreeningGate(Connection conn) -> (DeviceCharacteristic d)
+    routine SetExtra (string extra)           -> (DeviceCharacteristic d)
+    routine GetScope()                        -> (string scope)
+    routine GetName()                         -> (string name)
+    routine GetHash()                         -> (string hash)
+    routine GetState()                        -> (string state_val)
+    routine GetUnitName()                     -> (string unit_name)
+    routine GetBarrierGate ()                 -> (Connection conn)
+    routine GetPlungerGate ()                 -> (Connection conn)
+    routine GetReservoirGate()                -> (Connection conn)
+    routine GetScreeningGate()                -> (Connection conn)
+    routine GetExtra ()                       -> (string extra)
+}
+
+// ── Database ──────────────────────────────────────────────────────────────────
+// Read methods
+routine GetByName(string name) -> (DeviceCharacteristic dchar, bool found)
+routine GetAll() -> (DeviceCharacteristicList list)
+routine GetByHashRange(string hash_start, string hash_end) -> (DeviceCharacteristicList list)
+routine GetByQuery(DeviceCharacteristicQuery query) -> (DeviceCharacteristicList list)
+routine Count() -> (int count)
+routine IsConnected() -> (bool connected)
+
+// Write methods
+routine Insert(DeviceCharacteristic dchar) -> ()
+routine DeleteByName(string name) -> (bool deleted)
+routine DeleteByHash(string hash) -> (int deleted_count)
+
+// Admin & Snapshot methods
+routine InitializeSchema() -> ()
+routine ClearAll() -> ()
+routine ExportToJson(string filename) -> ()
+routine ImportFromJson(string filename, bool clear_existing) -> ()

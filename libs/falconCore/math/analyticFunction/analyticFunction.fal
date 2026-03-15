@@ -1,0 +1,12 @@
+import "../../../collections/array/array.fal";
+ffimport "analytic-function-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct AnalyticFunction{
+    routine New (Array<string> labels, string expression) -> (AnalyticFunction out)
+    routine Identity () -> (AnalyticFunction out)
+    routine Constant (float value) -> (AnalyticFunction out)
+    routine Labels () -> (Array<string> variables)
+    routine Equal (AnalyticFunction other) -> (bool equal)
+    routine NotEqual (AnalyticFunction other) -> (bool notequal)
+    routine FromJSON (string json) -> (AnalyticFunction dstate)
+    routine ToJSON () -> (string json)
+}

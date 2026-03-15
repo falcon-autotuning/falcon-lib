@@ -1,0 +1,38 @@
+import (
+"../../../generic/farray/farray.fal"
+"../../../autotunerInterfaces/contexts/acquisitionContext/acquisitionContext.fal"
+)
+ffimport "labelled-measured-array-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct LabelledMeasuredArray {
+    routine New (FArray arr) -> (LabelledMeasuredArray carray)
+    routine Add (MeasuredArray other) -> (LabelledMeasuredArray carray)
+    routine Add (FArray other) -> (LabelledMeasuredArray carray)
+    routine Add (int other) -> (LabelledMeasuredArray carray)
+    routine Add (float other) -> (LabelledMeasuredArray carray)
+    routine Minus (MeasuredArray other) -> (LabelledMeasuredArray carray)
+    routine Minus (FArray other) -> (LabelledMeasuredArray carray)
+    routine Minus (int other) -> (LabelledMeasuredArray carray)
+    routine Minus (float other) -> (LabelledMeasuredArray carray)
+    routine Negate -> (LabelledMeasuredArray carray)
+    routine Times (float factor) -> (LabelledMeasuredArray carray)
+    routine Times (int factor) -> (LabelledMeasuredArray carray)
+    routine Divides (float factor) -> (LabelledMeasuredArray carray)
+    routine Divides (int factor) -> (LabelledMeasuredArray carray)
+    routine Power (float exponent) -> (LabelledMeasuredArray carray)
+    routine Abs -> (LabelledMeasuredArray carray)
+    routine Min -> (float min)
+    routine Label -> (acquisitionContext::AcquisitionContext ac)
+    routine Connection -> (connection::Connection conn)
+    routine InstrumentType -> (instrument::Instrument it)
+    routine Units -> (symbolUnit::SymbolUnit unit)
+    // TODO: arraywise min and max
+    routine Max -> (float max)
+    routine Reshape (Array<int> shape) -> (LabelledMeasuredArray carray)
+    routine Flip (int axis) -> (LabelledMeasuredArray carray)
+    routine Gradient (int axis) -> (farray::FArray gradient)
+    routine FullGradient -> (Array<farray::FArray> gradients)
+    routine Equal (FArray other) -> (bool equal)
+    routine NotEqual (FArray other) -> (bool notequal)
+    routine FromJSON (string json) -> (FArray farray)
+    routine ToJSON () -> (string json)
+}

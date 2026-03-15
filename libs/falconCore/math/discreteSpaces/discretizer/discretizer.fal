@@ -1,0 +1,15 @@
+import "../../domains/domain/domain.fal";
+ffimport "discretizer-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct Discretizer {
+    routine NewCartesianDiscretizer(float delta) -> (Discretizer disc)
+    routine NewPolarDiscretizer(float delta) -> (Discretizer disc)
+    routine Delta () -> (float d)
+    routine SetDelta (float delta) -> ()
+    routine Domain () -> (domain::Domain d)
+    routine IsCartesian () -> (bool IsCartesian)
+    routine IsPolar () -> (bool IsPolar)
+    routine Equal (Discretizer other) -> (bool equal)
+    routine NotEqual (Discretizer other) -> (bool notequal)
+    routine FromJSON (string json) -> (Discretizer dstate)
+    routine ToJSON () -> (string json)
+}

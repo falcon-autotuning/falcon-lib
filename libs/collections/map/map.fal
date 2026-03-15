@@ -1,0 +1,117 @@
+import "../array/array.fal";
+// ---------------------------------------------------------------------------
+// Map<K, V> — a generic key-value store (hash map).
+//
+// Type parameters:
+//   K — key type   (int, float, bool, string)
+//   V — value type (any primitive or struct)
+//
+// Usage:
+//   import "libs/collections/map/map.fal";
+//
+//   Map<string, int> scores = Map.New();
+//   scores.Set("alice", 100);
+//   int a = scores.Get("alice");
+//   bool has = scores.Contains("alice");
+// ---------------------------------------------------------------------------
+struct Map <K, V> {
+    Array<K> keys_;
+    Array<V> values_;
+    // ── Construction ─────────────────────────────────────────────────────────
+
+    // New() -> empty Map<K,V>
+    routine New () -> (Map<K, V> m) {
+        Array<K> keys = Array.New();
+        Array<V> values = Array.New();
+        m.keys_ = keys;
+        m.values_ = values;
+    }
+
+    // ── Capacity ─────────────────────────────────────────────────────────────
+
+    // Returns the number of key-value pairs.
+    routine Size () -> (int size) {
+        size = keys_.Size();
+    }
+
+    // Returns true if the map has no entries.
+    routine IsEmpty () -> (bool empty) {
+        int size = keys_.Size();
+        empty = (size == 0);
+    }
+
+    // ── Access ────────────────────────────────────────────────────────────────
+
+    // Get(K key) -> (V value)
+    // Returns the value associated with `key`.
+    // Throws a runtime error if `key` is not present.
+    routine Get (K key) -> (V value) {
+        int index = keys_.IndexOf(key);
+        value = values_.GetIndex(index);
+    }
+
+    // GetOr(K key, V default_value) -> (V value)
+    // Returns the value for `key`, or `default_value` if not present.
+    routine GetOr (K key, V default_value) -> (V value) {
+        int index = keys_.IndexOf(key);
+        if (index != -1) {
+           value = values_.GetIndex(index);
+        }
+        else {
+            value = default_value;
+        }
+    }
+
+    // ── Mutation ──────────────────────────────────────────────────────────────
+
+    // Set(K key, V value) -> ()
+    // Inserts or overwrites the entry for `key`.
+    routine Set (K key, V value) -> () {
+       if (keys_.Contains(key)) {
+           int index = keys_.IndexOf(key);
+           values_.SetIndex(index, value);
+       }
+       else {
+            keys_.PushBack(key);
+            values_.PushBack(value);
+       }
+    }
+
+    // Remove(K key) -> (bool removed)
+    // Removes the entry for `key`.  Returns true if the key was present.
+    routine Remove (K key) -> (bool removed) {
+        int index = keys_.IndexOf(key);
+        removed = (index != -1);
+        if (removed) {
+            keys_.Erase(index);
+            values_.Erase(index);
+        }
+    }
+
+    // Clear() -> ()
+    // Removes all entries.
+    routine Clear () -> () {
+        keys_.Clear();
+        values_.Clear();
+    }
+
+    // ── Query ─────────────────────────────────────────────────────────────────
+
+    // Contains(K key) -> (bool found)
+    // Returns true if the map contains an entry for `key`.
+    routine Contains (K key) -> (bool found) {
+        found = keys_.Contains(key);
+    }
+
+    // Keys() -> (Array<K> keys)
+    // Returns an Array of all keys in unspecified order.
+    routine Keys () -> (Array<K> keys) {
+        keys = keys_;
+    }
+
+    // Values() -> (Array<V> values)
+    // Returns an Array of all values in unspecified order.
+    routine Values () -> (Array<V> values) {
+        values = values_;
+    }
+}

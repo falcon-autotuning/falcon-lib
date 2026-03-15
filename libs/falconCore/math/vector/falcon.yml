@@ -1,0 +1,23 @@
+name: vector
+version: "1.0.0"
+maintainer: "falcon-devs"
+github: ""
+dependencies:
+  - name: point
+    version: "1.0.0"
+    local_path: "../point/"
+  - name: quantity
+    version: "1.0.0"
+    local_path: "../quantity/"
+  - name: connection
+    version: "1.0.0"
+    local_path: "../../physics/deviceStructures/connection/"
+  - name: symbolUnit
+    version: "1.0.0"
+    local_path: "../../physics/units/symbolUnit/"
+  - name: deviceVoltageStates
+    version: "1.0.0"
+    local_path: "../../communications/voltageStates/deviceVoltageStates/"
+  - name: testing
+    version: "1.0.0"
+    local_path: "../../../testing/"

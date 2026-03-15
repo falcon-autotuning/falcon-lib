@@ -1,0 +1,24 @@
+import (
+"../labelledMeasuredArray/labelledMeasuredArray.fal"
+"../labelledControlArray/labelledControlArray.fal"
+"../../../autotunerInterfaces/acquisitionContext/acquisitionContext.fal"
+)
+ffimport "labelled-arrays-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+struct LabelledArrays <T> { // T can by LabelledMeasuredArray or LabelledControlArray
+    routine NewLabelledMeasuredArrays (array::Array<T> arr) -> (LabelledArrays<T> arrays)
+    routine NewLabelledControlArrays (array::Array<T> arr) -> (LabelledArrays<T> arrays)
+    routine Arrays -> (Array<T> arrays)
+    routine Labels -> (array::Array<acquisitionContext::AcquisitionContext> labels) 
+    routine IsControlArrays -> (bool IsControl)
+    routine IsMeasuredArrays -> (bool IsMeasured)
+    routine Equal (LabelledArrays<T> other) -> (bool equal)
+    routine NotEqual (LabelledArrays<T> other) -> (bool notequal)
+    routine FromJSON (string json) -> (LabelledArrays<T> arrays)
+    routine ToJSON -> (string json)
+    routine Size -> (int size) {
+        size = this.Labels().Size();
+    }
+    routine IsEmpty  -> (bool empty) {
+        empty = this.Labels().Empty();
+    }
+}

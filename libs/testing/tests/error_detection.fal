@@ -1,0 +1,106 @@
+// error_detection.fal
+// Demonstrates that falcon-test correctly detects and reports assertion failures.
+//
+// This suite intentionally contains FAILING tests.  Their purpose is to
+// exercise every failure path in TestContext so you can visually confirm:
+//   - [  FAILED  ] lines appear in red
+//   - The correct diagnostic message (expected vs. actual) is printed
+//   - Passing tests in the same suite still show [       OK ]
+//   - The final summary counts are accurate
+//
+// Expected final output:
+//   [  PASSED  ] 3 test(s)
+//   [  FAILED  ] 3 test(s)
+//
+// Run with:
+//   falcon-test error_detection.fal
+//
+import "../testing.fal";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite: ErrorDetection
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner ErrorDetection -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    // No setup/teardown needed — these tests are stateless.
+
+    // ── PASSING tests (3) ────────────────────────────────────────────────────
+
+    state test_pass_true (TestRunner runner, TestContext t) {
+        Error err = t.ExpectTrue(true, "true is true — should pass");
+        -> __end(runner, t);
+    }
+
+    state test_pass_int_eq (TestRunner runner, TestContext t) {
+        Error err = t.ExpectIntEq(100, 100, "100 == 100 — should pass");
+        -> __end(runner, t);
+    }
+
+    state test_pass_str_eq (TestRunner runner, TestContext t) {
+        Error err = t.ExpectStrEq("falcon", "falcon", "same string — should pass");
+        -> __end(runner, t);
+    }
+
+    // ── FAILING tests (3) — each exercises a different assertion path ─────────
+
+    // Fails: ExpectTrue called with false
+    state test_fail_expect_true (TestRunner runner, TestContext t) {
+        Error err = t.Log("intentional failure: ExpectTrue(false)");
+        err = t.ExpectTrue(false, "this must fail: false is not true");
+        -> __end(runner, t);
+    }
+
+    // Fails: integer mismatch — shows expected/actual in the message
+    state test_fail_int_mismatch (TestRunner runner, TestContext t) {
+        Error err = t.Log("intentional failure: ExpectIntEq(1, 2)");
+        err = t.ExpectIntEq(1, 2, "1 != 2 — mismatch should be reported");
+        -> __end(runner, t);
+    }
+
+    // Fails: string mismatch — shows quoted expected/actual in the message
+    state test_fail_str_mismatch (TestRunner runner, TestContext t) {
+        Error err = t.Log("intentional failure: ExpectStrEq('foo', 'bar')");
+        err = t.ExpectStrEq("foo", "bar", "foo != bar — string diff should be reported");
+        -> __end(runner, t);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite: MultipleFailuresPerTest
+// Verifies that ALL failures within a single test are collected, not just
+// the first one (non-aborting assertion semantics).
+// ─────────────────────────────────────────────────────────────────────────────
+autotuner MultipleFailuresPerTest -> (int passed, int failed) {
+    passed = 0; failed = 0;
+    start -> __init;
+
+    // ── PASSING: single assertion ─────────────────────────────────────────────
+
+    state test_single_pass (TestRunner runner, TestContext t) {
+        Error err = t.ExpectIntEq(7, 7, "single passing assertion");
+        -> __end(runner, t);
+    }
+
+    // ── FAILING: multiple assertions in one test, ALL failures reported ───────
+    // Proves assertions are non-aborting: execution continues after each
+    // failure and all three failures accumulate in the TestContext.
+
+    state test_three_failures (TestRunner runner, TestContext t) {
+        Error err = t.Log("recording three intentional failures in one test");
+        err = t.ExpectIntEq(1, 9, "failure 1: 1 != 9");
+        err = t.ExpectStrEq("alpha", "beta", "failure 2: alpha != beta");
+        err = t.ExpectTrue(false, "failure 3: false is not true");
+        // All three failures should appear under [  FAILED  ] for this test.
+        -> __end(runner, t);
+    }
+
+    // ── FAILING: Fail() — unconditional failure with a custom message ─────────
+
+    state test_explicit_fail (TestRunner runner, TestContext t) {
+        Error err = t.Log("calling t.Fail() directly");
+        err = t.Fail("explicit unconditional failure");
+        -> __end(runner, t);
+    }
+}
