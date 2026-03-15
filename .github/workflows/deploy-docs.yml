@@ -47,18 +47,23 @@ jobs:
           # Create directory structure
           mkdir -p docs/dsl/docs docs/dsl/treesitter docs/dsl/lsp docs/database docs/typing docs/qarrayDevice docs/libs
 
-          # Function to copy, following symlinks
+          # Remove any symlinks in docs before copying
+          find docs -type l -delete
+
+          # Function to copy, following symlinks, and skip if same file
           copy_with_symlinks() {
-            if [ -e "$1" ]; then
-              if [ -L "$1" ]; then
-                # It's a symlink, resolve it
-                cp -Lrv "$1" "$2" 2>&1 || echo "⚠️  Failed to copy $1"
-              else
-                # Regular file/directory
-                cp -rv "$1" "$2" 2>&1 || echo "⚠️  Failed to copy $1"
+            src="$1"
+            dest="$2"
+            base=$(basename "$src")
+            dest_file="$dest/$base"
+            if [ -e "$src" ]; then
+              if [ -e "$dest_file" ] && [ "$src" -ef "$dest_file" ]; then
+                echo "⚠️  $src and $dest_file are the same file, skipping"
+                return
               fi
+              cp -Lrv "$src" "$dest" 2>&1 || echo "⚠️  Failed to copy $src"
             else
-              echo "⚠️  $1 not found"
+              echo "⚠️  $src not found"
             fi
           }
 
