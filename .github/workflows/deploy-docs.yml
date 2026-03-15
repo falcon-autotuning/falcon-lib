@@ -69,7 +69,7 @@ jobs:
 
           # Copy DSL documentation
           echo "📋 Copying DSL documentation..."
-          copy_with_symlinks "dsl/docs/overview.md" "docs/dsl/docs/"
+          copy_with_symlinks "dsl/docs/OVERVIEW.md" "docs/dsl/docs/"
           copy_with_symlinks "dsl/docs/TUTORIAL.md" "docs/dsl/docs/"
           copy_with_symlinks "dsl/docs/LANGUAGE_REFERENCE.md" "docs/dsl/docs/"
           copy_with_symlinks "dsl/docs/CLI.md" "docs/dsl/docs/"
