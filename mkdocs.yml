@@ -45,10 +45,67 @@ theme:
     - toc.follow
   logo: assets/icons/icon-256.png
   favicon: assets/icons/icon-256.png
+
 nav:
-  - Get Started:
-      - Welcome to Falcon Lib: index.md
-      - Database Docs: ../database/README.md
+  - Home: index.md
+  - DSL (Domain-Specific Language):
+      - Overview: dsl/docs/OVERVIEW.md
+      - Getting Started: dsl/docs/TUTORIAL.md
+      - Language Reference: dsl/docs/LANGUAGE_REFERENCE.md
+      - CLI Reference: dsl/docs/CLI.md
+      - Package Manager: dsl/docs/PACKAGE_MANAGER.md
+      - TreeSitter (Syntax Highlighting): dsl/treesitter/README.md
+      - LSP (Language Server):
+          - Setup & Configuration: dsl/docs/LSP.md
+          - Editor Integration: dsl/lsp/README.md
+  - Database:
+      - Overview: database/README.md
+  - FFI (Foreign Function Interface):
+      - Typing & C ABI: typing/README.md
+  - Hardware Integration:
+      - qArray Device: qarrayDevice/README.md
+  - Library Bindings:
+      - collections:
+          - Array: libs/collections/array/README.md
+          - Map: libs/collections/map/README.md
+      - falconCore:
+          - Connection: libs/falconCore/physics/deviceStructures/connection/README.md
+          - Connections: libs/falconCore/physics/deviceStructures/connections/README.md
+          - SymbolUnit: libs/falconCore/physics/units/symbolUnit/README.md
+          - Vector: libs/falconCore/math/vector/README.md 
+          - UnitSpace: libs/falconCore/math/unitSpace/README.md 
+          - Quantity: libs/falconCore/math/quantity/README.md 
+          - Point: libs/falconCore/math/point/README.md 
+          - Domain: libs/falconCore/math/domains/domain/README.md
+          - LabelledDomain: libs/falconCore/math/domains/labelledDomain/README.md
+          - Discretizer: libs/falconCore/math/discreteSpaces/discretizer/README.md 
+          - DiscreteSpace: libs/falconCore/math/discreteSpaces/discreteSpace/README.md 
+          - Axes: libs/falconCore/math/axes/README.md
+          - ControlArray: libs/falconCore/math/arrays/controlArray/README.md
+          - ControlArray1D: libs/falconCore/math/arrays/controlArray1D/README.md 
+          - IncreasingAlignment: libs/falconCore/math/arrays/increasingAlignment/README.md
+          - LabelledControlArray: libs/falconCore/math/arrays/labelledControlArray/README.md 
+          - LabelledControlArray1D: libs/falconCore/math/arrays/labelledControlArray1D/README.md 
+          - LabelledMeasuredArray: libs/falconCore/math/arrays/labelledMeasuredArray/README.md 
+          - LabelledMeasuredArray1D: libs/falconCore/math/arrays/labelledMeasuredArray1D/README.md 
+          - MeasuredArray: libs/falconCore/math/arrays/measuredArray/README.md 
+          - MeasuredArray1D: libs/falconCore/math/arrays/measuredArray1D/README.md 
+          - AnalyticFunction: libs/falconCore/math/analyticFunction/README.md
+          - PortTransform: libs/falconCore/instrumentInterfaces/portTransforms/portTransform/README.md
+          - PortTransforms: libs/falconCore/instrumentInterfaces/portTransforms/portTransforms/README.md  
+          - Ports: libs/falconCore/instrumentInterfaces/names/ports/README.md 
+          - InstrumentPort: libs/falconCore/instrumentInterfaces/names/instrumentPort/README.md 
+          - Instrument: libs/falconCore/instrumentInterfaces/names/instrument/README.md
+          - DeviceVoltageStates: libs/falconCore/communications/voltageStates/deviceVoltageStates/README.md 
+          - DeviceVoltageState: libs/falconCore/communications/voltageStates/deviceVoltageState/README.md
+      - io: libs/io/README.md
+      - log: libs/log/README.md
+      - strings: libs/strings/README.md
+      - testing: libs/testing/README.md
+      - database: libs/database/README.md
+  - Architecture:
+      - Overview: ARCHITECTURE.md
+
 markdown_extensions:
   - tables
   - toc:

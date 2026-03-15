@@ -61,6 +61,7 @@ autotuner VoltageSweep (float min_voltage, float max_voltage, float step) -> (in
 ```
 
 Key points:
+
 - The `ffimport` line at the top tells the engine to compile `voltage_sweep_impl.cpp` automatically — no separate build step is needed.
 - The `uses` keyword is not part of the language. Cross-module calls simply use the `Module::symbol` qualified form.
 - Inputs and outputs are declared directly in the autotuner signature.
@@ -273,6 +274,6 @@ falcon-test voltage_sweep_tests.fal
 - Use [generic structs](LANGUAGE_REFERENCE.md#generic-structs) to build reusable data structures (e.g. `Accumulator<float>` for running statistics)
 - Use [cross-module imports](LANGUAGE_REFERENCE.md#imports-and-modules) to share routines across multiple autotuners
 - Use `falcon-test` with fixture `setup`/`teardown` for hardware-in-the-loop tests
-- See [libs/testing/README.md](../libs/testing/README.md) for the full testing library reference
+- See [libs/testing/README.md](libs/testing/README.md) for the full testing library reference
 
 See [LANGUAGE_REFERENCE.md](LANGUAGE_REFERENCE.md) for the complete language specification.
