@@ -67,6 +67,8 @@ jobs:
             fi
           }
 
+          # Copy README.md to docs/index.md for MkDocs homepage
+          cp README.md docs/index.md
           # Copy DSL documentation
           echo "📋 Copying DSL documentation..."
           copy_with_symlinks "dsl" "docs/"
