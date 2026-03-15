@@ -34,30 +34,63 @@ jobs:
           python -m pip install --upgrade pip
           pip install mkdocs mkdocs-material
 
+      - name: Debug - List root directory
+        run: |
+          echo "📂 Root directory contents:"
+          ls -la
+          echo ""
+          echo "📂 docs directory contents:"
+          ls -la docs/ || echo "docs folder doesn't exist yet"
+
       - name: Copy documentation files into docs folder
         run: |
           # Create directory structure
           mkdir -p docs/dsl/docs docs/dsl/treesitter docs/dsl/lsp docs/database docs/typing docs/qarrayDevice docs/libs
 
+          # Function to copy, following symlinks
+          copy_with_symlinks() {
+            if [ -e "$1" ]; then
+              if [ -L "$1" ]; then
+                # It's a symlink, resolve it
+                cp -Lrv "$1" "$2" 2>&1 || echo "⚠️  Failed to copy $1"
+              else
+                # Regular file/directory
+                cp -rv "$1" "$2" 2>&1 || echo "⚠️  Failed to copy $1"
+              fi
+            else
+              echo "⚠️  $1 not found"
+            fi
+          }
+
           # Copy DSL documentation
-          cp -v dsl/docs/overview.md docs/dsl/docs/ 2>/dev/null || echo "⚠️  dsl/docs/overview.md not found"
-          cp -v dsl/docs/TUTORIAL.md docs/dsl/docs/ 2>/dev/null || echo "⚠️  dsl/docs/TUTORIAL.md not found"
-          cp -v dsl/docs/LANGUAGE_REFERENCE.md docs/dsl/docs/ 2>/dev/null || echo "⚠️  dsl/docs/LANGUAGE_REFERENCE.md not found"
-          cp -v dsl/docs/CLI.md docs/dsl/docs/ 2>/dev/null || echo "⚠️  dsl/docs/CLI.md not found"
-          cp -v dsl/docs/PACKAGE_MANAGER.md docs/dsl/docs/ 2>/dev/null || echo "⚠️  dsl/docs/PACKAGE_MANAGER.md not found"
-          cp -v dsl/docs/LSP.md docs/dsl/docs/ 2>/dev/null || echo "⚠️  dsl/docs/LSP.md not found"
-          cp -rv dsl/treesitter docs/dsl/ 2>/dev/null || echo "⚠️  dsl/treesitter not found"
-          cp -rv dsl/lsp docs/dsl/ 2>/dev/null || echo "⚠️  dsl/lsp not found"
+          echo "📋 Copying DSL documentation..."
+          copy_with_symlinks "dsl/docs/overview.md" "docs/dsl/docs/"
+          copy_with_symlinks "dsl/docs/TUTORIAL.md" "docs/dsl/docs/"
+          copy_with_symlinks "dsl/docs/LANGUAGE_REFERENCE.md" "docs/dsl/docs/"
+          copy_with_symlinks "dsl/docs/CLI.md" "docs/dsl/docs/"
+          copy_with_symlinks "dsl/docs/PACKAGE_MANAGER.md" "docs/dsl/docs/"
+          copy_with_symlinks "dsl/docs/LSP.md" "docs/dsl/docs/"
+          copy_with_symlinks "dsl/treesitter" "docs/dsl/"
+          copy_with_symlinks "dsl/lsp" "docs/dsl/"
 
           # Copy other top-level documentation
-          cp -rv database docs/ 2>/dev/null || echo "⚠️  database not found"
-          cp -rv typing docs/ 2>/dev/null || echo "⚠️  typing not found"
-          cp -rv qarrayDevice docs/ 2>/dev/null || echo "⚠️  qarrayDevice not found"
-          cp -rv libs docs/ 2>/dev/null || echo "⚠️  libs not found"
+          echo "📋 Copying other documentation..."
+          copy_with_symlinks "database" "docs/"
+          copy_with_symlinks "typing" "docs/"
+          copy_with_symlinks "qarrayDevice" "docs/"
+          copy_with_symlinks "libs" "docs/"
+
+          # Remove any broken symlinks that might cause issues
+          echo "🔍 Removing broken symlinks from docs..."
+          find docs -type l ! -exec test -e {} \; -delete
 
           # Verify what we have
-          echo "📋 Files in docs folder:"
-          find docs -type f -name "*.md" | head -20
+          echo ""
+          echo "✅ Files in docs folder:"
+          find docs -type f -name "*.md" | sort
+          echo ""
+          echo "✅ Total markdown files:"
+          find docs -type f -name "*.md" | wc -l
 
       - name: Build MkDocs site
         run: |
