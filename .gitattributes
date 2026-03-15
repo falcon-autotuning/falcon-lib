@@ -1,0 +1,6 @@
+# Tell git to treat these as actual symlinks (not as text files)
+docs/dsl symlink
+docs/libs symlink
+docs/database symlink
+docs/typing symlink
+docs/qarrayDevice symlink

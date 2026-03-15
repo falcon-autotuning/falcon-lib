@@ -33,7 +33,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install mkdocs mkdocs-material
-
+      - name: Resolve symlinks
+        run: |
+          # Convert symlinks to actual copies for the build
+          find docs -type l -exec sh -c 'link="$1"; target=$(readlink "$link"); rm "$link"; cp -r "$target" "$link"' _ {} \;
       - name: Build MkDocs site (mkdoxy runs as a plugin)
         run: |
           mkdocs build --clean
