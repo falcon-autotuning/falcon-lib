@@ -48,6 +48,7 @@ theme:
 nav:
   - Get Started:
       - Welcome to Falcon Lib: index.md
+      - Database Docs: ../database/README.md
 markdown_extensions:
   - tables
   - toc:
