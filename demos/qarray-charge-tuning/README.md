@@ -23,7 +23,10 @@ export TEST_DATABASE_URL="postgresql://falcon_test:falcon_test_password@127.0.0.
 
 The log-level lets users customize the amount of logging they want to see when running the CLI.
 
+**To run the demo we currently require users to first clone the repo and navigate to demos folder**
+
 ```bash
+
 # From the demos/qarray-charge-tuning
 make docker-up
 # this runs the test
