@@ -28,7 +28,7 @@ make docker-up
 falcon-test ./tests/run_tests.fal --log-level info
 ```
 
-See [demos](https://github.com/falcon-autotuning/falcon-lib/demos/qarray-charge-tuning/README.md) for more details.
+[Try the Demo on GitHub](https://github.com/falcon-autotuning/falcon-lib/tree/main/demos/qarray-charge-tuning)
 
 ### For Developers: Build from Source
 
@@ -85,7 +85,7 @@ Each major component has its own build instructions:
 ## Next Steps
 
 - Get Started: Read [dsl/README.md](/dsl/README.md) for the introduction to the language
-- Try the Demo: Run the QArray charge tuning [demo](https://github.com/falcon-autotuning/falcon-lib/tree/main/demos/qarray-charge-tuning)
+- Try the Demo: Run the QArray charge tuning [Try the Demo on GitHub](https://github.com/falcon-autotuning/falcon-lib/tree/main/demos/qarray-charge-tuning)
 - Develop: Check individual component READMEs for build and API details
 - Online Docs: Visit our Falcon Lib website for interactive documentation
 
