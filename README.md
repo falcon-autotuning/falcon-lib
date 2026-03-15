@@ -18,6 +18,8 @@ Falcon Lib is organized into several key components:
 Currently this application only works on Linux. This may work on windows with WSL2.
 Windows support is currently in the works for better instrument support.
 
+See the [documentation](https://falcon-autotuning.github.io/falcon-lib/).
+
 ### For Users: Run the Demo
 
 ```bash
