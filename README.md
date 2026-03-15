@@ -85,7 +85,7 @@ Each major component has its own build instructions:
 ## Next Steps
 
 - Get Started: Read [dsl/README.md](/dsl/README.md) for the introduction to the language
-- Try the Demo: Run the QArray charge tuning [demo](/demos/qarray-charge-tuning/README.md)
+- Try the Demo: Run the QArray charge tuning [demo](https://github.com/falcon-autotuning/falcon-lib/tree/main/demos/qarray-charge-tuning)
 - Develop: Check individual component READMEs for build and API details
 - Online Docs: Visit our Falcon Lib website for interactive documentation
 
