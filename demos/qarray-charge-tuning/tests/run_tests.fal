@@ -54,7 +54,7 @@ autotuner FirstTest -> (int passed, int failed) {
             .SetValue(virtualizationNames.ToJSON());
         database::Insert(dcharVirtualizationNames);
         // 4. Build the interdotSpacing variable
-        Quantity interdotSpacing = Quantity.New(1.7, symbolUnit::SymbolUnit.Volt());
+        Quantity interdotSpacing = Quantity.New(1.0, symbolUnit::SymbolUnit.Volt());
         database::DeviceCharacteristic dcharInterdotSpacing = database::DeviceCharacteristic.New()
             .SetScope("device")
             .SetName("interdotSpacing")
@@ -69,6 +69,7 @@ autotuner FirstTest -> (int passed, int failed) {
         database::Insert(dcharInterdotSpacing);
         // 5. Define the starting position 
         Map<connection::Connection, quantity::Quantity> begin = Map.New();
+        begin.Set(Connection.NewPlungerGate("S1"), quantity::Quantity.New(-0.1, symbolUnit::SymbolUnit.Volt()));
         begin.Set(rawPlungerGates[0], quantity::Quantity.New(0.0, symbolUnit::SymbolUnit.Volt()));
         begin.Set(rawPlungerGates[1], quantity::Quantity.New(0.0, symbolUnit::SymbolUnit.Volt()));
         hub::Ramp(begin);

@@ -398,32 +398,47 @@ build_dvss_from_volt_map(const std::map<std::string, double> &volt_map) {
       std::make_shared<falcon_core::generic::List<DeviceVoltageState>>(vec));
 }
 
-static std::vector<int> detect_peaks(const std::vector<double> &signal,
-                                     double threshold_sigma = 2.0) {
-  const int n = static_cast<int>(signal.size());
-  if (n < 3) {
+constexpr double kDefaultThresholdSigma = 2.0;
+
+std::vector<int> detect_peaks(const std::vector<double> &signal,
+                              double threshold_sigma = kDefaultThresholdSigma) {
+  const int signal_size = static_cast<int>(signal.size());
+  if (signal_size < 3) {
     return {};
   }
-  std::vector<double> abs_signal(n);
-  for (int i = 0; i < n; ++i) {
+  std::vector<double> abs_signal(signal_size);
+  for (int i = 0; i < signal_size; ++i) {
     abs_signal[i] = std::abs(signal[i]);
   }
   double sum = 0.0;
-  for (double v : abs_signal) {
-    sum += v;
+  for (double value : abs_signal) {
+    sum += value;
   }
-  double mean = sum / n;
+  double mean = sum / signal_size;
   double sq_sum = 0.0;
-  for (double v : abs_signal) {
-    sq_sum += (v - mean) * (v - mean);
+  for (double value : abs_signal) {
+    sq_sum += (value - mean) * (value - mean);
   }
-  double stddev = std::sqrt(sq_sum / n);
+  double stddev = std::sqrt(sq_sum / signal_size);
   double threshold = mean + (threshold_sigma * stddev);
   std::vector<int> peaks;
-  for (int i = 1; i < n - 1; ++i) {
-    if (abs_signal[i] > abs_signal[i - 1] &&
-        abs_signal[i] > abs_signal[i + 1] && abs_signal[i] > threshold) {
-      peaks.push_back(i);
+  int i = 1;
+  while (i < signal_size - 1) {
+    // Check for flat peak
+    if (abs_signal[i] >= abs_signal[i - 1] &&
+        abs_signal[i] >= abs_signal[i + 1] && abs_signal[i] > threshold) {
+      int plateau_start = i;
+      int plateau_end = i;
+      // Extend plateau to the right
+      while (plateau_end + 1 < signal_size - 1 &&
+             abs_signal[plateau_end] == abs_signal[plateau_end + 1]) {
+        ++plateau_end;
+      }
+      // Only record the first index of the plateau as the peak
+      peaks.push_back(plateau_start);
+      i = plateau_end + 1;
+    } else {
+      ++i;
     }
   }
   return peaks;
