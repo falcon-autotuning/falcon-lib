@@ -146,17 +146,17 @@ static void plot_1d(const std::string &filename, const std::vector<double> &x,
   plsdev("pngcairo");
   plsfnam(filename.c_str());
   plinit();
-  double xmin = x[0], xmax = x[0], ymin = y[0], ymax = y[0];
+  double xmin = x[0];
+  double xmax = x[0];
+  double ymin = y[0];
+  double ymax = y[0];
   for (double val : x) {
-    if (val < xmin)
-      xmin = val;
+    xmin = std::min(val, xmin);
     xmax = std::max(val, xmax);
   }
   for (double val : y) {
-    if (val < ymin)
-      ymin = val;
-    if (val > ymax)
-      ymax = val;
+    ymin = std::min(val, ymin);
+    ymax = std::max(val, ymax);
   }
   if (ymin == ymax) {
     ymin -= 0.5;
@@ -837,7 +837,11 @@ void BuildVirtualizationMatrix(const FalconParamEntry *params,
   }
   auto shape = std::array<std::size_t, 2>{rows, cols};
   xt::xarray<double> arr = xt::adapt(flat, shape);
-  auto farr = std::make_shared<falcon_core::generic::FArray<double>>(arr);
+  double arrayMin = xt::amin(arr)();
+  double arrayMax = xt::amax(arr)();
+  xt::xarray<double> normalized = (arr - arrayMin) / (arrayMax - arrayMin);
+  auto farr =
+      std::make_shared<falcon_core::generic::FArray<double>>(normalized);
   out[0] = {};
   out[0].tag = FALCON_TYPE_OPAQUE;
   out[0].value.opaque.type_name = "FArray";

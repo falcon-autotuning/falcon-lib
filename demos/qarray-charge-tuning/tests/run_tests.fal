@@ -54,7 +54,7 @@ autotuner FirstTest -> (int passed, int failed) {
             .SetValue(virtualizationNames.ToJSON());
         database::Insert(dcharVirtualizationNames);
         // 4. Build the interdotSpacing variable
-        Quantity interdotSpacing = Quantity.New(1.0, symbolUnit::SymbolUnit.Volt());
+        Quantity interdotSpacing = Quantity.New(0.2, symbolUnit::SymbolUnit.Volt());
         database::DeviceCharacteristic dcharInterdotSpacing = database::DeviceCharacteristic.New()
             .SetScope("device")
             .SetName("interdotSpacing")
