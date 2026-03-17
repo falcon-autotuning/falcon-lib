@@ -146,6 +146,7 @@ static void plot_1d(const std::string &filename, const std::vector<double> &x,
   plsdev("pngcairo");
   plsfnam(filename.c_str());
   plinit();
+  double y_buffer = 0.05;
   double xmin = x[0];
   double xmax = x[0];
   double ymin = y[0];
@@ -162,6 +163,9 @@ static void plot_1d(const std::string &filename, const std::vector<double> &x,
     ymin -= 0.5;
     ymax += 0.5;
   }
+  double buffer_dist = (ymax - ymin) * y_buffer;
+  ymax = ymax + buffer_dist;
+  ymin = ymin - buffer_dist;
   if (xmin == xmax) {
     xmin -= 0.5;
     xmax += 0.5;
@@ -598,11 +602,34 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
     }
   }
 
+  double max_diff = 0.0;
+  std::string dominant_gate;
+  std::map<std::string, double> amplitudes;
+  for (const auto &key_value : start_map) {
+    const auto &name = key_value.first;
+    amplitudes[name] = std::abs(stop_map[name] - start_map[name]);
+    if (amplitudes[name] > max_diff) {
+      max_diff = amplitudes[name];
+      dominant_gate = name;
+    }
+  }
+  double scale = 0.0;
+  double offset = 0.0;
+  for (const auto &key_value : start_map) {
+    scale = scale + (amplitudes[key_value.first] * amplitudes[key_value.first]);
+    offset = offset + (start_map[key_value.first] * start_map[key_value.first]);
+  }
+  scale = std::sqrt(scale);
+  offset = std::sqrt(offset);
+  std::cout << "The selected scale was " << std::to_string(scale)
+            << " and the offset was " << std::to_string(offset) << "\n";
   int num_blips = static_cast<int>(peak_indices.size());
   // Debug plot: save the signal as a 1D plot
+  // calculate the virtualized x axis
   std::vector<double> x(signal.size());
-  for (size_t i = 0; i < signal.size(); ++i)
-    x[i] = static_cast<double>(i);
+  for (size_t i = 0; i < signal.size(); ++i) {
+    x[i] = (static_cast<double>(i) * scale / signal.size()) + offset;
+  }
 
   std::filesystem::create_directories("plots");
   auto now = std::chrono::system_clock::now();
@@ -611,8 +638,8 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
                     .count();
   std::string debug_plot_name =
       "plots/analyze_blips_signal_" + std::to_string(micros) + ".png";
-  plot_1d(debug_plot_name, x, signal, "Index", "Differentiated Signal",
-          "AnalyzeBlips Signal", peak_indices);
+  plot_1d(debug_plot_name, x, signal, "v" + dominant_gate,
+          "Differentiated Signal", "AnalyzeBlips Signal", peak_indices);
 
   out[0] = {};
   out[0].tag = FALCON_TYPE_INT;

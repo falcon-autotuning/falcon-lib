@@ -1,6 +1,6 @@
 # QArray Charge Tuning Demo & Tests
 
-A modern demo for QArray charge tuning in FAlCon, using the device characteristics database for global variables (libpqxx backend).
+A modern demo for QArray charge tuning in FAlCon, using the device characteristics database for global variables.
 
 This demo only currently runs on Linux, it may support WSL.
 
@@ -10,6 +10,10 @@ The ChargeConfigurationTuner runs the high level autotuning of the charge system
 We recommend running this demo using the falcon-test CLI. We have setup a psuedotest that sets up the environment for the autotuner and generates a local Charge Stability Diagram of the local area.
 
 ## Setup
+
+export PATH="/opt/falcon/lib:$PATH"
+export LD_LIBRARY_PATH="/opt/falcon/lib:$LD_LIBRARY_PATH"
+export PKG_CONFIG_PATH="/opt/falcon/lib/pkgconfig:$PKG_CONFIG_PATH"
 
 ### 1. Establish the database
 
