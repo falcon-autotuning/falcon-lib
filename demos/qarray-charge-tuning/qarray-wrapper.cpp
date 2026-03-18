@@ -460,6 +460,18 @@ get_struct_instance(const ParameterMap &pm, const std::string &key) {
   }
   return std::get<std::shared_ptr<StructInstance>>(it->second);
 }
+// We define a plunger gate from this config as a gate beginning with a P
+std::vector<ConnectionSP> get_current_plunger_gates() {
+  const auto &names = device().gate_names();
+  std::vector<ConnectionSP> conns;
+  conns.reserve(names.size());
+  for (const auto &name : names) {
+    if (name.find("P") != std::string::npos) {
+      conns.push_back(Connection::PlungerGate(name));
+    }
+  }
+  return conns;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Exported FFI functions
@@ -475,18 +487,10 @@ void CollectCurrentDeviceState(const FalconParamEntry * /*params*/,
   pack_dvss(std::move(dvss), out, oc);
 }
 
-// We define a plunger gate from this config as a gate beginning with a P
 void CollectCurrentPlungerGates(const FalconParamEntry * /*params*/,
                                 int32_t /*param_count*/, FalconResultSlot *out,
                                 int32_t *oc) {
-  const auto &names = device().gate_names();
-  std::vector<ConnectionSP> conns;
-  conns.reserve(names.size());
-  for (const auto &name : names) {
-    if (name.find("P") != std::string::npos) {
-      conns.push_back(Connection::PlungerGate(name));
-    }
-  }
+  auto conns = get_current_plunger_gates();
   pack_connection_array(std::move(conns), out, oc);
 }
 
@@ -615,9 +619,9 @@ void AnalyzeBlips(const FalconParamEntry *params, int32_t param_count,
   }
   double scale = 0.0;
   double offset = 0.0;
-  for (const auto &key_value : start_map) {
-    scale = scale + (amplitudes[key_value.first] * amplitudes[key_value.first]);
-    offset = offset + (start_map[key_value.first] * start_map[key_value.first]);
+  for (const auto &key : get_current_plunger_gates()) {
+    scale = scale + (amplitudes[key->name()] * amplitudes[key->name()]);
+    offset = offset + (start_map[key->name()] * start_map[key->name()]);
   }
   scale = std::sqrt(scale);
   offset = std::sqrt(offset);
@@ -864,11 +868,18 @@ void BuildVirtualizationMatrix(const FalconParamEntry *params,
   }
   auto shape = std::array<std::size_t, 2>{rows, cols};
   xt::xarray<double> arr = xt::adapt(flat, shape);
-  double arrayMin = xt::amin(arr)();
-  double arrayMax = xt::amax(arr)();
-  xt::xarray<double> normalized = (arr - arrayMin) / (arrayMax - arrayMin);
-  auto farr =
-      std::make_shared<falcon_core::generic::FArray<double>>(normalized);
+  // Check all diagonal values are equal
+  double diag = arr(0, 0);
+  constexpr double tol = 1e-8;
+  for (size_t i = 1; i < std::min(rows, cols); ++i) {
+    if (std::abs(arr(i, i) - diag) > tol) {
+      throw std::runtime_error(
+          "Diagonal values are not equal; cannot apply global scaling.");
+    }
+  }
+  // Scale entire matrix so diagonal is 1
+  arr /= diag;
+  auto farr = std::make_shared<falcon_core::generic::FArray<double>>(arr);
   out[0] = {};
   out[0].tag = FALCON_TYPE_OPAQUE;
   out[0].value.opaque.type_name = "FArray";

@@ -115,7 +115,7 @@ While a CLI exists for real deployments, this demo constructs them directly in t
 
 This test file is written using the [testing framework](https://github.com/falcon-autotuning/falcon-lib/tree/main/libs/testing) where the details of how to use the framework are explained in the library.
 We have included only a single test in this suite, feel free to add more or customize our directly.
-The test is called testCharge1AndCharge2 and it attempts to tune the DUT to the (1,2) charge configuration.
+The test is called test_Charge1AndCharge2 and it attempts to tune the DUT to the (1,2) charge configuration.
 
 The test begins by first restarting the attached [QArray](https://github.com/b-vanstraaten/QArray) simulation.
 This QArray simulation is bound into the FAlCon DSL through the FFI that we designed.
