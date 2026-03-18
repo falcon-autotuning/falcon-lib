@@ -20,7 +20,7 @@ autotuner FirstTest -> (int passed, int failed) {
     passed = 0; failed = 0;
     start -> __init;
 
-    state test_symmetrical(TestRunner runner, TestContext t) {
+    state testCharge1AndCharge2(TestRunner runner, TestContext t) {
         // Call our yaml file
         hub::RestartDevice("../2_dot.yml");
         // Reset the database
