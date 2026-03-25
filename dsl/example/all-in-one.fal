@@ -1,8 +1,4 @@
-import (
-"log"
-"io"
-"config"
-)
+import ("log" "io" "config")
 struct DeviceConnection {
     string name_;
     routine New(string name) -> (DeviceConnection conn) {
@@ -15,7 +11,7 @@ struct DeviceConnection {
 autotuner CheckPlungerGates (Array<DeviceConnection> connections,
                              Config config) -> (Error err) {
     int index = 0;
-    Error err = nil;
+    err = nil;
     DeviceConnection connection = connections[index];
     start -> loop (connection);
     state loop (DeviceConnection conn) {
@@ -23,7 +19,7 @@ autotuner CheckPlungerGates (Array<DeviceConnection> connections,
         if (!config.get_plunger_gates().contains(conn)) {
             log::warn("DeviceConnection " + conn.Name() +
                       " is not in plunger gates.");
-            -> missing_plunger_gate;
+            -> missing_plunger_gate(conn);
         }
         elif (index < connections.size()) {
             index = index + 1;
@@ -33,7 +29,7 @@ autotuner CheckPlungerGates (Array<DeviceConnection> connections,
             -> exit;
         }
     }
-    state missing_plunger_gate {
+    state missing_plunger_gate (DeviceConnection conn) {
         err = Error("DeviceConnection " + conn.Name() +
                     " is missing a plunger gate.");
         -> exit;
