@@ -15,7 +15,7 @@
 // Run with:
 //   falcon-test error_detection.fal
 //
-import "../testing.fal";
+import "github.com/falcon-autotuning/falcon-lib/libs/testing";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Suite: ErrorDetection

@@ -117,24 +117,25 @@ void PackageManager::install(const std::string &source,
       throw std::runtime_error("install: source not found: " + source);
     }
 
-    // Check if it's a Falcon package (contains falcon.yml)
     if (!PackageResolver::is_package(src_path)) {
       throw std::runtime_error("install: source is not a Falcon package "
                                "(missing falcon.yml file): " +
                                source);
     }
 
-    // Cache all .fal files in the package
     if (std::filesystem::is_directory(src_path)) {
-      for (const auto &entry :
-           std::filesystem::recursive_directory_iterator(src_path)) {
-        if (entry.path().extension() == ".fal") {
-          cache_->store(entry.path());
+      for (auto it = std::filesystem::recursive_directory_iterator(src_path);
+           it != std::filesystem::recursive_directory_iterator(); ++it) {
+        if (it->is_directory() && it->path().filename() == ".falcon") {
+          it.disable_recursion_pending();
+          continue;
+        }
+        if (it->is_regular_file() && it->path().extension() == ".fal") {
+          cache_->store(it->path());
         }
       }
     }
 
-    // Add to manifest if not already present
     std::string dep_name = src_path.stem().string();
     bool already = false;
     for (const auto &d : manifest_.dependencies) {

@@ -62,6 +62,14 @@ public:
   static bool is_package(const std::filesystem::path &path);
 
 private:
+  /**
+   * @brief Recursively resolve and cache all dependencies of a package.
+   *
+   * When a package is resolved, we need to also resolve and cache all of its
+   * dependencies (and their dependencies, recursively) so that FFI wrappers
+   * and .fal files from the entire dependency tree are available.
+   */
+  void resolve_package_dependencies(const std::filesystem::path &pkg_root);
   struct GitHubURL {
     std::string owner;
     std::string repo;
