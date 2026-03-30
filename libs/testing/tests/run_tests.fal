@@ -1,6 +1,6 @@
 // Self-tests for the falcon/testing library.
 // Run with:  falcon-test run_tests.fal
-import "github.com/falcon-autotuning/falcon-lib/libs/testing";
+import "../testing.fal";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Suite 1: Core assertion primitives
