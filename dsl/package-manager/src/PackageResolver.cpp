@@ -102,15 +102,9 @@ PackageResolver::parse_github_url(const std::string &url_string) {
 
 std::pair<std::string, std::string>
 PackageResolver::find_package_root_in_path(const GitHubURL &url) {
-  // The path given by the user IS the package directory
-  // Examples:
-  //  - "libs/collections/array"           (package directory)
-  //  - "libs/collections/array/array.fal" (specific file in package)
-
   std::string package_root = url.path;
   std::string subpath = "";
 
-  // If path ends with .fal, extract the filename as subpath
   if (package_root.ends_with(".fal")) {
     size_t last_slash = package_root.find_last_of('/');
     if (last_slash != std::string::npos) {
@@ -125,13 +119,11 @@ PackageResolver::find_package_root_in_path(const GitHubURL &url) {
 std::filesystem::path PackageResolver::download_github_package(
     const std::string &owner, const std::string &repo,
     const std::string &branch, const std::string &package_dir) {
-  // Simple approach: clone the repo to a cache directory
   auto cache_base = std::filesystem::temp_directory_path() / ".falcon-packages";
   std::filesystem::create_directories(cache_base);
 
   auto repo_cache_dir = cache_base / (owner + "_" + repo);
 
-  // If already cloned, skip the clone step
   if (!std::filesystem::exists(repo_cache_dir)) {
     std::string clone_url = "https://github.com/" + owner + "/" + repo + ".git";
     std::string clone_cmd = "git clone --depth 1 --branch " + branch + " \"" +
@@ -146,7 +138,6 @@ std::filesystem::path PackageResolver::download_github_package(
     }
   }
 
-  // Navigate to the package directory within the cloned repo
   auto final_path = repo_cache_dir / package_dir;
 
   if (!std::filesystem::exists(final_path)) {
@@ -155,7 +146,6 @@ std::filesystem::path PackageResolver::download_github_package(
         "\n(Looked in: " + final_path.string() + ")");
   }
 
-  // Verify it's a Falcon package (has falcon.yml)
   if (!std::filesystem::exists(final_path / "falcon.yml")) {
     throw std::runtime_error(
         "No falcon.yml found in package directory: " + package_dir +
@@ -167,22 +157,23 @@ std::filesystem::path PackageResolver::download_github_package(
 
 std::string PackageResolver::get_package_main_file(
     const std::filesystem::path &package_root) {
-  // Read falcon.yml to determine the main file
   auto manifest_file = package_root / "falcon.yml";
 
   if (std::filesystem::exists(manifest_file)) {
     try {
       auto manifest = PackageManifest::load(manifest_file);
-      // The "main" file should be the first .fal file in the package
-      // For now, use the package name with .fal extension
-      std::string pkg_name = package_root.stem().string();
-      return pkg_name + ".fal";
+      std::string pkg_name = manifest.name;
+      if (pkg_name.empty()) {
+        pkg_name = package_root.stem().string();
+      }
+      if (std::filesystem::exists(package_root / (pkg_name + ".fal"))) {
+        return pkg_name + ".fal";
+      }
     } catch (const YAML::Exception &e) {
       // Fallback below
     }
   }
 
-  // Fallback: look for .fal file with same name as directory
   std::string dir_name = package_root.stem().string();
   auto default_main = package_root / (dir_name + ".fal");
 
@@ -190,9 +181,8 @@ std::string PackageResolver::get_package_main_file(
     return dir_name + ".fal";
   }
 
-  // Fallback: any .fal file in the root
   for (const auto &entry : std::filesystem::directory_iterator(package_root)) {
-    if (entry.path().extension() == ".fal") {
+    if (entry.is_regular_file() && entry.path().extension() == ".fal") {
       return entry.path().filename().string();
     }
   }
@@ -225,13 +215,11 @@ PackageResolver::resolve(const std::string &import_path,
     return resolve_github_package(import_path);
   }
 
-  // Try relative to importing file
   auto local_candidate = base_dir / import_path;
   if (std::filesystem::exists(local_candidate)) {
     return resolve_local(std::filesystem::path("./" + import_path), base_dir);
   }
 
-  // Try relative to project root
   auto root_candidate = project_root_ / import_path;
   if (std::filesystem::exists(root_candidate)) {
     return resolve_local(import_path, project_root_);
@@ -258,46 +246,62 @@ PackageResolver::resolve_local(const std::filesystem::path &raw,
                                const std::filesystem::path &base_dir) {
   auto abs = std::filesystem::weakly_canonical(base_dir / raw);
 
-  // Check if it's a package directory
   if (is_package(abs)) {
-    // Load manifest to get FFI wrappers
     auto manifest = PackageManifest::load(abs / "falcon.yml");
 
-    // Cache ALL .fal files in the package
     std::vector<std::filesystem::path> fal_files;
-    for (const auto &entry :
-         std::filesystem::recursive_directory_iterator(abs)) {
-      if (entry.path().extension() == ".fal") {
-        cache_.store(entry.path());
-        fal_files.push_back(entry.path());
+    for (auto it = std::filesystem::recursive_directory_iterator(abs);
+         it != std::filesystem::recursive_directory_iterator(); ++it) {
+      if (it->is_directory() && it->path().filename() == ".falcon") {
+        it.disable_recursion_pending();
+        continue;
+      }
+      if (it->is_regular_file() && it->path().extension() == ".fal") {
+        cache_.store(it->path());
+        fal_files.push_back(it->path());
       }
     }
 
-    // Cache all FFI wrapper files
     for (const auto &wrapper_rel : manifest.ffi) {
       auto wrapper_path = abs / wrapper_rel;
       if (std::filesystem::exists(wrapper_path)) {
-        cache_.store(wrapper_path);
+        auto cached_wrapper = cache_.cache_dir() / wrapper_rel;
+        std::filesystem::create_directories(cached_wrapper.parent_path());
+        std::filesystem::copy_file(
+            wrapper_path, cached_wrapper,
+            std::filesystem::copy_options::overwrite_existing);
       }
-      // Note: missing wrappers don't cause failure
     }
+
+    resolve_package_dependencies(abs);
 
     if (fal_files.empty()) {
       throw std::runtime_error("No .fal files found in package: " +
                                abs.string());
     }
 
-    auto main_path = fal_files[0];
+    std::filesystem::path main_path;
+    try {
+      auto main_file_name = get_package_main_file(abs);
+      main_path = abs / main_file_name;
+    } catch (...) {
+    }
+
+    if (!std::filesystem::exists(main_path)) {
+      main_path = fal_files[0];
+    }
+
     auto sha = PackageCache::sha256_file(main_path);
     auto module_name = abs.stem().string();
 
-    return ResolvedImport{
-        main_path, cache_.lookup(main_path).value_or(main_path),
-        abs,       module_name,
-        sha,       true};
+    return ResolvedImport{main_path,
+                          cache_.lookup(main_path).value_or(main_path),
+                          cache_.cache_dir(),
+                          module_name,
+                          sha,
+                          true};
   }
 
-  // Regular .fal file
   if (!std::filesystem::exists(abs)) {
     throw std::runtime_error("Import not found: " + abs.string());
   }
@@ -317,34 +321,57 @@ PackageResolver::resolve_github_package(const std::string &import_path) {
   auto pkg_root = download_github_package(github_url.owner, github_url.repo,
                                           github_url.branch, package_dir);
 
-  // Load manifest to get FFI wrappers
   auto manifest = PackageManifest::load(pkg_root / "falcon.yml");
 
-  // Cache ALL .fal files in the package
   std::vector<std::filesystem::path> fal_files;
-  for (const auto &entry :
-       std::filesystem::recursive_directory_iterator(pkg_root)) {
-    if (entry.path().extension() == ".fal") {
-      cache_.store(entry.path());
-      fal_files.push_back(entry.path());
+  for (auto it = std::filesystem::recursive_directory_iterator(pkg_root);
+       it != std::filesystem::recursive_directory_iterator(); ++it) {
+    if (it->is_directory() && it->path().filename() == ".falcon") {
+      it.disable_recursion_pending();
+      continue;
+    }
+    if (it->is_regular_file() && it->path().extension() == ".fal") {
+      cache_.store(it->path());
+      fal_files.push_back(it->path());
     }
   }
 
-  // Cache all FFI wrapper files
   for (const auto &wrapper_rel : manifest.ffi) {
     auto wrapper_path = pkg_root / wrapper_rel;
     if (std::filesystem::exists(wrapper_path)) {
-      cache_.store(wrapper_path);
+      auto cached_wrapper = cache_.cache_dir() / wrapper_rel;
+      std::filesystem::create_directories(cached_wrapper.parent_path());
+      std::filesystem::copy_file(
+          wrapper_path, cached_wrapper,
+          std::filesystem::copy_options::overwrite_existing);
     }
-    // Note: missing wrappers don't cause failure
   }
+
+  resolve_package_dependencies(pkg_root);
 
   if (fal_files.empty()) {
     throw std::runtime_error("No .fal files found in downloaded package: " +
                              pkg_root.string());
   }
 
-  auto file_abs_path = fal_files[0];
+  std::filesystem::path file_abs_path;
+  if (subpath.empty()) {
+    try {
+      auto main_file_name = get_package_main_file(pkg_root);
+      file_abs_path = pkg_root / main_file_name;
+    } catch (...) {
+    }
+
+    if (!std::filesystem::exists(file_abs_path)) {
+      file_abs_path = fal_files[0];
+    }
+  } else {
+    file_abs_path = pkg_root / subpath;
+    if (!std::filesystem::exists(file_abs_path)) {
+      file_abs_path = fal_files[0];
+    }
+  }
+
   auto sha = PackageCache::sha256_file(file_abs_path);
 
   std::string module_name;
@@ -354,10 +381,39 @@ PackageResolver::resolve_github_package(const std::string &import_path) {
     module_name = file_abs_path.stem().string();
   }
 
-  return ResolvedImport{
-      file_abs_path, cache_.lookup(file_abs_path).value_or(file_abs_path),
-      pkg_root,      module_name,
-      sha,           true};
+  return ResolvedImport{file_abs_path,
+                        cache_.lookup(file_abs_path).value_or(file_abs_path),
+                        cache_.cache_dir(),
+                        module_name,
+                        sha,
+                        true};
+}
+void PackageResolver::resolve_package_dependencies(
+    const std::filesystem::path &pkg_root) {
+  auto manifest_path = pkg_root / "falcon.yml";
+  if (!std::filesystem::exists(manifest_path)) {
+    return;
+  }
+
+  auto manifest = PackageManifest::load(manifest_path);
+
+  for (const auto &dep : manifest.dependencies) {
+    try {
+      std::string import_path;
+      if (dep.github) {
+        import_path = *dep.github;
+      } else if (dep.local_path) {
+        import_path = *dep.local_path;
+      } else {
+        continue;
+      }
+
+      auto resolved = resolve(import_path, pkg_root / "dummy.fal");
+
+      resolve_package_dependencies(resolved.package_root);
+    } catch (const std::exception &e) {
+    }
+  }
 }
 
 } // namespace falcon::pm

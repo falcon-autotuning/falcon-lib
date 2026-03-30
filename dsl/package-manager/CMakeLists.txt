@@ -48,6 +48,7 @@ if(BUILD_TESTS)
     tests/test_cache.cpp
     tests/test_resolver.cpp
     tests/test_package_manager.cpp
+    tests/test_integration_github_packages.cpp
   )
   target_link_libraries(falcon-pm-tests
     PRIVATE falcon-pm GTest::gtest GTest::gtest_main
