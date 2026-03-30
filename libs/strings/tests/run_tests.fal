@@ -1,5 +1,5 @@
 // Tests for the falcon/strings library.
-import "github.com/falcon-autotuning/falcon-libs/libs/testing/testing.fal";
+import "github.com/falcon-autotuning/falcon-lib/libs/testing";
 import "../strings.fal";
 
 // ─────────────────────────────────────────────────────────────────────────────

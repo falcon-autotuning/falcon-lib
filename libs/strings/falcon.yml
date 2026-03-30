@@ -5,4 +5,7 @@ maintainer: "falcon-devs"
 github: "falcon-autotuning/falcon-lib"
 ffi:
   - "strings-wrapper.cpp"
-dependencies: []
+dependencies:
+  - name: testing
+    version: "^1.0.0"
+    github: "github.com/falcon-autotuning/falcon-lib/libs/testing"
