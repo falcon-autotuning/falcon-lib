@@ -277,9 +277,12 @@ PackageResolver::resolve_local(const std::filesystem::path &raw,
     for (const auto &wrapper_rel : manifest.ffi) {
       auto wrapper_path = abs / wrapper_rel;
       if (std::filesystem::exists(wrapper_path)) {
-        cache_.store(wrapper_path);
+        auto cached_wrapper = cache_.cache_dir() / wrapper_rel;
+        std::filesystem::create_directories(cached_wrapper.parent_path());
+        std::filesystem::copy_file(
+            wrapper_path, cached_wrapper,
+            std::filesystem::copy_options::overwrite_existing);
       }
-      // Note: missing wrappers don't cause failure
     }
 
     if (fal_files.empty()) {
@@ -291,10 +294,12 @@ PackageResolver::resolve_local(const std::filesystem::path &raw,
     auto sha = PackageCache::sha256_file(main_path);
     auto module_name = abs.stem().string();
 
-    return ResolvedImport{
-        main_path, cache_.lookup(main_path).value_or(main_path),
-        abs,       module_name,
-        sha,       true};
+    return ResolvedImport{main_path,
+                          cache_.lookup(main_path).value_or(main_path),
+                          cache_.cache_dir(),
+                          module_name, // Return cache_dir as package_root!
+                          sha,
+                          true};
   }
 
   // Regular .fal file
@@ -330,13 +335,19 @@ PackageResolver::resolve_github_package(const std::string &import_path) {
     }
   }
 
-  // Cache all FFI wrapper files
+  // Cache all FFI wrapper files alongside the .fal files
+  // This ensures they're in the project's .falcon/cache/
   for (const auto &wrapper_rel : manifest.ffi) {
     auto wrapper_path = pkg_root / wrapper_rel;
     if (std::filesystem::exists(wrapper_path)) {
-      cache_.store(wrapper_path);
+      // Copy wrapper to cache directory with its relative path preserved
+      // e.g., "array-wrapper.cpp" → cache/array-wrapper.cpp
+      auto cached_wrapper = cache_.cache_dir() / wrapper_rel;
+      std::filesystem::create_directories(cached_wrapper.parent_path());
+      std::filesystem::copy_file(
+          wrapper_path, cached_wrapper,
+          std::filesystem::copy_options::overwrite_existing);
     }
-    // Note: missing wrappers don't cause failure
   }
 
   if (fal_files.empty()) {
@@ -354,10 +365,12 @@ PackageResolver::resolve_github_package(const std::string &import_path) {
     module_name = file_abs_path.stem().string();
   }
 
-  return ResolvedImport{
-      file_abs_path, cache_.lookup(file_abs_path).value_or(file_abs_path),
-      pkg_root,      module_name,
-      sha,           true};
+  return ResolvedImport{file_abs_path,
+                        cache_.lookup(file_abs_path).value_or(file_abs_path),
+                        cache_.cache_dir(),
+                        module_name, // Return cache_dir as package_root!
+                        sha,
+                        true};
 }
 
 } // namespace falcon::pm
