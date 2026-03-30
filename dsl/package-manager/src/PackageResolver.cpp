@@ -294,12 +294,11 @@ PackageResolver::resolve_local(const std::filesystem::path &raw,
     auto sha = PackageCache::sha256_file(main_path);
     auto module_name = abs.stem().string();
 
-    return ResolvedImport{main_path,
-                          cache_.lookup(main_path).value_or(main_path),
-                          cache_.cache_dir(),
-                          module_name,
-                          sha,
-                          true};
+    auto cached_main = cache_.lookup(main_path).value_or(main_path);
+
+    // Force exact execution from the cache to preserve workspace context
+    return ResolvedImport{cached_main, cached_main, cache_.cache_dir(),
+                          module_name, sha,         true};
   }
 
   if (!std::filesystem::exists(abs)) {
@@ -381,12 +380,13 @@ PackageResolver::resolve_github_package(const std::string &import_path) {
     module_name = file_abs_path.stem().string();
   }
 
-  return ResolvedImport{file_abs_path,
-                        cache_.lookup(file_abs_path).value_or(file_abs_path),
-                        cache_.cache_dir(),
-                        module_name,
-                        sha,
-                        true};
+  auto cached_file = cache_.lookup(file_abs_path).value_or(file_abs_path);
+
+  // Return the locally cached file as the absolute path and cache_dir as the
+  // package root This shields the /tmp/ execution entirely from the Falcon
+  // runtime
+  return ResolvedImport{cached_file, cached_file, cache_.cache_dir(),
+                        module_name, sha,         true};
 }
 void PackageResolver::resolve_package_dependencies(
     const std::filesystem::path &pkg_root) {
