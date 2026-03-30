@@ -149,6 +149,8 @@ install-dsl: build-release
 	$(SUDO) cmake --install $(BUILD_DIR_RELEASE) --prefix $(INSTALL_PREFIX)
 	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/falcon-run $(INSTALL_LIBDIR)/falcon-run
 	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/falcon-test $(INSTALL_LIBDIR)/falcon-test
+	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/package-manager/falcon-pm $(INSTALL_LIBDIR)/falcon-pm
+	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/package-manager/libfalcon-pm.a $(INSTALL_LIBDIR)/libfalcon-pm.a
 	@echo "✓ falcon-dsl installed"
 	@echo "  Library : $(INSTALL_LIBDIR)/libfalcon-dsl.so"
 	@echo "  Headers : $(INSTALL_INCLUDEDIR)/falcon-dsl/"
@@ -156,31 +158,13 @@ install-dsl: build-release
 	@echo "  CLI     : $(INSTALL_LIBDIR)/falcon-run"
 	@echo "  TEST    : $(INSTALL_LIBDIR)/falcon-test"
 
-uninstall: uninstall-lsp
-	@echo "Uninstalling falcon-dsl from $(INSTALL_PREFIX)..."
-	$(SUDO) rm -f  $(INSTALL_LIBDIR)/libfalcon-dsl.so
-	$(SUDO) rm -f  $(INSTALL_LIBDIR)/libfalcon-dsl.so.1
-	$(SUDO) rm -f  $(INSTALL_LIBDIR)/libfalcon-dsl.so.1.0.0
-	$(SUDO) rm -r $(INSTALL_INCLUDEDIR)/falcon-dsl
-	$(SUDO) rm -r $(INSTALL_CMAKEDIR)
-	$(SUDO) rm -f $(INSTALL_PREFIX)/bin/falcon-run
-	$(SUDO) rm -f $(INSTALL_PREFIX)/bin/falcon-test
-	@echo "✓ Uninstall complete"
-
-uninstall-lsp:
-	@echo "Uninstalling lsp library from $(INSTALL_PREFIX)..."
-	$(SUDO) rm -f $(INSTALL_LIBDIR)/libfalcon-lsp.a
-	$(SUDO) rm -f $(INSTALL_LIBDIR)/falcon-lsp
-	$(SUDO) rm -r $(INSTALL_INCLUDEDIR)/falcon-lsp
-	@echo "✓ lsp library uninstalled"
-
 install-pm: build-release
 	@echo "Installing falcon-pm (package manager) to $(INSTALL_PREFIX)..."
 	$(SUDO) mkdir -p $(INSTALL_LIBDIR)
-	$(SUDO) mkdir -p $(INSTALL_INCLUDEDIR)/falcon-pm-cli
+	$(SUDO) mkdir -p $(INSTALL_INCLUDEDIR)/falcon-pm
 	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/package-manager/libfalcon-pm.a $(INSTALL_LIBDIR)/ 2>/dev/null || true
 	$(SUDO) find $(BUILD_DIR_RELEASE)/package-manager -name "falcon-pm" -type f \
-		-exec cp -v {} $(INSTALL_PREFIX)/bin/falcon-pm \; 2>/dev/null || true
+		-exec cp -v {} $(INSTALL_PREFIX)/lib/falcon-pm \; 2>/dev/null || true
 	@if [ -d lsp/package-manager/include ]; then \
 		$(SUDO) cp -r package-manager/include/* $(INSTALL_INCLUDEDIR)/falcon-pm/; \
 	fi
@@ -192,15 +176,16 @@ uninstall:
 	$(SUDO) rm -f  $(INSTALL_LIBDIR)/libfalcon-dsl.so
 	$(SUDO) rm -f  $(INSTALL_LIBDIR)/libfalcon-dsl.so.1
 	$(SUDO) rm -f  $(INSTALL_LIBDIR)/libfalcon-dsl.so.1.0.0
-	$(SUDO) rm -r $(INSTALL_INCLUDEDIR)/falcon-dsl
-	$(SUDO) rm -r $(INSTALL_INCLUDEDIR)/falcon-pm
-	$(SUDO) rm -r $(INSTALL_INCLUDEDIR)/falcon-lsp
+	@if [ -d "$(INSTALL_INCLUDEDIR)/falcon-dsl" ]; then $(SUDO) rm -r "$(INSTALL_INCLUDEDIR)/falcon-dsl"; fi
+	@if [ -d "$(INSTALL_INCLUDEDIR)/falcon-pm" ]; then $(SUDO) rm -r "$(INSTALL_INCLUDEDIR)/falcon-pm"; fi
+	@if [ -d "$(INSTALL_INCLUDEDIR)/falcon-lsp" ]; then $(SUDO) rm -r "$(INSTALL_INCLUDEDIR)/falcon-lsp"; fi
+	@if [ -d "$(INSTALL_CMAKEDIR)" ]; then $(SUDO) rm -r "$(INSTALL_CMAKEDIR)"; fi
 	$(SUDO) rm -f  $(INSTALL_LIBDIR)/falcon-lsp
 	$(SUDO) rm -f  $(INSTALL_LIBDIR)/falcon-pm
-	$(SUDO) rm -f  $(INSTALL_LIBDIR)/falcon-dsl
+	$(SUDO) rm -f  $(INSTALL_LIBDIR)/libfalcon-atc-core
+	$(SUDO) rm -f  $(INSTALL_LIBDIR)/libfalcon-pm
 	$(SUDO) rm -f  $(INSTALL_LIBDIR)/falcon-run
 	$(SUDO) rm -f  $(INSTALL_LIBDIR)/falcon-test
-	$(SUDO) rm -r $(INSTALL_CMAKEDIR)
 	@echo "✓ Uninstall complete"
 
 install-lsp: build-release

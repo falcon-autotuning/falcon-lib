@@ -1,4 +1,4 @@
-ffimport "MathW.cpp" () ()
+ffimport "MathW.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon_lib")
 routine Adder (int a, int b) -> (int add)
 routine Multiplier (int a, int b) -> (int mult)
 

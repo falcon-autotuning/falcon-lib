@@ -1,5 +1,6 @@
 #pragma once
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -12,36 +13,24 @@ class PackageCache;
  *
  * Supports:
  *  - Relative local paths:   "./Quantity.fal"  "./subdir/Adder.fal"
- *  - Future GitHub imports:  "github.com/owner/repo/path/file.fal"
- *                            (stubs out the download and returns a path in
- *                             the cache/vendor directory; actual HTTP fetch
- *                             is left as a TODO)
+ *  - Local packages:         "../shared/array" (directory with falcon.yml)
+ *  - GitHub packages:        "github.com/owner/repo/libs/collections/array"
  *
- * Resolution order:
- *  1. If the path starts with "./" or "../" → resolve relative to the
- *     directory of the importing file.
- *  2. If the path starts with "github.com/" → look in the vendor directory
- *     or download (TODO).
- *  3. Otherwise → error.
- *
- * Module name derivation:
- *  The module name for a resolved file is the stem of its filename,
- *  case-preserved.  e.g. "./Quantity.fal" → module name "Quantity".
+ * A Falcon package is identified by a `falcon.yml` metadata file in its root
+ * directory.
  */
 class PackageResolver {
 public:
-  /**
-   * @param project_root  Directory containing falcon.yml (used for vendor
-   * lookup).
-   * @param cache         SHA-256 cache (to validate/store resolved files).
-   */
   PackageResolver(std::filesystem::path project_root, PackageCache &cache);
 
   struct ResolvedImport {
     std::filesystem::path absolute_path; ///< Absolute path to the .fal file
     std::filesystem::path cached_path;   ///< Path inside .falcon/cache/
-    std::string module_name;             ///< e.g. "Quantity" from Quantity.fal
-    std::string sha256;                  ///< Current SHA-256 of the source
+    std::filesystem::path
+        package_root; ///< Root of the package (for FFI/relative resolution)
+    std::string module_name; ///< e.g. "array" from package name
+    std::string sha256;      ///< SHA-256 of the resolved file
+    bool is_package;         ///< True if this is a package import
   };
 
   /**
@@ -49,7 +38,8 @@ public:
    *
    * @param import_path  The raw string from `import "..."` in the .fal source.
    * @param importing_file  Absolute path of the file containing the import.
-   * @throws std::runtime_error if the path cannot be resolved.
+   * @return Resolved import information
+   * @throws std::runtime_error if the path cannot be resolved or downloaded.
    */
   ResolvedImport resolve(const std::string &import_path,
                          const std::filesystem::path &importing_file);
@@ -61,10 +51,51 @@ public:
   resolve_all(const std::vector<std::string> &import_paths,
               const std::filesystem::path &importing_file);
 
+  /**
+   * @brief Detect if a path is a Falcon package.
+   *
+   * A Falcon package must have a falcon.yml file at its root.
+   *
+   * @param path Local filesystem path or GitHub URL
+   * @return True if the path is a Falcon package
+   */
+  static bool is_package(const std::filesystem::path &path);
+
 private:
+  struct GitHubURL {
+    std::string owner;
+    std::string repo;
+    std::string branch;
+    std::string path;
+  };
+
   ResolvedImport resolve_local(const std::filesystem::path &raw,
                                const std::filesystem::path &base_dir);
-  ResolvedImport resolve_github(const std::string &import_path);
+
+  ResolvedImport resolve_github_package(const std::string &import_path);
+
+  static GitHubURL parse_github_url(const std::string &url_string);
+
+  /**
+   * @brief Find the falcon.yml file in the GitHub path hierarchy.
+   *
+   * Walks up the directory tree to find the falcon.yml that identifies the
+   * package.
+   *
+   * @return Pair of (package_directory, remaining_subpath)
+   */
+  static std::pair<std::string, std::string>
+  find_package_root_in_path(const GitHubURL &url);
+
+  static std::filesystem::path
+  download_github_package(const std::string &owner, const std::string &repo,
+                          const std::string &branch,
+                          const std::string &package_dir);
+
+  static std::string
+  get_package_main_file(const std::filesystem::path &package_root);
+
+  static std::string http_get(const std::string &url);
 
   std::filesystem::path project_root_;
   PackageCache &cache_;

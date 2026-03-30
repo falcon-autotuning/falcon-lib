@@ -1,4 +1,4 @@
-import "../array/array.fal";
+import "github.com/falcon-autotuning/falcon-lib/libs/collections/array";
 // ---------------------------------------------------------------------------
 // Map<K, V> — a generic key-value store (hash map).
 //

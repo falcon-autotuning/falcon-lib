@@ -1,5 +1,10 @@
 name: array
-version: "1.0.0"
-maintainer: "falcon-devs"
-github: ""
+version: 1.0.0
+description: "Generic dynamically-sized array"
+maintainer: "Falcon Team"
+github: "falcon-autotuning/falcon-lib"
+
+ffi:
+  - "array-wrapper.cpp"
+
 dependencies: []

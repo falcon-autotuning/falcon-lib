@@ -1,7 +1,7 @@
 // Tests for the falcon/collections/map library.
 // Run with:  falcon-test libs/collections/map/tests/run_tests.fal
 import "../../../testing/testing.fal";
-import "../../array/array.fal";
+import "github.com/falcon-autotuning/falcon-lib/libs/collections/array";
 import "../map.fal";
 
 // ─────────────────────────────────────────────────────────────────────────────
