@@ -1,4 +1,4 @@
-ffimport "testing-wrapper.cpp" ("/opt/falcon/include/") ("/opt/falcon/lib/libgtest.so")
+ffimport "testing-wrapper.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib/libgtest.so")
 
 // ── TestContext ────────────────────────────────────────────────────────────
 // One per test.  Write assertions against it; the runner reads pass/fail.

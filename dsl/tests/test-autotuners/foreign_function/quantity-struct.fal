@@ -1,4 +1,4 @@
-ffimport "QuantityW.cpp" () ()
+ffimport "QuantityW.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon_lib")
 struct Quantity {
     routine New (int a, int b) -> (Quantity q)
     routine Value  -> (int value)

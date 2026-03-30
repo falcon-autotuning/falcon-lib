@@ -57,57 +57,44 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
       log::error("File not found: " + fal_file_path);
       return false;
     }
-
     auto abs_path = std::filesystem::weakly_canonical(fal_file_path);
 
-    // ── Package manager: resolve imports ─────────────��────────────────────
+    // ── Package manager: resolve imports ──────────────────────────────────
     falcon::pm::PackageManager pm(abs_path);
 
-    // We need a quick pre-scan of imports *before* we parse the main file,
-    // because the parser validates type names at parse time.
-    // Strategy: do a lightweight text-scan of `import "..."` lines, resolve
-    // them, pre-load them, and inject their exported struct names into the
-    // parser's module_known_types table via the Compiler hint API.
-    //
-    // We achieve this by loading each imported file first (recursively),
-    // then loading the main file.  Imported programs' struct names are
-    // registered in the type registry and will be available.
-
-    // Read imports from file without full parse (look for import strings)
+    // Pre-scan for imports before parsing, so type names are available.
     std::vector<std::string> raw_imports = extract_imports_from_file(abs_path);
 
     if (!raw_imports.empty()) {
       auto resolved_imports = pm.resolve_imports(abs_path, raw_imports);
 
       for (const auto &imp : resolved_imports) {
-        // Load the imported file (recursive) — this registers its structs
-        // in the type registry and its routines in the function registry.
-        // We track which modules we've loaded to avoid infinite recursion.
-        if (loaded_paths_.find(imp.absolute_path) == loaded_paths_.end()) {
+        // Recursively load imported files, avoiding infinite recursion.
+        if (!loaded_paths_.contains(imp.absolute_path)) {
           if (!load_fal_file(imp.absolute_path.string())) {
             log::error("Failed to load import: " + imp.absolute_path.string());
             return false;
           }
         }
 
-        // Tell the compiler that "ModuleName::symbolName"-style type
-        // references are valid.  We inject the bare symbol names from the
-        // imported program's structs into the compiler's known-types hint.
+        // Register imported struct names for type validation.
         auto loaded_prog_it = loaded_programs_by_path_.find(imp.absolute_path);
         if (loaded_prog_it != loaded_programs_by_path_.end()) {
           const auto *prog = loaded_prog_it->second;
-          for (const auto &s : prog->structs) {
-            // Register both the bare name AND the qualified name
-            import_struct_hints_.insert(s.name);
-            import_struct_hints_.insert(imp.module_name + "::" + s.name);
+          for (const auto &struct_decl : prog->structs) {
+            import_struct_hints_.insert(struct_decl.name);
+            import_struct_hints_.insert(imp.module_name +
+                                        "::" + struct_decl.name);
           }
         }
+
+        // Store the package root for FFI wrapper path resolution.
+        package_roots_by_file_[imp.absolute_path] = imp.package_root;
       }
     }
 
     // ── Parse the main file ───────────────────────────────────────────────
     atc::Compiler compiler;
-    // Pass any imported struct hints so the parser accepts them as types
     compiler.set_known_struct_hints(import_struct_hints_);
 
     auto program = compiler.parse_file(abs_path.string());
@@ -148,16 +135,18 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
       loaded_autotuners_.erase(qname);
       loaded_autotuners_.insert({qname, std::move(autotuner)});
       auto it = loaded_autotuners_.find(qname);
-      if (it != loaded_autotuners_.end())
+      if (it != loaded_autotuners_.end()) {
         register_autotuner_as_function(it->second);
+      }
     }
 
     // ── Register inline routines ──────────────────────────────────────────
     for (auto &routine : program->routines) {
       routine.module_name = program->module_name;
       log::info("  - Routine: " + routine.name);
-      if (!routine.body.empty())
+      if (!routine.body.empty()) {
         register_inline_routine(routine);
+      }
       std::string qname = routine.module_name.empty()
                               ? routine.name
                               : routine.module_name + "::" + routine.name;

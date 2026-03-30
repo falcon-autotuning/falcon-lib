@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(CURL REQUIRED)
 
 # ─── Library ─────────────────────────────────────────────────────────────────
 add_library(falcon-pm STATIC
@@ -16,7 +17,6 @@ add_library(falcon-pm STATIC
   src/PackageManager.cpp
 )
 
-# Required because falcon-dsl is a SHARED library and links this statically
 set_target_properties(falcon-pm PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(falcon-pm
@@ -30,6 +30,7 @@ target_link_libraries(falcon-pm
     nlohmann_json::nlohmann_json
     yaml-cpp::yaml-cpp
     OpenSSL::Crypto
+    CURL::libcurl
 )
 
 # ─── CLI binary ──────────────────────────────────────────────────────────────
@@ -52,6 +53,15 @@ if(BUILD_TESTS)
     PRIVATE falcon-pm GTest::gtest GTest::gtest_main
   )
   add_test(NAME falcon-pm-tests COMMAND falcon-pm-tests)
+
+  # Integration tests (require network)
+  add_executable(falcon-pm-integration-tests
+    tests/test_integration_github_packages.cpp
+  )
+  target_link_libraries(falcon-pm-integration-tests
+    PRIVATE falcon-pm GTest::gtest GTest::gtest_main
+  )
+  add_test(NAME falcon-pm-integration-tests COMMAND falcon-pm-integration-tests)
 endif()
 
 # ─── Install ─────────────────────────────────────────────────────────────────
