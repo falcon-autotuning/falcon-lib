@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y \
   pkg-config \
   git \
   curl \
+  zip \
+  unzip \
+  tar \
   coreutils
 
 # Set up your workspace
