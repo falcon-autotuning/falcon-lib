@@ -67,7 +67,6 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
     std::vector<std::string> raw_imports = extract_imports_from_file(abs_path);
 
     if (!raw_imports.empty()) {
-      // TODO: need to break each import into its own bucket in the cache
       auto resolved_imports = pm.resolve_imports(abs_path, raw_imports);
 
       for (const auto &imp : resolved_imports) {
