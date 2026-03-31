@@ -23,7 +23,7 @@ INCLUDEDIR := $(PREFIX)/include
 ifeq ($(UNAME_S),Linux)
   VCPKG_TRIPLET ?= x64-linux-dynamic
 	TMPDIR = /tmp/falcon-core-install
-	SUDO := sudo
+	SUDO ?= sudo
   ARCHIVE_CPP = falcon-core-cpp-linux-x64.tar.gz
   ARCHIVE_CPP_SHA = falcon-core-cpp-linux-x64.tar.gz.sha256
   ARCHIVE_CAPI = falcon-core-c-api-linux-x64.tar.gz

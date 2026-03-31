@@ -7,14 +7,16 @@ RUN apt-get update && apt-get install -y \
   bison \
   flex \
   clang \
-  pkg-config 
+  pkg-config \
+  git 
 
 # Set up your workspace
+RUN git clone https://github.com/falcon-autotuning/falcon-lib.git /src
 WORKDIR /src
-COPY . .
 
 # runs the make install command that builds all of the executables
-RUN make install
+ENV SUDO=""
+RUN make install-deps && make install
 
 # Set the environment variables exactly as requested
 # (Added /opt/falcon/bin to PATH so your wrappers can find the CLI commands)
