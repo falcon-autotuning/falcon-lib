@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
   tar \
   linux-libc-dev \
   python3-dev \
+  autoconf \
   coreutils
 
 # Set up your workspace
