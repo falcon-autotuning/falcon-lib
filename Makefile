@@ -31,7 +31,7 @@ ifeq ($(UNAME_S),Linux)
   EXTRACT_CPP = tar -xzf $(TMPDIR)/$(ARCHIVE_CPP) -C $(TMPDIR)/cpp
   EXTRACT_CAPI = tar -xzf $(TMPDIR)/$(ARCHIVE_CAPI) -C $(TMPDIR)/c_api
   EXTRACT_LSP = tar -xvf $(TMPDIR)/$(ARCHIVE_LSP) -C $(TMPDIR)/lsp
-  LIBSUBDIR = 
+  LIBSUBDIR = lib/
 
 endif
 ifeq ($(OS),Windows_NT)
