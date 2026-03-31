@@ -130,12 +130,14 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
       manifest = pm::PackageManifest::load(manifest_path.value());
     }
     if (manifest_path.has_value() && (std::size(manifest.ffi) != 0U)) {
-      for (const auto &ffi : manifest.ffi) {
-        std::filesystem::path object = fal_file.parent_path() / (ffi.first);
-        if (!process_ff_import(ffi.first, abs_path, *program, object)) {
-          log::error("Failed to loaded prebuilt object: " + object.string() +
-                     " for " + fal_file_path);
-          return false;
+      for (const auto &ffi : program->ff_imports) {
+        for (const auto &[key, _] : manifest.ffi) {
+          std::filesystem::path object = fal_file.parent_path() / (key);
+          if (!process_ff_import(ffi, abs_path, *program, object)) {
+            log::error("Failed to loaded prebuilt object: " + object.string() +
+                       " for " + fal_file_path);
+            return false;
+          }
         }
       }
     } else {
@@ -664,6 +666,7 @@ bool AutotunerEngine::process_ff_import(
       pm.build(pm.project_root(), extra_flags); // Now always safe to build
     } catch (const std::exception &e) {
       log::error(std::string("Auto-build failed: ") + e.what());
+      log::error(std::string("The extra_flags were: " + extra_flags));
       return false;
     }
   }
