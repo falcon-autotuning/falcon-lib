@@ -53,6 +53,7 @@ struct PackageManifest {
   std::string version;    // SemVer, e.g. "1.0.0"
   std::string maintainer; // Free-form author/maintainer string
   std::string github;     // "owner/repo" of this package's canonical location
+  std::string license;    // License for the package
   std::map<std::string, std::string>
       ffi; // binary -> hash mapping for all necessary cpp dependencies
   std::vector<Dependency> dependencies;

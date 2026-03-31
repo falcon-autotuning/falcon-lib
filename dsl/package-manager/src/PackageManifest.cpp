@@ -20,6 +20,7 @@ PackageManifest PackageManifest::load(const std::filesystem::path &path) {
   m.version = doc["version"] ? doc["version"].as<std::string>() : "0.0.0";
   m.maintainer = doc["maintainer"] ? doc["maintainer"].as<std::string>() : "";
   m.github = doc["github"] ? doc["github"].as<std::string>() : "";
+  m.license = doc["license"] ? doc["license"].as<std::string>() : "";
 
   if (doc["ffi"]) {
     if (doc["ffi"].IsMap()) {
@@ -58,6 +59,7 @@ void PackageManifest::save(const std::filesystem::path &path) const {
   out << YAML::Key << "version" << YAML::Value << version;
   out << YAML::Key << "maintainer" << YAML::Value << maintainer;
   out << YAML::Key << "github" << YAML::Value << github;
+  out << YAML::Key << "license" << YAML::Value << license;
 
   if (!ffi.empty()) {
     out << YAML::Key << "ffi" << YAML::Value << YAML::BeginMap;
@@ -96,6 +98,7 @@ PackageManifest PackageManifest::make_empty(const std::string &pkg_name) {
   m.version = "0.1.0";
   m.maintainer = "";
   m.github = "";
+  m.license = "";
   return m;
 }
 
