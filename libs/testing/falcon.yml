@@ -1,8 +1,5 @@
 name: testing
 version: "1.0.0"
-description: "testing framework for use with falcon-test"
 maintainer: "falcon-devs"
-github: "falcon-autotuning/falcon-lib"
-ffi:
-  - "testing-wrapper.cpp"
+github: ""
 dependencies: []

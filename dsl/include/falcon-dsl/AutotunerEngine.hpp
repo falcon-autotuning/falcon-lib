@@ -80,9 +80,6 @@ private:
   // Holds dlopen handles for FFI shared libraries so they stay loaded
   // for the lifetime of the engine.
   std::vector<void *> ffi_handles_;
-  // Map from absolute file path → package root directory
-  // Used to resolve FFI wrappers relative to the package
-  std::map<std::filesystem::path, std::filesystem::path> package_roots_by_file_;
 };
 
 } // namespace falcon::dsl

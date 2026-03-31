@@ -1,6 +1,5 @@
 #include "falcon-pm/PackageManager.hpp"
 #include <algorithm>
-#include <iostream>
 #include <stdexcept>
 
 namespace falcon::pm {
@@ -11,6 +10,8 @@ PackageManager::PackageManager(const std::filesystem::path &start) {
     project_root_ = *root_opt;
     manifest_ = PackageManifest::load(project_root_ / "falcon.yml");
   } else {
+    // No falcon.yml — work relative to start directory (allows bare import
+    // tests)
     project_root_ =
         std::filesystem::is_directory(start) ? start : start.parent_path();
     manifest_ = PackageManifest::make_empty("(unnamed)");
@@ -40,13 +41,16 @@ PackageManager::resolve_imports(const std::filesystem::path &fal_file,
 }
 
 std::vector<InstalledPackage> PackageManager::list() const {
+  // Walk the cache index and correlate with manifest dependencies
   std::vector<InstalledPackage> result;
 
+  // Build a quick lookup from dep name → Dependency
   std::map<std::string, const Dependency *> dep_map;
   for (const auto &d : manifest_.dependencies) {
     dep_map[d.name] = &d;
   }
 
+  // Enumerate cached entries (each sha.fal corresponds to one source file)
   auto cache_dir = project_root_ / ".falcon" / "cache";
   if (!std::filesystem::exists(cache_dir)) {
     return result;
@@ -59,6 +63,9 @@ std::vector<InstalledPackage> PackageManager::list() const {
     InstalledPackage pkg;
     pkg.cached_path = entry.path();
     pkg.cached_sha256 = entry.path().stem().string();
+    // Module name isn't directly recoverable from the sha filename alone;
+    // we'd need the index.  For a richer list, the index could store the
+    // module name too.  For now, use the sha as the identifier.
     pkg.name = pkg.cached_sha256.substr(0, 12) + "...";
     pkg.version = "cached";
     result.push_back(std::move(pkg));
@@ -68,107 +75,57 @@ std::vector<InstalledPackage> PackageManager::list() const {
 
 void PackageManager::install(const std::string &source,
                              const std::string &version) {
-  bool is_github = source.starts_with("github.com/") ||
-                   source.starts_with("https://github.com/");
-
-  std::string normalized_source = source;
-  if (normalized_source.starts_with("https://github.com/")) {
-    normalized_source = normalized_source.substr(8);
+  // For now: local path installation only.
+  // GitHub installation is a TODO (see PackageResolver::resolve_github).
+  std::filesystem::path src_path(source);
+  if (!std::filesystem::exists(src_path)) {
+    throw std::runtime_error("install: source not found: " + source);
   }
 
-  if (is_github) {
-    try {
-      auto resolved =
-          resolver_->resolve(normalized_source, project_root_ / "dummy.fal");
-
-      std::string dep_name = resolved.module_name;
-
-      bool already = false;
-      for (const auto &d : manifest_.dependencies) {
-        if (d.name == dep_name) {
-          already = true;
-          break;
-        }
+  // Recursively cache all .fal files under source path
+  if (std::filesystem::is_directory(src_path)) {
+    for (const auto &entry :
+         std::filesystem::recursive_directory_iterator(src_path)) {
+      if (entry.path().extension() == ".fal") {
+        cache_->store(entry.path());
       }
-
-      if (!already) {
-        Dependency d;
-        d.name = dep_name;
-        d.version = version;
-        d.github = normalized_source;
-        manifest_.dependencies.push_back(std::move(d));
-
-        auto manifest_path = project_root_ / "falcon.yml";
-        manifest_.save(manifest_path);
-
-        std::cout << "Installed: " << normalized_source << " (" << dep_name
-                  << ")\n";
-      } else {
-        std::cout << "Package already installed: " << dep_name << "\n";
-      }
-    } catch (const std::exception &e) {
-      throw std::runtime_error("Failed to install GitHub package '" +
-                               normalized_source + "': " + e.what());
     }
   } else {
-    std::filesystem::path src_path(source);
+    cache_->store(src_path);
+  }
 
-    if (!std::filesystem::exists(src_path)) {
-      throw std::runtime_error("install: source not found: " + source);
+  // Add to manifest if not already present
+  std::string dep_name = src_path.stem().string();
+  bool already = false;
+  for (const auto &d : manifest_.dependencies) {
+    if (d.name == dep_name) {
+      already = true;
+      break;
     }
+  }
 
-    if (!PackageResolver::is_package(src_path)) {
-      throw std::runtime_error("install: source is not a Falcon package "
-                               "(missing falcon.yml file): " +
-                               source);
-    }
+  if (!already) {
+    Dependency d;
+    d.name = dep_name;
+    d.version = version;
+    d.local_path = std::filesystem::weakly_canonical(src_path).string();
+    manifest_.dependencies.push_back(std::move(d));
 
-    if (std::filesystem::is_directory(src_path)) {
-      for (auto it = std::filesystem::recursive_directory_iterator(src_path);
-           it != std::filesystem::recursive_directory_iterator(); ++it) {
-        if (it->is_directory() && it->path().filename() == ".falcon") {
-          it.disable_recursion_pending();
-          continue;
-        }
-        if (it->is_regular_file() && it->path().extension() == ".fal") {
-          cache_->store(it->path());
-        }
-      }
-    }
-
-    std::string dep_name = src_path.stem().string();
-    bool already = false;
-    for (const auto &d : manifest_.dependencies) {
-      if (d.name == dep_name) {
-        already = true;
-        break;
-      }
-    }
-
-    if (!already) {
-      Dependency d;
-      d.name = dep_name;
-      d.version = version;
-      d.local_path = std::filesystem::weakly_canonical(src_path).string();
-      manifest_.dependencies.push_back(std::move(d));
-
-      auto manifest_path = project_root_ / "falcon.yml";
+    auto manifest_path = project_root_ / "falcon.yml";
+    if (std::filesystem::exists(manifest_path)) {
       manifest_.save(manifest_path);
-
-      std::cout << "Installed: " << source << " (" << dep_name << ")\n";
-    } else {
-      std::cout << "Package already installed: " << dep_name << "\n";
     }
   }
 }
 
 void PackageManager::remove(const std::string &package_name) {
+  // Remove from manifest
   auto &deps = manifest_.dependencies;
   auto it = std::find_if(deps.begin(), deps.end(), [&](const Dependency &d) {
     return d.name == package_name;
   });
-
   if (it != deps.end()) {
+    // If it has a local_path, invalidate the cache entry
     if (it->local_path) {
       try {
         cache_->invalidate(std::filesystem::path(*it->local_path));

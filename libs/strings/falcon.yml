@@ -1,11 +1,5 @@
 name: strings
 version: "1.0.0"
-description: "string handling for the falcon language"
 maintainer: "falcon-devs"
-github: "falcon-autotuning/falcon-lib"
-ffi:
-  - "strings-wrapper.cpp"
-dependencies:
-  - name: testing
-    version: "^1.0.0"
-    github: "github.com/falcon-autotuning/falcon-lib/libs/testing"
+github: ""
+dependencies: []
