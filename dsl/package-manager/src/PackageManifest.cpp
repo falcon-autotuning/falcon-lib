@@ -21,10 +21,16 @@ PackageManifest PackageManifest::load(const std::filesystem::path &path) {
   m.maintainer = doc["maintainer"] ? doc["maintainer"].as<std::string>() : "";
   m.github = doc["github"] ? doc["github"].as<std::string>() : "";
 
-  // Load FFI wrappers list
-  if (doc["ffi"] && doc["ffi"].IsSequence()) {
-    for (const auto &wrapper_node : doc["ffi"]) {
-      m.ffi.push_back(wrapper_node.as<std::string>());
+  if (doc["ffi"]) {
+    if (doc["ffi"].IsMap()) {
+      for (auto it = doc["ffi"].begin(); it != doc["ffi"].end(); ++it) {
+        m.ffi[it->first.as<std::string>()] = it->second.as<std::string>();
+      }
+    } else if (doc["ffi"].IsSequence()) {
+      // Legacy fallback
+      for (const auto &wrapper_node : doc["ffi"]) {
+        m.ffi[wrapper_node.as<std::string>()] = "";
+      }
     }
   }
 
@@ -38,27 +44,6 @@ PackageManifest PackageManifest::load(const std::filesystem::path &path) {
         d.github = dep_node["github"].as<std::string>();
       if (dep_node["local_path"])
         d.local_path = dep_node["local_path"].as<std::string>();
-
-      // Load package_info if present
-      if (dep_node["package_info"]) {
-        PackageInfo info;
-        auto info_node = dep_node["package_info"];
-
-        if (info_node["package_root"])
-          info.package_root = info_node["package_root"].as<std::string>();
-
-        if (info_node["main_file"])
-          info.main_file = info_node["main_file"].as<std::string>();
-
-        if (info_node["ffi_wrappers"] &&
-            info_node["ffi_wrappers"].IsSequence()) {
-          for (const auto &wrapper_node : info_node["ffi_wrappers"]) {
-            info.ffi_wrappers.push_back(wrapper_node.as<std::string>());
-          }
-        }
-
-        d.package_info = info;
-      }
 
       m.dependencies.push_back(std::move(d));
     }
@@ -74,13 +59,12 @@ void PackageManifest::save(const std::filesystem::path &path) const {
   out << YAML::Key << "maintainer" << YAML::Value << maintainer;
   out << YAML::Key << "github" << YAML::Value << github;
 
-  // Save FFI wrappers
   if (!ffi.empty()) {
-    out << YAML::Key << "ffi" << YAML::Value << YAML::BeginSeq;
-    for (const auto &wrapper : ffi) {
-      out << wrapper;
+    out << YAML::Key << "ffi" << YAML::Value << YAML::BeginMap;
+    for (const auto &[file, hash] : ffi) {
+      out << YAML::Key << file << YAML::Value << hash;
     }
-    out << YAML::EndSeq;
+    out << YAML::EndMap;
   }
 
   out << YAML::Key << "dependencies" << YAML::Value << YAML::BeginSeq;
@@ -94,29 +78,6 @@ void PackageManifest::save(const std::filesystem::path &path) const {
       out << YAML::Key << "github" << YAML::Value << *d.github;
     if (d.local_path)
       out << YAML::Key << "local_path" << YAML::Value << *d.local_path;
-
-    // Save package_info if present
-    if (d.package_info) {
-      out << YAML::Key << "package_info" << YAML::Value << YAML::BeginMap;
-
-      if (d.package_info->package_root)
-        out << YAML::Key << "package_root" << YAML::Value
-            << *d.package_info->package_root;
-
-      if (d.package_info->main_file)
-        out << YAML::Key << "main_file" << YAML::Value
-            << *d.package_info->main_file;
-
-      if (!d.package_info->ffi_wrappers.empty()) {
-        out << YAML::Key << "ffi_wrappers" << YAML::Value << YAML::BeginSeq;
-        for (const auto &wrapper : d.package_info->ffi_wrappers) {
-          out << wrapper;
-        }
-        out << YAML::EndSeq;
-      }
-
-      out << YAML::EndMap;
-    }
 
     out << YAML::EndMap;
   }
@@ -145,12 +106,11 @@ PackageManifest::find_root(const std::filesystem::path &start) {
     dir = dir.parent_path();
 
   while (true) {
-    auto candidate = dir / "falcon.yml";
-    if (std::filesystem::exists(candidate))
+    if (std::filesystem::exists(dir / "falcon.yml"))
       return dir;
     auto parent = dir.parent_path();
     if (parent == dir)
-      break; // filesystem root
+      break;
     dir = parent;
   }
   return std::nullopt;

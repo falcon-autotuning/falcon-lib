@@ -3,7 +3,18 @@ using namespace falcon::dsl;
 using namespace falcon::dsl::test;
 using namespace falcon::typing;
 
-class ForeignFunctionTest : public DSLTestBase {};
+class ForeignFunctionTest : public DSLTestBase {
+protected:
+  void TearDown() override {
+    // List all possible FFI test folders
+    std::vector<std::string> test_dirs = {"test-autotuners/foreign_function"};
+    for (const auto &dir : test_dirs) {
+      std::filesystem::remove(std::filesystem::path(dir) / "falcon.yml");
+      std::filesystem::remove(std::filesystem::path(dir) / "falcon.yaml");
+    }
+    DSLTestBase::TearDown();
+  }
+};
 
 TEST_F(ForeignFunctionTest, QuantityStruct) {
   ParameterMap params;

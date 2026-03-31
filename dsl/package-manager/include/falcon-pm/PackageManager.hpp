@@ -16,7 +16,6 @@ struct InstalledPackage {
   std::string name;
   std::string version;
   std::string github;
-  std::string cached_sha256;
   std::filesystem::path cached_path;
 };
 
@@ -90,6 +89,15 @@ public:
    * @brief Remove a package from the cache and from falcon.yml dependencies.
    */
   void remove(const std::string &package_name);
+
+  /**
+   * @brief Compiled and builds FFI bindings and hashes them for release
+   *
+   * @param dir Directory containing FFI code that needs to be compiled
+   * @param extra_flags Additional flags indicating libraries and headers
+   */
+  void build(const std::filesystem::path &dir,
+             const std::string &extra_flags = "");
 
   // ── Accessors ──────────────────────────────────────────────────────────────
   [[nodiscard]] const std::filesystem::path &project_root() const {

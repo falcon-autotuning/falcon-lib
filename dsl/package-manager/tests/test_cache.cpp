@@ -35,49 +35,12 @@ TEST_F(CacheTest, Sha256DiffersForDifferentContent) {
   EXPECT_NE(s1, s2);
 }
 
-TEST_F(CacheTest, StoreAndLookup) {
+TEST_F(CacheTest, FileHashingMatchesString) {
   auto src = write_file("test.fal", "routine foo() -> (int r) { r = 1; }");
-  falcon::pm::PackageCache cache(tmp_ / ".cache");
 
-  auto cached = cache.store(src);
-  EXPECT_TRUE(fs::exists(cached));
+  auto file_hash = falcon::pm::PackageCache::sha256_file(src);
+  auto string_hash = falcon::pm::PackageCache::sha256_string(
+      "routine foo() -> (int r) { r = 1; }");
 
-  auto result = cache.lookup(src);
-  ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(*result, cached);
-}
-
-TEST_F(CacheTest, StaleAfterModification) {
-  auto src = write_file("test.fal", "routine foo() -> (int r) { r = 1; }");
-  falcon::pm::PackageCache cache(tmp_ / ".cache");
-  cache.store(src);
-
-  // Modify the source file — cache should become stale
-  std::ofstream f(src, std::ios::app);
-  f << "\n// modified";
-  f.close();
-
-  auto result = cache.lookup(src);
-  EXPECT_FALSE(result.has_value());
-}
-
-TEST_F(CacheTest, InvalidateRemovesEntry) {
-  auto src = write_file("test.fal", "routine foo() -> (int r) { r = 1; }");
-  falcon::pm::PackageCache cache(tmp_ / ".cache");
-  cache.store(src);
-  EXPECT_TRUE(cache.lookup(src).has_value());
-
-  cache.invalidate(src);
-  EXPECT_FALSE(cache.lookup(src).has_value());
-}
-
-TEST_F(CacheTest, ClearRemovesAll) {
-  auto f1 = write_file("a.fal", "routine a(){}");
-  auto f2 = write_file("b.fal", "routine b(){}");
-  falcon::pm::PackageCache cache(tmp_ / ".cache");
-  cache.store(f1);
-  cache.store(f2);
-  cache.clear();
-  EXPECT_FALSE(cache.lookup(f1).has_value());
-  EXPECT_FALSE(cache.lookup(f2).has_value());
+  EXPECT_EQ(file_hash, string_hash);
 }

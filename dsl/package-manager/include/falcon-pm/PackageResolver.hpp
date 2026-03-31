@@ -95,10 +95,10 @@ private:
   static std::pair<std::string, std::string>
   find_package_root_in_path(const GitHubURL &url);
 
-  static std::filesystem::path
-  download_github_package(const std::string &owner, const std::string &repo,
-                          const std::string &branch,
-                          const std::string &package_dir);
+  std::filesystem::path download_github_package(const std::string &owner,
+                                                const std::string &repo,
+                                                const std::string &branch,
+                                                const std::string &package_dir);
 
   static std::string
   get_package_main_file(const std::filesystem::path &package_root);

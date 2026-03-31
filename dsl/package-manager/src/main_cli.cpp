@@ -1,20 +1,7 @@
-// falcon-pm: A package manager for the Falcon DSL.
-//
-// Usage:
-//   falcon-pm [options]
-//
-// Options:
-//  --init  [dir] [name]        Create falcon.yml and .falcon/cache/ in <dir>
-//                              (defaults to current directory)
-//  --install <source> [ver]    Install a package from a local path or GitHub
-//  --remove  <name>            Remove a package from the manifest and cache
-//  --list                      List all packages in the cache index
-//  --help                      Show this message
 #include "falcon-pm/PackageManager.hpp"
 #include <filesystem>
 #include <iostream>
 #include <string>
-#include <vector>
 
 static void print_usage() {
   std::cout <<
@@ -25,9 +12,9 @@ Usage:
 
 Options:
  --init  [dir] [name]        Create falcon.yml and .falcon/cache/ in <dir>
-                             (defaults to current directory)
  --install <source> [ver]    Install a package from a local path or GitHub
- --remove  <name>            Remove a package from the manifest and cache
+ --remove  <name>            Remove a package from the manifest
+ --build                     Compile FFI .cpp wrappers and hash them for release
  --list                      List all packages in the cache index
  --help                      Show this message
 )" << '\n';
@@ -57,58 +44,42 @@ int main(int argc, char *argv[]) {
       return 0;
     }
 
-    // For all other commands we need an existing project context.
     falcon::pm::PackageManager pm(std::filesystem::current_path());
+
+    if (cmd == "build" || cmd == "--build") {
+      pm.build(pm.project_root());
+      return 0;
+    }
 
     if (cmd == "list" || cmd == "--list") {
       auto pkgs = pm.list();
-      if (pkgs.empty()) {
+      if (pkgs.empty())
         std::cout << "(no packages cached)\n";
-      } else {
-        std::cout << std::left;
-        std::cout.width(14);
-        std::cout << "SHA (prefix)";
-        std::cout.width(12);
-        std::cout << "Version";
-        std::cout << "Cached path\n";
-        std::cout << std::string(60, '-') << '\n';
+      else {
         for (const auto &p : pkgs) {
-          std::cout.width(14);
-          std::cout << p.name;
-          std::cout.width(12);
-          std::cout << p.version;
-          std::cout << p.cached_path.string() << '\n';
+          std::cout << p.name << " (" << p.version << ") -> "
+                    << p.cached_path.string() << '\n';
         }
       }
       return 0;
     }
 
     if (cmd == "--install") {
-      if (argc < 3) {
-        std::cerr << "Usage: falcon-pm --install <source> [version]\n";
+      if (argc < 3)
         return 1;
-      }
-      std::string source = argv[2];
-      std::string version = (argc >= 4) ? argv[3] : "*";
-      pm.install(source, version);
-      std::cout << "Installed: " << source << " (" << version << ")\n";
+      pm.install(argv[2], (argc >= 4) ? argv[3] : "*");
       return 0;
     }
 
     if (cmd == "--remove") {
-      if (argc < 3) {
-        std::cerr << "Usage: falcon-pm --remove <package-name>\n";
+      if (argc < 3)
         return 1;
-      }
       pm.remove(argv[2]);
-      std::cout << "Removed: " << argv[2] << '\n';
       return 0;
     }
 
-    std::cerr << "Unknown command: " << cmd << '\n';
     print_usage();
     return 1;
-
   } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << '\n';
     return 1;
