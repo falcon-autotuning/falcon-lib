@@ -3,7 +3,6 @@ CompileFlags:
   Add:
     - -I./../vcpkg_installed/x64-linux-dynamic/include
     - -I./include
-    - -I./package-manager/include/
     - -I./tests/test_utils
 
 Diagnostics:

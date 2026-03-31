@@ -1,4 +1,4 @@
-ffimport "ConnectionW.cpp" ("-I/opt/falcon/include/") ("-L/opt/falcon/lib" "-lfalcon_core_cpp")
+ffimport "ConnectionW.cpp" ("/opt/falcon/include/falcon_core/") ("/opt/falcon/lib/libfalcon_core_cpp.so")
 struct Connection {
     routine NewPlungerGate (string name) -> (Connection c)
     routine NewBarrierGate (string name) -> (Connection c)

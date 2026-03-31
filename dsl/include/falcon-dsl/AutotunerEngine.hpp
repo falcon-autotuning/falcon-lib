@@ -43,10 +43,9 @@ public:
   std::shared_ptr<TypeRegistry> get_type_registry() { return type_registry_; }
 
 private:
-  bool process_ff_import(
-      const atc::FFImportDecl &ffi, const std::filesystem::path &fal_dir,
-      const atc::Program &program,
-      const std::optional<std::filesystem::path> &so_path = std::nullopt);
+  bool process_ff_import(const atc::FFImportDecl &ffi,
+                         const std::filesystem::path &fal_dir,
+                         const atc::Program &program);
   void register_autotuner_as_function(const atc::AutotunerDecl &autotuner);
   void register_inline_routine(const atc::RoutineDecl &routine);
   // Helper to compute a SHA-256 (or simpler) hash of a file for cache keys
@@ -81,9 +80,6 @@ private:
   // Holds dlopen handles for FFI shared libraries so they stay loaded
   // for the lifetime of the engine.
   std::vector<void *> ffi_handles_;
-  // Map from absolute file path → package root directory
-  // Used to resolve FFI wrappers relative to the package
-  std::map<std::filesystem::path, std::filesystem::path> package_roots_by_file_;
 };
 
 } // namespace falcon::dsl

@@ -7,38 +7,13 @@
 namespace falcon::pm {
 
 /**
- * @brief Metadata about a package's structure and FFI dependencies.
- *
- * This is optional and primarily useful for documenting local packages.
- * For GitHub packages, structure is auto-detected.
- */
-struct PackageInfo {
-  // Root directory of the package (optional; can be inferred)
-  std::optional<std::string> package_root;
-
-  // Main .fal file (if not obvious from package structure)
-  std::optional<std::string> main_file;
-
-  // List of FFI wrapper files (.cpp, .c) that are part of this package
-  std::vector<std::string> ffi_wrappers;
-};
-
-/**
  * @brief Represents one entry in the `dependencies` list of falcon.yml.
- *
- * A dependency can be resolved from either:
- *  - A local path (local_path field)
- *  - A GitHub URL (github field, in format "owner/repo" or
- *    "github.com/owner/repo/path/file.fal")
  */
 struct Dependency {
   std::string name;    // Package name (must match the dep's falcon.yml `name`)
   std::string version; // SemVer constraint, e.g. "^1.0.0"
-  std::optional<std::string>
-      github; // "owner/repo" or "github.com/owner/repo/path/file.fal"
+  std::optional<std::string> github; // "owner/repo" — source for remote fetch
   std::optional<std::string> local_path; // Relative path for local-only deps
-  std::optional<PackageInfo>
-      package_info; // Optional metadata about the package
 };
 
 /**
@@ -52,7 +27,6 @@ struct PackageManifest {
   std::string version;    // SemVer, e.g. "1.0.0"
   std::string maintainer; // Free-form author/maintainer string
   std::string github;     // "owner/repo" of this package's canonical location
-  std::vector<std::string> ffi;
   std::vector<Dependency> dependencies;
 
   /**
