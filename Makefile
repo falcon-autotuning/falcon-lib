@@ -113,7 +113,7 @@ endif
 	$(SUDO) cp -r $(INCLUDEDIR)/falcon-core-c-api/falcon_core/* $(INCLUDEDIR)/falcon_core
 	$(SUDO) rm -rf $(INCLUDEDIR)/falcon-core-cpp
 	$(SUDO) rm -rf $(INCLUDEDIR)/falcon-core-c-api
-	// Installing cmake files for falcon_core that are not included with teh build
+	@echo "Installing cmake files for falcon_core that are not included with the build"
 	$(SUDO) mkdir -p $(LIBDIR)/cmake
 	$(SUDO) mkdir -p $(LIBDIR)/cmake/falcon_core
 	$(SUDO) cp ./falcon_core-config-version.cmake $(LIBDIR)/cmake/falcon_core
