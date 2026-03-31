@@ -3,6 +3,7 @@
 #include "falcon-dsl/StmtExecutor.hpp"
 #include "falcon-dsl/log.hpp"
 #include "falcon-pm/PackageManager.hpp"
+#include "falcon-pm/PackageManifest.hpp"
 #include <dlfcn.h>
 #include <falcon-typing/FFIHelpers.hpp>
 #include <falcon-typing/falcon_ffi.h>
@@ -66,6 +67,7 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
     std::vector<std::string> raw_imports = extract_imports_from_file(abs_path);
 
     if (!raw_imports.empty()) {
+      // TODO: need to break each import into its own bucket in the cache
       auto resolved_imports = pm.resolve_imports(abs_path, raw_imports);
 
       for (const auto &imp : resolved_imports) {
@@ -115,13 +117,33 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
     }
 
     // ── Process ffimport declarations ─────────────────────────────────────
-    // For each ffimport, compile the wrapper .cpp (relative to the .fal file)
+    // For each ffimport, compile the wrapper.cpp (relative to the .fal file)
     // into a shared library, then dlopen it and register every routine/struct
-    // method found in the program that has an empty body.
-    for (const auto &ffi : program->ff_imports) {
-      if (!process_ff_import(ffi, abs_path, *program)) {
-        log::error("Failed to process ffimport: " + ffi.wrapper_file);
-        return false;
+    // method found in the program that has an empty body only if not already
+    // packaged. If already packaged, use the package manager
+    std::filesystem::path fal_file = fal_file_path;
+    std::optional<std::filesystem::path> manifest_path =
+        pm.find_package_manifest(fal_file.parent_path());
+    pm::PackageManifest manifest;
+    if (manifest_path.has_value() &&
+        std::filesystem::exists(manifest_path.value())) {
+      manifest = pm::PackageManifest::load(manifest_path.value());
+    }
+    if (manifest_path.has_value() && (std::size(manifest.ffi) != 0U)) {
+      for (const auto &ffi : manifest.ffi) {
+        // process_ff_import without 1 - 3 and pass in the.so from the bucket
+        std::filesystem::path object = fal_file.parent_path() / (ffi + ".so");
+        if (!process_ff_import(ffi, abs_path, *program, object)) {
+          log::error("Failed to process loaded object: " + fal_file_path);
+          return false;
+        }
+      }
+    } else {
+      for (const auto &ffi : program->ff_imports) {
+        if (!process_ff_import(ffi, abs_path, *program)) {
+          log::error("Failed to process ffimport: " + ffi.wrapper_file);
+          return false;
+        }
       }
     }
 
@@ -578,57 +600,60 @@ void AutotunerEngine::register_inline_routine(const atc::RoutineDecl &routine) {
 //
 // All wrapper functions MUST be marked extern "C".
 // ---------------------------------------------------------------------------
-bool AutotunerEngine::process_ff_import(const atc::FFImportDecl &ffi,
-                                        const std::filesystem::path &fal_dir,
-                                        const atc::Program &program) {
+bool AutotunerEngine::process_ff_import(
+    const atc::FFImportDecl &ffi, const std::filesystem::path &fal_dir,
+    const atc::Program &program,
+    const std::optional<std::filesystem::path> &so_path) {
   namespace fs = std::filesystem;
+  if (!so_path.has_value()) {
 
-  // ── 1. Locate the wrapper source file ──────────────────────────────────
-  fs::path wrapper_src = fal_dir.parent_path() / ffi.wrapper_file;
-  if (!fs::exists(wrapper_src)) {
-    log::error("FFI wrapper not found: " + wrapper_src.string());
-    return false;
-  }
-
-  // ── 2. Determine the cache directory and output .so path ───────────────
-  fs::path cache_dir = fal_dir.parent_path() / ".falcon" / "cache";
-  fs::create_directories(cache_dir);
-
-  std::string src_hash = compute_file_hash(wrapper_src);
-  fs::path so_path = cache_dir / (wrapper_src.stem().string() + "_" +
-                                  src_hash.substr(0, 16) + ".so");
-
-  // ── 3. Compile the wrapper if the cached .so is stale ──────────────────
-  if (!fs::exists(so_path)) {
-    std::string includes;
-    for (const auto &inc : ffi.imports) {
-      includes += " " + inc; // Do NOT add extra -I
-    }
-
-    std::string libs;
-    for (const auto &lib : ffi.build_libs) {
-      libs += " " + lib;
-    }
-
-    std::string cmd = "clang++ -std=c++17 -fPIC -shared -O2"
-                      " -o \"" +
-                      so_path.string() + "\"" + includes + " \"" +
-                      wrapper_src.string() + "\"" + libs;
-
-    log::debug("Compiling FFI wrapper: " + wrapper_src.string());
-    log::debug("FFI compile command: " + cmd);
-
-    int ret = std::system(cmd.c_str());
-    if (ret != 0) {
-      log::error("Failed to compile FFI wrapper (exit " + std::to_string(ret) +
-                 "): " + wrapper_src.string());
+    // ── 1. Locate the wrapper source file ──────────────────────────────────
+    fs::path wrapper_src = fal_dir.parent_path() / ffi.wrapper_file;
+    if (!fs::exists(wrapper_src)) {
+      log::error("FFI wrapper not found: " + wrapper_src.string());
       return false;
+    }
+
+    // ── 2. Determine the cache directory and output .so path ───────────────
+    fs::path cache_dir = fal_dir.parent_path() / ".falcon" / "cache";
+    fs::create_directories(cache_dir);
+
+    std::string src_hash = compute_file_hash(wrapper_src);
+    fs::path so_path = cache_dir / (wrapper_src.stem().string() + "_" +
+                                    src_hash.substr(0, 16) + ".so");
+
+    // ── 3. Compile the wrapper if the cached .so is stale ──────────────────
+    if (!fs::exists(so_path)) {
+      std::string includes;
+      for (const auto &inc : ffi.imports) {
+        includes += " " + inc; // Do NOT add extra -I
+      }
+
+      std::string libs;
+      for (const auto &lib : ffi.build_libs) {
+        libs += " " + lib;
+      }
+
+      std::string cmd = "clang++ -std=c++17 -fPIC -shared -O2"
+                        " -o \"" +
+                        so_path.string() + "\"" + includes + " \"" +
+                        wrapper_src.string() + "\"" + libs;
+
+      log::debug("Compiling FFI wrapper: " + wrapper_src.string());
+      log::debug("FFI compile command: " + cmd);
+
+      int ret = std::system(cmd.c_str());
+      if (ret != 0) {
+        log::error("Failed to compile FFI wrapper (exit " +
+                   std::to_string(ret) + "): " + wrapper_src.string());
+        return false;
+      }
     }
   }
 
   // ── 4. dlopen the compiled .so ─────────────────────────────────────────
   void *dl_handle = dlopen(so_path.c_str(), RTLD_NOW | RTLD_LOCAL);
-  if (!dl_handle) {
+  if (dl_handle == nullptr) {
     log::error("Failed to dlopen FFI wrapper: " + std::string(dlerror()));
     return false;
   }

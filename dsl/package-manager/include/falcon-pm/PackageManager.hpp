@@ -61,6 +61,15 @@ public:
   std::vector<PackageResolver::ResolvedImport>
   resolve_imports(const std::filesystem::path &fal_file,
                   const std::vector<std::string> &imports);
+  /**
+   * @brief Returns the path to falcon.yml or falcon.yaml if the directory is a
+   * valid Falcon package (contains at least one .fal file).
+   * @param dir Directory to check.
+   * @return std::optional<std::filesystem::path> Path to manifest if valid,
+   * else std::nullopt.
+   */
+  std::optional<std::filesystem::path>
+  find_package_manifest(const std::filesystem::path &dir);
 
   // ── CLI-facing API ─────────────────────────────────────────────────────────
   /**

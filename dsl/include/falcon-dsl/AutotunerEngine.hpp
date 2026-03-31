@@ -43,9 +43,10 @@ public:
   std::shared_ptr<TypeRegistry> get_type_registry() { return type_registry_; }
 
 private:
-  bool process_ff_import(const atc::FFImportDecl &ffi,
-                         const std::filesystem::path &fal_dir,
-                         const atc::Program &program);
+  bool process_ff_import(
+      const atc::FFImportDecl &ffi, const std::filesystem::path &fal_dir,
+      const atc::Program &program,
+      const std::optional<std::filesystem::path> &so_path = std::nullopt);
   void register_autotuner_as_function(const atc::AutotunerDecl &autotuner);
   void register_inline_routine(const atc::RoutineDecl &routine);
   // Helper to compute a SHA-256 (or simpler) hash of a file for cache keys

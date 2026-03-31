@@ -1,7 +1,9 @@
 #include "falcon-pm/PackageManager.hpp"
 #include <algorithm>
+#include <filesystem>
 #include <iostream>
 #include <stdexcept>
+#include <vector>
 
 namespace falcon::pm {
 
@@ -31,6 +33,28 @@ void PackageManager::init(const std::filesystem::path &dir,
   std::filesystem::create_directories(dir / ".falcon" / "cache");
   auto m = PackageManifest::make_empty(package_name);
   m.save(manifest_path);
+}
+
+std::optional<std::filesystem::path>
+PackageManager::find_package_manifest(const std::filesystem::path &dir) {
+  if (!std::filesystem::is_directory(dir))
+    return std::nullopt;
+
+  std::filesystem::path manifest_path;
+  if (std::filesystem::exists(dir / "falcon.yml")) {
+    manifest_path = dir / "falcon.yml";
+  } else if (std::filesystem::exists(dir / "falcon.yaml")) {
+    manifest_path = dir / "falcon.yaml";
+  } else {
+    return std::nullopt;
+  }
+
+  for (const auto &entry : std::filesystem::directory_iterator(dir)) {
+    if (entry.is_regular_file() && entry.path().extension() == ".fal") {
+      return manifest_path;
+    }
+  }
+  return std::nullopt;
 }
 
 std::vector<PackageResolver::ResolvedImport>

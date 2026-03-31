@@ -4,5 +4,5 @@ description: "testing framework for use with falcon-test"
 maintainer: "falcon-devs"
 github: "falcon-autotuning/falcon-lib"
 ffi:
-  - "testing-wrapper.cpp"
+  - "testing-wrapper.so"
 dependencies: []
