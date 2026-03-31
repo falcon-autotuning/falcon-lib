@@ -8,10 +8,12 @@ RUN apt-get update && apt-get install -y \
   flex \
   clang \
   pkg-config \
-  git 
+  git \
+  curl \
+  coreutils
 
 # Set up your workspace
-RUN git clone https://github.com/falcon-autotuning/falcon-lib.git /src
+RUN git clone --branch dev --single-branch https://github.com/falcon-autotuning/falcon-lib.git /src
 WORKDIR /src
 
 # runs the make install command that builds all of the executables
