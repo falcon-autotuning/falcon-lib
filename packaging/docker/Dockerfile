@@ -6,23 +6,15 @@ RUN apt-get update && apt-get install -y \
   cmake \
   bison \
   flex \
+  clang \
   pkg-config 
 
 # Set up your workspace
 WORKDIR /src
 COPY . .
 
-# ---------------------------------------------------------
-# Template for your build chain
-# Use '&&' to maintain the directory context across commands
-# ---------------------------------------------------------
-RUN cd /src/dsl && \
-  make clean && \
-  make build && \
-  cd /src/external && \
-  make all && \
-  cd /src && \
-  make install DESTDIR=/opt/falcon
+# runs the make install command that builds all of the executables
+RUN make install
 
 # Set the environment variables exactly as requested
 # (Added /opt/falcon/bin to PATH so your wrappers can find the CLI commands)

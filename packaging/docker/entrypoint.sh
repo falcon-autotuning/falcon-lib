@@ -1,9 +1,11 @@
 #!/bin/bash
 set -e
 
-# (Optional) You can add runtime checks here.
-# For example, checking if NATS_URL is reachable before starting.
+# If the secure config volume is mounted, load the database URL
+if [ -f /config/db.env ]; then
+  source /config/db.env
+  export DB_URL="$FALCON_DB_URL"
+fi
 
-# Hand off execution to the command passed into the container
-# This will evaluate to things like: exec falcon-run --args
+# Execute the user's command
 exec "$@"

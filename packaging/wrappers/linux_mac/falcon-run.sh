@@ -1,9 +1,7 @@
 #!/bin/bash
-# Forward NATS_URL to host if not explicitly set by the user
-NATS_ENV="${NATS_URL:-nats://host.docker.internal:4222}"
-
 docker run -it --rm \
   -v "$(pwd):/workspace" \
+  -v falcon-config:/config:ro \
   -w /workspace \
-  -e NATS_URL="$NATS_ENV" \
+  -e NATS_URL="${NATS_URL:-nats://host.docker.internal:4222}" \
   falcon-cli:latest falcon-run "$@"

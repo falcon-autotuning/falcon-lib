@@ -204,3 +204,79 @@ help:
 	@echo "Current configuration:"
 	@echo "  VCPKG_ROOT: $(VCPKG_ROOT)"
 	@echo "  VCPKG_TRIPLET: $(VCPKG_TRIPLET)"
+
+# ==========================================
+# Docker & Database Configuration Targets
+# ==========================================
+
+DOCKER_IMAGE ?= falcon-cli:latest
+DB_CONTAINER_NAME ?= falcon-postgres
+DB_PORT ?= 5432
+CONFIG_VOLUME ?= falcon-config
+
+.PHONY: docker-build docker-db-start docker-db-stop docker-install-wrappers docker-uninstall-wrappers docker-teardown
+
+docker-build:
+	@echo "Building FAlCon Docker Image..."
+	docker build -t $(DOCKER_IMAGE) -f packaging/docker/Dockerfile .
+	@echo "✓ Docker image $(DOCKER_IMAGE) built successfully."
+
+docker-db-start:
+	@echo "Creating secure volume..."
+	@docker volume create $(CONFIG_VOLUME) > /dev/null
+	@echo "Launching secure configuration prompt..."
+	@# 1. Spin up an interactive bash container. 
+	@# It captures input securely (hiding the password) and writes to the volume.
+	@docker run -it --rm -v $(CONFIG_VOLUME):/config bash -c "\
+		echo '=== FAlCon Database Setup ===' && \
+		read -p 'Database Username [falcon_user]: ' usr && usr=\$${usr:-falcon_user} && \
+		read -s -p 'Database Password: ' pass && echo && \
+		read -p 'Database Name [falcon_db]: ' dbname && dbname=\$${dbname:-falcon_db} && \
+		echo \"\$$usr\" > /config/db_user.txt && \
+		echo \"\$$pass\" > /config/db_pass.txt && \
+		echo \"\$$dbname\" > /config/db_name.txt && \
+		echo \"export FALCON_DB_URL=postgresql://\$$usr:\$$pass@host.docker.internal:$(DB_PORT)/\$$dbname\" > /config/db.env && \
+		echo '✓ Credentials securely stored in Docker volume.'"
+	@echo "Starting PostgreSQL container..."
+	@# 2. Start Postgres using the _FILE variables, pointing to the volume.
+	@docker run -d --name $(DB_CONTAINER_NAME) \
+		-v $(CONFIG_VOLUME):/config:ro \
+		-e POSTGRES_USER_FILE=/config/db_user.txt \
+		-e POSTGRES_PASSWORD_FILE=/config/db_pass.txt \
+		-e POSTGRES_DB_FILE=/config/db_name.txt \
+		-p $(DB_PORT):5432 \
+		postgres:15
+	@echo "✓ Database started securely."
+
+docker-db-stop:
+	@echo "Stopping database and destroying secure configuration..."
+	-docker stop $(DB_CONTAINER_NAME)
+	-docker rm $(DB_CONTAINER_NAME)
+	-docker volume rm $(CONFIG_VOLUME)
+	@echo "✓ Database and credentials destroyed."
+
+docker-install-wrappers:
+	@if [ "$(UNAME_S)" = "Linux" ] || [ "$(UNAME_S)" = "Darwin" ]; then \
+		echo "Installing wrapper scripts to /usr/local/bin..."; \
+		$(SUDO) cp packaging/wrappers/linux_mac/*.sh /usr/local/bin/; \
+		$(SUDO) rename 's/\.sh$$//' /usr/local/bin/falcon-*.sh 2>/dev/null || \
+			for f in /usr/local/bin/falcon-*.sh; do $(SUDO) mv "$$f" "$${f%.sh}"; done; \
+		$(SUDO) chmod +x /usr/local/bin/falcon-*; \
+		echo "✓ Wrappers installed. You can now run 'falcon-run', etc."; \
+	else \
+		echo "For Windows, please manually add 'packaging/wrappers/windows' to your PATH."; \
+	fi
+
+docker-uninstall-wrappers:
+	@if [ "$(UNAME_S)" = "Linux" ] || [ "$(UNAME_S)" = "Darwin" ]; then \
+		echo "Removing wrapper scripts from /usr/local/bin..."; \
+		$(SUDO) rm -f /usr/local/bin/falcon-run /usr/local/bin/falcon-test /usr/local/bin/falcon-pm /usr/local/bin/falcon-db-cli; \
+		echo "✓ Wrappers uninstalled."; \
+	else \
+		echo "For Windows, please manually remove the folder from your PATH."; \
+	fi
+
+docker-teardown: docker-db-stop docker-uninstall-wrappers
+	@echo "Removing FAlCon Docker image..."
+	-docker rmi $(DOCKER_IMAGE)
+	@echo "✓ Teardown complete."
