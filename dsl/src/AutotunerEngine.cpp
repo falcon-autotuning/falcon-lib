@@ -131,10 +131,10 @@ bool AutotunerEngine::load_fal_file(const std::string &fal_file_path) {
     }
     if (manifest_path.has_value() && (std::size(manifest.ffi) != 0U)) {
       for (const auto &ffi : manifest.ffi) {
-        // process_ff_import without 1 - 3 and pass in the.so from the bucket
         std::filesystem::path object = fal_file.parent_path() / (ffi.first);
         if (!process_ff_import(ffi.first, abs_path, *program, object)) {
-          log::error("Failed to process loaded object: " + fal_file_path);
+          log::error("Failed to loaded prebuilt object: " + object.string() +
+                     " for " + fal_file_path);
           return false;
         }
       }
@@ -620,6 +620,13 @@ bool AutotunerEngine::process_ff_import(
     }
     so_path = fal_dir.parent_path() / wrapper_name;
   }
+  // std::string so_name = cpp_path.stem().string() + ".so";
+  // if (so_name == ".so" || cpp_path.stem().string().empty()) {
+  //   log::error("Cannot determine FFI wrapper name: wrapper_file is missing or
+  //   "
+  //              "invalid.");
+  //   return false;
+  // }
 
   // Construct the flags defined by the developer in the ffimport statement
   std::string extra_flags;
@@ -643,7 +650,7 @@ bool AutotunerEngine::process_ff_import(
     try {
       falcon::pm::PackageManager pm(fal_dir.parent_path());
       auto manifest_opt = pm.find_package_manifest(pm.project_root());
-      std::string so_name = cpp_path.stem().string() + ".so";
+      std::string so_name = so_path.stem().string();
       auto manifest_path = fal_dir.parent_path() / "falcon.yml";
 
       if (!manifest_opt) {
