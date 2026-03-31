@@ -14,7 +14,7 @@ Options:
  --init  [dir] [name]        Create falcon.yml and .falcon/cache/ in <dir>
  --install <source> [ver]    Install a package from a local path or GitHub
  --remove  <name>            Remove a package from the manifest
- --build                     Compile FFI .cpp wrappers and hash them for release
+ --build [extra_flags]       Compile FFI .cpp wrappers with extra flags
  --list                      List all packages in the cache index
  --help                      Show this message
 )" << '\n';
@@ -47,7 +47,12 @@ int main(int argc, char *argv[]) {
     falcon::pm::PackageManager pm(std::filesystem::current_path());
 
     if (cmd == "build" || cmd == "--build") {
-      pm.build(pm.project_root());
+      std::string extra_flags;
+      // Collect all arguments after "build" as extra flags
+      for (int i = 2; i < argc; ++i) {
+        extra_flags += std::string(argv[i]) + " ";
+      }
+      pm.build(pm.project_root(), extra_flags);
       return 0;
     }
 
