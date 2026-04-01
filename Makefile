@@ -165,7 +165,7 @@ install:
 	$(MAKE) -C database install
 	$(MAKE) -C comms install
 	$(MAKE) -C typing install
-	$(MAKE) -C routine install
+	#$(MAKE) -C routine install
 	$(MAKE) -C qarrayDevice install
 	$(MAKE) -C dsl install
 	@echo "✓ All components installed"

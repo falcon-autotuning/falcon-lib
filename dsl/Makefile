@@ -10,7 +10,7 @@ ifeq ($(UNAME_S),Linux)
     CMAKE_GENERATOR := Ninja
     VCPKG_TRIPLET ?= x64-linux-dynamic
     NPROC := $(shell nproc 2>/dev/null || echo 4)
-    SUDO := sudo
+    SUDO ?= sudo
 endif
 ifeq ($(OS),Windows_NT)
     PLATFORM := windows

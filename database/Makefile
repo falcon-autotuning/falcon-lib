@@ -11,7 +11,7 @@ ifeq ($(UNAME_S),Linux)
     VCPKG_TRIPLET ?= x64-linux-dynamic
     NPROC := $(shell nproc 2>/dev/null || echo 4)
     HAS_DOCKER := $(shell command -v docker-compose >/dev/null 2>&1 && echo yes || echo no)
-    SUDO := sudo
+    SUDO ?= sudo
 endif
 ifeq ($(OS),Windows_NT)
     PLATFORM := windows
