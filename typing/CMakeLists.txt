@@ -27,11 +27,6 @@ if(USE_CCACHE)
   endif()
 endif()
 
-include_directories(/opt/falcon/include)
-find_package(falcon_core CONFIG REQUIRED
-  PATHS /opt/falcon/lib/cmake/falcon_core
-)
-
 # ── Main shared library ───────────────────────────────────────────────────────
 add_library(falcon-typing SHARED
   src/PrimitiveTypes.cpp
@@ -46,11 +41,6 @@ target_include_directories(falcon-typing
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(falcon-typing
-  PUBLIC
-    falcon_core_cpp
 )
 
 if(MSVC)
