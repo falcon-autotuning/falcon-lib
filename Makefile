@@ -162,12 +162,12 @@ install-deps: deps install-core install-vcpkg-deps install-lsp-framework
 
 install:
 	@echo "Installing all components..."
-	$(MAKE) -C database install
-	$(MAKE) -C comms install
-	$(MAKE) -C typing install
-	#$(MAKE) -C routine install
-	$(MAKE) -C qarrayDevice install
-	$(MAKE) -C dsl install
+	$(MAKE) -C database install SUDO="$(SUDO)"
+	$(MAKE) -C comms install SUDO="$(SUDO)"
+	$(MAKE) -C typing install SUDO="$(SUDO)"
+	#$(MAKE) -C routine install SUDO="$(SUDO)"
+	$(MAKE) -C qarrayDevice install SUDO="$(SUDO)"
+	$(MAKE) -C dsl install SUDO="$(SUDO)"
 	@echo "✓ All components installed"
 
 clean:
