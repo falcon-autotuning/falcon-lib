@@ -166,6 +166,7 @@ install:
 	$(MAKE) -C comms install SUDO="$(SUDO)"
 	$(MAKE) -C typing install SUDO="$(SUDO)"
 	#$(MAKE) -C routine install SUDO="$(SUDO)"
+	$(MAKE) -C qarrayDevice install-python-deps SUDO="$(SUDO)"
 	$(MAKE) -C qarrayDevice install SUDO="$(SUDO)"
 	$(MAKE) -C dsl install SUDO="$(SUDO)"
 	@echo "✓ All components installed"
