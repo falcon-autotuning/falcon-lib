@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install -y \
   autoconf-archive \
   automake \
   libtool \
+  ninja-build \
+  lld \
   coreutils
 
 # Set up your workspace
@@ -27,7 +29,10 @@ WORKDIR /src
 
 # runs the make install command that builds all of the executables
 ENV SUDO=""
-RUN make install-deps && make install
+RUN make install-deps 
+
+# runs the make install command that builds the current package and installs it to /opt/falcon/
+RUN make install
 
 # Set the environment variables exactly as requested
 # (Added /opt/falcon/bin to PATH so your wrappers can find the CLI commands)
