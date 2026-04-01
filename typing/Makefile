@@ -92,7 +92,6 @@ configure-debug: check-vcpkg
 		-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_TOOLCHAIN) \
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
-		-Dfalcon_core_DIR=/opt/falcon/lib/cmake/falcon_core \
 		-DBUILD_TESTS=ON \
 		-DUSE_CCACHE=ON \
 		-DENABLE_PCH=ON \
@@ -109,7 +108,6 @@ configure-release: check-vcpkg
 		-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_TOOLCHAIN) \
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
-		-Dfalcon_core_DIR=/opt/falcon/lib/cmake/falcon_core \
 		-DBUILD_TESTS=ON \
 		-DUSE_CCACHE=ON \
 		-DENABLE_PCH=ON \
