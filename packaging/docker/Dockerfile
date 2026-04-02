@@ -23,6 +23,10 @@ RUN apt-get update && apt-get install -y \
   lld \
   coreutils
 
+# setup uv
+RUN curl -Ls https://astral.sh/uv/install.sh | bash
+ENV PATH="$HOME/.cargo/bin:$PATH"
+
 # Set up your workspace
 RUN git clone --branch dev --single-branch https://github.com/falcon-autotuning/falcon-lib.git /src
 WORKDIR /src
