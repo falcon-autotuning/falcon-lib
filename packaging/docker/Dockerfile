@@ -15,23 +15,29 @@ RUN apt-get update && apt-get install -y \
   tar \
   linux-libc-dev \
   python3-dev \
+  python3 \
+  python3-venv \
   autoconf \
   autoconf-archive \
   automake \
   libtool \
   ninja-build \
   lld \
-  coreutils
+  coreutils && \
+  rm -rf /var/lib/apt/lists/*
 
-# setup uv
-RUN curl -Ls https://astral.sh/uv/install.sh | bash
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Install uv - correct installation for Ubuntu
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
 
 # Set up your workspace
 RUN git clone --branch dev --single-branch https://github.com/falcon-autotuning/falcon-lib.git /src
 WORKDIR /src
 
-# runs the make install command that builds all of the executables
+# Verify uv is available
+RUN which uv && uv --version
+
+# runs the make install-deps command that builds all of the dependencies
 ENV SUDO=""
 RUN make install-deps 
 
