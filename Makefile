@@ -68,16 +68,16 @@ install-core:
 	$(SUDO) mkdir -p $(LIBDIR)
 	$(SUDO) mkdir -p $(INCLUDEDIR)
 	@echo "Downloading $(ARCHIVE_CPP)..."
-	curl -L -f -o $(TMPDIR)/$(ARCHIVE_CPP) \
+	curl -L -f $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) -o $(TMPDIR)/$(ARCHIVE_CPP) \
 		$(GITHUB_RELEASE_URL)/$(ARCHIVE_CPP)
 	@echo "Downloading $(ARCHIVE_CPP_SHA)..."
-	curl -L -f -o $(TMPDIR)/$(ARCHIVE_CPP_SHA) \
+	curl -L -f $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) -o $(TMPDIR)/$(ARCHIVE_CPP_SHA) \
 		$(GITHUB_RELEASE_URL)/$(ARCHIVE_CPP_SHA)
 	@echo "Downloading $(ARCHIVE_CAPI)..."
-	curl -L -f -o $(TMPDIR)/$(ARCHIVE_CAPI) \
+	curl -L -f $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) -o $(TMPDIR)/$(ARCHIVE_CAPI) \
 		$(GITHUB_RELEASE_URL)/$(ARCHIVE_CAPI)
 	@echo "Downloading $(ARCHIVE_CAPI_SHA)..."
-	curl -L -f -o $(TMPDIR)/$(ARCHIVE_CAPI_SHA) \
+	curl -L -f $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) -o $(TMPDIR)/$(ARCHIVE_CAPI_SHA) \
 		$(GITHUB_RELEASE_URL)/$(ARCHIVE_CAPI_SHA)
 ifeq ($(findstring MINGW,$(UNAME_S)),MINGW)
 	dos2unix "$(TMPDIR)/falcon-core-cpp-windows-x64.zip.sha256"
@@ -122,11 +122,14 @@ endif
 
 
 install-vcpkg-deps: 
-	@echo "Installing vcpkg dependencies from vcpkg.json..."
-	CC=clang CXX=clang++ MAKELEVEL=0 $(VCPKG_ROOT)/vcpkg install --triplet $(VCPKG_TRIPLET)
+	@echo "Installing vcpkg dependencies..."
+	@if [ ! -z "$(VCPKG_BINARY_SOURCES)" ]; then \
+		echo "Using binary sources: $(VCPKG_BINARY_SOURCES)"; \
+	fi
+	CC=clang CXX=clang++ MAKELEVEL=0 VCPKG_BINARY_SOURCES="$(VCPKG_BINARY_SOURCES)" $(VCPKG_ROOT)/vcpkg install --triplet $(VCPKG_TRIPLET)
 	@echo "Patching cereal install..."
 	mkdir -p $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types
-	curl -sSL https://raw.githubusercontent.com/falcon-autotuning/falcon-core/main/cpp/include/cereal/types/xtensor.hpp -o $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types/xtensor.hpp
+	curl -sSL $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) https://raw.githubusercontent.com/falcon-autotuning/falcon-core/main/cpp/include/cereal/types/xtensor.hpp -o $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types/xtensor.hpp
 	$(SUDO) mkdir -p $(INCLUDEDIR)/cereal/types
 	$(SUDO) cp $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types/xtensor.hpp $(INCLUDEDIR)/cereal/types/xtensor.hpp
 	@echo "✓ vcpkg dependencies installed"
@@ -134,7 +137,7 @@ install-vcpkg-deps:
 install-lsp-framework: install-vcpkg-deps
 	@echo "Installing lsp-framework 1.3.0 from source..."
 	mkdir -p $(TMPDIR)
-	curl -L -f -o $(TMPDIR)/lsp-framework-1.3.0.zip https://github.com/leon-bckl/lsp-framework/archive/refs/tags/1.3.0.zip
+	curl -L -f $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) -o $(TMPDIR)/lsp-framework-1.3.0.zip https://github.com/leon-bckl/lsp-framework/archive/refs/tags/1.3.0.zip
 	unzip -o $(TMPDIR)/lsp-framework-1.3.0.zip -d $(TMPDIR)
 	@echo "Building lsp-framework (Release) with clang..."
 	cd $(TMPDIR)/lsp-framework-1.3.0 && mkdir -p build && cd build && CC=clang CXX=clang++ cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX)
@@ -158,7 +161,7 @@ install-lsp-framework: install-vcpkg-deps
 	$(SUDO) cp $(TMPDIR)/lsp-framework-1.3.0/build/lib/cmake/lsp/lspConfigTargets.cmake $(LIBDIR)/cmake/lsp/
 	@echo "✓ lsp-framework (Release & Debug) installed"
 
-install-deps: deps install-core install-vcpkg-deps install-lsp-framework
+install-deps: install-vcpkg-deps install-core install-lsp-framework
 
 install:
 	@echo "Installing all components..."

@@ -40,6 +40,7 @@ target_include_directories(falcon-atc-core
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>  # For generated headers
     $<INSTALL_INTERFACE:include>
 )
+target_link_libraries(falcon-atc-core PUBLIC nlohmann_json::nlohmann_json)
 
 # Suppress warnings from generated code
 if(MSVC)

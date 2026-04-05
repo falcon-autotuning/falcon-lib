@@ -1,0 +1,10 @@
+**/build/
+**/.vcpkg/
+**/vcpkg_installed/
+**/.git/
+**/.vscode/
+**/*.pyc
+**/__pycache__/
+**/.venv/
+**/.pytest_cache/
+.DS_Store
