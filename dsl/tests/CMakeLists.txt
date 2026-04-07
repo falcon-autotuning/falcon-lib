@@ -22,6 +22,7 @@ add_executable(falcon_dsl_integration_tests
 target_link_libraries(falcon_dsl_integration_tests
   PRIVATE
     falcon-dsl
+    fmt::fmt
     falcon-atc-core
     GTest::gtest
     GTest::gtest_main

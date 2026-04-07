@@ -4,8 +4,6 @@
 #include "falcon-dsl/FunctionRegistry.hpp"
 #include "falcon-dsl/StmtExecutor.hpp"
 #include "falcon-dsl/TypeRegistry.hpp"
-#include <falcon-comms/runtime_comms.hpp>
-// #include <falcon-database/DatabaseConnection.hpp>
 #include <falcon-typing/PrimitiveTypes.hpp>
 #include <falcon_core/physics/config/core/Config.hpp>
 #include <memory>
@@ -40,13 +38,6 @@ public:
    */
   const typing::ParameterMap &get_variables() const { return variables_; }
 
-  /**
-   * @brief Get the loaded config.
-   */
-  const falcon_core::physics::config::core::ConfigSP &get_config() const {
-    return config_;
-  }
-
 private:
   void initialize_variables(const atc::AutotunerDecl &autotuner);
   void set_input_parameters(const atc::AutotunerDecl &autotuner,
@@ -66,9 +57,6 @@ private:
   std::shared_ptr<FunctionRegistry> functions_;
   std::shared_ptr<TypeRegistry> types_; // Added TypeRegistry
   typing::ParameterMap variables_;
-  // database::ReadWriteDatabaseConnection db_;
-  falcon_core::physics::config::core::ConfigSP config_;
-  comms::RuntimeComms comms_;
 };
 
 } // namespace falcon::dsl

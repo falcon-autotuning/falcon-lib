@@ -4,24 +4,7 @@ include(CMakeFindDependencyMacro)
 
 # Find all dependencies that falcon-autotuner needs
 find_dependency(nlohmann_json REQUIRED)
-find_dependency(cereal REQUIRED)
-find_dependency(xtensor REQUIRED)
-find_dependency(xtl REQUIRED)
-find_dependency(yaml-cpp REQUIRED)
-find_dependency(OpenSSL REQUIRED)
-find_dependency(unofficial-sodium REQUIRED)
-find_dependency(cnats REQUIRED)
-
-# falcon-typing provides PrimitiveTypes (RuntimeValue/ParameterMap) and the
-# C-ABI headers.  It must be installed before falcon-autotuner is consumed.
 find_dependency(falcon-typing REQUIRED)
-
-# FLEX and BISON are build-time only, not needed for consumers
-# find_dependency(FLEX)
-# find_dependency(BISON)
-
-# Include falcon-core if available
-find_package(falcon-core QUIET)
 
 # Include the targets file
 include("${CMAKE_CURRENT_LIST_DIR}/falcon-autotuner-targets.cmake")

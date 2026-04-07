@@ -51,38 +51,28 @@ TEST_F(CLIProcessTest, SimpleBoolAutotunerRuns) {
   std::filesystem::path fal_file =
       std::filesystem::path(__FILE__).parent_path().parent_path() /
       "test-autotuners/simple_bool/simple_bool.fal";
-  falcon::dsl::log::info(
-      fmt::format("The current fal_file is at {}", fal_file.c_str()));
-  falcon::typing::ParameterMap params;
-  SingleCompileEnvironment cenv{fal_file, "SimpleBool", params, true};
   std::string output;
   std::string error;
-  with_test_environment(cenv, [&]() {
-    int exit_code = run_cli({"SimpleBool", fal_file.string()}, output, error);
-    if (exit_code != 0) {
-      std::cerr << "CLI output:\n" << output << '\n';
-      std::cerr << "CLI error:\n" << error << '\n';
-    }
-    ASSERT_EQ(exit_code, 0);
-    ASSERT_NE(output.find("Autotuner 'SimpleBool' completed."),
-              std::string::npos);
-    ASSERT_NE(output.find("true"), std::string::npos);
-  });
+  int exit_code = run_cli({"SimpleBool", fal_file.string()}, output, error);
+  if (exit_code != 0) {
+    std::cerr << "CLI output:\n" << output << '\n';
+    std::cerr << "CLI error:\n" << error << '\n';
+  }
+  ASSERT_EQ(exit_code, 0);
+  ASSERT_NE(output.find("Autotuner 'SimpleBool' completed."),
+            std::string::npos);
+  ASSERT_NE(output.find("true"), std::string::npos);
 }
 
 TEST_F(CLIProcessTest, ListAutotuners) {
   std::filesystem::path fal_file =
       std::filesystem::path(__FILE__).parent_path().parent_path() /
       "test-autotuners/simple_bool/simple_bool.fal";
-  falcon::typing::ParameterMap params;
-  SingleCompileEnvironment cenv{fal_file, "SimpleBool", params, true};
   std::string output;
   std::string error;
-  with_test_environment(cenv, [&]() {
-    int exit_code = run_cli({"--list", fal_file.string()}, output, error);
+  int exit_code = run_cli({"--list", fal_file.string()}, output, error);
 
-    ASSERT_EQ(exit_code, 0);
-    ASSERT_NE(output.find("Loaded autotuners:"), std::string::npos);
-    ASSERT_NE(output.find("SimpleBool"), std::string::npos);
-  });
+  ASSERT_EQ(exit_code, 0);
+  ASSERT_NE(output.find("Loaded autotuners:"), std::string::npos);
+  ASSERT_NE(output.find("SimpleBool"), std::string::npos);
 }

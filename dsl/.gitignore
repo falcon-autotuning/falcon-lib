@@ -1,3 +1,4 @@
+.nuget_api_key
 # Build directories
 build/
 cmake-build-*/
