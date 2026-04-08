@@ -61,13 +61,16 @@ RUN if [ -n "$GITHUB_TOKEN" ]; then \
     make install-deps 
 
 # runs the make install command that builds the current package and installs it to /opt/falcon/
+# runs the make install command that builds the current package and installs it to /opt/falcon/
 RUN make install
 
-# Set the environment variables exactly as requested
-# (Added /opt/falcon/bin to PATH so your wrappers can find the CLI commands)
+# Set the environment variables
 ENV PATH="/opt/falcon/bin:/opt/falcon/lib:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/falcon/lib"
 ENV PKG_CONFIG_PATH="/opt/falcon/lib/pkgconfig"
+
+# Run the DSL smoke test to ensure the environment is functional
+RUN /bin/bash /src/packaging/docker/run-smoke-test.sh
 
 # Setup the entrypoint
 COPY packaging/docker/entrypoint.sh /usr/local/bin/entrypoint.sh

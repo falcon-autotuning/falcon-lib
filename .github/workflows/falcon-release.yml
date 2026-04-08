@@ -36,6 +36,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
             type=sha
 
       - name: Build and Push Docker Image
@@ -49,14 +50,10 @@ jobs:
           build-args: |
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
 
-      - name: Test Docker Executables (from local build)
+      - name: Verify Published Image
         run: |
-          # Build locally again to test before pushing or pull from ghcr
-          # Using the already built image if possible, but build-push-action with 'load: true' is needed for local tests.
-          # Here we just run a quick check on the built tags.
           for tag in ${{ steps.meta.outputs.tags }}; do
-            # We only need to test one tag
+            docker pull $tag
             ./packaging/docker/test-docker-executables.sh $tag
-            break
           done
         shell: bash
