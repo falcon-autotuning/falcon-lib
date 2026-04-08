@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 jobs:
-  # Build and push Docker image to GHCR
+  # Build and push Docker image to GHCR (EEE to trigger workflow)
   push-docker:
     name: Build & Push Docker Image to GHCR
     runs-on: ubuntu-latest
