@@ -171,7 +171,7 @@ install:
 	@echo "Installing all components..."
 	$(MAKE) -C database install SUDO="$(SUDO)"
 	$(MAKE) -C comms install SUDO="$(SUDO)"
-	$(MAKE) -C typing install SUDO="$(SUDO)"
+	# $(MAKE) -C typing install SUDO="$(SUDO)"
 	#$(MAKE) -C routine install SUDO="$(SUDO)"
 	$(MAKE) -C qarrayDevice install-python-deps SUDO="$(SUDO)"
 	$(MAKE) -C qarrayDevice install SUDO="$(SUDO)"
