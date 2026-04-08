@@ -222,8 +222,15 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Docker Buildx
+      - name: Set up Docker BuildX
         uses: docker/setup-buildx-action@v2
+
+      - name: Prepare Docker Metadata
+        id: prep
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "repo=${REPO_LOWER}" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
@@ -242,9 +249,11 @@ jobs:
           push: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') }}
           tags: |
             falcon-cli:latest
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+            ghcr.io/${{ steps.prep.outputs.repo }}:${{ github.ref_name }}
           build-args: |
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            NUGET_FEED_URL=${{ secrets.NUGET_FEED_URL }}
+            NUGET_API_KEY=${{ secrets.NUGET_API_KEY }}
 
       - name: Test Docker Executables
         run: |
@@ -272,6 +281,7 @@ jobs:
 
       - name: Pull and Test Image
         run: |
-          docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-          ./packaging/docker/test-docker-executables.sh ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker pull ghcr.io/${REPO_LOWER}:${{ github.ref_name }}
+          ./packaging/docker/test-docker-executables.sh ghcr.io/${REPO_LOWER}:${{ github.ref_name }}
         shell: bash

@@ -43,19 +43,17 @@ ENV VCPKG_ROOT=/vcpkg
 RUN git clone https://github.com/microsoft/vcpkg.git $VCPKG_ROOT && \
     $VCPKG_ROOT/bootstrap-vcpkg.sh
 
-# Build argument for GitHub token (required for NuGet authentication)
-ARG GITHUB_TOKEN
-
-# Configure vcpkg to use NuGet prebuilt binaries
-ENV NUGET_FEED="https://nuget.pkg.github.com/falcon-autotuning/index.json"
+# Build arguments for NuGet authentication
+ARG NUGET_FEED_URL
+ARG NUGET_API_KEY
 
 # runs the make install-deps command that builds all of the dependencies
 ENV SUDO=""
-RUN if [ -n "$GITHUB_TOKEN" ]; then \
-      echo "Using GITHUB_TOKEN for NuGet authentication"; \
-      export VCPKG_BINARY_SOURCES="clear;nuget,${NUGET_FEED},read,${GITHUB_TOKEN}"; \
-    else \
-      export VCPKG_BINARY_SOURCES="clear;nuget,${NUGET_FEED},read"; \
+RUN if [ -n "$NUGET_API_KEY" ] && [ -n "$NUGET_FEED_URL" ]; then \
+      echo "Using organization secrets for NuGet authentication"; \
+      export VCPKG_BINARY_SOURCES="clear;nuget,${NUGET_FEED_URL},az,${NUGET_API_KEY},readwrite"; \
+    elif [ -n "$NUGET_FEED_URL" ]; then \
+      export VCPKG_BINARY_SOURCES="clear;nuget,${NUGET_FEED_URL},readwrite"; \
     fi && \
     export GITHUB_TOKEN=${GITHUB_TOKEN} && \
     make install-deps 

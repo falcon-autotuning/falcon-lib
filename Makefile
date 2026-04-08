@@ -123,10 +123,13 @@ endif
 
 install-vcpkg-deps: 
 	@echo "Installing vcpkg dependencies..."
-	@if [ ! -z "$(VCPKG_BINARY_SOURCES)" ]; then \
+	@if [ ! -z "$(NUGET_API_KEY)" ] && [ ! -z "$(NUGET_FEED_URL)" ]; then \
+		echo "Using organization secrets for binary caching"; \
+		export VCPKG_BINARY_SOURCES="clear;nuget,$(NUGET_FEED_URL),az,$(NUGET_API_KEY),readwrite"; \
+	elif [ ! -z "$(VCPKG_BINARY_SOURCES)" ]; then \
 		echo "Using binary sources: $(VCPKG_BINARY_SOURCES)"; \
-	fi
-	CC=clang CXX=clang++ MAKELEVEL=0 VCPKG_BINARY_SOURCES="$(VCPKG_BINARY_SOURCES)" $(VCPKG_ROOT)/vcpkg install --triplet $(VCPKG_TRIPLET)
+	fi && \
+	CC=clang CXX=clang++ MAKELEVEL=0 $(VCPKG_ROOT)/vcpkg install --triplet $(VCPKG_TRIPLET)
 	@echo "Patching cereal install..."
 	mkdir -p $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types
 	curl -sSL $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) https://raw.githubusercontent.com/falcon-autotuning/falcon-core/main/cpp/include/cereal/types/xtensor.hpp -o $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types/xtensor.hpp
