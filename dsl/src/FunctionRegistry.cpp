@@ -1,45 +1,7 @@
 #include "falcon-dsl/FunctionRegistry.hpp"
-#include "falcon-dsl/log.hpp"
-#include <falcon-database/DatabaseConnection.hpp>
 #include <falcon-typing/PrimitiveTypes.hpp>
 #include <falcon_core/physics/device_structures/Connection.hpp>
 #include <stdexcept>
-namespace {
-falcon::typing::RuntimeValue json_to_runtime_value(const nlohmann::json &j) {
-  if (j.is_null()) {
-    return nullptr;
-  }
-  if (j.is_boolean()) {
-    return j.get<bool>();
-  }
-  if (j.is_number_integer()) {
-    return static_cast<int64_t>(j.get<int64_t>());
-  }
-  if (j.is_number_float()) {
-    return j.get<double>();
-  }
-  if (j.is_string()) {
-    return j.get<std::string>();
-  }
-  throw std::runtime_error("Unsupported JSON type for RuntimeValue");
-}
-nlohmann::json runtime_value_to_json(const falcon::typing::RuntimeValue &v) {
-  return std::visit(
-      [](auto &&arg) -> nlohmann::json {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, double> ||
-                      std::is_same_v<T, bool> ||
-                      std::is_same_v<T, std::string> ||
-                      std::is_same_v<T, std::nullptr_t>) {
-          return arg;
-        } else {
-          throw std::runtime_error(
-              "Unsupported RuntimeValue type for JSON conversion");
-        }
-      },
-      v);
-}
-} // namespace
 namespace falcon::dsl {
 
 FunctionRegistry::FunctionRegistry()
@@ -120,22 +82,6 @@ get_optional_string(const typing::ParameterMap &params, const char *key) {
   return std::nullopt;
 }
 
-// // Helper for loading optional Connection fields from ParameterMap
-// std::optional<std::string>
-// get_optional_connection_name(const ParameterMap &params, const char *key) {
-//   auto it = params.find(key);
-//   if (it != params.end() &&
-//       std::holds_alternative<
-//           falcon_core::physics::device_structures::ConnectionSP>(it->second))
-//           {
-//     auto conn =
-//     std::get<falcon_core::physics::device_structures::ConnectionSP>(
-//         it->second);
-//     return conn->name();
-//   }
-//   return std::nullopt;
-// }
-//
 // Helper for loading optional double fields from ParameterMap
 std::optional<double> get_optional_double(const typing::ParameterMap &params,
                                           const char *key) {

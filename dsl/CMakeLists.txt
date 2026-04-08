@@ -29,34 +29,24 @@ endif()
 
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(spdlog        CONFIG REQUIRED)
-find_package(cereal        CONFIG REQUIRED)
-find_package(xtensor       CONFIG REQUIRED)
-find_package(xtl           CONFIG REQUIRED)
 find_package(yaml-cpp      CONFIG REQUIRED)
-find_package(OpenSSL               REQUIRED)
-find_package(cnats         CONFIG REQUIRED)
+find_package(falcon-typing CONFIG REQUIRED)
+find_package(fmt           CONFIG REQUIRED)
 
 # 1. Compiler sub-project
 add_subdirectory(compiler)
 
-if(NOT TARGET falcon::falcon-database)
-  find_package(falcon-database CONFIG REQUIRED)
-endif()
-if(NOT TARGET falcon::falcon-comms)
-  find_package(falcon-comms CONFIG REQUIRED)
-endif()
 include_directories(/opt/falcon/include)
-find_package(falcon_core CONFIG REQUIRED)
 
 # falcon-typing: provides PrimitiveTypes (RuntimeValue/ParameterMap) and FFI ABI.
 # First try in-tree (when building from the falcon-lib root), then installed.
-if(NOT TARGET falcon::falcon-typing)
-  find_package(falcon-typing CONFIG REQUIRED
-    PATHS
-      "${CMAKE_CURRENT_SOURCE_DIR}/../typing/build/release"
-      /opt/falcon/lib/cmake/falcon-typing
-  )
-endif()
+# if(NOT TARGET falcon::falcon-typing)
+#   find_package(falcon-typing CONFIG REQUIRED
+#     PATHS
+#       "${CMAKE_CURRENT_SOURCE_DIR}/../typing/build/release"
+#       /opt/falcon/lib/cmake/falcon-typing
+#   )
+# endif()
 
 # 2. Package manager sub-project (falcon-pm)
 add_subdirectory(package-manager)
@@ -82,18 +72,12 @@ target_include_directories(falcon-dsl
 target_link_libraries(falcon-dsl
   PUBLIC
     nlohmann_json::nlohmann_json
-    falcon::falcon-database
-    falcon::falcon-comms
     falcon-atc-core
-    cereal::cereal
-    xtensor
-    xtl
     yaml-cpp::yaml-cpp
-    cnats::nats
-    falcon_core_cpp
     falcon::falcon-typing
   PRIVATE
     falcon-pm
+    fmt::fmt
 )
 
 # Pass the in-tree include directories so process_ff_import can compile wrappers
@@ -112,9 +96,9 @@ if(BUILD_TOOLS)
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   )
   install(TARGETS falcon-run RUNTIME DESTINATION bin)
-# falcon-test: fixture-aware test runner
-# Reads user .fal test files, injects harness states, and executes all
-# discovered test suite autotuners.
+  # falcon-test: fixture-aware test runner
+  # Reads user .fal test files, injects harness states, and executes all
+  # discovered test suite autotuners.
   add_executable(falcon-test src/cli/test_main.cpp)
   target_link_libraries(falcon-test PRIVATE falcon-dsl)
   target_include_directories(falcon-test
