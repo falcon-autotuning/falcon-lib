@@ -78,27 +78,20 @@ vcpkg-bootstrap:
 		cd $(VCPKG_ROOT) && ./bootstrap-vcpkg.sh; \
 	fi
 
-setup-nuget-auth:
-	@if [ ! -f .nuget_api_key ] && [ -z "$$NUGET_API_KEY" ]; then \
-		echo "No .nuget_api_key or NUGET_API_KEY found, skipping NuGet setup (local-only build, no binary cache)."; \
-		exit 0; \
-	fi
-	@echo "Setting up NuGet authentication for vcpkg binary caching..."
-	@if ! command -v mono >/dev/null 2>&1; then \
-		echo "Error: mono is not installed. Please install mono (e.g., 'sudo pacman -S mono' on Arch, 'sudo apt install mono-complete' on Ubuntu)."; \
-		exit 1; \
-	fi
-	@API_KEY=$$(if [ -f .nuget_api_key ]; then cat .nuget_api_key; else echo $$NUGET_API_KEY; fi); \
-	NUGET_EXE=$$(vcpkg fetch nuget | tail -n1); \
-	mono "$$NUGET_EXE" sources remove -Name "falcon-autotuning" || true; \
-	mono "$$NUGET_EXE" sources add -Name "falcon-autotuning" -Source "$(NUGET_FEED)" -Username "ADO" -Password "$$API_KEY"
-
 .PHONY: vcpkg-install-deps
-vcpkg-install-deps: setup-nuget-auth 
+vcpkg-install-deps:
 	@echo "Installing vcpkg dependencies" 
-	@CC=clang CXX=clang++ VCPKG_FEATURE_FLAGS=binarycaching \
+	@API_KEY=$$(if [ -f .nuget_api_key ]; then cat .nuget_api_key; else echo $$NUGET_API_KEY; fi); \
+	if [ ! -z "$$API_KEY" ] && [ ! -z "$(NUGET_FEED)" ]; then \
+		echo "Generating temporary nuget.config for binary caching..."; \
+		printf '<?xml version="1.0" encoding="utf-8"?>\n<configuration>\n  <packageSources>\n    <add key="AzureDevOps" value="%s" />\n  </packageSources>\n  <packageSourceCredentials>\n    <AzureDevOps>\n      <add key="Username" value="az" />\n      <add key="ClearTextPassword" value="%s" />\n    </AzureDevOps>\n  </packageSourceCredentials>\n</configuration>\n' "$(NUGET_FEED)" "$$API_KEY" > $(VCPKG_ROOT)/nuget.config; \
+		export VCPKG_BINARY_SOURCES="clear;nugetconfig,$(VCPKG_ROOT)/nuget.config,readwrite"; \
+	elif [ ! -z "$(VCPKG_BINARY_SOURCES)" ]; then \
+		echo "Using existing VCPKG_BINARY_SOURCES: $(VCPKG_BINARY_SOURCES)"; \
+		export VCPKG_BINARY_SOURCES="$(VCPKG_BINARY_SOURCES)"; \
+	fi && \
+	CC=clang CXX=clang++ VCPKG_FEATURE_FLAGS=binarycaching \
 		$(VCPKG_ROOT)/vcpkg install \
-		--binarysource="$(VCPKG_BINARY_SOURCES)" \
 		--triplet="$(VCPKG_TRIPLET)" \
 		--overlay-ports=./ports \
 		--debug
