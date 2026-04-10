@@ -51,7 +51,7 @@ ARG NUGET_API_KEY
 ENV SUDO=""
 RUN if [ -n "$NUGET_API_KEY" ] && [ -n "$NUGET_FEED_URL" ]; then \
       echo "Generating nuget.config for Azure DevOps authentication..."; \
-      printf '<?xml version="1.0" encoding="utf-8"?>\n<configuration>\n  <packageSources>\n    <add key="AzureDevOps" value="%s" />\n  </packageSources>\n  <packageSourceCredentials>\n    <AzureDevOps>\n      <add key="Username" value="az" />\n      <add key="ClearTextPassword" value="%s" />\n    </AzureDevOps>\n  </packageSourceCredentials>\n</configuration>\n' "$NUGET_FEED_URL" "$NUGET_API_KEY" > $VCPKG_ROOT/nuget.config && \
+      printf '<?xml version="1.0" encoding="utf-8"?>\n<configuration>\n  <config>\n    <add key="defaultPushSource" value="AzureDevOps" />\n  </config>\n  <packageSources>\n    <add key="AzureDevOps" value="%s" />\n  </packageSources>\n  <packageSourceCredentials>\n    <AzureDevOps>\n      <add key="Username" value="az" />\n      <add key="ClearTextPassword" value="%s" />\n    </AzureDevOps>\n  </packageSourceCredentials>\n</configuration>\n' "$NUGET_FEED_URL" "$NUGET_API_KEY" > $VCPKG_ROOT/nuget.config && \
       export VCPKG_BINARY_SOURCES="clear;nugetconfig,$VCPKG_ROOT/nuget.config,readwrite"; \
     elif [ -n "$NUGET_FEED_URL" ]; then \
       export VCPKG_BINARY_SOURCES="clear;nuget,${NUGET_FEED_URL},readwrite"; \
