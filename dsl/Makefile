@@ -85,7 +85,7 @@ vcpkg-install-deps:
 	@API_KEY=$$(if [ -f .nuget_api_key ]; then cat .nuget_api_key; else echo $$NUGET_API_KEY; fi); \
 	if [ ! -z "$$API_KEY" ] && [ ! -z "$(NUGET_FEED)" ]; then \
 		echo "Generating temporary nuget.config for binary caching..."; \
-		printf '<?xml version="1.0" encoding="utf-8"?>\n<configuration>\n  <config>\n    <add key="defaultPushSource" value="cpp-cache" />\n  </config>\n  <packageSources>\n    <add key="cpp-cache" value="%s" />\n  </packageSources>\n  <packageSourceCredentials>\n    <cpp-cache>\n      <add key="Username" value="az" />\n      <add key="ClearTextPassword" value="%s" />\n    </cpp-cache>\n  </packageSourceCredentials>\n</configuration>\n' "$(NUGET_FEED)" "$$API_KEY" > $(VCPKG_ROOT)/nuget.config; \
+		printf '<?xml version="1.0" encoding="utf-8"?>\n<configuration>\n  <config>\n    <add key="defaultPushSource" value="cpp-cache" />\n  </config>\n  <packageSources>\n    <add key="cpp-cache" value="%s" />\n  </packageSources>\n  <packageSourceCredentials>\n    <cpp-cache>\n      <add key="Username" value="az" />\n      <add key="ClearTextPassword" value="%s" />\n    </cpp-cache>\n  </packageSourceCredentials>\n  <apikeys>\n    <add key="cpp-cache" value="AzureDevOps" />\n  </apikeys>\n</configuration>\n' "$(NUGET_FEED)" "$$API_KEY" > $(VCPKG_ROOT)/nuget.config; \
 		export VCPKG_BINARY_SOURCES="clear;nugetconfig,$(VCPKG_ROOT)/nuget.config,readwrite"; \
 	elif [ ! -z "$(VCPKG_BINARY_SOURCES)" ]; then \
 		echo "Using existing VCPKG_BINARY_SOURCES: $(VCPKG_BINARY_SOURCES)"; \
