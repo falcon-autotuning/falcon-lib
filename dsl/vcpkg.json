@@ -35,6 +35,12 @@
     {
       "name": "falcon-typing",
       "version>=": "1.0.0"
+    },
+    {
+      "name": "openssl"
+    },
+    {
+      "name": "curl"
     }
   ],
   "builtin-baseline": "e5a1490e1409d175932ef6014519e9ae149ddb7c"
