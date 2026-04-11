@@ -173,6 +173,8 @@ install-dsl: build-release
 	$(SUDO) cmake --install $(BUILD_DIR_RELEASE) --prefix $(INSTALL_PREFIX)
 	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/falcon-run $(INSTALL_LIBDIR)/falcon-run
 	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/falcon-test $(INSTALL_LIBDIR)/falcon-test
+	@echo "Copying vcpkg dependencies to $(INSTALL_LIBDIR)..."
+	$(SUDO) cp -P $(VCPKG_INSTALLED_DIR)/$(VCPKG_TRIPLET)/lib/*.so* $(INSTALL_LIBDIR)/ || true
 	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/package-manager/falcon-pm $(INSTALL_LIBDIR)/falcon-pm
 	$(SUDO) cp -v $(BUILD_DIR_RELEASE)/package-manager/libfalcon-pm.a $(INSTALL_LIBDIR)/libfalcon-pm.a
 	@echo "✓ falcon-dsl installed"
