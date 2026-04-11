@@ -5,7 +5,7 @@ vcpkg_from_github(
     SHA512 28856ce19074b9dd5156c51bd34d56574997f6b780fd64aa7a53b073bdb90b4077d571bc8c8436d13f77af4898d249a8c735cbad31080aca35a18b6da2ef888a
 )
 
-vcpkg_build_type(RELEASE)
+set(VCPKG_BUILD_TYPE release)
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
 )
