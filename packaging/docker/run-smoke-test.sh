@@ -25,10 +25,22 @@ echo "Listing /opt/falcon/lib:"
 ls -l /opt/falcon/lib || echo "/opt/falcon/lib not found"
 echo "Checking for falcon-run:"
 which falcon-run || echo "falcon-run not in PATH"
+echo "File Info:"
+file $(which falcon-run) || echo "file command failed"
+echo "LDD Info:"
+ldd $(which falcon-run) || echo "ldd command failed"
+
+echo "Running autotuner: $AUTOTUNER_NAME from $AUTOTUNER_FILE"
 
 # Run falcon-run and capture output
 # We expect it to complete with success and print the result
-output=$(falcon-run "$AUTOTUNER_NAME" "$AUTOTUNER_FILE" 2>&1)
+# We wrap it in a subshell to avoid set -e killing the script if it returns 127
+output=$(falcon-run "$AUTOTUNER_NAME" "$AUTOTUNER_FILE" 2>&1) || {
+    err=$?
+    echo "Execution failed with exit code $err"
+    echo "Output: $output"
+    exit $err
+}
 
 echo "------------------------------------------"
 echo "$output"
