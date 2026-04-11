@@ -2,7 +2,7 @@ vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO falcon-autotuning/falcon-typing
     REF v1.0.0
-    SHA512 13a2bb42c852b14f10d6cac72b9400d8d40f211bd58214cf90eaac8a2f7e095276a09b9b71b8926a032643cc5c0d59839d45deab2df3623f707ed87de5411386
+    SHA512 9be44e054f334acefe140d13d893694c9fd981e4b906c91b52370e5a35b3dcd045bdee851608918d60b2859438caaf397c12032b606d19f4e603dc7ea7e8481d
 )
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
