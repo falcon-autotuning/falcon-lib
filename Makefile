@@ -1,17 +1,11 @@
 # Falcon-lib Root Makefile
 # Manages build configurations for all submodules
 
-.PHONY: all deps help clean install-vcpkg-deps build-all test-all install-lsp-framework install-deps install-core
+.PHONY: all deps help clean install-vcpkg-deps build-all test-all install-deps 
 
 VCPKG_ROOT ?= $(CURDIR)/.vcpkg
 VCPKG_TOOLCHAIN ?= $(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake
 UNAME_S := $(shell uname -s)
-
-# Repo and release configuration
-REPO = falcon-autotuning/falcon-core
-RELEASE_TAG = v1.1.0
-LIBS_RELEASE_TAG = v0.0.2
-LIBS_REPO = falcon-autotuning/falcon-core-libs
 
 # GitHub release download base URL
 GITHUB_RELEASE_URL = https://github.com/$(REPO)/releases/download/$(RELEASE_TAG)
@@ -61,66 +55,6 @@ deps:
 	fi
 	@echo "✓ vcpkg ready"
 
-
-install-core:
-	@echo "Fetching latest release assets from GitHub..."
-	mkdir -p $(TMPDIR)
-	$(SUDO) mkdir -p $(LIBDIR)
-	$(SUDO) mkdir -p $(INCLUDEDIR)
-	@echo "Downloading $(ARCHIVE_CPP)..."
-	curl -L -f $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) -o $(TMPDIR)/$(ARCHIVE_CPP) \
-		$(GITHUB_RELEASE_URL)/$(ARCHIVE_CPP)
-	@echo "Downloading $(ARCHIVE_CPP_SHA)..."
-	curl -L -f $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) -o $(TMPDIR)/$(ARCHIVE_CPP_SHA) \
-		$(GITHUB_RELEASE_URL)/$(ARCHIVE_CPP_SHA)
-	@echo "Downloading $(ARCHIVE_CAPI)..."
-	curl -L -f $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) -o $(TMPDIR)/$(ARCHIVE_CAPI) \
-		$(GITHUB_RELEASE_URL)/$(ARCHIVE_CAPI)
-	@echo "Downloading $(ARCHIVE_CAPI_SHA)..."
-	curl -L -f $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) -o $(TMPDIR)/$(ARCHIVE_CAPI_SHA) \
-		$(GITHUB_RELEASE_URL)/$(ARCHIVE_CAPI_SHA)
-ifeq ($(findstring MINGW,$(UNAME_S)),MINGW)
-	dos2unix "$(TMPDIR)/falcon-core-cpp-windows-x64.zip.sha256"
-	dos2unix "$(TMPDIR)/falcon-core-c-api-windows-x64.zip.sha256"
-endif
-	@echo "Verifying checksums..."
-	cd "$(TMPDIR)" && sha256sum -c "$(shell echo $(ARCHIVE_CPP_SHA) | tr -d '\r')"
-	cd "$(TMPDIR)" && sha256sum -c "$(shell echo $(ARCHIVE_CAPI_SHA) | tr -d '\r')"
-	@echo "Extracting Archives..."
-	mkdir -p $(TMPDIR)/cpp
-	mkdir -p $(TMPDIR)/c_api
-	$(EXTRACT_CPP)
-	$(EXTRACT_CAPI)
-	@echo "Installing Shared Libraries..."
-	$(SUDO) install -Dm755 $(TMPDIR)/cpp/$(LIBSUBDIR)* $(LIBDIR)/
-	$(SUDO) install -Dm755 $(TMPDIR)/c_api/$(LIBSUBDIR)* $(LIBDIR)/
-	@echo "Extracting and Installing C++ Headers..."
-	$(SUDO) mkdir -p $(INCLUDEDIR)/falcon-core-cpp/falcon_core/
-	$(SUDO) cp -r $(TMPDIR)/cpp/include/falcon_core/* $(INCLUDEDIR)/falcon-core-cpp/falcon_core/
-	@echo "Extracting and Installing C API Headers..."
-	$(SUDO) mkdir -p $(INCLUDEDIR)/falcon-core-c-api/falcon_core/
-	$(SUDO) cp -r $(TMPDIR)/c_api/include/falcon_core/* $(INCLUDEDIR)/falcon-core-c-api/falcon_core/
-	@echo "Installing other Headers..."
-	$(SUDO) find $(TMPDIR)/cpp/include -mindepth 1 -maxdepth 1 ! -name 'falcon_core' -exec cp -r {} $(INCLUDEDIR)/ \;
-	$(SUDO) find $(TMPDIR)/c_api/include -mindepth 1 -maxdepth 1 ! -name 'falcon_core' -exec cp -r {} $(INCLUDEDIR)/ \;
-ifeq ($(UNAME_S),Linux)
-	@echo "Updating linker cache..."
-	$(SUDO) ldconfig
-endif
-	@echo "falcon-core libraries and headers installed successfully."
-	$(SUDO) mkdir -p $(INCLUDEDIR)/falcon_core 
-	$(SUDO) cp -r $(INCLUDEDIR)/falcon-core-cpp/falcon_core/* $(INCLUDEDIR)/falcon_core
-	$(SUDO) cp -r $(INCLUDEDIR)/falcon-core-c-api/falcon_core/* $(INCLUDEDIR)/falcon_core
-	$(SUDO) rm -rf $(INCLUDEDIR)/falcon-core-cpp
-	$(SUDO) rm -rf $(INCLUDEDIR)/falcon-core-c-api
-	@echo "Installing cmake files for falcon_core that are not included with the build"
-	$(SUDO) mkdir -p $(LIBDIR)/cmake
-	$(SUDO) mkdir -p $(LIBDIR)/cmake/falcon_core
-	$(SUDO) cp ./falcon_core-config-version.cmake $(LIBDIR)/cmake/falcon_core
-	$(SUDO) cp ./falcon_core-config.cmake $(LIBDIR)/cmake/falcon_core
-	@echo ""
-
-
 install-vcpkg-deps: 
 	@echo "Installing vcpkg dependencies..."
 	@if [ ! -z "$(NUGET_API_KEY)" ] && [ ! -z "$(NUGET_FEED_URL)" ]; then \
@@ -135,35 +69,6 @@ install-vcpkg-deps:
 	$(SUDO) mkdir -p $(INCLUDEDIR)/cereal/types
 	$(SUDO) cp $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types/xtensor.hpp $(INCLUDEDIR)/cereal/types/xtensor.hpp
 	@echo "✓ vcpkg dependencies installed"
-
-install-lsp-framework: install-vcpkg-deps
-	@echo "Installing lsp-framework 1.3.0 from source..."
-	mkdir -p $(TMPDIR)
-	curl -L -f $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) -o $(TMPDIR)/lsp-framework-1.3.0.zip https://github.com/leon-bckl/lsp-framework/archive/refs/tags/1.3.0.zip
-	unzip -o $(TMPDIR)/lsp-framework-1.3.0.zip -d $(TMPDIR)
-	@echo "Building lsp-framework (Release) with clang..."
-	cd $(TMPDIR)/lsp-framework-1.3.0 && mkdir -p build && cd build && CC=clang CXX=clang++ cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX)
-	cd $(TMPDIR)/lsp-framework-1.3.0/build && make
-	@echo "Installing lsp-framework (Release)..."
-	cd $(TMPDIR)/lsp-framework-1.3.0/build && cmake --install . --prefix $(TMPDIR)/lsp-framework-1.3.0/build
-	$(SUDO) install -Dm755 $(TMPDIR)/lsp-framework-1.3.0/build/liblsp.a $(LIBDIR)/
-	@echo "Building lsp-framework (Debug) with clang..."
-	cd $(TMPDIR)/lsp-framework-1.3.0 && mkdir -p build-debug && cd build-debug && CC=clang CXX=clang++ cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=$(PREFIX)
-	cd $(TMPDIR)/lsp-framework-1.3.0/build-debug && make
-	@echo "Installing lsp-framework (Debug)..."
-	cd $(TMPDIR)/lsp-framework-1.3.0/build-debug && cmake --install . --prefix $(TMPDIR)/lsp-framework-1.3.0/build-debug
-	$(SUDO) install -Dm755 $(TMPDIR)/lsp-framework-1.3.0/build-debug/liblspd.a $(LIBDIR)/liblspd.a
-	@echo "Copying lsp headers..."
-	$(SUDO) mkdir -p $(INCLUDEDIR)/lsp
-	$(SUDO) cp -r $(TMPDIR)/lsp-framework-1.3.0/build/include/lsp/ $(INCLUDEDIR)/
-	@echo "Installing lsp-framework cmake config files..."
-	$(SUDO) mkdir -p $(LIBDIR)/cmake/lsp
-	$(SUDO) cp $(TMPDIR)/lsp-framework-1.3.0/build/lib/cmake/lsp/lspConfig.cmake $(LIBDIR)/cmake/lsp/
-	$(SUDO) cp $(TMPDIR)/lsp-framework-1.3.0/build/lib/cmake/lsp/lspConfigVersion.cmake $(LIBDIR)/cmake/lsp/
-	$(SUDO) cp $(TMPDIR)/lsp-framework-1.3.0/build/lib/cmake/lsp/lspConfigTargets.cmake $(LIBDIR)/cmake/lsp/
-	@echo "✓ lsp-framework (Release & Debug) installed"
-
-install-deps: install-vcpkg-deps install-core install-lsp-framework
 
 install:
 	@echo "Installing all components..."
@@ -195,9 +100,7 @@ help:
 	@echo "Setup targets:"
 	@echo "  make deps               - Install or update vcpkg"
 	@echo "  make install-vcpkg-deps - Install all dependencies"
-	@echo "  make install-lsp-framework - Install lsp-framework dependency"
 	@echo "  make install-core       - Install falcon_core"
-	@echo "  make install-deps       - Installs all dependencies in order"
 	@echo ""
 	@echo "Build targets:"
 	@echo "  make install           - Install all components"
