@@ -16,7 +16,15 @@ if [ ! -f "$AUTOTUNER_FILE" ]; then
     exit 1
 fi
 
-echo "Running autotuner: $AUTOTUNER_NAME from $AUTOTUNER_FILE"
+echo "Debug Info:"
+echo "PATH: $PATH"
+echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+echo "Listing /opt/falcon/bin:"
+ls -l /opt/falcon/bin || echo "/opt/falcon/bin not found"
+echo "Listing /opt/falcon/lib:"
+ls -l /opt/falcon/lib || echo "/opt/falcon/lib not found"
+echo "Checking for falcon-run:"
+which falcon-run || echo "falcon-run not in PATH"
 
 # Run falcon-run and capture output
 # We expect it to complete with success and print the result
