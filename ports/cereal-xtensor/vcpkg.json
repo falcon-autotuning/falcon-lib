@@ -1,0 +1,9 @@
+{
+    "name": "cereal-xtensor",
+    "version": "1.0.0",
+    "description": "Cereal serialization support for xtensor",
+    "dependencies": [
+        "cereal",
+        "xtensor"
+    ]
+}

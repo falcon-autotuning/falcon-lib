@@ -130,10 +130,8 @@ install-vcpkg-deps:
 	elif [ ! -z "$(VCPKG_BINARY_SOURCES)" ]; then \
 		echo "Using binary sources: $(VCPKG_BINARY_SOURCES)"; \
 	fi && \
-	CC=clang CXX=clang++ MAKELEVEL=0 $(VCPKG_ROOT)/vcpkg install --triplet $(VCPKG_TRIPLET)
+	CC=clang CXX=clang++ MAKELEVEL=0 $(VCPKG_ROOT)/vcpkg install --triplet $(VCPKG_TRIPLET) --overlay-ports=./ports
 	@echo "Patching cereal install..."
-	mkdir -p $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types
-	curl -sSL $(if $(GITHUB_TOKEN),-H "Authorization: token $(GITHUB_TOKEN)",) https://raw.githubusercontent.com/falcon-autotuning/cereal-xtensor/main/include/cereal/types/xtensor.hpp -o $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types/xtensor.hpp
 	$(SUDO) mkdir -p $(INCLUDEDIR)/cereal/types
 	$(SUDO) cp $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types/xtensor.hpp $(INCLUDEDIR)/cereal/types/xtensor.hpp
 	@echo "✓ vcpkg dependencies installed"
