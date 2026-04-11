@@ -4,6 +4,8 @@
     "description": "Cereal serialization support for xtensor",
     "dependencies": [
         "cereal",
-        "xtensor"
+        "xtensor",
+        "vcpkg-cmake",
+        "vcpkg-cmake-config"
     ]
 }
