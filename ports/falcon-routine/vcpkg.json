@@ -23,10 +23,6 @@
       "version>=": "3.7.0"
     },
     {
-      "name": "gtest",
-      "version>=": "1.16.0"
-    },
-    {
       "name": "falcon-database",
       "version>=": "1.0.1"
     },

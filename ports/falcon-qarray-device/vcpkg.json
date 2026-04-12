@@ -1,0 +1,24 @@
+{
+  "name": "falcon-qarray-device",
+  "version": "1.0.0",
+  "description": "A binding to teh qarray Python implementation for C++ consumption.",
+  "homepage": "https://github.com/falcon-autotuning/falcon-qarray-device",
+  "license": "MPL-2.0",
+  "dependencies": [
+    {
+      "name": "vcpkg-cmake"
+    },
+    {
+      "name": "vcpkg-cmake-config"
+    },
+    {
+      "name": "pybind11",
+      "version>=": "3.0.0"
+    },
+    {
+      "name": "plplot",
+      "version>=": "5.15.0"
+    }
+  ],
+  "builtin-baseline": "e5a1490e1409d175932ef6014519e9ae149ddb7c"
+}
