@@ -1,13 +1,11 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
-    REPO falcon-autotuning/falcon-typing
-    REF v1.0.0
-    SHA512 9be44e054f334acefe140d13d893694c9fd981e4b906c91b52370e5a35b3dcd045bdee851608918d60b2859438caaf397c12032b606d19f4e603dc7ea7e8481d
+    REPO falcon-autotuning/falcon-dsl
+    REF v${VERSION}
+    SHA512 6a7b407ed2c21a5ae74adbd1cb6e2414baf7008b6b42553cb6e3b4079b511f60cf65354886a0b17f121d8c8a0496edd57f75be4e8821762004b69ec2f90a280d
 )
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
-    OPTIONS
-        -DCMAKE_BUILD_TYPE=Release
 )
 vcpkg_cmake_install()
 vcpkg_cmake_config_fixup()
