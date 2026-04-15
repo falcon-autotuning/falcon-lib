@@ -57,7 +57,7 @@ RUN if [ -n "$NUGET_API_KEY" ] && [ -n "$NUGET_FEED_URL" ]; then \
       export VCPKG_BINARY_SOURCES="clear;nuget,${NUGET_FEED_URL},readwrite"; \
     fi && \
     export GITHUB_TOKEN=${GITHUB_TOKEN} && \
-    make install-deps 
+    make install-vcpkg-deps 
 
 # runs the make install command that builds the current package and installs it to /opt/falcon/
 # runs the make install command that builds the current package and installs it to /opt/falcon/

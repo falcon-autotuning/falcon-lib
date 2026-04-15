@@ -30,6 +30,24 @@
       "version>=": "1.2.2"
     },
     {
+      "name": "falcon-comms"
+    },
+    {
+      "name": "falcon-database"
+    },
+    {
+      "name": "falcon-dsl"
+    },
+    {
+      "name": "falcon-package-manager"
+    },
+    {
+      "name": "falcon-qarray-device"
+    },
+    {
+      "name": "falcon-typing"
+    },
+    {
       "name": "bext-sml",
       "version>=": "1.1.13"
     },

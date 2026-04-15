@@ -71,24 +71,15 @@ install-vcpkg-deps:
 	@echo "✓ vcpkg dependencies installed"
 
 install:
-	@echo "Installing all components..."
-	$(MAKE) -C database install SUDO="$(SUDO)"
-	$(MAKE) -C comms install SUDO="$(SUDO)"
-	# $(MAKE) -C typing install SUDO="$(SUDO)"
-	#$(MAKE) -C routine install SUDO="$(SUDO)"
-	$(MAKE) -C qarrayDevice install-python-deps SUDO="$(SUDO)"
-	$(MAKE) -C qarrayDevice install SUDO="$(SUDO)"
-	$(MAKE) -C dsl install SUDO="$(SUDO)"
-	@echo "✓ All components installed"
+	@echo "Installing falcon metapackage wrapper..."
+	$(SUDO) mkdir -p $(PREFIX)/bin $(PREFIX)/lib $(PREFIX)/include
+	$(SUDO) find $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/tools -type f -exec cp -v {} $(PREFIX)/bin/ \; 2>/dev/null || true
+	$(SUDO) cp -P $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/lib/*.so* $(PREFIX)/lib/ 2>/dev/null || true
+	$(SUDO) cp -r $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/* $(PREFIX)/include/ 2>/dev/null || true
+	@echo "✓ Metapackage binaries installed to $(PREFIX)"
 
 clean:
 	@echo "Cleaning all components..."
-	$(MAKE) -C database clean
-	$(MAKE) -C comms clean
-	$(MAKE) -C typing clean
-	$(MAKE) -C routine clean
-	$(MAKE) -C qarrayDevice clean
-	$(MAKE) -C dsl clean
 	rm -rf $(VCPKG_ROOT)
 	rm -rf ./vcpkg_installed/
 	@echo "✓ Clean complete"
