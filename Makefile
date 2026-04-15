@@ -67,7 +67,7 @@ install-vcpkg-deps:
 	CC=clang CXX=clang++ MAKELEVEL=0 $(VCPKG_ROOT)/vcpkg install --triplet $(VCPKG_TRIPLET) --overlay-ports=./ports
 	@echo "Patching cereal install..."
 	$(SUDO) mkdir -p $(INCLUDEDIR)/cereal/types
-	$(SUDO) cp $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal/types/xtensor.hpp $(INCLUDEDIR)/cereal/types/xtensor.hpp
+	$(SUDO) cp $(CURDIR)/vcpkg_installed/$(VCPKG_TRIPLET)/include/cereal-xtensor/types/xtensor.hpp $(INCLUDEDIR)/cereal/types/xtensor.hpp
 	@echo "✓ vcpkg dependencies installed"
 
 install:
