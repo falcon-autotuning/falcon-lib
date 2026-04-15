@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.json.schema.json",
   "name": "falcon-package-manager",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Package manager for organizing Falcon autotuning scripts and FFI executables",
   "homepage": "https://github.com/falcon-autotuning/package-manager",
   "license": "MPL-2.0",
