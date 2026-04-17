@@ -43,7 +43,7 @@ jobs:
           context: .
           file: packaging/docker/Dockerfile
           load: true
-          push: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') }}
+          push: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev') && !env.ACT }}
           tags: |
             falcon-cli:latest
             ghcr.io/${{ steps.prep.outputs.repo }}:${{ github.ref_name }}
