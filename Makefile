@@ -110,16 +110,29 @@ help:
 # ==========================================
 
 DOCKER_IMAGE ?= falcon-cli:latest
+DOCKER_REGISTRY ?= ghcr.io
+DOCKER_REPO ?= falcon-autotuning/falcon
+DOCKER_TAG ?= latest
 DB_CONTAINER_NAME ?= falcon-postgres
 DB_PORT ?= 5432
 CONFIG_VOLUME ?= falcon-config
 
-.PHONY: docker-build docker-db-start docker-db-stop docker-install-wrappers docker-uninstall-wrappers docker-teardown
+.PHONY: docker-build docker-push docker-pull docker-db-start docker-db-stop docker-install-wrappers docker-uninstall-wrappers docker-teardown
 
 docker-build:
 	@echo "Building FAlCon Docker Image..."
 	docker build -t $(DOCKER_IMAGE) -f packaging/docker/Dockerfile .
 	@echo "✓ Docker image $(DOCKER_IMAGE) built successfully."
+
+docker-push:
+	@echo "Tagging and pushing $(DOCKER_IMAGE) to $(DOCKER_REGISTRY)..."
+	docker tag $(DOCKER_IMAGE) $(DOCKER_REGISTRY)/$(DOCKER_REPO):$(DOCKER_TAG)
+	docker push $(DOCKER_REGISTRY)/$(DOCKER_REPO):$(DOCKER_TAG)
+
+docker-pull:
+	@echo "Pulling $(DOCKER_REGISTRY)/$(DOCKER_REPO):$(DOCKER_TAG)..."
+	docker pull $(DOCKER_REGISTRY)/$(DOCKER_REPO):$(DOCKER_TAG)
+	docker tag $(DOCKER_REGISTRY)/$(DOCKER_REPO):$(DOCKER_TAG) $(DOCKER_IMAGE)
 
 docker-db-start:
 	@echo "Creating secure volume..."

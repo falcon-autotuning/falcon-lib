@@ -1,6 +1,6 @@
-# Tell git to treat these as actual symlinks (not as text files)
-docs/dsl symlink
-docs/libs symlink
-docs/database symlink
-docs/typing symlink
-docs/qarrayDevice symlink
+# Force LF line endings for shell scripts and other Unix-centric files
+*.sh text eol=lf
+Makefile text eol=lf
+Dockerfile text eol=lf
+*.cmake text eol=lf
+*.json text eol=lf
